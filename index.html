@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YAMAGUCHI FISHING JOURNAL — 山口の海と、ダディの釣り。</title>
+  <meta name="description" content="山口県・萩と長門の海を中心にした釣りジャーナル。釣行Vlog、釣果記録、海況（天気・風・潮）をひとつに。" />
+  <meta property="og:title" content="YAMAGUCHI FISHING JOURNAL" />
+  <meta property="og:description" content="山口の海と、ダディの釣り。釣行Vlog・釣果・海況をまとめた釣りジャーナル。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/posters/hero_dusk.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Shippori+Mincho+B1:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <main id="main">
+    <!-- ============ HERO : 夕まずめ ============ -->
+    <section class="hero" aria-label="山口の夕まずめの海">
+      <video id="hero-video" muted playsinline loop preload="metadata"
+             poster="/assets/posters/hero_dusk.jpg" aria-hidden="true"></video>
+      <div class="hero-inner">
+        <h1 class="hero-title">
+          <span class="line1">Yamaguchi</span>
+          <span class="line2">Fishing Journal</span>
+        </h1>
+        <p class="hero-tagline">山口の海と、ダディの釣り。</p>
+      </div>
+      <div class="hero-meta t-mono" aria-hidden="true">
+        <span><strong>EVENING</strong> — 夕まずめ</span>
+        <span>SEA OF JAPAN / YAMAGUCHI</span>
+        <span>19:23 JST</span>
+      </div>
+      <div class="hero-scroll" aria-hidden="true">Scroll</div>
+    </section>
+
+    <!-- ============ TODAY'S SEA ============ -->
+    <section class="sea-strip" aria-labelledby="sea-h">
+      <div class="wrap">
+        <div class="sea-strip-head">
+          <h2 id="sea-h" class="t-display">Today's Sea<span class="ja">今日の海</span></h2>
+          <p class="sea-updated t-mono" data-sea-updated>UPDATED --:--</p>
+        </div>
+        <div class="sea-grid" id="sea-strip"></div>
+        <a class="sea-more" href="sea.html">Full Forecast<span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <!-- ============ INSTAGRAM ============ -->
+    <section class="ig" aria-labelledby="ig-h">
+      <div class="wrap">
+        <div class="ig-head reveal">
+          <div class="sec-head">
+            <p class="en" id="ig-h">Instagram</p>
+            <p class="ja">@child_daddy_o3z の最近の投稿</p>
+          </div>
+          <a class="ig-follow" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">Follow<span aria-hidden="true">→</span></a>
+        </div>
+        <div class="ig-grid" id="home-ig"></div>
+      </div>
+    </section>
+
+    <!-- ============ YOUTUBE ============ -->
+    <section class="yt" aria-labelledby="yt-h">
+      <div class="wrap">
+        <div class="yt-head reveal">
+          <div class="sec-head">
+            <p class="en" id="yt-h">Popular on YouTube</p>
+            <p class="ja">Childダディ でよく見られている釣り動画</p>
+          </div>
+          <a class="yt-cta" href="https://www.youtube.com/@childdaddy?sub_confirmation=1" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.3-1.6.4-3.2.4-4.8s-.1-3.2-.4-4.8ZM9.8 15.5v-7l6 3.5-6 3.5Z"/></svg>
+            チャンネル登録
+          </a>
+        </div>
+        <div class="yt-grid" id="home-yt"></div>
+        <p class="yt-more reveal"><a href="https://www.youtube.com/@childdaddy/videos" target="_blank" rel="noopener">すべての動画を見る<span aria-hidden="true">→</span></a></p>
+      </div>
+    </section>
+
+    <!-- ============ LATEST STORY ============ -->
+    <section class="story" aria-labelledby="story-h">
+      <p class="ghost" aria-hidden="true">Dawn</p>
+      <div class="wrap">
+        <p class="kicker reveal">Latest Story — 最新の釣行</p>
+        <div class="story-grid">
+          <figure class="story-media reveal">
+            <video muted playsinline loop preload="none"
+                   poster="/assets/posters/dawn_sea.jpg"
+                   data-src="/assets/video/hero/dawn_sea.mp4" aria-label="朝焼けの海面"></video>
+            <figcaption class="frame-caption t-mono">IMG_2871 — 朝マズメ / 山口</figcaption>
+          </figure>
+          <div class="story-body reveal">
+            <h3 id="story-h">朝マズメのモンゴウイカ。<br>アタリは、糸に出た。</h3>
+            <p class="lede">
+              朝焼けがまだ海面に残る時間。エギを抱いた瞬間はロッドに伝わらず、
+              ふけた糸がすっと走った。糸引きだけでアワせて掛けた、静かな一杯の記録。
+            </p>
+            <dl class="story-data">
+              <div><dt>Time</dt><dd>朝マズメ</dd></div>
+              <div><dt>Target</dt><dd>モンゴウイカ</dd></div>
+              <div><dt>Method</dt><dd>エギング</dd></div>
+              <div><dt>Bite</dt><dd>糸引き</dd></div>
+            </dl>
+            <a class="story-link" href="journal.html#mongo-dawn">Read the Journal<span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FISHING LOG ============ -->
+    <section class="log-section" aria-labelledby="log-h">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <p class="en" id="log-h">Fishing Log</p>
+          <p class="ja">釣果の記録</p>
+        </div>
+        <div class="log-editorial" id="home-log"></div>
+        <p class="log-all reveal"><a href="log.html">All Records<span aria-hidden="true">→</span></a></p>
+      </div>
+    </section>
+
+    <!-- ============ FIELD NOTES ============ -->
+    <section class="field-notes" aria-labelledby="fn-h">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <p class="en" id="fn-h">Field Notes</p>
+          <p class="ja">萩・長門・室津、三つの海</p>
+        </div>
+        <div class="area-row" id="home-areas"></div>
+      </div>
+    </section>
+
+    <!-- ============ NIGHT FISHING ============ -->
+    <section class="night" aria-labelledby="night-h">
+      <div class="night-bg" aria-hidden="true">
+        <video muted playsinline loop preload="none"
+               poster="/assets/posters/night_lantern.jpg"
+               data-src="/assets/video/hero/night_lantern.mp4"></video>
+      </div>
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <p class="en" id="night-h">Night Fishing</p>
+          <p class="ja">灯りの下の海</p>
+        </div>
+        <h3 class="reveal">灯火を落とすと、緑色の海に<br>イカの群れが浮かび上がる。</h3>
+        <p class="copy reveal">
+          日が落ちてからが本番の夜も多い。CD式灯火に集まるヤリイカ、
+          墨色の堤防で鳴るドラグ、ヘッドライトの先の計量器。
+          夜の記録は、このジャーナルのいちばん深いところにある。
+        </p>
+        <div class="night-links reveal">
+          <a href="journal.html#yariika-cd">見えイカ釣り 16:18</a>
+          <a href="journal.html#yariika-zen">4月のヤリイカ・前編 19:35</a>
+          <a href="journal.html#yariika-go">4月のヤリイカ・後編 26:29</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CATCH & COOK ============ -->
+    <section class="cook" aria-labelledby="cook-h">
+      <div class="wrap">
+        <div class="cook-grid">
+          <figure class="cook-media reveal">
+            <video muted playsinline loop preload="none"
+                   poster="/assets/posters/vlog_gazami.jpg"
+                   data-src="/assets/video/previews/gazami_cook.mp4"
+                   aria-label="タイワンガザミを捌く様子"></video>
+          </figure>
+          <div class="reveal">
+            <div class="sec-head">
+              <p class="en" id="cook-h">Catch &amp; Cook</p>
+              <p class="ja">釣って、食べるまで</p>
+            </div>
+            <h3>我が家で一番人気。<br>タイワンガザミの味噌汁。</h3>
+            <p class="copy">
+              釣りは持ち帰ってからも続く。夜の港で出会ったタイワンガザミを丁寧に捌いて、
+              20分煮てアクを取って、出汁ごといただく。
+            </p>
+            <ol class="steps">
+              <li><span class="no">01</span>ふんどしの根本に指を入れて甲羅をはがす</li>
+              <li><span class="no">02</span>20分煮て丁寧にアクを取り、出汁を作る</li>
+              <li><span class="no">03</span>身をほぐして、味噌を溶いて完成</li>
+            </ol>
+            <a class="story-link" style="border-color: var(--paper); margin-top: 26px;" href="journal.html#gazami-miso">Watch the Recipe<span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GEAR ============ -->
+    <section class="gear" aria-labelledby="gear-h">
+      <div class="wrap">
+        <div class="gear-head reveal">
+          <div class="sec-head">
+            <p class="en" id="gear-h">In My Bag</p>
+            <p class="ja">実際に海で使っている道具</p>
+          </div>
+          <p class="gear-lede">動画や写真に写っているものだけ。エギング、灯火、撮影機材まで、道具はTACKLEページにまとめています。</p>
+        </div>
+        <div class="tackle-grid" id="home-gear"></div>
+        <p class="gear-more reveal"><a class="story-link" style="border-color: var(--paper);" href="tackle.html">All Tackle<span aria-hidden="true">→</span></a></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <div class="footer-sea">
+      <video muted playsinline loop preload="none"
+             poster="/assets/posters/dawn_sea.jpg"
+             data-src="/assets/video/hero/dawn_sea.mp4" aria-hidden="true"></video>
+      <p class="phrase">また、次の潮で。<small>See you on the next tide</small></p>
+    </div>
+    <div id="footer-mount"></div>
+  </footer>
+
+  <script type="module" src="/src/js/pages/home.js"></script>
+</body>
+</html>
