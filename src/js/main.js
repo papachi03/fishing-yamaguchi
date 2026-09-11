@@ -6,6 +6,7 @@ import { instagramProfile } from './data/instagram.js';
 import { AMAZON_DISCLOSURE } from './config/affiliate.js';
 import { assessSafety } from './api/safety.js';
 import { url } from './base.js';
+import './analytics.js'; // 全ページ共通でGA4を読み込む（各HTMLにタグは書かない）
 export { url };
 
 /* ---------------- header / nav ---------------- */

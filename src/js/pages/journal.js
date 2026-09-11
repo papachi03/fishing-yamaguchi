@@ -1,4 +1,11 @@
-import { mountChrome, mountFooterBottom, initReveal, fmtDateDot, slowConnection } from '../main.js';
+import {
+  mountChrome,
+  mountFooterBottom,
+  initReveal,
+  fmtDateDot,
+  slowConnection,
+  url,
+} from '../main.js';
 import { vlogs } from '../data/vlogs.js';
 
 mountChrome('/journal.html');

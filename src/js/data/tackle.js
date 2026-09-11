@@ -63,6 +63,9 @@ export const tackle = [
       query: 'シマノ ヤエン A-RB L', asin: 'B000AR4BV2', note: 'ローラー付きで送り込みが滑らかなヤエン。' }),
   A({ id: 'liberty-club-seabass', category: 'yaen', type: 'rod', brand: 'DAIWA', name: 'リバティクラブ シーバス',
       query: 'ダイワ リバティクラブ シーバス', asin: 'B0073B25Z2', note: 'ヤエンと泳がせを兼ねる、手頃なシーバスロッド。' }),
+  A({ id: 'aorista-bb', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '13 アオリスタ BB',
+      query: 'シマノ 13 アオリスタ BB', spec: 'ヤエン専用 / フリー機構',
+      note: 'ヤエン専用リール。アジを泳がせている間はレバーで糸を送り出しておき、イカが抱いたらそのまま巻きに移れる。' }),
   A({ id: 'nexave-yaen', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '21 ネクサーブ',
       query: 'シマノ ネクサーブ', asin: 'B09BFNJ3P7', note: 'ヤエンにも同じネクサーブ。' }),
   A({ id: 'tg-peacemaster', category: 'yaen', type: 'line', brand: 'DUEL', name: 'TG ピースマスター 磯 ビヨンド',
@@ -177,6 +180,20 @@ export const tackle = [
       query: 'ZEXUS ZX-R730', asin: 'B083BK3GD4', note: '最大1200ルーメンの充電式ヘッドライト。夜の計量も手元も。' }),
 
   // ---------- 撮影 ----------
+  // 本体はアクセサリより先（これが無いと他が意味をなさない）。
+  // ★本体は「最新モデルを載せる」方針（2026-09-12 ダディ指示）。現行の最上位は HERO13 Black。
+  //   新型が出たら name / query / spec を差し替えること（HERO14 は2026年秋に出る見込み）。
+  //   世代ごとにASINが分かれて古い型に飛びやすいので、本体はあえて検索リンク（query）にしている。
+  //   なお、サイトに載っている2022年の動画は HERO9 で撮影（元データの firmware HD9.01.01.72.00 で確認）。
+  A({ id: 'gopro-hero', category: 'camera', type: 'camera', brand: 'GoPro', name: 'HERO13 Black',
+      query: 'GoPro HERO13 Black', spec: '5.3K60 / 水平ロック / 防水10m',
+      note: 'Vlogを撮っている本体。ケース無しで水深10mまで使えるので、雨も波しぶきも気にせず堤防に持ち出せる。' }),
+  A({ id: 'dji-mic-mini', category: 'camera', type: 'camera', brand: 'DJI', name: 'MIC MINI',
+      query: 'DJI MIC MINI', spec: 'ワイヤレスマイク',
+      note: '小型のワイヤレスマイク。風のある堤防でも声がクリアに録れる。' }),
+  A({ id: 'insta360-flow-2-pro', category: 'camera', type: 'camera', brand: 'Insta360', name: 'Flow 2 Pro',
+      query: 'Insta360 Flow 2 Pro', spec: 'スマホ用ジンバル',
+      note: 'スマホ用のジンバル。歩きながらの移動シーンや、手持ちの引きの映像を滑らかに。' }),
   A({ id: 'gopro-wind-cover', category: 'camera', type: 'camera', brand: 'Taisioner', name: 'GoPro 防風スポンジカバー',
       query: 'GoPro 防風カバー スポンジ', asin: 'B08LDBWH8G', note: '海風の風切り音を減らす。Vlogの音が聞き取りやすくなる。' }),
   A({ id: 'gopro-film', category: 'camera', type: 'camera', brand: 'ELECOM', name: 'GoPro 衝撃吸収フィルム',
