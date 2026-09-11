@@ -1,6 +1,11 @@
 # GitHub Pages で公開する手順
 
-公開URL（予定）: `https://papachi03.github.io/fishing-yamaguchi/`
+## ✅ 2026-09-11 公開完了
+**公開URL: https://papachi03.github.io/fishing-yamaguchi/**
+全7ページ・動画・画像・潮汐データの配信を確認済み。以後は push するだけで自動更新される。
+
+（初回の注意）Pagesを有効化する前にpushするとデプロイだけ404で失敗する。その場合は
+Actionsの該当実行で「ジョブの再実行」を押せば通る。
 
 ## 事前チェック（2026-09-11 クロロ実施・すべてOK）
 
