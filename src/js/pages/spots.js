@@ -17,7 +17,8 @@ document.getElementById('spot-blocks').innerHTML = areas
       <p>${a.description}</p>
       ${a.contributor ? `<p class="spot-contrib t-mono">FROM A VIEWER — ${a.contributor}</p>` : ''}
       ${a.homeSpot ? `<p class="coords t-mono">基準の釣り場: ${a.homeSpot.name}</p>` : ''}
-      <p class="coords t-mono">${a.lat.toFixed(3)}N, ${a.lon.toFixed(3)}E</p>
+      ${/* 視聴者の方の釣り場（contributor 付き）は場所を特定できないよう座標を出さない */ ''}
+      ${a.contributor ? '' : `<p class="coords t-mono">${a.lat.toFixed(3)}N, ${a.lon.toFixed(3)}E</p>`}
       <p style="margin-top: 18px;">
         <a class="sea-more" href="${url('/sea.html')}#${a.id}">今日の${a.nameJa}の海況<span aria-hidden="true">→</span></a>
       </p>

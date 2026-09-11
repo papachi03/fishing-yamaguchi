@@ -301,8 +301,10 @@ async function render() {
 
     ${seasonPanelHTML()}`;
 
+  // 視聴者の方の釣り場（contributor 付き）は場所が特定できないよう座標を出さない
+  const coordNote = area.contributor ? '' : ` / 座標 ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)}`;
   document.getElementById('source-note').textContent =
-    `天気・風: Open-Meteo / 潮汐: 気象庁 潮位表（${t.stationName}）/ 座標 ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)} / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
+    `天気・風: Open-Meteo / 潮汐: 気象庁 潮位表（${t.stationName}）${coordNote} / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
 
   initReveal();
 }

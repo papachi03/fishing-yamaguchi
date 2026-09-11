@@ -38,7 +38,7 @@ npm run build # 本番ビルド (dist/)
 - 天気・風: **Open-Meteo**（実データ・キー不要・CORS可）— `src/js/api/weather.js`
 - 波高・周期: **Open-Meteo Marine** — 同ファイルの `fetchMarine()`（釣り場の座標で取得）
 - 堤防の安全判定: `src/js/api/safety.js` — 風速 5/7/10m/s・突風 10/15・波高 1.0/1.2/1.5m・向かい風で 安全/注意/危険/中止 の4段階。HOMEのチップとSEAのバンド、時間別テーブルのセル色に使用
-- エリア: 萩(K5)・長門(K5共用)・室津(下関・弟子待 A1)。`scripts/build-tide.mjs` の STATIONS と `areas.js` の `tideStn` を揃えること。室津は視聴者の方の釣り場（`contributor` 付き）
+- エリア: 萩(K5)・長門(K5共用)・下関(弟子待 A1)。`scripts/build-tide.mjs` の STATIONS と `areas.js` の `tideStn` を揃えること。下関エリアは視聴者の方の釣り場で、**サイト上では具体地名を出さず「下関」と濁す方針**（`contributor` 付き）
 - 潮汐: **気象庁 潮位表の実データ** — `src/js/api/tide.js`
   気象庁はCORSを許可していないため、ビルド前に年間データを取得してJSONに変換しておく。
 
