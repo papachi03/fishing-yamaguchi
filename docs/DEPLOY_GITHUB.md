@@ -12,10 +12,10 @@
 
 ## ぱっぱがやること（ログインが必要な部分）
 
-### 1. GitHubの設定でメールアドレスを非公開にする（初回のみ）
-1. https://github.com/settings/emails
-2. **Keep my email addresses private** にチェック
-3. **Block command line pushes that expose my email** にもチェック
+### 1. GitHubの設定でメールアドレスを非公開にする（✅ 2026-09-11 設定済み）
+- https://github.com/settings/emails の「私のメールアドレスを非公開にしてください」と
+  「メールアドレスを公開するコマンドラインプッシュをブロックします」の両方をオンにした
+- PC側のGit（全体設定・tproject-site・このリポジトリ）も `207080942+papachi03@users.noreply.github.com` に統一済み
 
 ### 2. リポジトリを作る
 1. https://github.com/new
