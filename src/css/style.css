@@ -579,7 +579,8 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 14px;
+  gap: 4px 14px;
+  flex-wrap: wrap;
   padding-top: 12px;
 }
 .log-cap .species {
@@ -587,6 +588,16 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   font-weight: 700;
   font-size: clamp(17px, 2vw, 22px);
   letter-spacing: 0.1em;
+  /* 魚種名は途中で折らない（「コウイ／カ」になるのを防ぐ）。
+     入り切らない時は右のデータ側が次の行へ回る */
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* 狭い画面では横並びをやめ、魚種名の下にデータを置く */
+@media (max-width: 560px) {
+  .log-cap { display: grid; justify-items: start; gap: 2px; }
+  .log-cap .data { text-align: left; }
 }
 .log-cap .data {
   font-family: var(--font-mono);
