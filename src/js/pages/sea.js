@@ -181,6 +181,7 @@ function safetyBandHTML(area, w) {
         s.reasons.length ? s.reasons.join(' ／ ') : `風速${fmt1(w.current.wind)}m/s・波高${fmt1(w.current.wave)}m`
       }${onshore && w.current.wind < 3 ? ' ／ 海からの風' : ''}</p>
       <p class="safety-legend t-mono">${legend}。気象庁の注意報・警報が出ている時はそちらを優先</p>
+      <p class="safety-legend t-mono">数字は予報値です。海の上では<strong>+2m/sほど強く感じます</strong>（表示5m ≒ 体感7〜8m）。上のしきい値はその体感を織り込んであります</p>
     </div>`;
 }
 
