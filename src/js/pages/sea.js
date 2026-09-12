@@ -44,6 +44,20 @@ toggle.addEventListener('click', (e) => {
   render();
 });
 
+// ページを開いたまま URL のハッシュだけが変わった場合にも切り替える。
+// （#hofu を見ている人に #hagi のリンクを送っても何も起きない、という状態を防ぐ）
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1);
+  if (!areas.some((a) => a.id === id) || id === current) return;
+  current = id;
+  toggle.querySelectorAll('button').forEach((b) => {
+    const on = b.dataset.area === current;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  render();
+});
+
 const fmt1 = (v) => (v == null ? '—' : v.toFixed(1));
 const fmt0 = (v) => (v == null ? '—' : String(Math.round(v)));
 
