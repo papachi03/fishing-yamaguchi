@@ -9,7 +9,8 @@
 //   一般的な目安より厳しいが、山口の日本海側・北向きの堤防という実地の条件に合わせている。
 //
 //   風速   〜3 安全 / 3〜5 注意 / 5〜7 危険 / 7〜 中止
-//   突風   10〜 注意 / 15〜 危険（平均風速の1.5〜2倍になるのが普通）
+//   突風   6〜 注意 / 10〜 危険（平均風速の1.5〜2倍になるのが普通。
+//          2026-09-12に10/15→6/10へ。風速を3/5/7にしたので、平均の約2倍で揃えた）
 //   波高   〜1.0 安全 / 1.0〜1.2 注意 / 1.2〜1.5 危険 / 1.5〜 中止（堤防を波が洗う）
 //   うねり 周期7秒以上 かつ 波高1.0以上 は1段階上げる
 //   向かい風（海から陸へ吹く風）は波が立つので、風速3以上なら1段階上げる
@@ -42,8 +43,8 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
     else if (wind >= 3) bump(1, `風速${wind.toFixed(1)}m/s`);
   }
   if (gust != null) {
-    if (gust >= 15) bump(2, `突風${gust.toFixed(1)}m/s`);
-    else if (gust >= 10) bump(1, `突風${gust.toFixed(1)}m/s`);
+    if (gust >= 10) bump(2, `突風${gust.toFixed(1)}m/s`);
+    else if (gust >= 6) bump(1, `突風${gust.toFixed(1)}m/s`);
   }
   if (waveHeight != null) {
     if (waveHeight >= 1.5) bump(3, `波高${waveHeight.toFixed(1)}m`);
@@ -63,5 +64,5 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
 
 // 時間別テーブルのセル用（風速だけで段階を返す）
 export const windLevel = (v) => (v == null ? 0 : v >= 7 ? 3 : v >= 5 ? 2 : v >= 3 ? 1 : 0);
-export const gustLevel = (v) => (v == null ? 0 : v >= 15 ? 2 : v >= 10 ? 1 : 0);
+export const gustLevel = (v) => (v == null ? 0 : v >= 10 ? 2 : v >= 6 ? 1 : 0);
 export const waveLevel = (v) => (v == null ? 0 : v >= 1.5 ? 3 : v >= 1.2 ? 2 : v >= 1.0 ? 1 : 0);
