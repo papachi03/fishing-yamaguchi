@@ -34,8 +34,8 @@ export const tackle = [
   A({ id: 'nexave', category: 'eging', type: 'reel', brand: 'SHIMANO', name: '21 ネクサーブ（C3000DH）',
       query: 'シマノ ネクサーブ C3000DH', asin: 'B09BFNJ3P7', spec: 'C3000 / ダブルハンドル',
       note: 'エメラルダスXと組んでいたリール。価格を抑えつつ、シャクリのリズムが作りやすい。' }),
-  A({ id: 'sephia-bb-c3000sdhhg', category: 'eging', type: 'reel', brand: 'SHIMANO', name: 'セフィア BB C3000SDHHG',
-      query: 'シマノ セフィア BB C3000SDHHG', spec: 'C3000 / ダブルハンドル / ハイギア',
+  A({ id: 'sephia-bb-c3000sdhhg', category: 'eging', type: 'reel', brand: 'SHIMANO', name: '26 セフィア BB C3000SDHHG',
+      query: 'シマノ セフィア BB C3000SDHHG', asin: 'B0H41JNYRC', spec: 'C3000 / ダブルハンドル / ハイギア',
       note: 'セフィアSSと組む新しいリール。ダブルハンドルのハイギアで、シャクった後のラインスラックを素早く回収できる。' }),
   A({ id: 'naory-range-hunter', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'ナオリー レンジハンター',
       query: 'ヤマシタ ナオリー レンジハンター', asin: 'B07TSBPQS1',
@@ -49,11 +49,12 @@ export const tackle = [
   A({ id: 'emeraldas-leader', category: 'eging', type: 'line', brand: 'DAIWA', name: 'エメラルダス リーダー（フロロ）',
       query: 'ダイワ エメラルダスリーダー 2号', asin: 'B072MRXDQM',
       note: 'エギング用フロロリーダー。' }),
-  A({ id: 'sephia-bb-s86ml', category: 'eging', type: 'rod', brand: 'SHIMANO', name: 'セフィア BB S86ML', owned: false,
-      query: 'シマノ セフィア BB S86ML', spec: '8.6ft / ML',
+  A({ id: 'sephia-bb-s86ml', category: 'eging', type: 'rod', brand: 'SHIMANO', name: '22 セフィア BB S86ML', owned: false,
+      query: 'シマノ セフィア BB S86ML', asin: 'B0B7RNF6X4', spec: '8.6ft / ML',
       note: 'これから揃えるなら。8.6ft MLはエメラルダスXと同じ、いちばん潰しの効く番手。' }),
-  A({ id: 'egioh-k', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'エギ王 K 3.5号', owned: false,
-      query: 'ヤマシタ エギ王K 3.5号',
+  // エギは色ごとにASINが分かれる。リンク先は軍艦グリーンなので、名前にも色を入れておく
+  A({ id: 'egioh-k', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'エギ王 K 3.5号（軍艦グリーン）', owned: false,
+      query: 'ヤマシタ エギ王K 3.5号', asin: 'B078ZW65R7', spec: '3.5号 / 22g',
       note: '秋のアオリイカの定番エギ。まず1本ならこれ。' }),
 
   // ---------- ヤエン ----------
