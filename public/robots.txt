@@ -1,0 +1,5 @@
+# YAMAGUCHI FISHING JOURNAL
+User-agent: *
+Allow: /
+
+Sitemap: https://papachi03.github.io/fishing-yamaguchi/sitemap.xml
