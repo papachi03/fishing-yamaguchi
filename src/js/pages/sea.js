@@ -170,7 +170,7 @@ function safetyBandHTML(area, w) {
     facing: area.facing,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
-  const legend = '風速 〜5 安全 / 5〜7 注意 / 7〜10 危険 / 10〜 中止 ・ 波高 1.0 / 1.2 / 1.5m';
+  const legend = '風速 〜3 安全 / 3〜5 注意 / 5〜7 危険 / 7〜 中止 ・ 波高 1.0 / 1.2 / 1.5m';
   return `
     <div class="safety-band lv${s.level} reveal" role="status">
       <div class="safety-main">
@@ -179,7 +179,7 @@ function safetyBandHTML(area, w) {
       </div>
       <p class="safety-reasons t-mono">${
         s.reasons.length ? s.reasons.join(' ／ ') : `風速${fmt1(w.current.wind)}m/s・波高${fmt1(w.current.wave)}m`
-      }${onshore && w.current.wind < 5 ? ' ／ 海からの風' : ''}</p>
+      }${onshore && w.current.wind < 3 ? ' ／ 海からの風' : ''}</p>
       <p class="safety-legend t-mono">${legend}。気象庁の注意報・警報が出ている時はそちらを優先</p>
     </div>`;
 }

@@ -1,14 +1,18 @@
 // 堤防釣りの安全判定。
 //
 // 風速・突風・波高・風向から 0〜3 の4段階で「今日、堤防に立てるか」を返す。
-// 数値は一般的な目安（釣り情報サイト複数と気象庁の注意報基準を参考）で、
 // 気象庁の警報・注意報が出ている時はそちらが優先。
 //
-//   風速   〜5 安全 / 5〜7 注意 / 7〜10 危険 / 10〜 中止
+// ★風速のしきい値は 2026-09-12 に 5/7/10 → 3/5/7 へ引き上げた。
+//   萩で実際に釣りをしている地元の方に萩のデータを見てもらった結果
+//   「風速3.0mを超えると釣りは厳しい。北風の時は特にきつい」との実感をいただいたため。
+//   一般的な目安より厳しいが、山口の日本海側・北向きの堤防という実地の条件に合わせている。
+//
+//   風速   〜3 安全 / 3〜5 注意 / 5〜7 危険 / 7〜 中止
 //   突風   10〜 注意 / 15〜 危険（平均風速の1.5〜2倍になるのが普通）
 //   波高   〜1.0 安全 / 1.0〜1.2 注意 / 1.2〜1.5 危険 / 1.5〜 中止（堤防を波が洗う）
 //   うねり 周期7秒以上 かつ 波高1.0以上 は1段階上げる
-//   向かい風（海から陸へ吹く風）は波が立つので、風速5以上なら1段階上げる
+//   向かい風（海から陸へ吹く風）は波が立つので、風速3以上なら1段階上げる
 
 export const SAFETY_LEVELS = [
   { level: 0, key: 'ok', label: '安全', short: 'OK', message: '堤防で釣りができるコンディションです。' },
@@ -33,9 +37,9 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   };
 
   if (wind != null) {
-    if (wind >= 10) bump(3, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= 7) bump(2, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= 5) bump(1, `風速${wind.toFixed(1)}m/s`);
+    if (wind >= 7) bump(3, `風速${wind.toFixed(1)}m/s`);
+    else if (wind >= 5) bump(2, `風速${wind.toFixed(1)}m/s`);
+    else if (wind >= 3) bump(1, `風速${wind.toFixed(1)}m/s`);
   }
   if (gust != null) {
     if (gust >= 15) bump(2, `突風${gust.toFixed(1)}m/s`);
@@ -49,7 +53,8 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
       bump(Math.min(3, level + 1), `周期${wavePeriod.toFixed(0)}秒のうねり`);
     }
   }
-  if (wind != null && wind >= 5 && isOnshore(windDir, facing)) {
+  // 向かい風の発動ラインは「注意」のしきい値（3m/s）に合わせる
+  if (wind != null && wind >= 3 && isOnshore(windDir, facing)) {
     bump(Math.min(3, level + 1), '向かい風（海から吹いて波が立つ）');
   }
 
@@ -57,6 +62,6 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
 }
 
 // 時間別テーブルのセル用（風速だけで段階を返す）
-export const windLevel = (v) => (v == null ? 0 : v >= 10 ? 3 : v >= 7 ? 2 : v >= 5 ? 1 : 0);
+export const windLevel = (v) => (v == null ? 0 : v >= 7 ? 3 : v >= 5 ? 2 : v >= 3 ? 1 : 0);
 export const gustLevel = (v) => (v == null ? 0 : v >= 15 ? 2 : v >= 10 ? 1 : 0);
 export const waveLevel = (v) => (v == null ? 0 : v >= 1.5 ? 3 : v >= 1.2 ? 2 : v >= 1.0 ? 1 : 0);
