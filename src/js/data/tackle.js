@@ -28,10 +28,11 @@ export const tackle = [
   A({ id: 'emeraldas-x', category: 'eging', type: 'rod', brand: 'DAIWA', name: 'エメラルダス X（86ML）',
       query: 'ダイワ エメラルダス X 86ML', asin: 'B07THWQNF4', spec: '8.6ft / ML',
       note: 'ヤリイカの灯火釣りで振っていたロッド。エギングの最初の1本としても扱いやすい。' }),
-  // AmazonはS86ML-S単体のASINが取れていないため、Amazonだけ検索リンクのまま。
-  // 楽天は商品ページ直リンク（釣具のポイントで型番一致を確認済み・2026-09-12）。
+  // セフィアSSは1つの商品ページに全番手が同居していて、番手ごとにASINが違う。
+  // B0C7BQLTP4 = S86ML-S（URLのスラッグは "S80M" と出るが、開くとS86ML-Sが選択される。
+  // 実際にページを開いて選択中の番手を確認したうえで設定・2026-09-12）。
   A({ id: 'sephia-ss-s86ml-s', category: 'eging', type: 'rod', brand: 'SHIMANO', name: '23 セフィア SS S86ML-S',
-      query: 'シマノ セフィア SS S86ML-S', spec: '8.6ft / ML / ソリッドティップ',
+      query: 'シマノ セフィア SS S86ML-S', asin: 'B0C7BQLTP4', spec: '8.6ft / ML / ソリッドティップ',
       rakutenUrl: 'https://item.rakuten.co.jp/point/4969363356765/',
       note: '2026年に新調したエギングロッド。ソリッドティップで、イカがエギを抱いた小さなアタリが穂先に出る。' }),
   A({ id: 'nexave', category: 'eging', type: 'reel', brand: 'SHIMANO', name: '21 ネクサーブ（C3000DH）',
