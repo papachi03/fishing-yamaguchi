@@ -65,6 +65,7 @@ export const tackle = [
       query: 'ダイワ リバティクラブ シーバス', asin: 'B0073B25Z2', note: 'ヤエンと泳がせを兼ねる、手頃なシーバスロッド。' }),
   A({ id: 'aorista-bb', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '13 アオリスタ BB',
       query: 'シマノ 13 アオリスタ BB', asin: 'B00E2BMEXE', spec: 'ヤエン専用 / C3000HG',
+      rakutenUrl: 'https://item.rakuten.co.jp/point/4969363031822/',
       note: 'ヤエン専用リール。アジを泳がせている間はレバーで糸を送り出しておき、イカが抱いたらそのまま巻きに移れる。' }),
   A({ id: 'nexave-yaen', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '21 ネクサーブ',
       query: 'シマノ ネクサーブ', asin: 'B09BFNJ3P7', note: 'ヤエンにも同じネクサーブ。' }),
