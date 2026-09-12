@@ -64,7 +64,7 @@ export const tackle = [
   A({ id: 'liberty-club-seabass', category: 'yaen', type: 'rod', brand: 'DAIWA', name: 'リバティクラブ シーバス',
       query: 'ダイワ リバティクラブ シーバス', asin: 'B0073B25Z2', note: 'ヤエンと泳がせを兼ねる、手頃なシーバスロッド。' }),
   A({ id: 'aorista-bb', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '13 アオリスタ BB',
-      query: 'シマノ 13 アオリスタ BB', spec: 'ヤエン専用 / フリー機構',
+      query: 'シマノ 13 アオリスタ BB', asin: 'B00E2BMEXE', spec: 'ヤエン専用 / C3000HG',
       note: 'ヤエン専用リール。アジを泳がせている間はレバーで糸を送り出しておき、イカが抱いたらそのまま巻きに移れる。' }),
   A({ id: 'nexave-yaen', category: 'yaen', type: 'reel', brand: 'SHIMANO', name: '21 ネクサーブ',
       query: 'シマノ ネクサーブ', asin: 'B09BFNJ3P7', note: 'ヤエンにも同じネクサーブ。' }),
@@ -182,18 +182,18 @@ export const tackle = [
   // ---------- 撮影 ----------
   // 本体はアクセサリより先（これが無いと他が意味をなさない）。
   // ★本体は「最新モデルを載せる」方針（2026-09-12 ダディ指示）。現行の最上位は HERO13 Black。
-  //   新型が出たら name / query / spec を差し替えること（HERO14 は2026年秋に出る見込み）。
-  //   世代ごとにASINが分かれて古い型に飛びやすいので、本体はあえて検索リンク（query）にしている。
+  //   新型が出たら name / query / spec / asin を差し替えること（HERO14 は2026年秋に出る見込み）。
   //   なお、サイトに載っている2022年の動画は HERO9 で撮影（元データの firmware HD9.01.01.72.00 で確認）。
-  A({ id: 'gopro-hero', category: 'camera', type: 'camera', brand: 'GoPro', name: 'HERO13 Black',
-      query: 'GoPro HERO13 Black', spec: '5.3K60 / 水平ロック / 防水10m',
-      note: 'Vlogを撮っている本体。ケース無しで水深10mまで使えるので、雨も波しぶきも気にせず堤防に持ち出せる。' }),
-  A({ id: 'dji-mic-mini', category: 'camera', type: 'camera', brand: 'DJI', name: 'MIC MINI',
-      query: 'DJI MIC MINI', spec: 'ワイヤレスマイク',
-      note: '小型のワイヤレスマイク。風のある堤防でも声がクリアに録れる。' }),
-  A({ id: 'insta360-flow-2-pro', category: 'camera', type: 'camera', brand: 'Insta360', name: 'Flow 2 Pro',
-      query: 'Insta360 Flow 2 Pro', spec: 'スマホ用ジンバル',
-      note: 'スマホ用のジンバル。歩きながらの移動シーンや、手持ちの引きの映像を滑らかに。' }),
+  // 以下3点のASINはダディからもらったリンクから取得し、実際の商品ページの表記と一致を確認済み（2026-09-12）。
+  A({ id: 'gopro-hero', category: 'camera', type: 'camera', brand: 'GoPro', name: 'HERO13 Black バッテリーセット',
+      query: 'GoPro HERO13 Black', asin: 'B0DCS3J96Q', spec: '5.3K60 / 10bit HDR / 防水10m',
+      note: 'Vlogを撮っている本体。ケース無しで水深10mまで使えるので、雨も波しぶきも気にせず堤防に持ち出せる。予備バッテリー3個とデュアル充電器が付く公式ストア限定セット。' }),
+  A({ id: 'dji-mic-mini', category: 'camera', type: 'camera', brand: 'DJI', name: 'Mic Mini',
+      query: 'DJI Mic Mini', asin: 'B0DDL8WGH5', spec: 'ワイヤレスマイク / 2TX + 1RX',
+      note: '超軽量のワイヤレスピンマイク。風のある堤防でも声がクリアに録れて、2人分まで同時に録れる。' }),
+  A({ id: 'insta360-flow-2-pro', category: 'camera', type: 'camera', brand: 'Insta360', name: 'Flow 2 Pro クリエイターキット',
+      query: 'Insta360 Flow 2 Pro', asin: 'B0DPL2R1TJ', spec: 'スマホ用ジンバル / 三脚・自撮り棒内蔵',
+      note: 'スマホ用のAIジンバル。歩きながらの移動シーンを滑らかに。自分を追いかけるトラッキングと内蔵三脚で、一人でも引きの画が撮れる。' }),
   A({ id: 'gopro-wind-cover', category: 'camera', type: 'camera', brand: 'Taisioner', name: 'GoPro 防風スポンジカバー',
       query: 'GoPro 防風カバー スポンジ', asin: 'B08LDBWH8G', note: '海風の風切り音を減らす。Vlogの音が聞き取りやすくなる。' }),
   A({ id: 'gopro-film', category: 'camera', type: 'camera', brand: 'ELECOM', name: 'GoPro 衝撃吸収フィルム',
