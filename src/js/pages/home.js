@@ -9,7 +9,7 @@ import {
   url,
 } from '../main.js';
 import { featuredCatches } from '../data/catches.js';
-import { areas } from '../data/areas.js';
+import { ownAreas } from '../data/areas.js';
 import { featuredTackle } from '../data/tackle.js';
 import { tackleCardHTML } from '../components/tackle-card.js';
 import { mountInstagram } from '../components/instagram.js';
@@ -33,7 +33,8 @@ if (!reduced && !slowConnection()) {
    （夜中に開くと「22:53なのにこの明るさ」と映像と矛盾するため） */
 
 /* ---- TODAY'S SEA ---- */
-renderSeaStrip(document.getElementById('sea-strip'));
+// HOMEはダディ自身が行く海（萩・長門）だけ。友人・視聴者のエリアはSEA/SPOTSに出す
+renderSeaStrip(document.getElementById('sea-strip'), ownAreas);
 
 /* ---- FISHING LOG (editorial, 4 featured) ---- */
 const logRoot = document.getElementById('home-log');
@@ -58,7 +59,7 @@ logRoot.innerHTML = featuredCatches
   .join('');
 
 /* ---- FIELD NOTES ---- */
-document.getElementById('home-areas').innerHTML = areas
+document.getElementById('home-areas').innerHTML = ownAreas
   .map(
     (a) => `
   <a class="area-card reveal" href="${url('/spots.html')}#${a.id}">

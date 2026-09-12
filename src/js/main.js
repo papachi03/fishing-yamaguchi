@@ -152,8 +152,9 @@ function compassSVG(deg) {
   </svg>`;
 }
 
-export async function renderSeaStrip(container) {
-  container.innerHTML = areas
+// list を省略すると全エリア。HOMEは ownAreas（ダディ自身の海）だけを渡す
+export async function renderSeaStrip(container, list = areas) {
+  container.innerHTML = list
     .map(
       (a) => `
     <article class="sea-card" data-area="${a.id}">
@@ -169,7 +170,7 @@ export async function renderSeaStrip(container) {
     .join('');
 
   await Promise.all(
-    areas.map(async (a) => {
+    list.map(async (a) => {
       const card = container.querySelector(`[data-area="${a.id}"]`);
       const nowEl = card.querySelector('.sea-now');
       const tideEl = card.querySelector('.sea-tide');
@@ -196,6 +197,7 @@ export async function renderSeaStrip(container) {
           wavePeriod: w.current.wavePeriod,
           windDir: w.current.windDir,
           facing: a.facing,
+          seaProfile: a.seaProfile,
         });
         const chip = card.querySelector('[data-safety]');
         chip.textContent = s.label;

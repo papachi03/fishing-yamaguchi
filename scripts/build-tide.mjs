@@ -30,10 +30,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // 取得する観測地点。
 //   萩(K5)   … 越ヶ浜・仙崎で共用（仙崎には専用の観測地点が無い）
 //   弟子待(A1) … 下関エリアで使う。彦島の観測点で、同じ響灘側で最寄り
+//   徳山(QA)   … 下松エリアで使う（徳山湾・約5km）。瀬戸内側
+//   三田尻(J9) … 防府エリアで使う。防府市三田尻そのものなので代用ではない
+//   ※コードは気象庁の地域別一覧（s_kyushun.php）で確認した。総当たりでは特定できない
+//     （存在しないコードでも200が返る地点があるため）
 //   ※「下関(DS)」は潮位観測所の記号で、潮位表のテキストは A1 でしか配布されていない
 const STATIONS = [
   { code: 'K5', name: '萩' },
   { code: 'A1', name: '下関（弟子待）' },
+  { code: 'QA', name: '徳山' },
+  { code: 'J9', name: '三田尻' },
 ];
 
 const year = Number(process.argv[2]) || new Date().getFullYear();

@@ -3,7 +3,15 @@ import { areas, areaById } from '../data/areas.js';
 import { fetchWeather, describeWeather, windDirection } from '../api/weather.js';
 import { fetchTide } from '../api/tide.js';
 import { calcExpectation, seasonalTargets } from '../api/fishing.js';
-import { assessSafety, windLevel, gustLevel, waveLevel, isOnshore } from '../api/safety.js';
+import {
+  assessSafety,
+  windLevel,
+  gustLevel,
+  waveLevel,
+  isOnshore,
+  legendText,
+  profileOf,
+} from '../api/safety.js';
 
 mountChrome('/sea.html');
 mountFooterBottom(document.getElementById('footer-mount'));
@@ -168,9 +176,11 @@ function safetyBandHTML(area, w) {
     wavePeriod: w.current.wavePeriod,
     windDir: w.current.windDir,
     facing: area.facing,
+    seaProfile: area.seaProfile,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
-  const legend = '風速 〜3 安全 / 3〜5 注意 / 5〜7 危険 / 7〜 中止 ・ 波高 1.0 / 1.2 / 1.5m';
+  const pf = profileOf(area.seaProfile);
+  const legend = legendText(area.seaProfile);
   return `
     <div class="safety-band lv${s.level} reveal" role="status">
       <div class="safety-main">
@@ -179,8 +189,10 @@ function safetyBandHTML(area, w) {
       </div>
       <p class="safety-reasons t-mono">${
         s.reasons.length ? s.reasons.join(' ／ ') : `風速${fmt1(w.current.wind)}m/s・波高${fmt1(w.current.wave)}m`
-      }${onshore && w.current.wind < 3 ? ' ／ 海からの風' : ''}</p>
-      <p class="safety-legend t-mono">${legend}。気象庁の注意報・警報が出ている時はそちらを優先</p>
+      }${onshore && w.current.wind < pf.wind[0] ? ' ／ 海からの風' : ''}</p>
+      <p class="safety-legend t-mono">${legend}（${pf.label}の基準）。気象庁の注意報・警報が出ている時はそちらを優先${
+        pf.provisional ? ' ／ この海域のしきい値は暫定です' : ''
+      }</p>
       <p class="safety-legend t-mono">数字は予報値です。海の上では<strong>+2m/sほど強く感じます</strong>（表示5m ≒ 体感7〜8m）。上のしきい値はその体感を織り込んであります</p>
     </div>`;
 }
@@ -273,9 +285,9 @@ async function render() {
             <tr><th>天気</th>${hours.map((h) => `<td>${describeWeather(h.code).ja.slice(0, 4)}</td>`).join('')}</tr>
             <tr><th>気温 °C</th>${hours.map((h) => `<td>${fmt0(h.temp)}</td>`).join('')}</tr>
             <tr><th>降水 %</th>${hours.map((h) => `<td>${fmt0(h.pop)}</td>`).join('')}</tr>
-            <tr><th>風 m/s</th>${hours.map((h) => `<td class="lv${windLevel(h.wind)}">${arrow(h.windDir)} ${fmt1(h.wind)}</td>`).join('')}</tr>
-            <tr><th>突風 m/s</th>${hours.map((h) => `<td class="lv${gustLevel(h.gust)}">${fmt1(h.gust)}</td>`).join('')}</tr>
-            <tr><th>波高 m</th>${hours.map((h) => `<td class="lv${waveLevel(h.wave)}">${fmt1(h.wave)}</td>`).join('')}</tr>
+            <tr><th>風 m/s</th>${hours.map((h) => `<td class="lv${windLevel(h.wind, area.seaProfile)}">${arrow(h.windDir)} ${fmt1(h.wind)}</td>`).join('')}</tr>
+            <tr><th>突風 m/s</th>${hours.map((h) => `<td class="lv${gustLevel(h.gust, area.seaProfile)}">${fmt1(h.gust)}</td>`).join('')}</tr>
+            <tr><th>波高 m</th>${hours.map((h) => `<td class="lv${waveLevel(h.wave, area.seaProfile)}">${fmt1(h.wave)}</td>`).join('')}</tr>
           </tbody>
         </table>
       </div>
