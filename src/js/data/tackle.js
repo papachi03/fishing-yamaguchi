@@ -186,14 +186,22 @@ export const tackle = [
   //   新型が出たら name / query / spec / asin を差し替えること（HERO14 は2026年秋に出る見込み）。
   //   なお、サイトに載っている2022年の動画は HERO9 で撮影（元データの firmware HD9.01.01.72.00 で確認）。
   // 以下3点のASINはダディからもらったリンクから取得し、実際の商品ページの表記と一致を確認済み（2026-09-12）。
-  A({ id: 'gopro-hero', category: 'camera', type: 'camera', brand: 'GoPro', name: 'HERO13 Black バッテリーセット',
+  // ★Amazonと楽天でセット内容が違う商品は、商品名を素の型番にしておく
+  //   （名前にセット名を書くと、もう一方のリンクを踏んだ人に嘘になる）。
+  //   HERO13 Black: Amazon=デュアル充電器＋バッテリー3個付き / 楽天=充電口付サイドドア＋2年保証
+  A({ id: 'gopro-hero', category: 'camera', type: 'camera', brand: 'GoPro', name: 'HERO13 Black',
       query: 'GoPro HERO13 Black', asin: 'B0DCS3J96Q', spec: '5.3K60 / 10bit HDR / 防水10m',
-      note: 'Vlogを撮っている本体。ケース無しで水深10mまで使えるので、雨も波しぶきも気にせず堤防に持ち出せる。予備バッテリー3個とデュアル充電器が付く公式ストア限定セット。' }),
+      rakutenUrl: 'https://item.rakuten.co.jp/gopro/chdhx-131-fw-sd/',
+      note: 'Vlogを撮っている本体。ケース無しで水深10mまで使えるので、雨も波しぶきも気にせず堤防に持ち出せる。リンク先はどちらも公式ストアの国内正規品。' }),
   A({ id: 'dji-mic-mini', category: 'camera', type: 'camera', brand: 'DJI', name: 'Mic Mini',
       query: 'DJI Mic Mini', asin: 'B0DDL8WGH5', spec: 'ワイヤレスマイク / 2TX + 1RX',
+      rakutenUrl: 'https://item.rakuten.co.jp/dji-shop/6941565991454/',
       note: '超軽量のワイヤレスピンマイク。風のある堤防でも声がクリアに録れて、2人分まで同時に録れる。' }),
   A({ id: 'insta360-flow-2-pro', category: 'camera', type: 'camera', brand: 'Insta360', name: 'Flow 2 Pro クリエイターキット',
       query: 'Insta360 Flow 2 Pro', asin: 'B0DPL2R1TJ', spec: 'スマホ用ジンバル / 三脚・自撮り棒内蔵',
+      // variantId はクリエイターキットを選んだ状態で開くために必要（外すと素のFlow 2 Proになる）
+      rakutenUrl:
+        'https://item.rakuten.co.jp/insta360-shop2/insta360-gimble-flow2pro/?variantId=flow2pro-w-creatkit',
       note: 'スマホ用のAIジンバル。歩きながらの移動シーンを滑らかに。自分を追いかけるトラッキングと内蔵三脚で、一人でも引きの画が撮れる。' }),
   A({ id: 'gopro-wind-cover', category: 'camera', type: 'camera', brand: 'Taisioner', name: 'GoPro 防風スポンジカバー',
       query: 'GoPro 防風カバー スポンジ', asin: 'B08LDBWH8G', note: '海風の風切り音を減らす。Vlogの音が聞き取りやすくなる。' }),
