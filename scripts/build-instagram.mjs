@@ -25,7 +25,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const ENV_FILE = resolve(ROOT, '.env');
 const OUT_JSON = resolve(ROOT, 'src/js/data/instagram-feed.json');
-const OUT_DIR = resolve(ROOT, 'assets/instagram');
+// ★出力先は public/ の中。ここを 'assets/instagram' にすると Vite の公開対象外になり、
+//   JSONは画像を参照しているのに実体が無い＝本番で404になる
+//   （GitHub Pages のサブフォルダ対応で assets/ を public/assets/ に移した際の直し漏れ。2026-09-13 修正）
+const OUT_DIR = resolve(ROOT, 'public/assets/instagram');
 const API = 'https://graph.instagram.com/v25.0';
 const LIMIT = Number(process.argv[2] ?? 24);
 
