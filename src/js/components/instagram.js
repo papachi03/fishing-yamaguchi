@@ -88,19 +88,24 @@ function renderGrid(container, posts, n) {
 
 // 裏でWorkerの最新を取りに行き、取れたときだけ描き直す。
 // 失敗（ネットワーク・CORS・未認可＝fallback:true・0件）はすべて「何もしない」＝手元のデータが残る。
-async function refreshFromWorker(container, n) {
+async function refreshFromWorker(container, n, haveLocal) {
   const res = await fetch(FEED_ENDPOINT);
   if (!res.ok) return false;
   const data = await res.json();
   if (data.fallback || !Array.isArray(data.posts) || data.posts.length === 0) return false;
+  // stale = Worker側がAPI取得に失敗し続けている状態。Workerが返す画像URLは
+  // Instagram CDN のもので数日〜数週間で失効するため、放置すると画像が割れる。
+  // 手元（/assets/instagram/ に永続保存）がある場合はそちらを優先する。
+  if (data.stale && haveLocal) return false;
   renderGrid(container, data.posts.map(fromWorker), n);
   return true;
 }
 
 /** container に最新 n 件を表示する。戻り値は最初に描いたときの方式 */
 export function mountInstagram(container, n = 6) {
+  const haveLocal = instagramFeed.length > 0;
   let mode;
-  if (instagramFeed.length) {
+  if (haveLocal) {
     renderGrid(container, instagramFeed, n);
     mode = 'grid';
   } else {
@@ -108,6 +113,6 @@ export function mountInstagram(container, n = 6) {
     mode = 'embed';
   }
   // 最新化は非同期。失敗しても最初の描画はそのまま
-  refreshFromWorker(container, n).catch(() => {});
+  refreshFromWorker(container, n, haveLocal).catch(() => {});
   return mode;
 }
