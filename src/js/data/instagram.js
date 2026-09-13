@@ -1,12 +1,14 @@
 // Instagram（@child_daddy_o3z）。
 //
-// 2つのデータ源がある:
-//   1. instagram-feed.json … 公式APIから自動取得したもの（scripts/build-instagram.mjs が生成）
-//      → これがあれば自前の写真グリッドで表示する（速い・デザインを揃えられる）
-//   2. instagramPosts      … 手で書いた投稿URLの一覧（フォールバック）
-//      → APIがまだ設定されていない時は、Instagram公式の埋め込みで表示する
+// データ源は3段構え（実際の切り替えは components/instagram.js）:
+//   0. Cloudflare Worker（tproject-jp.com/ig/feed?shop=fishing）… 1時間ごとの自動更新。通常はこれが出る
+//   1. instagram-feed.json … scripts/build-instagram.mjs で取り込んだ静的データ
+//      → 初回描画とフォールバック用。Workerが落ちても・未認可でもこれが出るので壊れて見えない
+//   2. instagramPosts      … 手で書いた投稿URLの一覧（1も無いときの最後の逃げ道・公式埋め込み）
 //
-// 通常運用は 1。月1回 `node scripts/build-instagram.mjs` を実行すれば最新になる。
+// ★2026-09-13 以降、月1回の手動取り込みは不要（Workerが自動更新）。
+//   ただし 1 は「Workerが止まったときの保険」なので、半年に1回くらい取り直しておくと表示が古くならない。
+//   取り直し： node scripts/build-instagram.mjs → npm run build → push
 
 import feed from './instagram-feed.json';
 
