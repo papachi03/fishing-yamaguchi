@@ -45,11 +45,13 @@ export const catches = [
     featured: true,
   },
   {
-    id: 'kouika-2180',
+    // 2026-09-13 ダディの指摘で魚種を訂正（コウイカ → モンゴウイカ）。
+    // 写真の個体は紋のある甲イカで、本人の確認済み。idも合わせて直した（他から参照されていない）
+    id: 'mongo-2180',
     date: '2023-05-22',
     area: null,
     spot: null,
-    species: 'コウイカ',
+    species: 'モンゴウイカ',
     size: null,
     weight: '2.180kg',
     method: 'エギング',
@@ -59,7 +61,7 @@ export const catches = [
     image: '/assets/images/img_4163_1600.webp',
     image800: '/assets/images/img_4163_800.webp',
     video: null,
-    description: '昼の釣行で出た大型コウイカ。2.180kg。',
+    description: '昼の釣行で出た大型モンゴウイカ。2.180kg。',
     featured: true,
   },
   {
