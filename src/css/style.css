@@ -1374,6 +1374,12 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 
 /* Instagram — 自前グリッド（自動取得時） */
 .ig-grid.is-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+/* HOMEは4枚ちょうどなので列数を固定する。auto-fillのままだと広い画面で5列になり、
+   4枚が左に寄って右に空きができる（2026-09-13 ダディ指摘「3つだと不格好」）。
+   ABOUTの一覧（#about-ig・9枚）は auto-fill のままでよいので、HOMEだけに当てる。 */
+#home-ig.is-grid { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 860px) { #home-ig.is-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { #home-ig.is-grid { grid-template-columns: 1fr; } }
 .ig-tile { display: block; min-width: 0; }
 .ig-tile figure { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: var(--sumi); }
 .ig-tile img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1); }

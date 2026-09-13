@@ -80,7 +80,7 @@ document.getElementById('home-gear').innerHTML = featuredTackle
   .join('');
 
 /* ---- INSTAGRAM (最新3件) ---- */
-mountInstagram(document.getElementById('home-ig'), 3);
+mountInstagram(document.getElementById('home-ig'), 4);
 
 /* ---- YOUTUBE (よく見られている釣り動画3本) ---- */
 document.getElementById('home-yt').innerHTML = popularVideos
