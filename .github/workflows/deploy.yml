@@ -2,12 +2,22 @@
 # main に push するたびにビルドして公開する。
 # 潮汐JSON・Instagramのフィードはリポジトリに含めてあるので、CIでは取得し直さない
 # （Instagramの更新は月1回ローカルで `node scripts/build-instagram.mjs` → push）。
+#
+# ★2026-09-14 3時間ごとの自動ビルドを追加。
+#   SEAページはビルド時に予報を取得してHTMLに書き込む（scripts/prerender-sea.mjs。
+#   Googlebotが「ソフト404」と判定しないための対策）。書き込んだ予報が古くならないよう
+#   定期的に作り直す。コミットは増えない。
+#   注意：GitHubの仕様で、リポジトリに60日間 push が無いと定期実行が自動停止する。
+#   止まっていたら Actions タブで「Enable workflow」を押すか、何か1つ push する。
 
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    # UTC表記。0,3,6,…時（日本時間 9,12,15,…時）。GitHubの混雑で数十分遅れることがある
+    - cron: '17 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -33,6 +43,8 @@ jobs:
         env:
           # リポジトリ名に合わせる。独自ドメインにしたら "/" に変更する
           SITE_BASE: /fishing-yamaguchi/
+          # 事前描画の日付・時刻を日本時間にする（CIのサーバーはUTC）
+          TZ: Asia/Tokyo
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
