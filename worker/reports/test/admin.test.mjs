@@ -11,7 +11,7 @@ const valid = { name: 'つりお', spotId: 'hagi-koshigahama', comment: '<script
 
 // 管理ページはWorker自身が返すので、フォームの送信元originはWorkerのorigin（=BASE）になる。
 // origin: null を渡すとヘッダーそのものを付けない（素の<form>送信でOriginが付かないブラウザの再現）
-const call = (path, env, { method = 'GET', cookie = '', form = null, origin = BASE, secFetchSite, ip = '203.0.113.50' } = {}) =>
+const call = (path, env, { method = 'GET', cookie = '', form = null, origin = BASE, secFetchSite, referer, ip = '203.0.113.50' } = {}) =>
   worker.fetch(
     new Request(`${BASE}${path}`, {
       method,
@@ -19,6 +19,7 @@ const call = (path, env, { method = 'GET', cookie = '', form = null, origin = BA
         ...(cookie ? { cookie } : {}),
         ...(origin !== null ? { origin } : {}),
         ...(secFetchSite ? { 'sec-fetch-site': secFetchSite } : {}),
+        ...(referer ? { referer } : {}),
         'cf-connecting-ip': ip,
         ...(form ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
       },
@@ -294,9 +295,78 @@ test('削除リンク：偽のトークンでは消せず、GETでは消えな�
     const forged = `${token.slice(0, -1)}${token.endsWith('0') ? '1' : '0'}`;
 
     assert.equal((await call('/admin/delete-by-token', env, { method: 'POST', form: { token: forged } })).status, 400);
-    assert.equal((await call('/admin/delete-by-token', env, { method: 'POST', form: { token }, origin: 'https://evil.example' })).status, 403);
     // GETは状態を変えない（合言葉も無いのでここでは入口ごと断る）
     assert.equal((await call(`/admin/delete-by-token?token=${encodeURIComponent(token)}`, env)).status, 403);
+    assert.ok(await env.REPORTS_KV.get(`post:${post.id}`), '投稿は残っている');
+  } finally {
+    f.restore();
+  }
+});
+
+// 2026-09-21：ダディのiPhone（Discordのアプリ内ブラウザ）から削除フォームを送ったら
+// 「操作できません」で弾かれた。この経路は合言葉のCookieではなく署名付きトークンで本人を確かめるので、
+// オリジンの手がかりが無くても通す（トークンを知らない相手は何を送っても弾かれる）。
+// ここを「安全のため」と言って元に戻すと、また本人が削除できなくなる。
+test('削除リンク：Origin・sec-fetch-site・Refererが何も付かない送信でも削除できる（iPhoneの実機で発覚）', async () => {
+  const env = makeEnv();
+  const f = stubFetch(okFetch());
+  try {
+    const post = await createPost(env);
+    const token = await makeDeleteToken(env, post.id);
+    const res = await call('/admin/delete-by-token', env, { method: 'POST', form: { token }, origin: null });
+    assert.equal(res.status, 200);
+    assert.equal(await env.REPORTS_KV.get(`post:${post.id}`), null, '投稿が消えている');
+  } finally {
+    f.restore();
+  }
+});
+
+test('管理ページの削除：Originが無くてもRefererが自分のサイトなら通る', async () => {
+  const env = makeEnv();
+  const f = stubFetch(okFetch());
+  try {
+    const post = await createPost(env);
+    const cookie = await login(env);
+    const res = await call(`/admin/posts/${post.id}/delete`, env, {
+      method: 'POST',
+      cookie,
+      origin: null,
+      referer: `${BASE}/admin`,
+    });
+    assert.equal(res.status, 303);
+    assert.equal(await env.REPORTS_KV.get(`post:${post.id}`), null);
+  } finally {
+    f.restore();
+  }
+});
+
+test('管理ページの削除：よそのサイトからのRefererは通さない', async () => {
+  const env = makeEnv();
+  const f = stubFetch(okFetch());
+  try {
+    const post = await createPost(env);
+    const cookie = await login(env);
+    const res = await call(`/admin/posts/${post.id}/delete`, env, {
+      method: 'POST',
+      cookie,
+      origin: null,
+      referer: 'https://evil.example/attack',
+    });
+    assert.equal(res.status, 403);
+    assert.ok(await env.REPORTS_KV.get(`post:${post.id}`), '投稿は残っている');
+  } finally {
+    f.restore();
+  }
+});
+
+test('管理ページの削除：手がかりが何も無い送信は通さない（Cookieで動く経路なので）', async () => {
+  const env = makeEnv();
+  const f = stubFetch(okFetch());
+  try {
+    const post = await createPost(env);
+    const cookie = await login(env);
+    const res = await call(`/admin/posts/${post.id}/delete`, env, { method: 'POST', cookie, origin: null });
+    assert.equal(res.status, 403);
     assert.ok(await env.REPORTS_KV.get(`post:${post.id}`), '投稿は残っている');
   } finally {
     f.restore();

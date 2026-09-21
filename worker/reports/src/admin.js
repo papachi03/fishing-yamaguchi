@@ -33,7 +33,8 @@ function html(body, status = 200) {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
         'x-robots-tag': 'noindex, nofollow',
-        'referrer-policy': 'no-referrer',
+        // same-origin＝よそのサイトには送らないが、自分への送信では手がかりとして使える（sameOriginの判定に使う）
+        'referrer-policy': 'same-origin',
       },
     }
   );
@@ -70,12 +71,31 @@ ${p.hidden ? `<form method="post" action="/admin/posts/${p.id}/restore"><button 
 
 // 管理ページはWorker自身が返すので、フォームの送信元は必ずこのWorkerのorigin。
 // 公開側の ALLOWED_ORIGINS（釣りサイト）とは別物なので、ここでは自分のoriginだけを通す。
-// 素の<form method="post">はナビゲーション扱いになるブラウザがあり、その場合Originが付かないことがある。
-// その救済として、Originが無いときは sec-fetch-site: same-origin（ブラウザが付ける値。攻撃者のページからの
-// 送信では cross-site になるのでCSRFの守りは崩れない）も同一オリジンとして扱う
-const sameOrigin = (request, url) =>
-  request.headers.get('origin') === url.origin ||
-  (!request.headers.get('origin') && request.headers.get('sec-fetch-site') === 'same-origin');
+//
+// 素の<form method="post">はナビゲーション扱いになり、ブラウザによって付く手がかりが違う。
+// 2026-09-21、ダディのiPhone（Discordのアプリ内ブラウザ）から削除フォームを送ったら「操作できません」に
+// なった。そのため手がかりを3つ順番に見る：Origin → sec-fetch-site → Referer。
+// どれも攻撃者のページからの送信では同一オリジンにならないのでCSRFの守りは崩れない。
+// （Refererを使えるようにするため、管理ページの referrer-policy は no-referrer ではなく same-origin。
+//   よそのサイトには送られないので、投稿の中身が外に漏れることはない）
+const sameOrigin = (request, url) => {
+  const origin = request.headers.get('origin');
+  if (origin) return origin === url.origin;
+  const site = request.headers.get('sec-fetch-site');
+  if (site) return site === 'same-origin';
+  const referer = request.headers.get('referer');
+  if (referer) return referer === url.origin || referer.startsWith(`${url.origin}/`);
+  return false; // 手がかりが何も無い＝判断できないので通さない
+};
+// 弾いたときに手がかりを残す（次に同じことが起きたら wrangler tail で見られるように）
+const logRefusal = (request, path) =>
+  console.warn(
+    'admin refused',
+    path,
+    'origin=', request.headers.get('origin'),
+    'sec-fetch-site=', request.headers.get('sec-fetch-site'),
+    'referer=', request.headers.get('referer') ? 'あり' : 'なし'
+  );
 const forbidden = () => html('<h1>操作できません</h1><p>もう一度、管理ページから入り直してください。</p>', 403);
 const missing = () => html('<h1>見つかりませんでした</h1><p>管理ページに戻ってお試しください。</p>', 404);
 // 303にも noindex を付ける（リダイレクトそのものが検索結果に拾われないように）
@@ -100,7 +120,7 @@ export async function handleAdmin(request, env, url) {
   }
 
   if (path === '/admin/login' && method === 'POST') {
-    if (!sameOrigin(request, url)) return forbidden();
+    if (!sameOrigin(request, url)) return (logRefusal(request, path), forbidden());
     // 合言葉を見る前に回数を数える。当たっていても枠を使い切っていたら入れない
     if (!(await allowLogin(env, await ipHashOf(request, env)))) {
       return loginPage('試行回数が多すぎます。1時間ほどおいてからお試しください。', 429);
@@ -124,7 +144,10 @@ export async function handleAdmin(request, env, url) {
   }
 
   if (path === '/admin/delete-by-token' && method === 'POST') {
-    if (!sameOrigin(request, url)) return forbidden();
+    // ここは同一オリジンの判定をしない。合言葉のCookieではなく「署名付きトークン」で本人を確かめる経路なので、
+    // トークンを知らない相手は何を送っても弾かれ、知っている相手（＝ダディのDiscordを見られる人）は
+    // どうせリンクを自分で開ける。判定を入れると端末によって本人が削除できなくなる害の方が大きい。
+    // 「リンクを開いただけで消える」事故は、GETでは消さずこのPOSTを必要にすることで防いでいる。
     const id = await readDeleteToken(env, (await request.formData()).get('token'));
     if (!id || !isId(id)) return html('<h1>リンクが無効です</h1><p>期限が切れているか、リンクが途中で切れています。管理ページから削除してください。</p>', 400);
     await deletePost(env, id);
@@ -146,7 +169,7 @@ export async function handleAdmin(request, env, url) {
 
   const action = path.match(/^[/]admin[/]posts[/]([^/]+)[/](delete|restore)$/);
   if (action && method === 'POST' && isId(action[1])) {
-    if (!sameOrigin(request, url)) return forbidden();
+    if (!sameOrigin(request, url)) return (logRefusal(request, path), forbidden());
     const [, id, kind] = action;
     if (kind === 'delete') {
       await deletePost(env, id);
