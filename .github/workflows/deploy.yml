@@ -42,7 +42,7 @@ jobs:
       - run: npm run build
         env:
           # リポジトリ名に合わせる。独自ドメインにしたら "/" に変更する
-          SITE_BASE: /fishing-yamaguchi/
+          SITE_BASE: /
           # 事前描画の日付・時刻を日本時間にする（CIのサーバーはUTC）
           TZ: Asia/Tokyo
       - uses: actions/upload-pages-artifact@v3
