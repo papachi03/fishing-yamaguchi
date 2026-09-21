@@ -1520,3 +1520,153 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 .journal-note { margin-top: 16px; font-size: 11px; color: var(--ink-soft); }
 .yt-rank { position: absolute; left: 10px; top: 8px; font-size: 12px; letter-spacing: 0.1em; color: var(--paper); background: rgba(10, 13, 18, 0.8); padding: 2px 8px; }
 .yt-views { margin-top: 4px; font-size: 11px; color: var(--ink-soft); letter-spacing: 0.06em; }
+
+/* ==========================================================================
+   REPORTS — 現地の声（投稿フォーム／絞り込み／投稿カード／釣り場一覧）
+   堤防でスマホを片手に打つ人が多いので、入力欄は16px以上（iOSの自動ズームを防ぐ）・
+   触る所は高さ44px以上にしてある
+   ========================================================================== */
+.report-intro { max-width: 760px; margin-bottom: clamp(30px, 4vw, 48px); font-size: 15px; }
+.report-intro p { margin-bottom: 12px; }
+.report-intro strong { font-weight: 700; color: var(--teal); }
+.report-intro a { color: var(--teal); text-decoration: underline; text-underline-offset: 3px; }
+.report-h {
+  margin: clamp(48px, 6vw, 80px) 0 clamp(18px, 2.5vw, 26px);
+  padding-top: 14px;
+  border-top: 1px solid rgba(32, 35, 42, 0.18);
+  color: var(--ink-soft);
+}
+.report-h:first-of-type { margin-top: 0; }
+
+/* ---------- 投稿フォーム ---------- */
+.report-form { display: grid; gap: 18px; max-width: 640px; }
+.report-form label, .report-wind legend { display: grid; gap: 6px; font-size: 14px; font-weight: 500; }
+.report-form input:not([type='radio']), .report-form select, .report-form textarea {
+  font: inherit; font-size: 16px; line-height: 1.5;
+  min-height: 48px; padding: 11px 14px;
+  border: 1px solid rgba(32, 35, 42, 0.3); border-radius: 8px;
+  background: #fff; color: var(--ink); width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.report-form input[type='file'] { padding: 8px 10px; background: transparent; border-style: dashed; }
+.report-form input[type='date'] { -webkit-appearance: none; appearance: none; }
+.report-form textarea { resize: vertical; min-height: 120px; }
+.report-form select, .report-filter select {
+  appearance: none; -webkit-appearance: none; padding-right: 40px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2320232a' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center;
+}
+.report-form input:not([type='radio']):focus-visible, .report-form select:focus-visible, .report-form textarea:focus-visible,
+.report-filter select:focus-visible {
+  outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(47, 107, 102, 0.22);
+}
+.report-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.report-wind { border: 0; padding: 0; min-width: 0; }
+.report-wind #rf-wind { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.wind-choice { display: block; position: relative; font-weight: 400; cursor: pointer; }
+.wind-choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.wind-choice span {
+  display: block; padding: 10px 18px; min-height: 44px;
+  border: 1px solid rgba(32, 35, 42, 0.3); border-radius: 999px; background: #fff;
+  font-size: 14px; line-height: 1.6; transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.wind-choice input:checked + span { background: var(--teal); border-color: var(--teal); color: #fff; }
+.wind-choice input:focus-visible + span { outline: 2px solid var(--amber); outline-offset: 2px; }
+#ts-widget:empty { display: none; }
+.report-submit {
+  justify-self: start; font: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.08em;
+  min-height: 52px; padding: 14px 40px; border: 0; border-radius: 999px;
+  background: var(--ink); color: var(--paper); cursor: pointer; transition: background 0.2s;
+}
+.report-submit:hover { background: var(--teal); }
+.report-submit:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.report-submit:disabled { opacity: 0.5; cursor: default; background: var(--ink); }
+.report-form-msg { min-height: 1.6em; font-size: 14px; color: var(--teal); }
+.report-form-msg:empty { display: none; }
+.report-form-msg.is-error { color: var(--safe-danger); }
+.report-rules, .report-note, .report-filter-note { max-width: 640px; margin-top: 18px; font-size: 13px; line-height: 1.8; color: var(--ink-soft); }
+.report-rules { margin-top: 26px; padding-left: 16px; border-left: 2px solid rgba(32, 35, 42, 0.18); }
+.report-rules li { margin-bottom: 4px; }
+
+/* ---------- 絞り込み（エリア → 釣り場 → 魚種） ---------- */
+.report-filter {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px 14px; align-items: end;
+  max-width: 900px; margin-bottom: 12px;
+}
+.report-filter label {
+  display: grid; gap: 4px;
+  font-family: var(--font-display); font-weight: 600; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.report-filter select {
+  font: inherit; font-size: 16px; line-height: 1.5; min-height: 46px; padding: 9px 40px 9px 14px;
+  border: 1px solid rgba(32, 35, 42, 0.3); border-radius: 8px; background-color: #fff; color: var(--ink); width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.report-filter select:disabled { opacity: 0.45; background-color: var(--paper-warm); cursor: default; }
+.report-filter-clear {
+  font: inherit; font-size: 13px; font-weight: 500; min-height: 46px; padding: 9px 18px;
+  border: 1px solid rgba(32, 35, 42, 0.3); border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer;
+  white-space: nowrap; transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.report-filter-clear:hover { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.report-filter-clear:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.report-filter-clear[hidden] { display: none; }
+.report-filter-note { margin-top: 0; margin-bottom: clamp(22px, 3vw, 32px); font-size: 12.5px; }
+/* 0件のときの「条件をクリア」は文に添える小さな形 */
+.report-grid .report-filter-clear { display: inline-block; min-height: 0; margin-left: 12px; padding: 4px 14px; font-family: var(--font-body); font-size: 12px; }
+
+/* ---------- 投稿カード ---------- */
+.report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: clamp(16px, 2.4vw, 24px); }
+.report-grid > .sea-error { grid-column: 1 / -1; padding: 26px 0; }
+.report-grid[aria-busy='true'] { opacity: 0.6; transition: opacity 0.2s; }
+.report-card {
+  display: flex; flex-direction: column;
+  background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid rgba(32, 35, 42, 0.12);
+  box-shadow: 0 1px 0 rgba(32, 35, 42, 0.04);
+}
+.report-photo { margin: 0; aspect-ratio: 4 / 3; background: var(--paper-warm); }
+.report-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.report-body { display: flex; flex-direction: column; flex: 1; padding: 18px 20px 16px; }
+.report-place { font-family: var(--font-mincho); font-size: 18px; font-weight: 700; line-height: 1.5; letter-spacing: 0.02em; }
+.report-meta { font-size: 11px; color: var(--ink-soft); margin: 2px 0 12px; letter-spacing: 0.06em; }
+.report-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.report-tags span { font-size: 12px; line-height: 1.7; padding: 2px 10px; border-radius: 999px; background: var(--paper-warm); }
+.report-tags .wind-stronger { background: var(--safe-danger); color: #fff; }
+.report-tags .wind-weaker { background: var(--safe-ok); color: #fff; }
+.report-comment { font-size: 14px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-flag {
+  align-self: flex-start; margin-top: auto; padding: 14px 0 0; border: 0; background: none;
+  font-size: 10px; letter-spacing: 0.06em; color: var(--ink-soft); opacity: 0.75; text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.report-flag:hover { opacity: 1; }
+.report-flag:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; opacity: 1; }
+.report-flag:disabled { text-decoration: none; cursor: default; opacity: 1; color: var(--teal); }
+
+/* ---------- 選べる釣り場 ---------- */
+.spot-names-list { display: grid; gap: 10px; max-width: 760px; margin-top: 18px; }
+.spot-names { display: grid; grid-template-columns: 4em 1fr; gap: 12px; font-size: 14px; padding-bottom: 10px; border-bottom: 1px dashed rgba(32, 35, 42, 0.18); }
+.spot-names:last-child { border-bottom: 0; }
+.spot-names dt { font-family: var(--font-mincho); font-weight: 700; letter-spacing: 0.1em; }
+.spot-names dd { color: var(--ink-soft); }
+
+@media (max-width: 860px) {
+  .report-filter { grid-template-columns: 1fr 1fr; }
+  .report-filter-clear { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 560px) {
+  .report-form-row { grid-template-columns: 1fr; }
+  .report-submit { justify-self: stretch; width: 100%; }
+  .report-filter { grid-template-columns: 1fr; gap: 12px; }
+  .report-grid { grid-template-columns: 1fr; }
+  .report-body { padding: 16px 16px 14px; }
+}
+
+/* ---------- SEAページの「現地の声」 ---------- */
+/* 海況の続きとして静かに置く（上に細い罫線、見出しは潮汐パネルと同じ書式）。0件のときは丸ごと出ない */
+.area-reports { margin-top: clamp(36px, 5vw, 60px); padding-top: clamp(24px, 3vw, 36px); border-top: 1px solid rgba(32, 35, 42, 0.3); }
+.area-reports .report-grid { margin: 16px 0 6px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.area-reports .sea-more { margin-top: 14px; }
+@media (max-width: 560px) {
+  .area-reports .report-grid { grid-template-columns: 1fr; }
+}

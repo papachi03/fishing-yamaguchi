@@ -16,6 +16,7 @@ const NAV = [
   { href: '/log.html', label: 'Fishing Log' },
   { href: '/spots.html', label: 'Spots' },
   { href: '/sea.html', label: 'Sea' },
+  { href: '/reports.html', label: 'Reports' },
   { href: '/tackle.html', label: 'Tackle' },
   { href: '/about.html', label: 'About' },
 ];

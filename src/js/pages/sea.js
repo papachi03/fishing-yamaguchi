@@ -3,6 +3,8 @@ import { areas, areaById } from '../data/areas.js';
 import { fetchWeather } from '../api/weather.js';
 import { fetchTide } from '../api/tide.js';
 import { dashHTML, sourceNoteText, toggleHTML, hhmm } from './sea-render.js';
+import { mountAreaReports, cancelAreaReports } from '../components/area-reports.js';
+import { bindReportButtons } from '../components/report-flag.js';
 
 mountChrome('/sea.html');
 mountFooterBottom(document.getElementById('footer-mount'));
@@ -10,6 +12,8 @@ mountFooterBottom(document.getElementById('footer-mount'));
 const dash = document.getElementById('sea-dash');
 const toggle = document.getElementById('area-toggle');
 const sourceNote = document.getElementById('source-note');
+const reportsBox = document.getElementById('sea-reports');
+bindReportButtons(reportsBox);
 
 // ビルド時に取得して埋め込んだ予報（scripts/prerender-sea.mjs）。
 // 開いた時の取得に失敗したら、これを「○時○分時点」として代わりに見せる。
@@ -85,6 +89,10 @@ async function render() {
     dash.innerHTML = '<p class="sea-error">海況を取得しています…</p>';
   }
   prerendered = null;
+  // 前のエリアの「現地の声」を残さない（海況が届いてから、このエリアの分を取りに行く）。
+  // 取得中のものも捨てる。空にするだけだと、遅れて帰ってきた前のエリアぶんが描かれてしまう
+  cancelAreaReports();
+  reportsBox.innerHTML = '';
 
   const [wr, tr] = await Promise.allSettled([loadWeather(area), loadTide(area)]);
   if (areaId !== current) return; // 取得中に別のエリアへ切り替えられた
@@ -105,6 +113,7 @@ async function render() {
   dash.innerHTML = dashHTML({ area, w, t, now, updatedLabel, notice });
   sourceNote.textContent = sourceNoteText(area, t);
   initReveal();
+  mountAreaReports(reportsBox, areaId); // 待たない。失敗しても海況には影響させない
 }
 
 render();

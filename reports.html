@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REPORTS — 現地の声（萩・長門・下関・下松・防府の釣り場から）| YAMAGUCHI FISHING JOURNAL</title>
+  <meta name="description" content="山口県の萩・長門・下関・下松・防府の堤防や漁港から、釣り人が風・波・釣果を写真とコメントで知らせ合うページ。予報と現地の体感のズレも投稿できます。" />
+  <link rel="canonical" href="https://yamaguchifishing.com/reports.html" />
+  <meta property="og:title" content="REPORTS — 現地の声" />
+  <meta property="og:description" content="山口の堤防から、釣り人が今の海を知らせ合うページ。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yamaguchifishing.com/reports.html" />
+  <meta property="og:image" content="https://yamaguchifishing.com/assets/posters/dawn_sea.jpg" />
+  <meta property="og:site_name" content="YAMAGUCHI FISHING JOURNAL" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Shippori+Mincho+B1:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/css/style.css" />
+  <!-- ロボット除け（Turnstile）のスクリプトは、受付が動いているときだけ pages/reports.js が読み込む -->
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <h1 class="en">Reports</h1>
+        <p class="ja">現地の声。堤防に立った人が、今の海を知らせ合う。</p>
+      </div>
+    </section>
+    <section class="page-body">
+      <div class="wrap">
+        <div class="report-intro">
+          <p>予報の風速と、堤防に立ったときの体感は違います。このページは、萩・長門・下関・下松・防府の釣り場から、釣り人が<strong>風・波・釣果</strong>を写真とコメントで知らせ合う場所です。どなたでも投稿でき、投稿はすぐに表示されます。</p>
+          <p>「風の体感」を選んでもらえると、このサイトの<a href="./sea.html">海況ページ</a>の安全の目安を、より実際に近づける材料になります。</p>
+        </div>
+
+        <h2 class="t-label report-h">Post — 投稿する</h2>
+        <form class="report-form" id="report-form" novalidate>
+          <label>お名前（ニックネーム可・20文字まで）<input name="name" maxlength="20" required autocomplete="nickname" /></label>
+          <label>場所<select name="spotId" id="rf-spot" required></select></label>
+          <label>コメント（400文字まで）<textarea name="comment" maxlength="400" rows="4" required></textarea></label>
+          <label>写真（任意・1枚）<input type="file" name="photo" id="rf-photo" accept="image/*" /></label>
+          <div class="report-form-row">
+            <label>釣れた魚（任意）<select name="fish" id="rf-fish"></select></label>
+            <label>いつの情報（任意）<input type="date" name="date" id="rf-date" /></label>
+          </div>
+          <fieldset class="report-wind"><legend>風の体感（任意）</legend><div id="rf-wind"></div></fieldset>
+          <div id="ts-widget"></div>
+          <p class="report-form-msg" id="rf-msg" role="status" aria-live="polite"></p>
+          <button type="submit" class="report-submit" id="rf-submit">投稿する</button>
+        </form>
+        <ul class="report-rules">
+          <li>ほかの人の顔や、車のナンバーが写った写真は載せないでください。</li>
+          <li>釣り禁止・立入禁止の場所の情報は削除します。</li>
+          <li>写真に記録された撮影場所（位置情報）は、送信前に自動で消えます。</li>
+          <li>時間帯の制限や立入禁止の区画など、現地の看板・ルールは必ずご確認のうえ、マナーを守って釣りをお楽しみください（安全・トラブルは自己責任でお願いします）。</li>
+          <li>投稿の削除をご希望の場合は、Instagram（@child_daddy_o3z）のDMでお知らせください。</li>
+        </ul>
+
+        <h2 class="t-label report-h">Voices — みんなの投稿</h2>
+        <div class="report-filter" id="report-filter" role="group" aria-label="投稿の絞り込み">
+          <label>エリア<select id="ff-area" name="area"><option value="">すべて</option></select></label>
+          <label>釣り場<select id="ff-spot" name="spot" disabled><option value="">すべて</option></select></label>
+          <label>魚種<select id="ff-fish" name="fish"><option value="">すべて</option></select></label>
+          <button type="button" class="report-filter-clear" id="ff-clear" hidden>条件をクリア</button>
+        </div>
+        <p class="report-filter-note">エリアを選ぶと、その中の漁港・堤防を選べます。魚種は単独でも、場所と組み合わせても絞り込めます。「場所不明」の投稿は、エリアを「すべて」にしたときだけ表示されます。</p>
+        <div class="report-grid" id="report-list"><p class="sea-error">投稿を読み込んでいます…</p></div>
+
+        <h2 class="t-label report-h">Spots — 選べる釣り場</h2>
+        <p class="report-note">場所を細かく出したくない方は「〇〇市内（詳しい場所は非公開）」または「場所不明」を選べます。釣り禁止・立入禁止の場所は載せていません。</p>
+        <dl class="spot-names-list" id="spot-names"></dl>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"><div id="footer-mount"></div></footer>
+  <script type="module" src="/src/js/pages/reports.js"></script>
+</body>
+</html>

@@ -20,6 +20,21 @@ export default defineConfig({
         },
       },
     },
+    {
+      // 「現地の声」ページに、選べる釣り場の一覧を書き込む（検索エンジンが通信なしで読める本文にする）
+      name: 'prerender-reports',
+      apply: 'build',
+      transformIndexHtml: {
+        order: 'pre',
+        async handler(html, ctx) {
+          if (!ctx.filename.replace(/\\/g, '/').endsWith('/reports.html')) return html;
+          const mark = '<dl class="spot-names-list" id="spot-names"></dl>';
+          if (!html.includes(mark)) throw new Error('reports.html に釣り場一覧の目印が見つかりません');
+          const { spotListHTML } = await import('./src/js/components/spot-list-html.js');
+          return html.replace(mark, () => `<dl class="spot-names-list" id="spot-names">${spotListHTML()}</dl>`);
+        },
+      },
+    },
   ],
   build: {
     rollupOptions: {
@@ -31,6 +46,7 @@ export default defineConfig({
         spots: resolve(__dirname, 'spots.html'),
         about: resolve(__dirname, 'about.html'),
         tackle: resolve(__dirname, 'tackle.html'),
+        reports: resolve(__dirname, 'reports.html'),
       },
     },
   },
