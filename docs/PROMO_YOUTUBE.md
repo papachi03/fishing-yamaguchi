@@ -1,6 +1,6 @@
 # サイトを見てもらうための導線（コピペ用）
 
-サイト: https://papachi03.github.io/fishing-yamaguchi/
+サイト: https://yamaguchifishing.com/
 
 **このファイルの使い方**：下のコードブロックをそのままコピーして、YouTubeの概要欄・固定コメント・
 Instagramのプロフィールに貼るだけ。文言を変えたくなったらこのファイルを直して、また使う。
@@ -18,11 +18,11 @@ Instagramから来た人**を分けて数えられる。付けなくても動く
 
 | 貼る場所 | 貼るURL |
 |---|---|
-| YouTube 概要欄 | `https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=description` |
-| YouTube 固定コメント | `https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=comment` |
-| Instagram プロフィール | `https://papachi03.github.io/fishing-yamaguchi/?utm_source=instagram&utm_medium=bio` |
-| Instagram ストーリーズ | `https://papachi03.github.io/fishing-yamaguchi/?utm_source=instagram&utm_medium=story` |
-| 口頭で伝える時 | `papachi03.github.io/fishing-yamaguchi`（印なしでOK） |
+| YouTube 概要欄 | `https://yamaguchifishing.com/?utm_source=youtube&utm_medium=description` |
+| YouTube 固定コメント | `https://yamaguchifishing.com/?utm_source=youtube&utm_medium=comment` |
+| Instagram プロフィール | `https://yamaguchifishing.com/?utm_source=instagram&utm_medium=bio` |
+| Instagram ストーリーズ | `https://yamaguchifishing.com/?utm_source=instagram&utm_medium=story` |
+| 口頭で伝える時 | `yamaguchifishing.com`（印なしでOK） |
 
 **GA4での見方**：レポート → 集客 → トラフィック獲得 → 「セッションのソース / メディア」。
 `youtube / description` と `youtube / comment` が別の行で出てくる。
@@ -37,7 +37,7 @@ Instagramから来た人**を分けて数えられる。付けなくても動く
 ━━━━━━━━━━━━━━━━
 🎣 釣りに行く前に見るサイトを作りました
 YAMAGUCHI FISHING JOURNAL
-https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=description
+https://yamaguchifishing.com/?utm_source=youtube&utm_medium=description
 
 萩・長門・下関の「今の海」がひと目で分かります。
 ・天気 / 風向・風速 / 突風 / 波の高さ
@@ -53,7 +53,7 @@ https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=des
 ```text
 釣りに行く前に見る用のサイトを作りました🎣
 萩・長門・下関の風と波と潮、それに「今日は堤防に立てるか」の判定が出ます。
-👉 https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=comment
+👉 https://yamaguchifishing.com/?utm_source=youtube&utm_medium=comment
 朝マズメ前の確認にどうぞ。
 ```
 
@@ -137,7 +137,7 @@ Instagramはハッシュタグ文化が違うので20〜30個までOK。プロ�
 
 ### プロフィールのリンク欄
 ```text
-https://papachi03.github.io/fishing-yamaguchi/?utm_source=instagram&utm_medium=bio
+https://yamaguchifishing.com/?utm_source=instagram&utm_medium=bio
 ```
 
 ### 投稿キャプション（サイト告知の回）
@@ -234,7 +234,7 @@ YouTube Studio → コンテンツ → この動画 → 詳細
 
 1. **説明の一番上**にこの1行を入れる（折りたたみ状態でも見える位置）
    ```text
-   🎣 釣りに行く前の海況チェック → https://papachi03.github.io/fishing-yamaguchi/?utm_source=youtube&utm_medium=description
+   🎣 釣りに行く前の海況チェック → https://yamaguchifishing.com/?utm_source=youtube&utm_medium=description
    ```
 2. **説明の一番下**に §2 の枠をまるごと貼る（既存の文章は消さない）
 3. 「保存」
