@@ -67,8 +67,10 @@ export function validatePhoto(bytes) {
   if (!(bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)) {
     return fail('写真はJPEG形式だけ受け付けます。');
   }
+  // ここに来る前に index.js が stripJpegMeta を通しているので、普通は起きない。
+  // それでも残っていたら、場所が漏れるより断るほうを選ぶ（最後の砦）
   if (hasExif(bytes)) {
-    return fail('写真に撮影情報が残っています。投稿フォームから写真を選び直してください。');
+    return fail('写真の撮影情報を消せませんでした。恐れ入りますが、別の写真でお試しください。');
   }
   return { ok: true, hasPhoto: true };
 }

@@ -26,6 +26,8 @@ const TABS = [
   { href: '/log.html', label: 'Log', icon: 'M3 12c4-5 10-5 14 0-4 5-10 5-14 0Zm14 0 4-3m-4 3 4 3M7 12h.01' },
   { href: '/journal.html', label: 'Vlog', icon: 'M4 5h16v14H4zM10 9l5 3-5 3z' },
   { href: '/spots.html', label: 'Spots', icon: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11Zm0-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z' },
+  // 吹き出し＋ペン: 「現地の声を投稿する」
+  { href: '/reports.html', label: 'Reports', icon: 'M3 5h18v11h-9l-5 4v-4H3zM9 13l5-5 2 2-5 5-3 1z' },
 ];
 
 export function mountChrome(active = '') {

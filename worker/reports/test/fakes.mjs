@@ -105,9 +105,14 @@ export function postForm(fields, { photo = null, ip = '203.0.113.1', origin = TE
 }
 
 // ごく小さいJPEGらしきバイト列。exif:true で "Exif\0\0" を埋め込む
+// ごく小さいJPEGらしきバイト列。実物と同じ「マーカーの連なり」になっているので、
+// 撮影情報を落とす処理（stripJpegMeta）を通してもJPEGの体裁が崩れない。
+// exif:true で APP1 に "Exif\0\0" を入れる
 export function jpegBytes({ exif = false, size = 64 } = {}) {
-  const bytes = new Uint8Array(size);
-  bytes.set([0xff, 0xd8, 0xff, exif ? 0xe1 : 0xe0, 0x00, 0x10]);
-  if (exif) bytes.set([0x45, 0x78, 0x69, 0x66, 0x00, 0x00], 6);
-  return bytes;
+  const seg = (marker, payload) => [0xff, marker, ((payload.length + 2) >> 8) & 0xff, (payload.length + 2) & 0xff, ...payload];
+  const app0 = seg(0xe0, [0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x02, 0x00]); // JFIF
+  const app1 = exif ? seg(0xe1, [0x45, 0x78, 0x69, 0x66, 0x00, 0x00, 0x4d, 0x4d, 0x00, 0x2a]) : [];
+  const head = [0xff, 0xd8, ...app1, ...app0, 0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00];
+  const body = new Array(Math.max(0, size - head.length - 2)).fill(0x55);
+  return new Uint8Array([...head, ...body, 0xff, 0xd9]);
 }

@@ -1,7 +1,11 @@
 // 写真を縮小してJPEGに作り直す。
-// 描き直した画像には元のEXIF（撮影場所のGPSなど）が一切入らない。
 // 「場所不明」を選んだ人の写真から場所が漏れるのを防ぐための要の処理なので、
 // 元のファイルをそのまま送る近道を作らないこと。
+//
+// 描き直すだけでは足りない：端末やブラウザによっては、書き出したJPEGに
+// 撮影情報を入れ直すものがある（2026-09-21にダディの端末で発覚）。
+// そのため最後に stripJpegMeta を必ず通してから返す。
+import { stripJpegMeta } from './strip-jpeg-meta.js';
 
 async function decode(file) {
   try {
@@ -32,5 +36,6 @@ export async function resizeToJpeg(file, maxSide = 1600, quality = 0.82) {
   canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
   if (!blob) throw new Error('jpeg encode failed');
-  return blob;
+  const clean = stripJpegMeta(new Uint8Array(await blob.arrayBuffer()));
+  return new Blob([clean], { type: 'image/jpeg' });
 }

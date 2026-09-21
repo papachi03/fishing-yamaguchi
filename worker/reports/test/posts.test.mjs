@@ -124,12 +124,29 @@ test('写真つきの投稿はKVに入り、/photo/<id> で取れる', async () 
   }
 });
 
-test('EXIF入りの写真は400', async () => {
+// 以前は400で断っていたが、スマホの写真はほとんどEXIF入りで投稿できなくなるため、
+// 受け取って撮影情報だけ落として保存する方式に変えた（2026-09-21）
+test('EXIF入りの写真も受け取り、保存する前に撮影情報を落とす', async () => {
   const env = makeEnv();
   const f = stubFetch(okFetch());
   try {
     const res = await worker.fetch(postForm(valid, { photo: jpegBytes({ exif: true }) }), env, ctx);
-    assert.equal(res.status, 400);
+    assert.equal(res.status, 201);
+    const { post } = await res.json();
+    assert.equal(post.hasPhoto, true);
+
+    const saved = new Uint8Array((await env.REPORTS_KV.getWithMetadata(`photo/${post.id}.jpg`, 'arrayBuffer')).value);
+    const sig = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
+    const found = (() => {
+      outer: for (let i = 0; i <= saved.length - sig.length; i++) {
+        for (let j = 0; j < sig.length; j++) if (saved[i + j] !== sig[j]) continue outer;
+        return true;
+      }
+      return false;
+    })();
+    assert.equal(found, false, '保存した写真に撮影情報が残っている');
+    assert.equal(saved[0], 0xff, 'JPEGとして壊れている');
+    assert.equal(saved[1], 0xd8, 'JPEGとして壊れている');
   } finally {
     try {
       await settle();

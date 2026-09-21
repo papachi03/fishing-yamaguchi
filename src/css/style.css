@@ -175,7 +175,7 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
     z-index: 100;
     left: 12px; right: 12px; bottom: 12px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     background: rgba(10, 13, 18, 0.9);
     backdrop-filter: blur(14px);
     border: 1px solid rgba(241, 236, 225, 0.12);
@@ -1405,6 +1405,39 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 .ig .ig-tile figure { background: var(--paper); }
 .ig .ig-tile-cap .t-mono { color: var(--ink-soft); opacity: 1; }
 .ig .ig-tile-cap p { color: var(--ink); opacity: 0.85; }
+
+/* ==========================================================================
+   REPORTS LEAD — HOME「今日の海」の直後に置く投稿への導線
+   海況を見た人が「実際はどうだった？」を投稿する流れを作る（2026-09-21 ダディ指摘）
+   ========================================================================== */
+.reports-lead { background: var(--paper); color: var(--ink); padding: clamp(40px, 6vw, 72px) 0; border-top: 1px solid rgba(32, 35, 42, 0.12); }
+.reports-lead-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(20px, 4vw, 56px);
+}
+.reports-lead .sec-head { margin-bottom: 0; }
+.reports-lead .sec-head .en { font-size: clamp(30px, 4.2vw, 52px); color: var(--teal); }
+.reports-lead .sec-head .ja { margin-top: 8px; }
+.reports-lead-text { margin-top: 16px; max-width: 34em; font-size: 14px; color: var(--ink-soft); }
+.reports-lead-text .open {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--ink);
+}
+.reports-lead-text .open::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+.reports-cta {
+  display: inline-flex; align-items: center; gap: 12px; white-space: nowrap;
+  font-family: var(--font-mincho); font-weight: 700; font-size: 14px; letter-spacing: 0.12em;
+  color: var(--paper); background: var(--ink); padding: 14px 24px;
+  transition: background 0.25s, gap 0.25s;
+}
+.reports-cta svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; flex: none; }
+.reports-cta:hover { background: var(--teal); gap: 18px; }
+@media (max-width: 760px) {
+  .reports-lead-grid { grid-template-columns: 1fr; align-items: start; }
+  .reports-cta { width: 100%; justify-content: center; }
+}
 
 /* ==========================================================================
    SAFETY — 堤防の安全判定（意味色。アクセント色とは別）

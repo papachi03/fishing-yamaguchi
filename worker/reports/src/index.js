@@ -16,6 +16,7 @@ import { LIMITS, ALLOWED_ORIGINS } from './config.js';
 import { validatePost, validatePhoto } from './validate.js';
 import { ipHashOf, verifyTurnstile, allowPost, allowReport } from './guard.js';
 import { newId, isId, getPost, putPost, putPhoto, getPhoto, toPublic, rebuildIndex, getIndex, listPosts, byNewest } from './store.js';
+import { stripJpegMeta } from '../../../src/js/lib/strip-jpeg-meta.js';
 import { placeById } from '../../../src/js/data/spot-list.js';
 import { FISH } from '../../../src/js/data/report-options.js';
 import { requireSignSecret } from './auth.js';
@@ -130,7 +131,8 @@ async function handleCreate(request, env, ctx) {
   let bytes = null;
   if (file && typeof file !== 'string' && file.size > 0) {
     if (file.size > LIMITS.photoBytes) return json({ ok: false, error: '写真が大きすぎます（3MBまで）。' }, 400, request);
-    bytes = new Uint8Array(await file.arrayBuffer());
+    // 送信前にブラウザでも落としているが、端末によっては残ることがあるので受け取り側でも必ず落とす
+    bytes = stripJpegMeta(new Uint8Array(await file.arrayBuffer()));
   }
   const pv = validatePhoto(bytes);
   if (!pv.ok) return json({ ok: false, error: pv.error }, 400, request);
