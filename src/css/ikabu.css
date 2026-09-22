@@ -47,7 +47,7 @@
 .ika-hero-grid {
   position: relative;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: clamp(24px, 4vw, 64px);
   padding-bottom: clamp(48px, 8vw, 96px);
@@ -95,13 +95,15 @@
 }
 .ika-section .ika-btn--primary, .ika-join .ika-btn--primary { box-shadow: 4px 4px 0 var(--ika-navy); }
 
-/* イラスト */
-.ika-hero-art { position: relative; justify-self: center; }
+/* イラスト（ChatGPT生成のメインビジュアル。ロゴと同じイカ） */
+.ika-hero-art { position: relative; justify-self: end; width: 100%; }
 .ika-hero-img {
-  width: min(100%, 420px);
+  width: 100%;
   height: auto;
-  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.35));
-  transform: rotate(-4deg);
+  border: 4px solid var(--ika-ivory);
+  border-radius: 22px;
+  box-shadow: 10px 10px 0 var(--ika-red);
+  transform: rotate(-2deg);
 }
 .ika-sticker {
   position: absolute;
@@ -300,8 +302,10 @@
 }
 @media (max-width: 760px) {
   .ika-hero-grid { grid-template-columns: 1fr; gap: 12px; }
-  /* スマホではロゴの中にイカがいるので、右側の大きなイカは出さない（本番のメインイラストが出来たら再検討） */
-  .ika-hero-art { display: none; }
+  .ika-hero-art { order: -1; margin: 0 0 18px; }
+  .ika-hero-img { transform: none; border-width: 3px; box-shadow: 6px 6px 0 var(--ika-red); }
+  .ika-sticker--a { top: -10px; left: -6px; }
+  .ika-sticker--b { bottom: -10px; right: -6px; }
   .ika-hero { padding-top: 96px; }
   .ika-rules-list, .ika-cards, .ika-soon-grid, .ika-games { grid-template-columns: 1fr; }
   .ika-join-inner { grid-template-columns: 1fr; }
