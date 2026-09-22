@@ -1,0 +1,314 @@
+/* ==========================================================================
+   山口イカ部 — /ikabu/ 専用の見た目
+   土台（ヘッダー・フッター・投稿カード）は style.css を共有し、
+   色・書体・空気だけをイカ部に置き換える。
+   色はステッカー案から採取：紺 / アイボリー / 朱
+   ========================================================================== */
+
+.ikabu {
+  --ika-navy: #1f2f45;      /* ステッカーの線の紺 */
+  --ika-navy-deep: #16233a;
+  --ika-ivory: #f7f1e3;     /* ステッカーの地 */
+  --ika-ivory-2: #efe6d2;
+  --ika-red: #d9552a;       /* 差し色の朱 */
+  --ika-red-soft: #f0b79f;
+  --ika-sea: #5b8f8b;       /* 山口の海（薄め） */
+  --font-maru: 'Zen Maru Gothic', 'Zen Kaku Gothic New', sans-serif;
+
+  background: var(--ika-ivory);
+  color: var(--ika-navy);
+  font-family: var(--font-maru);
+}
+
+/* 共通ヘッダーの上に薄く紺を敷いて、白いロゴが読めるようにする */
+.ikabu .site-header { background: linear-gradient(rgba(22, 35, 58, 0.85), rgba(22, 35, 58, 0)); }
+.ikabu .site-header.is-scrolled { background: rgba(22, 35, 58, 0.9); }
+.ikabu .main-nav a[aria-current='page'] { border-color: var(--ika-red); }
+
+/* ---------- HERO ---------- */
+
+.ika-hero {
+  position: relative;
+  background:
+    radial-gradient(60% 50% at 78% 40%, rgba(217, 85, 42, 0.16), transparent 70%),
+    var(--ika-navy);
+  color: var(--ika-ivory);
+  padding-top: clamp(110px, 16vh, 170px);
+  overflow: hidden;
+}
+/* 地の紙のような細かい点 */
+.ika-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(247, 241, 227, 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+.ika-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+  padding-bottom: clamp(48px, 8vw, 96px);
+}
+.ika-kicker { color: var(--ika-red-soft); margin-bottom: 18px; }
+.ika-title { line-height: 0; }
+.ika-logo {
+  width: min(100%, 560px);
+  height: auto;
+  filter: drop-shadow(6px 8px 0 rgba(217, 85, 42, 0.55));
+}
+.ika-lead {
+  margin-top: clamp(18px, 3vw, 30px);
+  font-size: clamp(22px, 3.2vw, 36px);
+  font-weight: 700;
+  line-height: 1.35;
+}
+.ika-sub {
+  margin-top: 16px;
+  max-width: 34em;
+  font-size: 15px;
+  line-height: 2;
+  color: rgba(247, 241, 227, 0.78);
+}
+.ika-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+.ika-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.ika-btn:hover { transform: translateY(-2px); }
+.ika-btn--primary {
+  background: var(--ika-red);
+  border-color: var(--ika-red);
+  color: var(--ika-ivory);
+  box-shadow: 4px 4px 0 var(--ika-navy-deep);
+}
+.ika-section .ika-btn--primary, .ika-join .ika-btn--primary { box-shadow: 4px 4px 0 var(--ika-navy); }
+
+/* イラスト */
+.ika-hero-art { position: relative; justify-self: center; }
+.ika-hero-img {
+  width: min(100%, 420px);
+  height: auto;
+  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.35));
+  transform: rotate(-4deg);
+}
+.ika-sticker {
+  position: absolute;
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--ika-ivory);
+  color: var(--ika-navy);
+  border: 3px solid var(--ika-navy);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ika-red);
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+}
+.ika-sticker--a { top: 6%; left: -6%; transform: rotate(-8deg); }
+.ika-sticker--b { bottom: 8%; right: -4%; transform: rotate(6deg); background: var(--ika-red); color: var(--ika-ivory); box-shadow: 4px 4px 0 var(--ika-ivory); }
+
+/* ダジャレの帯 */
+.ika-ticker {
+  position: relative;
+  border-top: 3px solid var(--ika-ivory);
+  background: var(--ika-red);
+  color: var(--ika-ivory);
+  overflow: hidden;
+  padding: 10px 0;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+.ika-ticker-track { display: flex; gap: 48px; width: max-content; animation: ika-marquee 28s linear infinite; }
+.ika-ticker-track span { white-space: nowrap; }
+.ika-ticker-track span::before { content: '◆'; font-size: 10px; margin-right: 18px; vertical-align: middle; opacity: 0.8; }
+@keyframes ika-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ika-ticker-track { animation: none; } }
+
+/* ---------- 部則 ---------- */
+
+.ika-rules { padding: clamp(28px, 4vw, 48px) 0 0; }
+.ika-rules-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.ika-rules-list li {
+  padding: 18px 20px;
+  border: 3px solid var(--ika-navy);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 5px 5px 0 var(--ika-navy);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.ika-rules-list li b { color: var(--ika-red); margin-right: 6px; }
+.ika-rules-list li:nth-child(2) { transform: rotate(0.6deg); }
+.ika-rules-list li:nth-child(3) { transform: rotate(-0.8deg); }
+
+/* ---------- 各セクション共通 ---------- */
+
+.ika-section { padding: clamp(56px, 8vw, 110px) 0; }
+.ika-section--tint { background: var(--ika-ivory-2); }
+.ika-section--navy { background: var(--ika-navy); color: var(--ika-ivory); }
+
+.ika-head { margin-bottom: clamp(24px, 4vw, 44px); }
+.ika-head .t-label { color: var(--ika-red); }
+.ika-section--navy .ika-head .t-label { color: var(--ika-red-soft); }
+.ika-head h2, .ika-join h2 {
+  margin-top: 8px;
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: clamp(30px, 4.6vw, 52px);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+.ika-head-note { margin-top: 10px; font-size: 15px; line-height: 2; opacity: 0.8; max-width: 40em; }
+.ika-more { margin-top: 28px; font-weight: 700; }
+.ika-more a:not(.ika-btn) { border-bottom: 2px solid var(--ika-red); padding-bottom: 2px; }
+
+/* ---------- 部活動の記録（カード） ---------- */
+
+.ika-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 28px); }
+.ika-card {
+  display: block;
+  background: #fff;
+  border: 3px solid var(--ika-navy);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 6px 6px 0 var(--ika-navy);
+  transition: transform 0.2s ease;
+}
+.ika-card:hover { transform: translate(-2px, -2px); }
+.ika-card figure { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-ivory-2); }
+.ika-card img { width: 100%; height: 100%; object-fit: cover; }
+.ika-card-body { padding: 16px 18px 18px; }
+.ika-card-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ika-red);
+  color: var(--ika-ivory);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.ika-card h3 { margin-top: 10px; font-size: 18px; font-weight: 900; line-height: 1.5; }
+.ika-card p { margin-top: 6px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
+
+/* ---------- 部員の掲示板（共通の投稿カードをイカ部の色に） ---------- */
+
+.ika-voices .report-card {
+  border: 3px solid var(--ika-navy);
+  border-radius: 18px;
+  box-shadow: 6px 6px 0 var(--ika-navy);
+  background: #fff;
+  overflow: hidden;
+}
+.ika-voices .report-place { font-family: var(--font-maru); font-weight: 900; }
+.ika-voices .report-tags span { background: var(--ika-red); color: var(--ika-ivory); font-weight: 700; }
+.ika-voices .report-flag { color: var(--ika-navy); }
+.ika-loading, .ika-empty { grid-column: 1 / -1; padding: 24px 0; font-weight: 700; opacity: 0.7; }
+.ika-voices .report-card.reveal { opacity: 1; transform: none; }
+/* 見本の投稿（本物の投稿が無いときにだけ出す） */
+.ika-sample { position: relative; }
+.ika-sample::after {
+  content: '見本';
+  position: absolute; top: 10px; right: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ika-navy);
+  color: var(--ika-ivory);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- 準備中のタイル ---------- */
+
+.ika-soon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 28px); }
+.ika-soon {
+  position: relative;
+  padding: 26px 22px 24px;
+  border: 3px dashed var(--ika-navy);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.ika-soon-tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--ika-navy);
+  color: var(--ika-ivory);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.ika-soon h3 { margin-top: 12px; font-size: 19px; font-weight: 900; line-height: 1.45; }
+.ika-soon p { margin-top: 6px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
+
+/* ---------- 部室で遊ぶ ---------- */
+
+.ika-games { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(16px, 2.4vw, 28px); }
+.ika-game {
+  display: flex; flex-direction: column;
+  padding: 28px 26px 24px;
+  background: var(--ika-ivory);
+  color: var(--ika-navy);
+  border: 3px solid var(--ika-ivory);
+  border-radius: 20px;
+  box-shadow: 6px 6px 0 var(--ika-red);
+  transition: transform 0.2s ease;
+}
+.ika-game:hover { transform: translate(-2px, -2px); }
+.ika-game-kind { color: var(--ika-red); }
+.ika-game h3 { margin-top: 10px; font-size: clamp(24px, 3vw, 32px); font-weight: 900; }
+.ika-game p { margin-top: 8px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
+.ika-game-go { margin-top: 20px; align-self: flex-start; font-weight: 900; border-bottom: 2px solid var(--ika-red); }
+
+/* ---------- 入部 ---------- */
+
+.ika-join {
+  background: var(--ika-red);
+  color: var(--ika-ivory);
+  padding: clamp(56px, 8vw, 100px) 0;
+}
+.ika-join-inner { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(24px, 4vw, 56px); }
+.ika-join-badge { width: clamp(120px, 16vw, 200px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(22, 35, 58, 0.35)); }
+.ika-join .t-label { color: var(--ika-ivory); opacity: 0.8; }
+.ika-join p:not(.t-label) { margin-top: 12px; font-size: 16px; line-height: 2; max-width: 36em; }
+.ika-join .ika-btn--primary { background: var(--ika-navy); border-color: var(--ika-navy); box-shadow: 4px 4px 0 var(--ika-ivory); }
+
+/* ---------- スマホ ---------- */
+
+@media (max-width: 900px) {
+  .ika-rules-list, .ika-cards, .ika-soon-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .ika-hero-grid { grid-template-columns: 1fr; gap: 12px; }
+  /* スマホではロゴの中にイカがいるので、右側の大きなイカは出さない（本番のメインイラストが出来たら再検討） */
+  .ika-hero-art { display: none; }
+  .ika-hero { padding-top: 96px; }
+  .ika-rules-list, .ika-cards, .ika-soon-grid, .ika-games { grid-template-columns: 1fr; }
+  .ika-join-inner { grid-template-columns: 1fr; }
+  .ika-join-badge { width: 120px; }
+  /* 下のタブバーに隠れないように */
+  .ikabu .site-footer { padding-bottom: 80px; }
+}
+
+.sp-only { display: none; }
+@media (max-width: 760px) { .sp-only { display: inline; } }

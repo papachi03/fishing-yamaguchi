@@ -48,6 +48,7 @@ export default defineConfig({
         tackle: resolve(__dirname, 'tackle.html'),
         reports: resolve(__dirname, 'reports.html'),
         invite: resolve(__dirname, 'invite.html'),
+        ikabu: resolve(__dirname, 'ikabu/index.html'),
       },
     },
   },

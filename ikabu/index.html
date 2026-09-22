@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>山口イカ部 — イカが好き。それだけで、部員。| YAMAGUCHI FISHING JOURNAL</title>
+  <meta name="description" content="山口在住の釣り人が始めた、イカ好きの部活。釣っても、食べても、眺めるだけでも部員。萩・長門・下関のイカ釣り、イカ料理、みんなの声、イカのパズルまで。" />
+  <link rel="canonical" href="https://yamaguchifishing.com/ikabu/" />
+  <meta property="og:title" content="山口イカ部 — イカが好き。それだけで、部員。" />
+  <meta property="og:description" content="山口在住の釣り人が始めた、イカ好きの部活。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yamaguchifishing.com/ikabu/" />
+  <meta property="og:site_name" content="YAMAGUCHI FISHING JOURNAL" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <!-- ラフ案の間は検索に載せない。正式公開のときにこの行を外す -->
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Shippori+Mincho+B1:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/css/style.css" />
+  <link rel="stylesheet" href="/src/css/ikabu.css" />
+</head>
+<body class="ikabu">
+  <a class="skip-link" href="#main">本文へスキップ</a>
+  <main id="main">
+
+    <!-- ===== HERO ===== -->
+    <section class="ika-hero">
+      <div class="wrap ika-hero-grid">
+        <div class="ika-hero-text">
+          <p class="ika-kicker t-label">Yamaguchi Ika-bu / since 2026</p>
+          <h1 class="ika-title">
+            <img class="ika-logo" src="/assets/ikabu/logo_1200.png" srcset="/assets/ikabu/logo_600.png 600w, /assets/ikabu/logo_1200.png 1200w" sizes="(max-width: 760px) 86vw, 560px" alt="山口イカ部 — YAMAGUCHI IKA CLUB" width="1200" height="438" />
+          </h1>
+          <p class="ika-lead">イカが好き。<br />それだけで、部員。</p>
+          <p class="ika-sub">山口在住の釣り人が始めた、イカ好きの部活です。釣っても、食べても、眺めるだけでも。釣り場は言わなくていい、釣れなくても部員。</p>
+          <div class="ika-cta">
+            <a class="ika-btn ika-btn--primary" href="#join">入部する</a>
+            <a class="ika-btn" href="#voices">部員の声を見る</a>
+          </div>
+        </div>
+        <div class="ika-hero-art" aria-hidden="true">
+          <!-- ここに ChatGPT で生成したイカ部のメインイラストが入る（今は小松さんのステッカー案を仮置き） -->
+          <img class="ika-hero-img" src="/assets/ikabu/hero_placeholder.png" alt="" width="640" height="681" />
+          <span class="ika-sticker ika-sticker--a">釣り場は<br />言わなくてOK</span>
+          <span class="ika-sticker ika-sticker--b">部費 0円</span>
+        </div>
+      </div>
+      <div class="ika-ticker" aria-hidden="true">
+        <div class="ika-ticker-track">
+          <span>いかが？</span><span>いかしてる！</span><span>まぁ、いっか。</span><span>いかほど？</span><span>いかんせん、眠い。</span><span>いかないで！</span>
+          <span>いかが？</span><span>いかしてる！</span><span>まぁ、いっか。</span><span>いかほど？</span><span>いかんせん、眠い。</span><span>いかないで！</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 部則 ===== -->
+    <section class="ika-rules">
+      <div class="wrap">
+        <ol class="ika-rules-list">
+          <li><b>一、</b>釣り場は、言わなくていい。</li>
+          <li><b>二、</b>釣れなくても、部員。</li>
+          <li><b>三、</b>ダジャレは、減点しない。</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== 部活動の記録 ===== -->
+    <section class="ika-section" id="activity">
+      <div class="wrap">
+        <header class="ika-head">
+          <p class="t-label">01 / Activity</p>
+          <h2>部活動の記録</h2>
+          <p class="ika-head-note">ジャーナル本編よりも、ゆるめに。釣った日も、釣れなかった日も。</p>
+        </header>
+        <div class="ika-cards" id="activity-cards"></div>
+        <p class="ika-more"><a href="/journal.html">本気の釣行記録はジャーナルへ →</a></p>
+      </div>
+    </section>
+
+    <!-- ===== 部員の声 ===== -->
+    <section class="ika-section ika-section--tint" id="voices">
+      <div class="wrap">
+        <header class="ika-head">
+          <p class="t-label">02 / Voices</p>
+          <h2>部員の掲示板</h2>
+          <p class="ika-head-note">「現地の声」のうち、イカの投稿だけをここに集めます。投稿の仕組みはそのまま、見た目だけイカ部仕様。</p>
+        </header>
+        <div class="report-grid ika-voices" id="ika-voices"><p class="ika-loading">掲示板を読み込んでいます…</p></div>
+        <p class="ika-more"><a class="ika-btn ika-btn--primary" href="/reports.html">イカの声を投稿する</a></p>
+      </div>
+    </section>
+
+    <!-- ===== 捌く・食べる ===== -->
+    <section class="ika-section" id="cook">
+      <div class="wrap">
+        <header class="ika-head">
+          <p class="t-label">03 / Cook</p>
+          <h2>捌く・食べる</h2>
+          <p class="ika-head-note">釣ったイカをどう食べるか。捌き方とレシピは動画で。（料理会はやりません。台所は各自で。）</p>
+        </header>
+        <div class="ika-soon-grid">
+          <div class="ika-soon">
+            <span class="ika-soon-tag">準備中</span>
+            <h3>ケンサキイカの捌き方</h3>
+            <p>皮むきから刺身まで、3分で。</p>
+          </div>
+          <div class="ika-soon">
+            <span class="ika-soon-tag">準備中</span>
+            <h3>コウイカの墨、どうする？</h3>
+            <p>捨てないで。イカ墨パスタになります。</p>
+          </div>
+          <div class="ika-soon">
+            <span class="ika-soon-tag">募集中</span>
+            <h3>部員のレシピ</h3>
+            <p>「うちはこう食べる」を掲示板へ。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 部室で遊ぶ ===== -->
+    <section class="ika-section ika-section--navy" id="play">
+      <div class="wrap">
+        <header class="ika-head">
+          <p class="t-label">04 / Play</p>
+          <h2>部室で遊ぶ</h2>
+          <p class="ika-head-note">釣りに行けない日のために。イカのパズルを2つ。</p>
+        </header>
+        <div class="ika-games">
+          <a class="ika-game" href="https://yamaguchi-ika-club.swyk-blue.chatgpt.site/atelier.html" target="_blank" rel="noopener">
+            <span class="ika-game-kind t-label">24手・直線パズル</span>
+            <h3>墨ぺたアトリエ</h3>
+            <p>同じ印のイカを一直線につないで、山口の景色を刷り上げる。</p>
+            <span class="ika-game-go">遊ぶ ↗</span>
+          </a>
+          <a class="ika-game" href="https://yamaguchi-ika-club.swyk-blue.chatgpt.site/play.html" target="_blank" rel="noopener">
+            <span class="ika-game-kind t-label">20手・3マッチパズル</span>
+            <h3>墨つなぎ</h3>
+            <p>隣の2匹を入れ替えて3匹そろえる。連鎖で墨をためよう。</p>
+            <span class="ika-game-go">遊ぶ ↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== そのうち ===== -->
+    <section class="ika-section" id="soon">
+      <div class="wrap">
+        <header class="ika-head">
+          <p class="t-label">05 / Someday</p>
+          <h2>そのうち、やりたいこと</h2>
+          <p class="ika-head-note">部員が増えてから。焦らずに。</p>
+        </header>
+        <div class="ika-soon-grid">
+          <div class="ika-soon">
+            <span class="ika-soon-tag">構想中</span>
+            <h3>部員証ステッカー</h3>
+            <p>クーラーボックスに貼る用。置いてくれるお店、探し中。</p>
+          </div>
+          <div class="ika-soon">
+            <span class="ika-soon-tag">構想中</span>
+            <h3>協力してくれるお店</h3>
+            <p>「イカ部の部員です」で何かいいことがある店。</p>
+          </div>
+          <div class="ika-soon">
+            <span class="ika-soon-tag">いつか</span>
+            <h3>釣ったイカを、お店で。</h3>
+            <p>気軽に頼める仲になってから。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 入部 ===== -->
+    <section class="ika-join" id="join">
+      <div class="wrap ika-join-inner">
+        <img class="ika-join-badge" src="/assets/ikabu/badge_ikaga.png" alt="" width="180" height="200" aria-hidden="true" />
+        <div>
+          <p class="t-label">Join</p>
+          <h2>入部届は、<br class="sp-only" />いりません。</h2>
+          <p>Instagramをフォローして、イカの投稿に「いかしてる！」と書けば、もう部員です。</p>
+          <div class="ika-cta">
+            <a class="ika-btn ika-btn--primary" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">Instagramをフォロー</a>
+            <a class="ika-btn" href="/reports.html">掲示板に書く</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <footer class="site-footer"><div id="footer-mount"></div></footer>
+  <script type="module" src="/src/js/pages/ikabu.js"></script>
+</body>
+</html>

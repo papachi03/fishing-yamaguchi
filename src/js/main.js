@@ -17,6 +17,7 @@ const NAV = [
   { href: '/spots.html', label: 'Spots' },
   { href: '/sea.html', label: 'Sea' },
   { href: '/reports.html', label: 'Reports' },
+  { href: '/ikabu/', label: 'Ikabu' },
   { href: '/tackle.html', label: 'Tackle' },
   { href: '/about.html', label: 'About' },
 ];
