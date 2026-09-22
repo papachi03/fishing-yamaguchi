@@ -17,6 +17,10 @@
     [[kv_namespaces]]
     binding = "REPORTS_KV"
     id = "<yfj-reports の KV namespace id>"
+
+    # 毎朝5:00（日本時間）の堤防判定のX投稿下書き（src/morning.js）。UTC表記
+    [triggers]
+    crons = ["0 20 * * *"]
     ```
   - secretの登録も同じ場所から：`printf '%s' '<値>' | npx wrangler secret put <名前>`
   - `npx wrangler login` は要らない（このPCは既に認証済み。Avastが `wrangler login` を誤検知する問題があるので、loginはやり直さない）

@@ -22,6 +22,7 @@ import { FISH } from '../../../src/js/data/report-options.js';
 import { requireSignSecret } from './auth.js';
 import { notifyNewPost, notifyHidden } from './notify.js';
 import { handleAdmin } from './admin.js';
+import { sendMorningDraft } from './morning.js';
 
 // vary は許可・不許可にかかわらず必ず付ける。付け忘れると、CORSヘッダーの無い応答が
 // 途中のキャッシュに載り、あとから許可originの人に配られてしまう（/posts は30秒キャッシュ）
@@ -75,6 +76,11 @@ export default {
       console.error('unhandled', err && err.stack ? err.stack : String(err));
       return json({ ok: false, error: '処理中に問題が起きました。時間をおいてもう一度お試しください。' }, 500, request);
     }
+  },
+
+  // Cloudflareの定期実行（wrangler.toml の [triggers] crons）。毎朝5:00に堤防判定の下書きを送る
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(sendMorningDraft(env));
   },
 };
 
