@@ -2,8 +2,6 @@
   "name": "YAMAGUCHI FISHING JOURNAL",
   "short_name": "YFJ",
   "description": "山口の海と、ダディの釣り。萩・長門・下関・下松・防府の海況・釣り場・現地の声。",
-  "start_url": "/?utm_source=homescreen&utm_medium=pwa",
-  "id": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
