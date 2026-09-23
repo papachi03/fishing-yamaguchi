@@ -1,6 +1,16 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { prerenderSea } from './scripts/prerender-sea.mjs';
+import { prerenderIkabu, closePrerenderIkabu } from './scripts/prerender-ikabu.mjs';
+import { IKABU_PAGES } from './scripts/gen-ikabu-shells.mjs';
+
+// イカ部：ikabu/<page>.html と ikabu/en/<page>.html（殻は scripts/gen-ikabu-shells.mjs が作る）
+const ikabuInputs = Object.fromEntries(
+  IKABU_PAGES.flatMap((p) => [
+    [`ikabu-${p}`, resolve(__dirname, `ikabu/${p}.html`)],
+    [`ikabu-en-${p}`, resolve(__dirname, `ikabu/en/${p}.html`)],
+  ])
+);
 
 export default defineConfig({
   // GitHub Pages のサブフォルダ配置に対応。CIでは SITE_BASE=/fishing-yamaguchi/ を渡す。
@@ -35,6 +45,19 @@ export default defineConfig({
         },
       },
     },
+    {
+      // イカ部：/ikabu/ 配下の殻に、ブラウザと同じ render(lang) でヘッダー・本文・フッターを書き込む
+      // （詳細は scripts/prerender-ikabu.mjs）。dev ではブラウザ側で描く
+      name: 'prerender-ikabu',
+      apply: 'build',
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html, ctx) {
+          return prerenderIkabu(html, { filename: ctx.filename, root: __dirname, base: process.env.SITE_BASE || '/' });
+        },
+      },
+      closeBundle: closePrerenderIkabu,
+    },
   ],
   build: {
     rollupOptions: {
@@ -48,7 +71,7 @@ export default defineConfig({
         tackle: resolve(__dirname, 'tackle.html'),
         reports: resolve(__dirname, 'reports.html'),
         invite: resolve(__dirname, 'invite.html'),
-        ikabu: resolve(__dirname, 'ikabu/index.html'),
+        ...ikabuInputs,
       },
     },
   },
