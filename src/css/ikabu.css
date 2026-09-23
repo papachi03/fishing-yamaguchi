@@ -1,317 +1,744 @@
 /* ==========================================================================
    山口イカ部 — /ikabu/ 専用の見た目
-   土台（ヘッダー・フッター・投稿カード）は style.css を共有し、
-   色・書体・空気だけをイカ部に置き換える。
-   色はステッカー案から採取：紺 / アイボリー / 朱
+   style.css（YFJ）の上に重ねる。ページ全体を .ikabu で包み、色はここでだけ決める。
+
+   配色：マイアミ・ハリケーンズのグリーン #005030 × オレンジ #F47321 × 白。
+   ロゴとイラストは紺・アイボリー・朱のままなので、白い「ワッペン」や
+   白い「ステッカー枠」に載せてグリーンの地となじませる。
+   空気：大学の運動部（バーシティ文字・3本ストライプ・背番号・チケット）× 海辺。
+
+   文字の色の組み合わせ（WCAG AA を確かめたもの）
+     白 on グリーン           9.6 : 1  ○ 本文OK
+     グリーン on 白           9.6 : 1  ○ 本文OK
+     墨（--ika-ink）on オレンジ 5.4 : 1  ○ 本文OK  → オレンジのボタンの文字は墨
+     白 on オレンジ           2.9 : 1  × 使わない
+     オレンジ on 白           2.9 : 1  × 小さな文字には使わない（塗り・線・24px以上の飾り文字だけ）
+     オレンジ on グリーン     3.3 : 1  △ 24px以上の飾り文字だけ
    ========================================================================== */
 
 .ikabu {
-  --ika-navy: #1f2f45;      /* ステッカーの線の紺 */
-  --ika-navy-deep: #16233a;
-  --ika-ivory: #f7f1e3;     /* ステッカーの地 */
-  --ika-ivory-2: #efe6d2;
-  --ika-red: #d9552a;       /* 差し色の朱 */
-  --ika-red-soft: #f0b79f;
-  --ika-sea: #5b8f8b;       /* 山口の海（薄め） */
-  --font-maru: 'Zen Maru Gothic', 'Zen Kaku Gothic New', sans-serif;
+  --ika-green: #005030;
+  --ika-green-deep: #003b23;
+  --ika-green-line: #0a6a42;      /* グリーンの上の薄い線 */
+  --ika-orange: #f47321;
+  --ika-orange-deep: #d95f12;
+  --ika-white: #ffffff;
+  --ika-mist: #eef4ef;            /* うっすら緑がかった白（帯の背景） */
+  --ika-ink: #0f2a1d;             /* 本文の墨（緑寄りの黒） */
+  --ika-ink-soft: #46584f;        /* 補足の文字（白の上で 7 : 1） */
+  --ika-shadow: var(--ika-green);
 
-  background: var(--ika-ivory);
-  color: var(--ika-navy);
-  font-family: var(--font-maru);
+  --font-maru: 'Zen Maru Gothic', 'Zen Kaku Gothic New', 'Hiragino Maru Gothic ProN', sans-serif;
+  --font-varsity: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-text: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', sans-serif;
+  --ika-gutter: clamp(16px, 4vw, 56px);
+  --ika-radius: 18px;
+
+  background: var(--ika-white);
+  color: var(--ika-ink);
+  font-family: var(--font-text);
+  padding-bottom: 0;          /* style.css がスマホで足すタブバー分の余白を打ち消す */
+}
+.ikabu .wrap { padding-inline: var(--ika-gutter); }
+.ikabu ::selection { background: var(--ika-orange); color: var(--ika-ink); }
+.ikabu :focus-visible { outline: 3px solid var(--ika-orange); outline-offset: 3px; }
+.ikabu .skip-link { background: var(--ika-orange); color: var(--ika-ink); font-weight: 700; }
+
+/* 3本ストライプ（緑・オレンジ・緑）：ユニフォームの袖の線 */
+.ika-stripe {
+  height: 10px;
+  background: linear-gradient(var(--ika-green) 0 30%, var(--ika-white) 30% 40%, var(--ika-orange) 40% 60%, var(--ika-white) 60% 70%, var(--ika-green) 70%);
 }
 
-/* 共通ヘッダーの上に薄く紺を敷いて、白いロゴが読めるようにする */
-.ikabu .site-header { background: linear-gradient(rgba(22, 35, 58, 0.85), rgba(22, 35, 58, 0)); }
-.ikabu .site-header.is-scrolled { background: rgba(22, 35, 58, 0.9); }
-.ikabu .main-nav a[aria-current='page'] { border-color: var(--ika-red); }
+/* 英字の小見出し（バーシティ書体） */
+.ika-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ika-green);
+}
+.ika-eyebrow-num {
+  display: inline-grid; place-items: center;
+  min-width: 34px; height: 26px; padding: 0 6px;
+  background: var(--ika-green);
+  color: var(--ika-white);
+  border-radius: 6px;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+.ika-eyebrow--ink { color: var(--ika-ink); }
+.ika-eyebrow--ink .ika-eyebrow-num { background: var(--ika-ink); }
 
-/* ---------- HERO ---------- */
+/* ナビの背番号 */
+.ika-nav-num {
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  margin-right: 0.5em;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   ヘッダー
+   ========================================================================== */
+
+#ika-header { position: sticky; top: 0; z-index: 100; }
+.ika-header-bar { background: var(--ika-white); }
+.ika-header-inner {
+  display: flex; align-items: center; gap: 24px;
+  min-height: 72px;
+  padding-block: 10px;
+}
+.ika-brand { flex: none; display: block; line-height: 0; }
+.ika-brand img { width: auto; height: 46px; }
+
+.ika-nav { flex: 1; min-width: 0; }
+.ika-nav ul { display: flex; flex-wrap: nowrap; gap: 2px; justify-content: center; }
+.ika-nav a {
+  display: inline-block;
+  padding: 8px 9px;
+  border-radius: 8px;
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ika-green);
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.ika-nav a:hover { background: var(--ika-mist); }
+.ika-nav a[aria-current='page'] { background: var(--ika-green); color: var(--ika-white); }
+.ika-nav a[aria-current='page'] .ika-nav-num { opacity: 1; color: var(--ika-orange); }
+
+.ika-header-tools { flex: none; display: flex; align-items: center; gap: 14px; }
+
+.ika-lang { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ika-green); }
+.ika-lang a { padding: 6px 8px; border-radius: 999px; line-height: 1; transition: background 0.2s; }
+.ika-lang a:hover { background: var(--ika-mist); }
+.ika-lang a[aria-current='true'] { background: var(--ika-green); color: var(--ika-white); }
+.ika-lang span { opacity: 0.4; }
+
+.ika-yfj {
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--ika-green);
+  border-bottom: 2px solid var(--ika-orange);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+.ika-yfj-arrow { margin-right: 6px; }
+
+/* スマホのメニューボタン */
+.ika-menu-btn {
+  display: none;
+  align-items: center; gap: 8px;
+  min-height: 44px; padding: 6px 12px;
+  border: 3px solid var(--ika-green);
+  border-radius: 10px;
+  color: var(--ika-green);
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+.ika-menu-bars { display: grid; gap: 4px; width: 18px; }
+.ika-menu-bars i { display: block; height: 3px; border-radius: 2px; background: currentColor; }
+.ika-menu-btn[aria-expanded='true'] { background: var(--ika-green); color: var(--ika-white); }
+
+.ika-menu {
+  background: var(--ika-green);
+  color: var(--ika-white);
+  padding: 22px 0 26px;
+  box-shadow: 0 20px 40px rgba(0, 59, 35, 0.35);
+}
+.ika-menu-eyebrow { font-family: var(--font-maru); font-weight: 900; font-size: 18px; margin-bottom: 12px; }
+.ika-menu-list { display: grid; gap: 2px; }
+.ika-menu-list a {
+  display: flex; align-items: center;
+  min-height: 48px; padding: 6px 12px;
+  border-radius: 10px;
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: 17px;
+}
+.ika-menu-list a:hover, .ika-menu-list a[aria-current='page'] { background: rgba(255, 255, 255, 0.12); }
+.ika-menu-list a[aria-current='page'] .ika-nav-num { color: var(--ika-orange); opacity: 1; }
+.ika-menu-list .ika-nav-num { font-size: 15px; min-width: 2.2em; }
+.ika-menu-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--ika-green-line); }
+.ika-lang--menu { color: var(--ika-white); font-size: 15px; }
+.ika-lang--menu a[aria-current='true'] { background: var(--ika-white); color: var(--ika-green); }
+.ika-menu .ika-yfj { color: var(--ika-white); }
+
+/* ==========================================================================
+   ボタン
+   ========================================================================== */
+
+.ika-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px;
+  padding: 10px 26px;
+  border-radius: 999px;
+  border: 3px solid var(--ika-ink);
+  background: var(--ika-white);
+  color: var(--ika-ink);
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  box-shadow: 4px 4px 0 var(--ika-ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ika-btn:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--ika-ink); }
+.ika-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ika-ink); }
+.ika-btn--primary { background: var(--ika-orange); border-color: var(--ika-ink); color: var(--ika-ink); }
+.ika-btn--green { background: var(--ika-green); border-color: var(--ika-green); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-ink); }
+.ika-btn--ink { background: var(--ika-ink); border-color: var(--ika-ink); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-white); }
+.ika-btn--ink:hover { box-shadow: 6px 6px 0 var(--ika-white); }
+.ika-btn--ghost { background: transparent; border-color: var(--ika-white); color: var(--ika-white); box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.35); }
+.ika-btn--ghost:hover { box-shadow: 6px 6px 0 rgba(255, 255, 255, 0.35); }
+.ika-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+
+/* ==========================================================================
+   HERO
+   ========================================================================== */
 
 .ika-hero {
   position: relative;
-  background:
-    radial-gradient(60% 50% at 78% 40%, rgba(217, 85, 42, 0.16), transparent 70%),
-    var(--ika-navy);
-  color: var(--ika-ivory);
-  padding-top: clamp(110px, 16vh, 170px);
+  background: var(--ika-green);
+  color: var(--ika-white);
   overflow: hidden;
 }
-/* 地の紙のような細かい点 */
+/* 斜めの細いピンストライプ：ユニフォームの生地 */
 .ika-hero::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: radial-gradient(rgba(247, 241, 227, 0.08) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background: repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.045) 18px 20px);
+  pointer-events: none;
+}
+/* 右下に大きなオレンジの弧（夕日）：イラストの朱とつなぐ */
+.ika-hero::after {
+  content: '';
+  position: absolute;
+  right: -12vw; bottom: -30vw;
+  width: 60vw; height: 60vw;
+  max-width: 760px; max-height: 760px;
+  border-radius: 50%;
+  border: 22px solid rgba(244, 115, 33, 0.22);
   pointer-events: none;
 }
 .ika-hero-grid {
-  position: relative;
+  position: relative; z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(24px, 4vw, 64px);
-  padding-bottom: clamp(48px, 8vw, 96px);
+  gap: clamp(28px, 5vw, 72px);
+  padding-top: clamp(40px, 6vw, 80px);
+  padding-bottom: clamp(56px, 8vw, 104px);
 }
-.ika-kicker { color: var(--ika-red-soft); margin-bottom: 18px; }
+
+/* ペナント（三角旗）の小見出し */
+.ika-pennant {
+  display: inline-flex; align-items: center; gap: 12px;
+  margin-bottom: 22px;
+  padding: 6px 30px 6px 14px;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 50%, 100% 100%, 0 100%);
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+}
+.ika-pennant span + span::before { content: '★'; margin-right: 12px; font-size: 10px; }
+
+/* ロゴのワッペン：白い縁つきの布地で、紺のロゴをグリーンの上に載せる */
 .ika-title { line-height: 0; }
-.ika-logo {
-  width: min(100%, 560px);
-  height: auto;
-  filter: drop-shadow(6px 8px 0 rgba(217, 85, 42, 0.55));
+.ika-logo-patch {
+  display: inline-block;
+  padding: clamp(14px, 2.4vw, 26px) clamp(18px, 3vw, 34px);
+  background: var(--ika-white);
+  border-radius: 22px;
+  box-shadow: 0 0 0 4px var(--ika-white), 0 0 0 7px var(--ika-green), 0 0 0 11px var(--ika-orange), 10px 12px 0 11px var(--ika-green-deep);
+  transform: rotate(-1.2deg);
+  max-width: 100%;
 }
+.ika-logo { width: min(100%, 520px); height: auto; }
+
 .ika-lead {
-  margin-top: clamp(18px, 3vw, 30px);
-  font-size: clamp(22px, 3.2vw, 36px);
-  font-weight: 700;
-  line-height: 1.35;
+  margin-top: clamp(30px, 4vw, 44px);
+  font-family: var(--font-maru);
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
 }
 .ika-sub {
   margin-top: 16px;
-  max-width: 34em;
+  max-width: 32em;
   font-size: 15px;
   line-height: 2;
-  color: rgba(247, 241, 227, 0.78);
+  color: rgba(255, 255, 255, 0.86);
 }
-.ika-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 
-.ika-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 48px;
-  padding: 10px 24px;
-  border-radius: 999px;
-  border: 2px solid currentColor;
-  font-family: var(--font-maru);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.06em;
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-}
-.ika-btn:hover { transform: translateY(-2px); }
-.ika-btn--primary {
-  background: var(--ika-red);
-  border-color: var(--ika-red);
-  color: var(--ika-ivory);
-  box-shadow: 4px 4px 0 var(--ika-navy-deep);
-}
-.ika-section .ika-btn--primary, .ika-join .ika-btn--primary { box-shadow: 4px 4px 0 var(--ika-navy); }
-
-/* イラスト（ChatGPT生成のメインビジュアル。ロゴと同じイカ） */
-.ika-hero-art { position: relative; justify-self: end; width: 100%; }
-.ika-hero-img {
-  width: 100%;
-  height: auto;
-  border: 4px solid var(--ika-ivory);
-  border-radius: 22px;
-  box-shadow: 10px 10px 0 var(--ika-red);
+/* イラスト：ステッカー枠（白い縁＋オレンジの厚み）で少し傾ける */
+.ika-hero-art { position: relative; justify-self: end; width: 100%; padding: 14px 18px 18px 6px; }
+.ika-hero-frame {
+  border: 6px solid var(--ika-white);
+  border-radius: 20px;
+  background: var(--ika-white);
+  box-shadow: 0 0 0 3px var(--ika-green-deep), 12px 12px 0 3px var(--ika-orange);
   transform: rotate(-2deg);
+  overflow: hidden;
 }
+.ika-hero-img { width: 100%; height: auto; border-radius: 14px; }
+
 .ika-sticker {
-  position: absolute;
+  position: absolute; z-index: 2;
   display: inline-block;
-  padding: 8px 16px;
-  background: var(--ika-ivory);
-  color: var(--ika-navy);
-  border: 3px solid var(--ika-navy);
+  padding: 10px 16px;
+  background: var(--ika-white);
+  color: var(--ika-green);
+  border: 3px solid var(--ika-green);
   border-radius: 14px;
-  box-shadow: 4px 4px 0 var(--ika-red);
+  box-shadow: 4px 4px 0 var(--ika-orange);
+  font-family: var(--font-maru);
   font-weight: 900;
   font-size: 14px;
   line-height: 1.35;
   text-align: center;
   white-space: nowrap;
 }
-.ika-sticker--a { top: 6%; left: -6%; transform: rotate(-8deg); }
-.ika-sticker--b { bottom: 8%; right: -4%; transform: rotate(6deg); background: var(--ika-red); color: var(--ika-ivory); box-shadow: 4px 4px 0 var(--ika-ivory); }
+.ika-sticker--a { top: -4px; left: -10px; transform: rotate(-7deg); }
+.ika-sticker--b {
+  bottom: 2px; right: 0;
+  transform: rotate(5deg);
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  border-color: var(--ika-white);
+  box-shadow: 4px 4px 0 var(--ika-green-deep);
+  font-size: 16px;
+}
+.ika-sticker--b b { font-family: var(--font-varsity); font-weight: 800; font-size: 1.6em; line-height: 1; vertical-align: -0.08em; margin: 0 2px; }
 
-/* ダジャレの帯 */
+/* ダジャレの帯：オレンジの地に墨の文字（白抜きは AA を満たさないため） */
 .ika-ticker {
-  position: relative;
-  border-top: 3px solid var(--ika-ivory);
-  background: var(--ika-red);
-  color: var(--ika-ivory);
+  position: relative; z-index: 1;
+  border-top: 4px solid var(--ika-white);
+  border-bottom: 4px solid var(--ika-white);
+  background: var(--ika-orange);
+  color: var(--ika-ink);
   overflow: hidden;
   padding: 10px 0;
+  font-family: var(--font-maru);
   font-weight: 900;
-  font-size: 18px;
+  font-size: 17px;
   letter-spacing: 0.08em;
 }
-.ika-ticker-track { display: flex; gap: 48px; width: max-content; animation: ika-marquee 28s linear infinite; }
+.ika-ticker-track { display: flex; gap: 44px; width: max-content; animation: ika-marquee 40s linear infinite; }
 .ika-ticker-track span { white-space: nowrap; }
-.ika-ticker-track span::before { content: '◆'; font-size: 10px; margin-right: 18px; vertical-align: middle; opacity: 0.8; }
+.ika-ticker-track span::before { content: '◆'; font-size: 9px; margin-right: 16px; vertical-align: middle; color: var(--ika-green); }
 @keyframes ika-marquee { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .ika-ticker-track { animation: none; } }
 
-/* ---------- 部則 ---------- */
+/* ==========================================================================
+   部則（チケットの半券）
+   ========================================================================== */
 
-.ika-rules { padding: clamp(28px, 4vw, 48px) 0 0; }
-.ika-rules-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+.ika-rules { padding: clamp(28px, 4vw, 44px) 0 0; }
+.ika-rules-label {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.22em;
+  color: var(--ika-green);
 }
+.ika-rules-label span { font-family: var(--font-maru); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; color: var(--ika-ink-soft); }
+.ika-rules-label::after { content: ''; flex: 1; height: 3px; background: repeating-linear-gradient(90deg, var(--ika-green) 0 12px, transparent 12px 20px); opacity: 0.35; }
+.ika-rules-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .ika-rules-list li {
-  padding: 18px 20px;
-  border: 3px solid var(--ika-navy);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 5px 5px 0 var(--ika-navy);
-  font-weight: 700;
-  font-size: 17px;
-  line-height: 1.5;
-}
-.ika-rules-list li b { color: var(--ika-red); margin-right: 6px; }
-.ika-rules-list li:nth-child(2) { transform: rotate(0.6deg); }
-.ika-rules-list li:nth-child(3) { transform: rotate(-0.8deg); }
-
-/* ---------- 各セクション共通 ---------- */
-
-.ika-section { padding: clamp(56px, 8vw, 110px) 0; }
-.ika-section--tint { background: var(--ika-ivory-2); }
-.ika-section--navy { background: var(--ika-navy); color: var(--ika-ivory); }
-
-.ika-head { margin-bottom: clamp(24px, 4vw, 44px); }
-.ika-head .t-label { color: var(--ika-red); }
-.ika-section--navy .ika-head .t-label { color: var(--ika-red-soft); }
-.ika-head h2, .ika-join h2 {
-  margin-top: 8px;
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px;
+  padding: 16px 20px 16px 16px;
+  background: var(--ika-white);
+  border: 3px solid var(--ika-green);
+  border-radius: 14px;
+  box-shadow: 5px 5px 0 var(--ika-green);
   font-family: var(--font-maru);
-  font-weight: 900;
-  font-size: clamp(30px, 4.6vw, 52px);
-  line-height: 1.2;
+  font-weight: 700;
+  font-size: 16.5px;
+  line-height: 1.5;
+  /* 左右の丸い切れ込み＝半券のミシン目 */
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px), radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle at 0 50%, transparent 9px, #000 9.5px), radial-gradient(circle at 100% 50%, transparent 9px, #000 9.5px);
+  mask-composite: intersect;
+}
+.ika-rule-num {
+  display: grid; place-items: center;
+  width: 44px; height: 44px;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  border-radius: 10px;
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 22px;
   letter-spacing: 0.02em;
 }
-.ika-head-note { margin-top: 10px; font-size: 15px; line-height: 2; opacity: 0.8; max-width: 40em; }
-.ika-more { margin-top: 28px; font-weight: 700; }
-.ika-more a:not(.ika-btn) { border-bottom: 2px solid var(--ika-red); padding-bottom: 2px; }
+.ika-rules-list li:nth-child(2) { transform: rotate(0.5deg); }
+.ika-rules-list li:nth-child(3) { transform: rotate(-0.7deg); }
 
-/* ---------- 部活動の記録（カード） ---------- */
+/* ==========================================================================
+   各セクション共通
+   ========================================================================== */
+
+.ika-section { padding: clamp(56px, 8vw, 104px) 0; }
+.ika-section--tint { background: var(--ika-mist); }
+.ika-section--board {
+  background: var(--ika-green);
+  color: var(--ika-white);
+  /* コルクボードのような点 */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.2px, transparent 1.3px);
+  background-size: 18px 18px;
+}
+.ika-section--board .ika-eyebrow { color: var(--ika-white); }
+.ika-section--board .ika-eyebrow-num { background: var(--ika-orange); color: var(--ika-ink); }
+.ika-section--board .ika-head-note { color: rgba(255, 255, 255, 0.82); }
+
+.ika-head { margin-bottom: clamp(26px, 4vw, 44px); }
+.ika-head h2, .ika-join h2, .ika-page-title {
+  margin-top: 12px;
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: clamp(28px, 4.4vw, 48px);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+.ika-head-note { margin-top: 12px; font-size: 15px; line-height: 2; color: var(--ika-ink-soft); max-width: 40em; }
+.ika-more { margin-top: 30px; font-family: var(--font-maru); font-weight: 700; }
+.ika-more a:not(.ika-btn) { border-bottom: 3px solid var(--ika-orange); padding-bottom: 2px; color: var(--ika-green); }
+
+/* ==========================================================================
+   入口（7つの部活動）：12列のグリッドで 3 + 4 に並べる
+   ========================================================================== */
+
+.ika-entries { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(14px, 2vw, 22px); }
+.ika-entry { grid-column: span 4; }
+.ika-entry:nth-child(n + 4) { grid-column: span 3; }
+.ika-entry {
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: 22px 22px 20px;
+  background: var(--ika-white);
+  border: 3px solid var(--ika-green);
+  border-radius: var(--ika-radius);
+  box-shadow: 6px 6px 0 var(--ika-green);
+  color: var(--ika-ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+.ika-entry:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ika-orange); }
+/* 背番号：右上に大きく、薄いオレンジの縁取り文字 */
+.ika-entry-num {
+  position: absolute; top: 6px; right: 14px;
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 64px;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--ika-orange);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ika-entry-en {
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  color: var(--ika-green);
+}
+.ika-entry-name { margin-top: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 22px; line-height: 1.4; }
+.ika-entry-title { margin-top: 10px; font-family: var(--font-maru); font-weight: 700; font-size: 15px; line-height: 1.6; color: var(--ika-green); }
+.ika-entry-desc { margin-top: 8px; font-size: 13.5px; line-height: 1.85; color: var(--ika-ink-soft); flex: 1; }
+.ika-entry-go {
+  margin-top: 18px;
+  align-self: flex-start;
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--ika-green);
+  border-bottom: 3px solid var(--ika-orange);
+  padding-bottom: 1px;
+}
+
+/* ==========================================================================
+   部活動の記録（カード）
+   ========================================================================== */
 
 .ika-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 28px); }
 .ika-card {
   display: block;
-  background: #fff;
-  border: 3px solid var(--ika-navy);
-  border-radius: 18px;
+  background: var(--ika-white);
+  border: 3px solid var(--ika-green);
+  border-radius: var(--ika-radius);
   overflow: hidden;
-  box-shadow: 6px 6px 0 var(--ika-navy);
-  transition: transform 0.2s ease;
+  box-shadow: 6px 6px 0 var(--ika-green);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.ika-card:hover { transform: translate(-2px, -2px); }
-.ika-card figure { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-ivory-2); }
+.ika-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ika-orange); }
+.ika-card figure { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); border-bottom: 3px solid var(--ika-green); }
 .ika-card img { width: 100%; height: 100%; object-fit: cover; }
 .ika-card-body { padding: 16px 18px 18px; }
 .ika-card-tag {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
-  background: var(--ika-red);
-  color: var(--ika-ivory);
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  font-family: var(--font-maru);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: 0.06em;
 }
-.ika-card h3 { margin-top: 10px; font-size: 18px; font-weight: 900; line-height: 1.5; }
-.ika-card p { margin-top: 6px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
+.ika-card h3 { margin-top: 10px; font-family: var(--font-maru); font-size: 19px; font-weight: 900; line-height: 1.5; }
+.ika-card h3 small { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--ika-green); margin-left: 6px; }
+.ika-card p { margin-top: 6px; font-size: 14px; line-height: 1.9; color: var(--ika-ink-soft); }
 
-/* ---------- 部員の掲示板（共通の投稿カードをイカ部の色に） ---------- */
+/* ==========================================================================
+   部員の掲示板（緑のコルクボードに白いカードを画鋲で）
+   ========================================================================== */
 
-.ika-voices .report-card {
-  border: 3px solid var(--ika-navy);
-  border-radius: 18px;
-  box-shadow: 6px 6px 0 var(--ika-navy);
-  background: #fff;
-  overflow: hidden;
-}
-.ika-voices .report-place { font-family: var(--font-maru); font-weight: 900; }
-.ika-voices .report-tags span { background: var(--ika-red); color: var(--ika-ivory); font-weight: 700; }
-.ika-voices .report-flag { color: var(--ika-navy); }
-.ika-loading, .ika-empty { grid-column: 1 / -1; padding: 24px 0; font-weight: 700; opacity: 0.7; }
-.ika-voices .report-card.reveal { opacity: 1; transform: none; }
-/* 見本の投稿（本物の投稿が無いときにだけ出す） */
-.ika-sample { position: relative; }
-.ika-sample::after {
-  content: '見本';
-  position: absolute; top: 10px; right: 10px;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--ika-navy);
-  color: var(--ika-ivory);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-/* ---------- 準備中のタイル ---------- */
-
-.ika-soon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 28px); }
-.ika-soon {
+.ika-voices { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: clamp(18px, 2.4vw, 26px); }
+.ika-voice {
   position: relative;
-  padding: 26px 22px 24px;
-  border: 3px dashed var(--ika-navy);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.55);
-}
-.ika-soon-tag {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: var(--ika-navy);
-  color: var(--ika-ivory);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-.ika-soon h3 { margin-top: 12px; font-size: 19px; font-weight: 900; line-height: 1.45; }
-.ika-soon p { margin-top: 6px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
-
-/* ---------- 部室で遊ぶ ---------- */
-
-.ika-games { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(16px, 2.4vw, 28px); }
-.ika-game {
   display: flex; flex-direction: column;
-  padding: 28px 26px 24px;
-  background: var(--ika-ivory);
-  color: var(--ika-navy);
-  border: 3px solid var(--ika-ivory);
-  border-radius: 20px;
-  box-shadow: 6px 6px 0 var(--ika-red);
-  transition: transform 0.2s ease;
+  background: var(--ika-white);
+  color: var(--ika-ink);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 30, 18, 0.35);
 }
-.ika-game:hover { transform: translate(-2px, -2px); }
-.ika-game-kind { color: var(--ika-red); }
-.ika-game h3 { margin-top: 10px; font-size: clamp(24px, 3vw, 32px); font-weight: 900; }
-.ika-game p { margin-top: 8px; font-size: 14px; line-height: 1.9; opacity: 0.85; }
-.ika-game-go { margin-top: 20px; align-self: flex-start; font-weight: 900; border-bottom: 2px solid var(--ika-red); }
+.ika-voice:nth-child(3n + 1) { transform: rotate(-0.8deg); }
+.ika-voice:nth-child(3n + 2) { transform: rotate(0.5deg); }
+.ika-voice:nth-child(3n) { transform: rotate(-0.3deg); }
+/* 画鋲 */
+.ika-voice::before {
+  content: '';
+  position: absolute; z-index: 1; top: 10px; left: 50%;
+  width: 16px; height: 16px; margin-left: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffb27a, var(--ika-orange) 55%, var(--ika-orange-deep));
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+.ika-voice-photo { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); }
+.ika-voice-photo img { width: 100%; height: 100%; object-fit: cover; }
+.ika-voice-body { display: flex; flex-direction: column; flex: 1; padding: 30px 20px 16px; }
+.ika-voice-place { font-family: var(--font-maru); font-size: 18px; font-weight: 900; line-height: 1.5; }
+.ika-voice-meta { margin: 2px 0 10px; font-size: 12px; letter-spacing: 0.04em; color: var(--ika-ink-soft); }
+.ika-voice-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.ika-voice-tags span { font-family: var(--font-maru); font-size: 12px; font-weight: 900; line-height: 1.7; padding: 2px 10px; border-radius: 999px; background: var(--ika-green); color: var(--ika-white); }
+.ika-voice-comment { font-size: 14px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ika-voice-flag {
+  align-self: flex-start; margin-top: auto; padding: 14px 0 0;
+  font-size: 11px; letter-spacing: 0.04em; color: var(--ika-ink-soft);
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.ika-voice-flag:disabled { text-decoration: none; cursor: default; color: var(--ika-green); }
+.ika-voice--sample .ika-voice-meta { color: var(--ika-ink-soft); }
 
-/* ---------- 入部 ---------- */
+/* ==========================================================================
+   入部
+   ========================================================================== */
 
 .ika-join {
-  background: var(--ika-red);
-  color: var(--ika-ivory);
-  padding: clamp(56px, 8vw, 100px) 0;
+  position: relative;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  padding: clamp(56px, 8vw, 96px) 0;
+  overflow: hidden;
 }
-.ika-join-inner { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(24px, 4vw, 56px); }
-.ika-join-badge { width: clamp(120px, 16vw, 200px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(22, 35, 58, 0.35)); }
-.ika-join .t-label { color: var(--ika-ivory); opacity: 0.8; }
-.ika-join p:not(.t-label) { margin-top: 12px; font-size: 16px; line-height: 2; max-width: 36em; }
-.ika-join .ika-btn--primary { background: var(--ika-navy); border-color: var(--ika-navy); box-shadow: 4px 4px 0 var(--ika-ivory); }
-
-/* ---------- スマホ ---------- */
-
-@media (max-width: 900px) {
-  .ika-rules-list, .ika-cards, .ika-soon-grid { grid-template-columns: 1fr 1fr; }
+.ika-join::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.12) 18px 20px);
+  pointer-events: none;
 }
+.ika-join-inner { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(24px, 4vw, 56px); }
+.ika-join-badge { width: clamp(130px, 16vw, 210px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(0, 59, 35, 0.35)); }
+.ika-join p:not(.ika-eyebrow) { margin-top: 14px; font-size: 16px; line-height: 2; max-width: 36em; }
+
+/* ==========================================================================
+   サブページ：見出しと準備中
+   ========================================================================== */
+
+.ika-page-head {
+  background: var(--ika-green);
+  color: var(--ika-white);
+  padding: clamp(28px, 5vw, 56px) 0 clamp(36px, 6vw, 64px);
+  position: relative;
+  overflow: hidden;
+}
+.ika-page-head::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 18px, rgba(255, 255, 255, 0.045) 18px 20px);
+  pointer-events: none;
+}
+.ika-page-head .wrap { position: relative; }
+.ika-crumb { font-size: 12.5px; color: rgba(255, 255, 255, 0.82); margin-bottom: 22px; }
+.ika-crumb a { border-bottom: 1px solid rgba(255, 255, 255, 0.5); }
+.ika-page-head .ika-eyebrow { color: var(--ika-white); }
+.ika-page-head .ika-eyebrow-num { background: var(--ika-orange); color: var(--ika-ink); }
+.ika-page-title { max-width: 18em; }
+.ika-page-desc { margin-top: 16px; max-width: 40em; font-size: 15px; line-height: 2; color: rgba(255, 255, 255, 0.86); }
+
+.ika-soon-section { padding: clamp(40px, 6vw, 72px) 0 clamp(64px, 8vw, 104px); }
+.ika-locker {
+  position: relative;
+  padding: clamp(28px, 4vw, 44px) clamp(20px, 4vw, 44px);
+  border: 3px dashed var(--ika-green);
+  border-radius: var(--ika-radius);
+  background: var(--ika-mist);
+}
+.ika-locker-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  font-family: var(--font-maru);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+.ika-locker-title { margin-top: 14px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.5; color: var(--ika-green); }
+.ika-locker-note { margin-top: 8px; font-size: 15px; line-height: 2; max-width: 40em; }
+.ika-locker-sub { margin-top: 22px; font-family: var(--font-maru); font-weight: 700; font-size: 14px; color: var(--ika-ink-soft); }
+.ika-locker-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.ika-locker-links a {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 8px 16px;
+  background: var(--ika-white);
+  border: 2px solid var(--ika-green);
+  border-radius: 999px;
+  color: var(--ika-green);
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: 14px;
+  transition: background 0.2s, color 0.2s;
+}
+.ika-locker-links a:hover { background: var(--ika-green); color: var(--ika-white); }
+
+/* ==========================================================================
+   フッター
+   ========================================================================== */
+
+#ika-footer { background: var(--ika-green-deep); color: var(--ika-white); }
+.ika-footer-inner {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: clamp(28px, 5vw, 64px);
+  padding-top: clamp(40px, 5vw, 64px);
+  padding-bottom: clamp(32px, 4vw, 48px);
+}
+.ika-footer-brand img {
+  width: 220px; height: auto;
+  padding: 12px 16px;
+  background: var(--ika-white);
+  border-radius: 14px;
+}
+.ika-footer-motto { margin-top: 18px; font-family: var(--font-maru); font-weight: 700; font-size: 15px; line-height: 2; color: rgba(255, 255, 255, 0.9); }
+.ika-footer-head { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.24em; color: var(--ika-orange); margin-bottom: 12px; }
+.ika-footer-nav ul, .ika-footer-links ul { display: grid; gap: 4px; }
+.ika-footer-nav a, .ika-footer-links a {
+  display: inline-block; padding: 4px 0;
+  font-size: 14px; line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.ika-footer-nav a:hover, .ika-footer-links a:hover { border-color: var(--ika-orange); }
+.ika-footer-bottom {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
+  padding-top: 18px; padding-bottom: 28px;
+  border-top: 1px solid var(--ika-green-line);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ==========================================================================
+   現れる演出（任意）
+   ========================================================================== */
+
+.ika-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.ika-reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ika-reveal { opacity: 1; transform: none; }
+  .ika-btn, .ika-entry, .ika-card { transition: none; }
+}
+
+/* ==========================================================================
+   画面幅
+   ========================================================================== */
+
+/* 1280px 付近：ナビ7項目＋言語切替＋YFJ が1行に収まる幅まで。YFJ は略称に */
+@media (max-width: 1360px) {
+  .ika-header-tools .ika-yfj-full { display: none; }
+}
+@media (min-width: 1361px) {
+  .ika-header-tools .ika-yfj-short { display: none; }
+}
+@media (max-width: 1180px) {
+  .ika-nav a { font-size: 12.5px; padding: 8px 6px; }
+  .ika-nav .ika-nav-num { display: none; }
+}
+
+@media (max-width: 960px) {
+  .ika-nav { display: none; }
+  .ika-menu-btn { display: inline-flex; }
+  .ika-header-inner { justify-content: space-between; }
+  .ika-header-tools .ika-lang { display: none; }   /* 言語切替はメニューの中に */
+  .ika-entry, .ika-entry:nth-child(n + 4) { grid-column: span 6; }
+  .ika-entry:last-child { grid-column: span 12; }
+  .ika-cards { grid-template-columns: 1fr 1fr; }
+  .ika-footer-inner { grid-template-columns: 1fr 1fr; }
+  .ika-footer-brand { grid-column: 1 / -1; }
+}
+
 @media (max-width: 760px) {
-  .ika-hero-grid { grid-template-columns: 1fr; gap: 12px; }
-  .ika-hero-art { order: -1; margin: 0 0 18px; }
-  .ika-hero-img { transform: none; border-width: 3px; box-shadow: 6px 6px 0 var(--ika-red); }
-  .ika-sticker--a { top: -10px; left: -6px; }
-  .ika-sticker--b { bottom: -10px; right: -6px; }
-  .ika-hero { padding-top: 96px; }
-  .ika-rules-list, .ika-cards, .ika-soon-grid, .ika-games { grid-template-columns: 1fr; }
+  .ika-brand img { height: 38px; }
+  .ika-hero-grid { grid-template-columns: 1fr; gap: 22px; padding-top: 24px; padding-bottom: 44px; }
+  .ika-hero-art { order: -1; padding: 8px 10px 14px 6px; }
+  .ika-hero-frame { transform: rotate(-1.2deg); border-width: 4px; box-shadow: 0 0 0 3px var(--ika-green-deep), 8px 8px 0 3px var(--ika-orange); }
+  .ika-hero::after { width: 90vw; height: 90vw; right: -30vw; bottom: auto; top: -20vw; border-width: 14px; }
+  .ika-sticker { font-size: 12px; padding: 8px 12px; }
+  .ika-sticker--a { top: -6px; left: -4px; }
+  .ika-sticker--b { bottom: -2px; right: 0; font-size: 14px; }
+  .ika-pennant { font-size: 12px; margin-bottom: 16px; }
+  .ika-logo-patch { padding: 12px 16px; border-radius: 16px; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 5px var(--ika-green), 0 0 0 8px var(--ika-orange), 6px 8px 0 8px var(--ika-green-deep); }
+  .ika-lead { margin-top: 26px; font-size: 26px; }
+  .ika-sub { font-size: 14px; line-height: 1.95; }
+  .ika-btn { min-height: 48px; padding: 8px 20px; font-size: 14px; }
+  .ika-ticker { font-size: 15px; padding: 8px 0; }
+  .ika-rules-list { grid-template-columns: 1fr; gap: 14px; }
+  .ika-rules-list li { font-size: 15.5px; padding: 12px 18px 12px 14px; }
+  .ika-rules-list li:nth-child(n) { transform: none; }
+  .ika-rule-num { width: 40px; height: 40px; font-size: 20px; }
+  .ika-entries { gap: 14px; }
+  .ika-entry, .ika-entry:nth-child(n + 4), .ika-entry:last-child { grid-column: span 12; }
+  .ika-entry { padding: 20px 18px 18px; }
+  .ika-entry-num { font-size: 56px; }
+  .ika-cards { grid-template-columns: 1fr; }
   .ika-join-inner { grid-template-columns: 1fr; }
-  .ika-join-badge { width: 120px; }
-  /* 下のタブバーに隠れないように */
-  .ikabu .site-footer { padding-bottom: 80px; }
+  .ika-join-badge { width: 130px; }
+  .ika-footer-inner { grid-template-columns: 1fr; gap: 28px; }
+  .ika-footer-bottom { flex-direction: column; }
+  .ika-page-title { font-size: 27px; }
 }
 
 .sp-only { display: none; }
