@@ -1703,3 +1703,25 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 @media (max-width: 560px) {
   .area-reports .report-grid { grid-template-columns: 1fr; }
 }
+
+/* invite.html — 現地で見せる招待ページ */
+.invite-body { max-width: 560px; text-align: center; }
+.invite-qr-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  display: inline-block;
+  box-shadow: 0 4px 24px rgba(32, 35, 42, 0.12);
+  margin-bottom: 20px;
+}
+.invite-qr-card img { display: block; width: min(320px, 60vw); height: auto; }
+.invite-lead { color: var(--ink-soft); font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+.invite-body .reports-cta { margin: 0 auto 40px; }
+.invite-h3 { font-size: 16px; margin-bottom: 18px; }
+.invite-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+.invite-step { background: var(--paper-warm); border-radius: 12px; padding: 18px 20px; }
+.invite-step ol { margin: 10px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.9; color: var(--ink-soft); }
+.invite-step li { margin-bottom: 4px; }
+@media (max-width: 560px) {
+  .invite-steps { grid-template-columns: 1fr; }
+}

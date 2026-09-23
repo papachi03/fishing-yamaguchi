@@ -47,6 +47,7 @@ export default defineConfig({
         about: resolve(__dirname, 'about.html'),
         tackle: resolve(__dirname, 'tackle.html'),
         reports: resolve(__dirname, 'reports.html'),
+        invite: resolve(__dirname, 'invite.html'),
       },
     },
   },
