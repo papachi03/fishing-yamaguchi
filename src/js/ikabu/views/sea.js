@@ -27,20 +27,12 @@ export function areaToggleHTML(lang, current = 'hagi') {
     .join('');
 }
 
-const LEVEL_EN = ['SAFE', 'CAUTION', 'DANGER', 'STOP'];
-const LEVEL_MSG_EN = [
-  'Conditions are fine for fishing from the breakwater.',
-  'Light rigs will drift. Choose inside the harbor or the lee of the wind.',
-  'Avoid breakwaters facing the open sea. Life jacket required.',
-  'Do not go out on the breakwater today.',
-];
-
 function safetyTableHTML(lang) {
   const rows = SAFETY_LEVELS.map(
-    (l, i) => `
+    (l) => `
       <li class="ika-sea-level lv${l.level}">
-        <span class="ika-sea-level-badge">${lang === 'en' ? LEVEL_EN[i] : l.label}</span>
-        <span>${lang === 'en' ? LEVEL_MSG_EN[i] : l.message}</span>
+        <span class="ika-sea-level-badge">${lang === 'en' ? l.labelEn : l.label}</span>
+        <span>${lang === 'en' ? l.messageEn : l.message}</span>
       </li>`
   ).join('');
   const thresholds = Object.entries(SEA_PROFILES)
@@ -116,7 +108,7 @@ export function render(lang) {
           <li><a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/index.php" target="_blank" rel="noopener">${t(lang, '気象庁 潮位表 ↗', 'JMA tide tables ↗')}</a> — ${t(lang, '満潮・干潮と毎時潮位（萩・仙崎は共用の観測点）', 'high and low tides and hourly levels (Hagi and Nagato share one station)')}</li>
           <li><a href="${assetHref('/sea.html')}">${t(lang, 'ジャーナル本編の海況ページ →', 'The journal’s own sea page →')}</a> — ${t(lang, '同じ数字を、ジャーナルの見た目で', 'the same numbers in the journal’s style')}</li>
         </ul>
-        ${lang === 'en' ? `<p class="ika-small">Live figures are produced by the journal’s Japanese engine. Headings, units and safety labels are translated here; weather condition names, the bite message and this month’s species tags appear in Japanese. Fish reports are shown as posted.</p>` : ''}
+        ${lang === 'en' ? `<p class="ika-small">Field reports are shown as posted (names and comments are not translated). Individual spot names stay in Japanese.</p>` : ''}
       </div>
     </div>
   </section>`;

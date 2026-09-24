@@ -42,6 +42,7 @@
 export const SEA_PROFILES = {
   nihonkai: {
     label: '日本海側',
+    labelEn: 'Sea of Japan side',
     wind: [3, 5, 7],
     gust: [6, 10],
     wave: [1.0, 1.2, 1.5],
@@ -49,6 +50,7 @@ export const SEA_PROFILES = {
   },
   setouchi: {
     label: '瀬戸内側',
+    labelEn: 'Seto Inland Sea side',
     wind: [5, 7, 10],
     gust: [10, 15],
     wave: [1.0, 1.2, 1.5],
@@ -58,12 +60,19 @@ export const SEA_PROFILES = {
 
 export const profileOf = (key) => SEA_PROFILES[key] ?? SEA_PROFILES.nihonkai;
 
+// labelEn / messageEn はイカ部の英語ページ用。label / message（日本語）は従来のまま
 export const SAFETY_LEVELS = [
-  { level: 0, key: 'ok', label: '安全', short: 'OK', message: '堤防で釣りができるコンディションです。' },
-  { level: 1, key: 'caution', label: '注意', short: '注意', message: '軽い仕掛けは流されます。港内・風裏を選んでください。' },
-  { level: 2, key: 'danger', label: '危険', short: '危険', message: '外向きの堤防は避けてください。ライフジャケット必須。' },
-  { level: 3, key: 'stop', label: '中止', short: '中止', message: '今日は堤防に立たないでください。' },
+  { level: 0, key: 'ok', label: '安全', short: 'OK', message: '堤防で釣りができるコンディションです。', labelEn: 'SAFE', messageEn: 'Conditions are fine for fishing from the breakwater.' },
+  { level: 1, key: 'caution', label: '注意', short: '注意', message: '軽い仕掛けは流されます。港内・風裏を選んでください。', labelEn: 'CAUTION', messageEn: 'Light rigs will drift. Choose inside the harbor or the lee of the wind.' },
+  { level: 2, key: 'danger', label: '危険', short: '危険', message: '外向きの堤防は避けてください。ライフジャケット必須。', labelEn: 'DANGER', messageEn: 'Avoid breakwaters facing the open sea. Life jacket required.' },
+  { level: 3, key: 'stop', label: '中止', short: '中止', message: '今日は堤防に立たないでください。', labelEn: 'STOP', messageEn: 'Do not go out on the breakwater today.' },
 ];
+
+// 判定理由の文言（lang='en' のときだけ英語。既定は従来の日本語）
+const REASON = {
+  ja: { wind: (v) => `風速${v}m/s`, gust: (v) => `突風${v}m/s`, wave: (v) => `波高${v}m`, swell: (p) => `周期${p}秒のうねり`, onshore: '向かい風（海から吹いて波が立つ）' },
+  en: { wind: (v) => `wind ${v} m/s`, gust: (v) => `gusts ${v} m/s`, wave: (v) => `waves ${v} m`, swell: (p) => `swell with a ${p} s period`, onshore: 'onshore wind (blowing in from the sea, waves build)' },
+};
 
 // 風向(deg, 風が吹いてくる方角) が、海に向いた方角(facing) から ±60° 以内なら向かい風
 export function isOnshore(windDir, facing) {
@@ -73,8 +82,9 @@ export function isOnshore(windDir, facing) {
 }
 
 // seaProfile を省略すると日本海側の基準（従来の挙動）になる
-export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile }) {
+export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, lang = 'ja' }) {
   const pf = profileOf(seaProfile);
+  const R = REASON[lang] ?? REASON.ja;
   const [w1, w2, w3] = pf.wind;
   const [g1, g2] = pf.gust;
   const [h1, h2, h3] = pf.wave;
@@ -87,35 +97,38 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   };
 
   if (wind != null) {
-    if (wind >= w3) bump(3, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= w2) bump(2, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= w1) bump(1, `風速${wind.toFixed(1)}m/s`);
+    if (wind >= w3) bump(3, R.wind(wind.toFixed(1)));
+    else if (wind >= w2) bump(2, R.wind(wind.toFixed(1)));
+    else if (wind >= w1) bump(1, R.wind(wind.toFixed(1)));
   }
   if (gust != null) {
-    if (gust >= g2) bump(2, `突風${gust.toFixed(1)}m/s`);
-    else if (gust >= g1) bump(1, `突風${gust.toFixed(1)}m/s`);
+    if (gust >= g2) bump(2, R.gust(gust.toFixed(1)));
+    else if (gust >= g1) bump(1, R.gust(gust.toFixed(1)));
   }
   if (waveHeight != null) {
-    if (waveHeight >= h3) bump(3, `波高${waveHeight.toFixed(1)}m`);
-    else if (waveHeight >= h2) bump(2, `波高${waveHeight.toFixed(1)}m`);
-    else if (waveHeight >= h1) bump(1, `波高${waveHeight.toFixed(1)}m`);
+    if (waveHeight >= h3) bump(3, R.wave(waveHeight.toFixed(1)));
+    else if (waveHeight >= h2) bump(2, R.wave(waveHeight.toFixed(1)));
+    else if (waveHeight >= h1) bump(1, R.wave(waveHeight.toFixed(1)));
     if (wavePeriod != null && wavePeriod >= 7 && waveHeight >= h1) {
-      bump(Math.min(3, level + 1), `周期${wavePeriod.toFixed(0)}秒のうねり`);
+      bump(Math.min(3, level + 1), R.swell(wavePeriod.toFixed(0)));
     }
   }
   // 向かい風の発動ラインは、その海域の「注意」のしきい値に合わせる
   if (wind != null && wind >= w1 && isOnshore(windDir, facing)) {
-    bump(Math.min(3, level + 1), '向かい風（海から吹いて波が立つ）');
+    bump(Math.min(3, level + 1), R.onshore);
   }
 
-  return { ...SAFETY_LEVELS[level], reasons };
+  const lv = SAFETY_LEVELS[level];
+  // 英語のときは label / message を英語に差し替えて返す（呼び出し側の取り出し方は同じ）
+  return lang === 'en' ? { ...lv, label: lv.labelEn, message: lv.messageEn, reasons } : { ...lv, reasons };
 }
 
 // 凡例の文字列（海域ごとに数字が変わるので、画面側で使い回せるようにする）
-export function legendText(seaProfile) {
+export function legendText(seaProfile, lang = 'ja') {
   const pf = profileOf(seaProfile);
   const [w1, w2, w3] = pf.wind;
   const [h1, h2, h3] = pf.wave;
+  if (lang === 'en') return `Wind up to ${w1} safe / ${w1}–${w2} caution / ${w2}–${w3} danger / ${w3}+ stop · Wave ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)} m`;
   return `風速 〜${w1} 安全 / ${w1}〜${w2} 注意 / ${w2}〜${w3} 危険 / ${w3}〜 中止 ・ 波高 ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)}m`;
 }
 

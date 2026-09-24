@@ -52,6 +52,10 @@ async function loadDataset(stn, year) {
   return data;
 }
 
+// 観測地点名の英語（イカ部の英語ページ用）。JSON 側は日本語のまま
+const STATION_EN = { K5: 'Hagi', A1: 'Shimonoseki (Deshimachi)', QA: 'Tokuyama', J9: 'Mitajiri' };
+const SOURCE_EN = 'JMA tide tables (predicted astronomical tide)';
+
 const pad = (n) => String(n).padStart(2, '0');
 const dateKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -80,8 +84,10 @@ export async function fetchTide(area, date = new Date()) {
   return {
     isDemo: false,
     source: dataset.source,
+    sourceEn: SOURCE_EN,
     sourceUrl: dataset.sourceUrl,
     stationName: dataset.stationName,
+    stationNameEn: STATION_EN[stn] ?? dataset.stationName,
     isProxy: area.tideIsProxy ?? true,
     highs: day.highs,
     lows: day.lows,

@@ -19,6 +19,15 @@ export const AREA_LABELS = {
   hofu: '防府',
 };
 
+// イカ部の英語ページ用（日本語の表示は AREA_LABELS のまま）
+export const AREA_LABELS_EN = {
+  hagi: 'Hagi',
+  nagato: 'Nagato',
+  shimonoseki: 'Shimonoseki',
+  kudamatsu: 'Kudamatsu',
+  hofu: 'Hōfu',
+};
+
 export const SPOTS = [
   { id: 'hagi-koshigahama', areaId: 'hagi', name: '越ヶ浜漁港' },
   { id: 'hagi-hagikou', areaId: 'hagi', name: '萩港' },

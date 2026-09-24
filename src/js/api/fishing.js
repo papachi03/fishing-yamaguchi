@@ -83,7 +83,22 @@ function parseTimeToday(timeStr, base) {
   return d;
 }
 
-export function calcExpectation(area, tide, date = new Date()) {
+// 潮名・理由・一言の英語（lang='en' のときだけ使う）
+const TIDE_NAME_EN = { 大潮: 'spring tide', 中潮: 'medium tide', 小潮: 'neap tide', 長潮: 'long tide', 若潮: 'young tide' };
+export const tideNameEn = (ja) => TIDE_NAME_EN[ja] ?? ja;
+const EXPECT_TEXT = {
+  ja: {
+    slack: '潮止まり前後', moving: '潮がよく動く時間帯', mazume: 'まずめ時',
+    msg: (score) => (score >= 8 ? '今釣れる絶好のチャンスです！' : score >= 6 ? '今は釣れそうですね！' : score >= 4 ? 'ぼちぼち狙えそうな時間帯です。' : '今は釣れる時間ではないかもしれないです！'),
+  },
+  en: {
+    slack: 'around slack tide', moving: 'tide moving well', mazume: 'twilight (mazume)',
+    msg: (score) => (score >= 8 ? 'Prime time. Get a line in the water!' : score >= 6 ? 'Looking good right now.' : score >= 4 ? 'A fair time to try.' : 'Probably not the best hour right now.'),
+  },
+};
+
+export function calcExpectation(area, tide, date = new Date(), lang = 'ja') {
+  const X = EXPECT_TEXT[lang] ?? EXPECT_TEXT.ja;
   const extremes = [...(tide?.highs ?? []), ...(tide?.lows ?? [])]
     .map((p) => parseTimeToday(p.time, date))
     .filter(Boolean);
@@ -119,27 +134,21 @@ export function calcExpectation(area, tide, date = new Date()) {
 
   const score = Math.max(0, Math.min(10, flowPoint + sunPoint + rangePoint));
 
+  const shownName = lang === 'en' ? tideNameEn(name) : name;
   const reasons = [];
-  if (minutesToNearest <= 30) reasons.push('潮止まり前後');
-  else if (minutesToNearest >= 120) reasons.push('潮がよく動く時間帯');
-  if (sunPoint === 2) reasons.push('まずめ時');
-  reasons.push(name);
+  if (minutesToNearest <= 30) reasons.push(X.slack);
+  else if (minutesToNearest >= 120) reasons.push(X.moving);
+  if (sunPoint === 2) reasons.push(X.mazume);
+  reasons.push(shownName);
 
-  const message =
-    score >= 8
-      ? '今釣れる絶好のチャンスです！'
-      : score >= 6
-        ? '今は釣れそうですね！'
-        : score >= 4
-          ? 'ぼちぼち狙えそうな時間帯です。'
-          : '今は釣れる時間ではないかもしれないです！';
+  const message = X.msg(score);
 
   return {
     score,
     stars: Math.round(score),
     message,
     reasons,
-    tideName: name,
+    tideName: shownName,
     moonAge: age,
     sunrise,
     sunset,
@@ -170,7 +179,19 @@ const SEASONAL = {
   12: { fish: ['メバル', 'アラカブ', 'ヒラメ'], squid: ['ヤリイカ'] },
 };
 
-export function seasonalTargets(date = new Date()) {
+// 魚名の英語（釣り人が使う言い方）。lang='en' のときだけ引く
+const FISH_EN = {
+  メバル: 'rockfish (mebaru)', アラカブ: 'scorpionfish (arakabu)', ヒラメ: 'flounder', サヨリ: 'halfbeak (sayori)',
+  キビレ: 'yellowfin sea bream (kibire)', マダイ: 'red sea bream', クロダイ: 'black sea bream', チヌ: 'black sea bream (chinu)',
+  アジ: 'horse mackerel (aji)', イサキ: 'grunt (isaki)', キス: 'whiting (kisu)', ハマチ: 'young yellowtail (hamachi)',
+  タチウオ: 'cutlassfish (tachiuo)',
+  ヤリイカ: 'spear squid', コウイカ: 'golden cuttlefish', アオリイカ: 'bigfin reef squid',
+};
+export const fishNameEn = (ja) => FISH_EN[ja] ?? ja;
+
+export function seasonalTargets(date = new Date(), lang = 'ja') {
   const month = date.getMonth() + 1;
-  return { month, ...(SEASONAL[month] ?? { fish: [], squid: [] }) };
+  const s = SEASONAL[month] ?? { fish: [], squid: [] };
+  if (lang === 'en') return { month, fish: s.fish.map(fishNameEn), squid: s.squid.map(fishNameEn) };
+  return { month, ...s };
 }

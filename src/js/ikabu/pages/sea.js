@@ -1,10 +1,9 @@
 // イカ部「sea」の入口。説明文はビルド時に書き込み済み。ここでは YFJ の海況ロジック
-// （weather / tide / sea-render / area-reports）をそのまま使って、生きた数字を入れる。
+// （weather / tide / sea-render / area-reports）をそのまま使い、lang を渡して生きた数字を入れる。
 // 見た目はイカ部の CSS（.ikabu .sea-dash …）で上書きし、YFJ 本体の sea.html には触らない。
 import { boot } from '../boot.js';
 import { render } from '../views/sea.js';
 import { t } from '../i18n.js';
-import { localizeSeaHTML } from '../sea-i18n.js';
 import { areas, areaById } from '../../data/areas.js';
 import { fetchWeather } from '../../api/weather.js';
 import { fetchTide } from '../../api/tide.js';
@@ -64,14 +63,6 @@ async function loadTide(area) {
   return tide;
 }
 
-// 英語ページ用の出典行（日本語は YFJ と同じ文をそのまま使う）
-function sourceLine(area, tide) {
-  if (lang !== 'en') return sourceNoteText(area, tide);
-  const coord = area.contributor ? '' : ` / ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)}`;
-  const tideNote = tide ? ` / Tide: JMA tide tables (${tide.stationName})` : '';
-  return `Weather and wind: Open-Meteo${tideNote}${coord} / Reference information for planning a trip. Always check official JMA warnings and advisories.`;
-}
-
 async function renderArea() {
   const areaId = current;
   const area = areaById(areaId);
@@ -85,13 +76,10 @@ async function renderArea() {
   const now = new Date();
   const w = wr.status === 'fulfilled' ? wr.value : null;
   const tide = tr.status === 'fulfilled' ? tr.value : null;
-  dash.innerHTML = localizeSeaHTML(dashHTML({ area, w, t: tide, now, updatedLabel: `UPDATED ${hhmm(now)} JST` }), lang);
-  sourceNote.textContent = sourceLine(area, tide);
+  dash.innerHTML = dashHTML({ area, w, t: tide, now, updatedLabel: `UPDATED ${hhmm(now)} JST`, lang });
+  sourceNote.textContent = sourceNoteText(area, tide, lang);
   initReveal();
-  // 現地の声（イカ以外も含む、このエリアの最新2件）。描き終わったら英語に置き換える
-  mountAreaReports(reportsBox, areaId).then(() => {
-    if (lang === 'en' && reportsBox.innerHTML) reportsBox.innerHTML = localizeSeaHTML(reportsBox.innerHTML, lang);
-  });
+  mountAreaReports(reportsBox, areaId, lang); // 待たない。失敗しても海況には影響させない
 }
 
 selectArea(current);

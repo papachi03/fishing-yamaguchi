@@ -6,36 +6,38 @@
 const BASE = 'https://api.open-meteo.com/v1/forecast';
 
 const WMO = new Map([
-  [0, { ja: '快晴', icon: 'sun' }],
-  [1, { ja: '晴れ', icon: 'sun' }],
-  [2, { ja: '晴れ時々曇り', icon: 'sun-cloud' }],
-  [3, { ja: '曇り', icon: 'cloud' }],
-  [45, { ja: '霧', icon: 'fog' }],
-  [48, { ja: '霧氷', icon: 'fog' }],
-  [51, { ja: '霧雨', icon: 'rain' }],
-  [53, { ja: '霧雨', icon: 'rain' }],
-  [55, { ja: '霧雨', icon: 'rain' }],
-  [61, { ja: '小雨', icon: 'rain' }],
-  [63, { ja: '雨', icon: 'rain' }],
-  [65, { ja: '大雨', icon: 'rain' }],
-  [66, { ja: '着氷性の雨', icon: 'rain' }],
-  [67, { ja: '着氷性の雨', icon: 'rain' }],
-  [71, { ja: '小雪', icon: 'snow' }],
-  [73, { ja: '雪', icon: 'snow' }],
-  [75, { ja: '大雪', icon: 'snow' }],
-  [77, { ja: '霧雪', icon: 'snow' }],
-  [80, { ja: 'にわか雨', icon: 'rain' }],
-  [81, { ja: 'にわか雨', icon: 'rain' }],
-  [82, { ja: '激しいにわか雨', icon: 'rain' }],
-  [85, { ja: 'にわか雪', icon: 'snow' }],
-  [86, { ja: 'にわか雪', icon: 'snow' }],
-  [95, { ja: '雷雨', icon: 'storm' }],
-  [96, { ja: '雷雨・ひょう', icon: 'storm' }],
-  [99, { ja: '雷雨・ひょう', icon: 'storm' }],
+  [0, { ja: '快晴', en: 'Clear', icon: 'sun' }],
+  [1, { ja: '晴れ', en: 'Mostly sunny', icon: 'sun' }],
+  [2, { ja: '晴れ時々曇り', en: 'Partly cloudy', icon: 'sun-cloud' }],
+  [3, { ja: '曇り', en: 'Cloudy', icon: 'cloud' }],
+  [45, { ja: '霧', en: 'Fog', icon: 'fog' }],
+  [48, { ja: '霧氷', en: 'Rime fog', icon: 'fog' }],
+  [51, { ja: '霧雨', en: 'Drizzle', icon: 'rain' }],
+  [53, { ja: '霧雨', en: 'Drizzle', icon: 'rain' }],
+  [55, { ja: '霧雨', en: 'Drizzle', icon: 'rain' }],
+  [61, { ja: '小雨', en: 'Light rain', icon: 'rain' }],
+  [63, { ja: '雨', en: 'Rain', icon: 'rain' }],
+  [65, { ja: '大雨', en: 'Heavy rain', icon: 'rain' }],
+  [66, { ja: '着氷性の雨', en: 'Freezing rain', icon: 'rain' }],
+  [67, { ja: '着氷性の雨', en: 'Freezing rain', icon: 'rain' }],
+  [71, { ja: '小雪', en: 'Light snow', icon: 'snow' }],
+  [73, { ja: '雪', en: 'Snow', icon: 'snow' }],
+  [75, { ja: '大雪', en: 'Heavy snow', icon: 'snow' }],
+  [77, { ja: '霧雪', en: 'Snow grains', icon: 'snow' }],
+  [80, { ja: 'にわか雨', en: 'Showers', icon: 'rain' }],
+  [81, { ja: 'にわか雨', en: 'Showers', icon: 'rain' }],
+  [82, { ja: '激しいにわか雨', en: 'Heavy showers', icon: 'rain' }],
+  [85, { ja: 'にわか雪', en: 'Snow showers', icon: 'snow' }],
+  [86, { ja: 'にわか雪', en: 'Snow showers', icon: 'snow' }],
+  [95, { ja: '雷雨', en: 'Thunderstorm', icon: 'storm' }],
+  [96, { ja: '雷雨・ひょう', en: 'Thunder & hail', icon: 'storm' }],
+  [99, { ja: '雷雨・ひょう', en: 'Thunder & hail', icon: 'storm' }],
 ]);
 
-export function describeWeather(code) {
-  return WMO.get(code) ?? { ja: '—', icon: 'cloud' };
+// 天気名。ja / en を両方持ち、text は lang に合わせた方（省略時は日本語＝従来どおり）
+export function describeWeather(code, lang = 'ja') {
+  const w = WMO.get(code) ?? { ja: '—', en: '—', icon: 'cloud' };
+  return { ...w, text: lang === 'en' ? w.en : w.ja };
 }
 
 const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];

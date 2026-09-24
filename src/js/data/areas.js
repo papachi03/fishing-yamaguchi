@@ -16,6 +16,7 @@
 // tideIsProxy: その釣り場そのものの観測点ではなく、最寄りを借りている場合 true
 // facing: 釣り場が海に向いている方角（度）。風向がこれに近ければ「向かい風」で波が立つ
 // contributor: ダディ本人ではなく、情報をくれている人がいるエリアに記載
+// nameRoman / homeSpot.nameEn: イカ部の英語ページ用のローマ字表記（日本語の表示には使わない）
 
 export const areas = [
   {
@@ -23,6 +24,7 @@ export const areas = [
     seaProfile: 'nihonkai',
     nameEn: 'HAGI',
     nameJa: '萩',
+    nameRoman: 'Hagi',
     lat: 34.408,
     lon: 131.399,
     tideStn: 'K5',
@@ -30,6 +32,7 @@ export const areas = [
     facing: 0,
     homeSpot: {
       name: '越ヶ浜漁港',
+      nameEn: 'Koshigahama harbor',
       lat: 34.439,
       lon: 131.423,
     },
@@ -46,6 +49,7 @@ export const areas = [
     seaProfile: 'nihonkai',
     nameEn: 'NAGATO',
     nameJa: '長門',
+    nameRoman: 'Nagato',
     lat: 34.371,
     lon: 131.182,
     tideStn: 'K5',
@@ -53,6 +57,7 @@ export const areas = [
     facing: 0,
     homeSpot: {
       name: '仙崎人工島',
+      nameEn: 'Senzaki artificial island',
       lat: 34.388,
       lon: 131.199,
     },
@@ -67,6 +72,7 @@ export const areas = [
     seaProfile: 'nihonkai',
     nameEn: 'SHIMONOSEKI',
     nameJa: '下関',
+    nameRoman: 'Shimonoseki',
     // ★このエリアは視聴者の方の釣り場なので、具体的な港名・ポイント名は載せない方針
     //   （2026-09-12 ダディ指示「あそこは下関と濁しておいてください」）。
     //   座標は海況を取るために必要な最小限だけ（小数2桁＝約1km四方）に丸めてある。
@@ -87,6 +93,7 @@ export const areas = [
     seaProfile: 'setouchi',
     nameEn: 'KUDAMATSU',
     nameJa: '下松',
+    nameRoman: 'Kudamatsu',
     // 友人の釣り場なので具体的なポイント名・港名は載せない（下関と同じ方針）。
     // 座標は海況を取るために必要な最小限だけ（小数2桁＝約1km四方）。
     lat: 34.0,
@@ -106,6 +113,7 @@ export const areas = [
     seaProfile: 'setouchi',
     nameEn: 'HOFU',
     nameJa: '防府',
+    nameRoman: 'Hōfu',
     lat: 34.02,
     lon: 131.57,
     tideStn: 'J9',
