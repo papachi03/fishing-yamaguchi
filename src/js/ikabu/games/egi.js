@@ -211,6 +211,7 @@ const BITE_MIX = {
 //   しゃくらずに PUNCH_WAIT 秒待つと「抱かせる間」になって、気になる度合いが上がる（本物の定石）。
 //   抱く判定とは別に起きる接触なので、パンチがあっても釣れる数そのものは直接は減らない
 // ジェット噴射の間隔と疲れ（fight 中）
+export const REEL_WEIGHT = 0.3; // 重さ1kgごとに巻き寄せが遅くなる割合（2kg級を30〜40mから寄せて約2〜2.5分）
 export const JET_GAP = 1.2;
 export const JET_BURST = 3;
 export const JET_WINDOW = 8;
@@ -556,7 +557,8 @@ export function tick(s, dt) {
     case 'fight': {
       const p = s.hooking.power;
       if (s.pressing) {
-        s.dist = Math.max(0, s.dist - 2.2 * dt);
+        // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）
+        s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * (s.hooking.weight ?? 0) / 1000)) * dt);
         s.tension += (22 + p * 22) * dt;
       } else {
         s.tension -= 45 * dt;
