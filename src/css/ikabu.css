@@ -815,6 +815,451 @@
 }
 
 /* ==========================================================================
+   サブページ共通の部品：チップ・注意書き・クレジット・タグ
+   ========================================================================== */
+
+.ika-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ika-chip {
+  display: inline-flex; align-items: center;
+  min-height: 40px; padding: 6px 16px;
+  border: 2px solid var(--ika-sea);
+  border-radius: 999px;
+  background: var(--ika-white);
+  color: var(--ika-sea);
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.ika-chip:hover { background: var(--ika-mist); }
+.ika-chip[aria-pressed='true'] { background: var(--ika-sea); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-orange); }
+.ika-chips--small .ika-chip { min-height: 36px; padding: 4px 14px; font-size: 13px; }
+
+.ika-note {
+  margin-top: clamp(28px, 4vw, 44px);
+  padding: 18px 22px;
+  border: 3px solid var(--ika-sea);
+  border-radius: 14px;
+  background: var(--ika-mist);
+  font-size: 14.5px;
+  line-height: 1.9;
+}
+.ika-note--orange { border-color: var(--ika-orange); background: #fff4ea; }
+.ika-note-label {
+  display: inline-block;
+  margin-bottom: 8px; padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--ika-sea);
+  color: var(--ika-white);
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.ika-note--orange .ika-note-label { background: var(--ika-orange); color: var(--ika-ink); }
+.ika-note a { color: var(--ika-sea); font-weight: 700; border-bottom: 2px solid var(--ika-orange); }
+
+.ika-credit { margin-top: 8px; font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); }
+.ika-credit a { color: var(--ika-sea); text-decoration: underline; text-underline-offset: 2px; }
+.ika-small { margin-top: 18px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+
+.ika-tag {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--ika-mist);
+  color: var(--ika-sea);
+  border: 2px solid var(--ika-sea);
+  font-family: var(--font-maru);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+.ika-tag--orange { background: var(--ika-orange); border-color: var(--ika-orange); color: var(--ika-ink); }
+.ika-tag--sea { background: var(--ika-sea); color: var(--ika-white); }
+
+.ika-h2-small, .ika-h3-small { font-family: var(--font-maru); font-weight: 900; color: var(--ika-sea); }
+.ika-h2-small { font-size: 22px; margin-bottom: 18px; }
+.ika-h3-small { font-size: 16px; margin: 22px 0 10px; }
+
+/* ==========================================================================
+   01 山口マップ
+   ========================================================================== */
+
+.ika-map-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(18px, 3vw, 32px); margin-top: 22px; }
+.ika-map-col { position: sticky; top: 96px; align-self: start; }
+.ika-map-frame { border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; box-shadow: 6px 6px 0 var(--ika-sea); background: var(--ika-mist); }
+.ika-map { position: relative; height: clamp(360px, 56vh, 560px); background: var(--ika-mist); z-index: 0; }
+.ika-map-fallback { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; padding: 24px; text-align: center; font-size: 14px; line-height: 1.8; color: var(--ika-ink-soft); }
+.ika-map-fallback-title { font-family: var(--font-maru); font-weight: 900; font-size: 17px; color: var(--ika-sea); }
+.ika-map-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 10px 14px; border-top: 3px solid var(--ika-sea); background: var(--ika-white); font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-sea); }
+.ika-map-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.ika-pin-sample { width: 16px; height: 16px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid var(--ika-white); box-shadow: 0 0 0 2px var(--ika-sea); }
+.ika-pin-sample--boat { background: var(--ika-sea); }
+.ika-pin-sample--food { background: var(--ika-orange); }
+.ika-map-meta { margin-top: 12px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+
+/* ピン（Leaflet の divIcon）。しずく型の中に番号 */
+.ika-pin-wrap { background: none; border: 0; }
+.ika-pin {
+  display: block; position: relative;
+  width: 36px; height: 36px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--ika-sea);
+  border: 3px solid var(--ika-white);
+  box-shadow: 0 0 0 2px var(--ika-sea), 2px 3px 6px rgba(0, 40, 46, 0.45);
+  transition: transform 0.2s;
+}
+.ika-pin--food { background: var(--ika-orange); box-shadow: 0 0 0 2px var(--ika-orange-deep), 2px 3px 6px rgba(0, 40, 46, 0.45); }
+.ika-pin b {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  transform: rotate(45deg);
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ika-white);
+}
+.ika-pin--food b { color: var(--ika-ink); }
+.ika-pin-wrap.is-active .ika-pin { transform: rotate(-45deg) scale(1.25); box-shadow: 0 0 0 4px var(--ika-orange), 2px 3px 8px rgba(0, 40, 46, 0.5); }
+.ika-pin-wrap.is-active .ika-pin--food { box-shadow: 0 0 0 4px var(--ika-sea), 2px 3px 8px rgba(0, 40, 46, 0.5); }
+.ikabu .leaflet-container { font-family: var(--font-text); }
+.ikabu .leaflet-popup-content-wrapper { border-radius: 12px; border: 2px solid var(--ika-sea); box-shadow: 3px 3px 0 var(--ika-sea); font-size: 13px; line-height: 1.6; }
+.ikabu .leaflet-popup-content { margin: 10px 14px; }
+.ikabu .leaflet-popup-tip { border: 0; }
+.ikabu .leaflet-control-attribution { font-size: 10px; }
+
+.ika-spots { display: grid; gap: 14px; }
+.ika-spot {
+  position: relative;
+  padding: 16px 18px 18px;
+  background: var(--ika-white);
+  border: 3px solid var(--ika-sea);
+  border-radius: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.ika-spot--food { border-color: var(--ika-orange-deep); }
+.ika-spot.is-active { box-shadow: 6px 6px 0 var(--ika-orange); transform: translate(-2px, -2px); }
+.ika-spot--food.is-active { box-shadow: 6px 6px 0 var(--ika-sea); }
+.ika-spot-head { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; }
+.ika-spot-num {
+  flex: none;
+  display: grid; place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: var(--ika-sea);
+  color: var(--ika-white);
+  font-family: var(--font-varsity);
+  font-weight: 800;
+  font-size: 20px;
+}
+.ika-spot--food .ika-spot-num { background: var(--ika-orange); color: var(--ika-ink); }
+.ika-spot-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ika-spot-name { font-family: var(--font-maru); font-weight: 900; font-size: 18px; line-height: 1.4; color: var(--ika-ink); }
+.ika-spot-head:hover .ika-spot-name { color: var(--ika-sea); text-decoration: underline; text-decoration-color: var(--ika-orange); text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.ika-spot-tag { font-size: 12.5px; font-weight: 700; color: var(--ika-sea); }
+.ika-spot-desc { margin-top: 12px; font-size: 14px; line-height: 1.9; }
+.ika-spot-notes { margin-top: 6px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+.ika-spot-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ika-spot-links a {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 4px 12px;
+  border: 2px solid var(--ika-sea); border-radius: 999px;
+  color: var(--ika-sea); font-size: 13px; font-weight: 700;
+  transition: background 0.2s, color 0.2s;
+}
+.ika-spot-links a:hover { background: var(--ika-sea); color: var(--ika-white); }
+.ika-spot-sea { display: inline-block; margin-top: 12px; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); padding-bottom: 1px; }
+
+/* ==========================================================================
+   02 風と波：YFJ の海況（style.css の .sea-dash 系）をイカ部の色に
+   ========================================================================== */
+
+.ika-sea-toggle { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+.ika-sea-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 96px; min-height: 52px; padding: 6px 14px;
+  border: 3px solid var(--ika-sea); border-radius: 12px;
+  background: var(--ika-white); color: var(--ika-sea);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.ika-sea-tab:hover { background: var(--ika-mist); }
+.ika-sea-tab.is-active { background: var(--ika-sea); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-orange); }
+.ika-sea-tab-en { font-family: var(--font-varsity); font-weight: 800; font-size: 16px; letter-spacing: 0.12em; }
+.ika-sea-tab-ja { font-family: var(--font-maru); font-weight: 700; font-size: 12px; }
+
+.ikabu .sea-dash { gap: clamp(22px, 3vw, 36px); }
+.ikabu .sea-error { font-family: var(--font-text); font-size: 14px; color: var(--ika-ink-soft); }
+.ikabu .sea-strip-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; }
+.ikabu .sea-strip-head h2 { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.06em; color: var(--ika-sea); }
+.ikabu .sea-strip-head h2 .ja { font-family: var(--font-maru); font-weight: 700; font-size: 15px; letter-spacing: 0.1em; margin-left: 12px; color: var(--ika-ink-soft); }
+.ikabu .sea-updated { font-family: var(--font-varsity); font-weight: 800; font-size: 12px; letter-spacing: 0.16em; color: var(--ika-orange-deep); }
+.ikabu .dash-now { gap: 10px; }
+.ikabu .dash-now > div { background: var(--ika-mist); border-radius: 14px; border: 2px solid var(--ika-sea); }
+.ikabu .dash-now dt { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.2em; color: var(--ika-sea); }
+.ikabu .dash-now dd { font-family: var(--font-varsity); font-weight: 800; color: var(--ika-ink); }
+.ikabu .dash-now dd .sub { font-family: var(--font-text); font-weight: 400; color: var(--ika-ink-soft); }
+.ikabu .safety-band { border-radius: 14px; border-width: 3px; }
+.ikabu .safety-msg { font-family: var(--font-maru); font-weight: 900; }
+.ikabu .safety-badge { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.14em; }
+.ikabu .tide-panel, .ikabu .season-panel, .ikabu .bite-panel, .ikabu .area-reports { border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); background: var(--ika-white); }
+.ikabu .area-reports { padding: clamp(18px, 3vw, 30px); margin-top: 0; }
+.ikabu .tide-panel-head h3, .ikabu .season-head h3, .ikabu .bite-head h3, .ikabu .t-label { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.14em; color: var(--ika-sea); }
+.ikabu .bite-spot, .ikabu .season-month, .ikabu .source-note { font-family: var(--font-text); color: var(--ika-ink-soft); }
+.ikabu .bite-stars { color: var(--ika-orange-deep); }
+.ikabu .bite-score { font-family: var(--font-varsity); font-weight: 800; color: var(--ika-sea); }
+.ikabu .bite-message { font-family: var(--font-maru); font-weight: 700; }
+.ikabu .bite-reasons span { border-color: var(--ika-sea); color: var(--ika-sea); }
+.ikabu .bite-bar i { background: var(--ika-sea); }
+.ikabu .tide-chart .curve { stroke: var(--ika-sea); }
+.ikabu .tide-chart .fill { fill: rgba(0, 97, 107, 0.12); }
+.ikabu .tide-chart .peak-dot { fill: var(--ika-sea); }
+.ikabu .tide-chart .nowline, .ikabu .tide-chart .now-dot { stroke: var(--ika-orange-deep); fill: var(--ika-orange-deep); }
+.ikabu .tide-chart .nowline { fill: none; }
+.ikabu .tide-times, .ikabu .hourly-table { font-family: var(--font-text); }
+.ikabu .tide-times .k, .ikabu .season-group > dt { font-family: var(--font-varsity); font-weight: 800; color: var(--ika-sea); }
+.ikabu .hourly-table th { color: var(--ika-sea); }
+.ikabu .hourly-table td.now-col { background: rgba(244, 115, 33, 0.16); }
+.ikabu .season-tags span { border-color: var(--ika-sea); color: var(--ika-sea); }
+.ikabu .season-tags.squid span { border-color: var(--ika-orange-deep); color: var(--ika-orange-deep); }
+.ikabu .sea-more { color: var(--ika-sea); }
+.ikabu .report-card { border-color: var(--ika-sea); border-radius: 12px; }
+.ika-sea-source { margin-top: 24px; font-size: 12px; line-height: 1.8; color: var(--ika-ink-soft); }
+
+/* 読み方 */
+.ika-sea-guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ika-sea-guide-item { padding: 18px 18px 20px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; }
+.ika-sea-guide-key { font-family: var(--font-varsity); font-weight: 800; font-size: 13px; letter-spacing: 0.2em; color: var(--ika-orange-deep); }
+.ika-sea-guide-item h3 { margin-top: 4px; font-family: var(--font-maru); font-weight: 900; font-size: 17px; color: var(--ika-sea); }
+.ika-sea-guide-item p { margin-top: 8px; font-size: 13.5px; line-height: 1.85; color: var(--ika-ink-soft); }
+.ika-sea-h3 { margin-top: clamp(30px, 4vw, 44px); font-family: var(--font-maru); font-weight: 900; font-size: 20px; color: var(--ika-sea); }
+.ika-sea-p { margin-top: 10px; font-size: 14.5px; line-height: 1.9; max-width: 44em; }
+.ika-sea-levels { display: grid; gap: 8px; margin-top: 16px; }
+.ika-sea-level { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 14px; padding: 10px 14px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 12px; font-size: 14px; line-height: 1.7; }
+.ika-sea-level-badge { display: inline-grid; place-items: center; min-height: 30px; padding: 2px 8px; border-radius: 8px; font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.12em; color: #fff; background: var(--safe-ok, #2f6b66); }
+.ika-sea-level.lv1 .ika-sea-level-badge { background: var(--safe-caution, #b8860b); }
+.ika-sea-level.lv2 .ika-sea-level-badge { background: var(--safe-danger, #c2571f); }
+.ika-sea-level.lv3 .ika-sea-level-badge { background: var(--safe-stop, #9b2226); }
+.ika-sea-thresholds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.ika-sea-thresholds li { display: grid; gap: 3px; padding: 12px 16px; background: var(--ika-white); border: 2px dashed var(--ika-sea); border-radius: 12px; font-size: 13px; line-height: 1.7; }
+.ika-sea-thresholds strong { font-family: var(--font-maru); color: var(--ika-sea); }
+.ika-sea-thresholds em { display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-style: normal; font-size: 11px; font-weight: 700; }
+.ika-sea-areas { display: grid; gap: 6px; margin-top: 12px; font-size: 14px; line-height: 1.8; }
+.ika-sea-areas strong { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.1em; color: var(--ika-sea); margin-right: 4px; }
+.ika-sea-areas small { display: block; font-size: 12px; color: var(--ika-ink-soft); }
+.ika-sea-sources { margin-top: clamp(28px, 4vw, 40px); padding-top: 22px; border-top: 3px solid var(--ika-sea); }
+.ika-sea-sources-head { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.22em; color: var(--ika-sea); margin-bottom: 8px; }
+.ika-sea-sources ul { display: grid; gap: 6px; font-size: 13.5px; line-height: 1.8; }
+.ika-sea-sources a { color: var(--ika-sea); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ika-orange); }
+
+/* ==========================================================================
+   03 イカ食堂
+   ========================================================================== */
+
+.ika-kitchen-intro { display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: clamp(22px, 4vw, 48px); margin-bottom: clamp(32px, 5vw, 56px); }
+.ika-kitchen-intro h2 { font-family: var(--font-maru); font-weight: 900; font-size: clamp(24px, 3.4vw, 36px); line-height: 1.35; color: var(--ika-sea); }
+.ika-kitchen-intro p { margin-top: 14px; font-size: 15px; line-height: 2; }
+.ika-kitchen-photo { margin: 0; }
+.ika-kitchen-photo img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); box-shadow: 6px 6px 0 var(--ika-orange); }
+
+.ika-recipe-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(14px, 2vw, 22px); }
+.ika-recipe-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: 20px 22px 20px;
+  background: var(--ika-white);
+  border: 3px solid var(--ika-sea);
+  border-radius: var(--ika-radius);
+  box-shadow: 6px 6px 0 var(--ika-sea);
+  color: var(--ika-ink);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.ika-recipe-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ika-orange); }
+.ika-recipe-kind { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 3px 12px; border-radius: 999px; background: var(--ika-mist); color: var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; }
+.ika-recipe-time { position: absolute; top: 14px; right: 18px; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; letter-spacing: 0.1em; color: var(--ika-sea); }
+.ika-recipe-time b { font-size: 28px; margin-right: 3px; line-height: 1; }
+.ika-recipe-name { margin-top: 12px; font-family: var(--font-maru); font-weight: 900; font-size: 20px; line-height: 1.45; }
+.ika-recipe-intro { margin-top: 8px; font-size: 14px; line-height: 1.85; color: var(--ika-ink-soft); flex: 1; }
+.ika-recipe-go { margin-top: 16px; align-self: flex-start; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
+
+/* 1品のページ */
+.ika-recipe-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.ika-recipe-meta .ika-recipe-kind { background: var(--ika-sea); color: var(--ika-white); }
+.ika-recipe-meta .ika-recipe-time { position: static; }
+.ika-recipe-meta .ika-recipe-time b { font-size: 22px; }
+.ika-recipe-serves { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-recipe-body { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: clamp(22px, 4vw, 48px); margin-top: 26px; }
+.ika-ingredients { align-self: start; padding: 20px 22px 22px; background: var(--ika-mist); border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); }
+.ika-ingredients h2, .ika-method h2 { font-family: var(--font-maru); font-weight: 900; font-size: 20px; color: var(--ika-sea); }
+.ika-ingredients .ika-chips { margin-top: 12px; }
+.ika-ingredient-list { margin-top: 14px; display: grid; }
+.ika-ingredient-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--ika-sea-line); font-size: 14.5px; line-height: 1.6; }
+.ika-ingredient-list li:last-child { border-bottom: 0; }
+.ika-qty { flex: none; font-family: var(--font-varsity); font-weight: 800; font-size: 17px; letter-spacing: 0.04em; color: var(--ika-sea); }
+.ika-steps { margin-top: 14px; display: grid; gap: 14px; counter-reset: step; }
+.ika-steps li { position: relative; padding: 14px 18px 14px 62px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 14px; font-size: 15px; line-height: 1.9; counter-increment: step; }
+.ika-steps li::before { content: counter(step); position: absolute; left: 14px; top: 12px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-varsity); font-weight: 800; font-size: 20px; }
+.ika-tip { margin-top: 18px; padding: 14px 18px; border-left: 6px solid var(--ika-orange); background: #fff4ea; border-radius: 0 12px 12px 0; font-size: 14px; line-height: 1.85; }
+.ika-tip-label { display: inline-block; margin-right: 10px; font-family: var(--font-maru); font-weight: 900; color: var(--ika-orange-deep); }
+.ika-recipe-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 22px; margin-top: 26px; }
+.ika-recipe-back { font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
+.ika-print-only { display: none; }
+.ika-recipe-others .ika-recipe-list { grid-template-columns: repeat(3, 1fr); }
+
+/* ==========================================================================
+   04 世界のイカ
+   ========================================================================== */
+
+.ika-atlas-tools { display: grid; gap: 14px; margin-bottom: clamp(26px, 4vw, 40px); }
+.ika-search { display: flex; align-items: center; gap: 12px; max-width: 520px; }
+.ika-search-label { flex: none; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); }
+.ika-search input { flex: 1; min-width: 0; min-height: 46px; padding: 8px 16px; border: 3px solid var(--ika-sea); border-radius: 12px; background: var(--ika-white); font-family: var(--font-text); font-size: 15px; color: var(--ika-ink); }
+.ika-search input::placeholder { color: var(--ika-ink-soft); opacity: 0.8; }
+.ika-atlas-count { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-atlas-count b { font-family: var(--font-varsity); font-weight: 800; font-size: 20px; color: var(--ika-sea); margin-right: 2px; }
+.ika-atlas-group + .ika-atlas-group { margin-top: clamp(36px, 5vw, 56px); }
+.ika-atlas-group-title { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(20px, 2.6vw, 26px); color: var(--ika-sea); }
+.ika-atlas-group-title::after { content: ''; flex: 1; height: 3px; background: repeating-linear-gradient(90deg, var(--ika-sea) 0 12px, transparent 12px 20px); opacity: 0.35; }
+.ika-atlas-group-key { padding: 2px 10px; border-radius: 6px; background: var(--ika-sea); color: var(--ika-white); font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.16em; }
+.ika-atlas-group-count { font-family: var(--font-varsity); font-weight: 800; font-size: 18px; color: var(--ika-orange-deep); }
+.ika-atlas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 22px); }
+.ika-species { background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; box-shadow: 6px 6px 0 var(--ika-sea); transition: box-shadow 0.2s; }
+.ika-species[open] { box-shadow: 6px 6px 0 var(--ika-orange); }
+.ika-species-summary { display: block; cursor: pointer; list-style: none; }
+.ika-species-summary::-webkit-details-marker { display: none; }
+.ika-species-media { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); border-bottom: 3px solid var(--ika-sea); overflow: hidden; }
+.ika-species-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ika-species-wanted { display: grid; place-content: center; justify-items: center; gap: 6px; height: 100%; padding: 20px; text-align: center; color: var(--ika-sea); background: repeating-linear-gradient(135deg, transparent 0 14px, rgba(0, 97, 107, 0.06) 14px 16px), var(--ika-mist); }
+.ika-species-wanted-title { font-family: var(--font-maru); font-weight: 900; font-size: 16px; }
+.ika-species-wanted-note { font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); max-width: 22em; }
+.ika-species-head { position: relative; padding: 16px 18px 46px; }
+.ika-species-zone { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-varsity); font-weight: 800; font-size: 12px; letter-spacing: 0.2em; color: var(--ika-sea); text-transform: uppercase; }
+.ika-species-no { padding: 1px 6px; border-radius: 5px; background: var(--ika-sea); color: var(--ika-white); }
+.ika-species-name { margin-top: 8px; font-family: var(--font-maru); font-weight: 900; font-size: 20px; line-height: 1.4; }
+.ika-species-latin { margin-top: 2px; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-species-hook { margin-top: 10px; font-family: var(--font-maru); font-weight: 700; font-size: 14.5px; line-height: 1.6; color: var(--ika-sea); }
+.ika-species-more { position: absolute; left: 18px; bottom: 14px; font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
+.ika-species-more::after { content: ' ▾'; }
+.ika-species[open] .ika-species-more::after { content: ' ▴'; }
+.ika-species-more-close, .ika-species[open] .ika-species-more-open { display: none; }
+.ika-species[open] .ika-species-more-close { display: inline; }
+.ika-species-body { padding: 16px 18px 20px; border-top: 3px dashed var(--ika-sea-line); font-size: 14px; line-height: 1.9; }
+.ika-species-rows { display: grid; gap: 6px; margin-top: 12px; }
+.ika-species-row { display: grid; grid-template-columns: 4.5em 1fr; gap: 10px; align-items: baseline; }
+.ika-species-row dt { font-family: var(--font-maru); font-weight: 900; font-size: 12px; color: var(--ika-white); background: var(--ika-sea); border-radius: 6px; text-align: center; padding: 2px 4px; line-height: 1.6; }
+.ika-species-row dd { font-size: 13.5px; line-height: 1.7; }
+.ika-species-source { margin-top: 12px; }
+.ika-species-source a { font-family: var(--font-maru); font-weight: 700; font-size: 13.5px; color: var(--ika-sea); border-bottom: 2px solid var(--ika-orange); }
+.ika-atlas-empty { padding: 40px 0; text-align: center; font-family: var(--font-maru); font-weight: 700; color: var(--ika-ink-soft); }
+
+/* ==========================================================================
+   05 写真部
+   ========================================================================== */
+
+.ika-gallery-count { margin: 12px 0 20px; font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-gallery-count b { font-family: var(--font-varsity); font-weight: 800; font-size: 20px; color: var(--ika-sea); margin-right: 2px; }
+.ika-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 22px); }
+.ika-photo { margin: 0; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; box-shadow: 6px 6px 0 var(--ika-sea); }
+.ika-photo--own { border-color: var(--ika-orange-deep); box-shadow: 6px 6px 0 var(--ika-orange); }
+.ika-photo-btn { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--ika-mist); cursor: zoom-in; overflow: hidden; }
+.ika-photo-btn img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+.ika-photo-btn:hover img { transform: scale(1.04); }
+.ika-photo-cat { position: absolute; left: 10px; top: 10px; padding: 3px 10px; border-radius: 999px; background: var(--ika-white); color: var(--ika-sea); border: 2px solid var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 11.5px; }
+.ika-photo--own .ika-photo-cat { background: var(--ika-orange); border-color: var(--ika-orange); color: var(--ika-ink); }
+.ika-photo figcaption { display: grid; gap: 3px; padding: 12px 14px 14px; border-top: 3px solid var(--ika-sea); }
+.ika-photo--own figcaption { border-top-color: var(--ika-orange-deep); }
+.ika-photo-title { font-family: var(--font-maru); font-weight: 900; font-size: 15px; line-height: 1.5; }
+.ika-photo-by { font-size: 11.5px; line-height: 1.6; color: var(--ika-ink-soft); }
+
+/* 拡大表示 */
+.ika-lightbox { margin: auto; max-width: min(96vw, 1100px); max-height: 96vh; padding: 0; border: 0; border-radius: var(--ika-radius); background: var(--ika-ink); color: var(--ika-white); }
+.ika-lightbox::backdrop { background: rgba(0, 20, 24, 0.86); }
+.ika-lightbox-inner { position: relative; display: grid; grid-template-rows: 1fr auto; max-height: 96vh; }
+.ika-lightbox-figure { margin: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+.ika-lightbox-figure img { width: 100%; max-height: min(72vh, 760px); object-fit: contain; background: #000; display: block; }
+.ika-lightbox-cap { display: grid; gap: 4px; padding: 14px 20px 6px; font-size: 13.5px; line-height: 1.7; }
+.ika-lightbox-cap strong { font-family: var(--font-maru); font-weight: 900; font-size: 17px; }
+.ika-lightbox-cap .ika-credit { color: rgba(255, 255, 255, 0.72); }
+.ika-lightbox-cap .ika-credit a { color: var(--ika-orange-light); }
+.ika-lightbox-close { position: absolute; top: 10px; right: 10px; z-index: 2; width: 44px; height: 44px; border-radius: 50%; background: var(--ika-white); color: var(--ika-ink); font-size: 26px; line-height: 1; cursor: pointer; box-shadow: 3px 3px 0 var(--ika-orange); }
+.ika-lightbox-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 14px 14px; }
+.ika-lightbox-nav button { min-width: 56px; min-height: 44px; border-radius: 999px; background: var(--ika-white); color: var(--ika-sea); font-family: var(--font-varsity); font-weight: 800; font-size: 20px; cursor: pointer; }
+.ika-lightbox-pos { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.14em; color: var(--ika-orange-light); }
+
+/* ==========================================================================
+   07 スタンプとSNS
+   ========================================================================== */
+
+.ika-sheets { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(18px, 3vw, 32px); }
+.ika-sheet { padding: 18px 18px 22px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); box-shadow: 6px 6px 0 var(--ika-sea); }
+.ika-sheet-figure { position: relative; margin: 0; }
+.ika-sheet-figure img { width: 100%; height: auto; aspect-ratio: 3 / 2; display: block; border-radius: 12px; background: var(--ika-white); }
+.ika-sheet-vol { position: absolute; top: -8px; left: -8px; padding: 4px 12px; background: var(--ika-orange); color: var(--ika-ink); border: 3px solid var(--ika-white); border-radius: 8px; font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.16em; box-shadow: 3px 3px 0 var(--ika-sea); transform: rotate(-4deg); }
+.ika-sheet h2 { margin-top: 18px; font-family: var(--font-maru); font-weight: 900; font-size: 22px; line-height: 1.4; color: var(--ika-sea); }
+.ika-sheet p { margin-top: 10px; font-size: 14.5px; line-height: 1.9; }
+.ika-sheet .ika-tag { margin-top: 14px; }
+
+.ika-puns { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 22px); }
+.ika-pun { padding: 22px 22px 20px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); box-shadow: 6px 6px 0 var(--ika-orange); }
+.ika-pun:nth-child(even) { box-shadow: 6px 6px 0 var(--ika-sea); }
+.ika-pun-jp { font-family: var(--font-maru); font-weight: 900; font-size: clamp(26px, 3vw, 32px); line-height: 1.3; color: var(--ika-sea); }
+.ika-pun-en { margin-top: 6px; font-family: var(--font-varsity); font-weight: 800; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ika-orange-deep); }
+.ika-pun-note { margin-top: 10px; font-size: 13.5px; line-height: 1.85; color: var(--ika-ink-soft); }
+
+.ika-socials { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2vw, 22px); }
+.ika-social { position: relative; padding: 22px 22px 22px; background: var(--ika-white); border: 3px dashed var(--ika-sea); border-radius: var(--ika-radius); }
+.ika-social-mark { margin-top: 12px; font-family: var(--font-varsity); font-weight: 800; font-size: 30px; letter-spacing: 0.08em; color: var(--ika-sea); }
+.ika-social h3 { margin-top: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 19px; line-height: 1.45; }
+.ika-social p { margin-top: 8px; font-size: 14px; line-height: 1.9; }
+.ika-social small { display: block; margin-top: 12px; font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); }
+
+/* ==========================================================================
+   出典
+   ========================================================================== */
+
+.ika-source-photos { display: grid; gap: 12px; margin-bottom: clamp(32px, 5vw, 56px); }
+.ika-source-photo { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 12px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 14px; }
+.ika-source-photo--own { border-color: var(--ika-orange-deep); }
+.ika-source-thumb { display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; background: var(--ika-mist); }
+.ika-source-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ika-source-text h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--font-maru); font-weight: 900; font-size: 16px; line-height: 1.5; }
+.ika-source-text p { margin-top: 4px; font-size: 13.5px; line-height: 1.8; }
+.ika-source-cols { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 4vw, 48px); }
+.ika-source-list { display: grid; gap: 6px; font-size: 14px; line-height: 1.8; }
+.ika-source-list a { color: var(--ika-sea); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ika-orange); }
+.ika-source-list i { font-weight: 400; color: var(--ika-ink-soft); }
+.ika-source-dl { display: grid; gap: 14px; }
+.ika-source-dl > div { padding: 16px 20px; background: var(--ika-mist); border-radius: 14px; }
+.ika-source-dl dt { font-family: var(--font-maru); font-weight: 900; font-size: 15px; color: var(--ika-sea); }
+.ika-source-dl dd { margin-top: 4px; font-size: 14px; line-height: 1.9; }
+
+/* ==========================================================================
+   印刷（レシピ）：ヘッダー・フッター・ナビを消し、材料と手順だけを A4 に
+   ========================================================================== */
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .ikabu { background: #fff; color: #000; }
+  .ikabu #ika-header, .ikabu #ika-footer, .ikabu .ika-crumb, .ikabu .ika-recipe-actions, .ikabu #ika-servings, .ikabu .ika-recipe-others, .ikabu .skip-link { display: none !important; }
+  .ikabu .ika-page-head { background: none; color: #000; padding: 0 0 8mm; }
+  .ikabu .ika-page-head::before { display: none; }
+  .ikabu .ika-page-head .ika-eyebrow, .ikabu .ika-page-desc { color: #333; }
+  .ikabu .ika-page-head .ika-eyebrow-num { background: #000; color: #fff; }
+  .ikabu .ika-page-title { font-size: 24pt; }
+  .ikabu .ika-section { padding: 0; }
+  .ikabu .wrap { padding-inline: 0; }
+  .ikabu .ika-recipe-body { grid-template-columns: 1fr; gap: 8mm; margin-top: 6mm; }
+  .ikabu .ika-ingredients, .ikabu .ika-steps li, .ikabu .ika-note, .ikabu .ika-tip { background: none; border-color: #000; box-shadow: none; break-inside: avoid; }
+  .ikabu .ika-steps li::before { background: none; border: 2px solid #000; color: #000; }
+  .ikabu .ika-qty, .ikabu .ika-ingredients h2, .ikabu .ika-method h2, .ikabu .ika-tip-label { color: #000; }
+  .ikabu .ika-note-label { background: #000; color: #fff; }
+  .ikabu .ika-print-only { display: block; margin-top: 8mm; font-size: 9pt; color: #555; }
+}
+
+/* ==========================================================================
    現れる演出（任意）
    ========================================================================== */
 
@@ -851,6 +1296,14 @@
   .ika-cards { grid-template-columns: 1fr 1fr; }
   .ika-footer-inner { grid-template-columns: 1fr 1fr; }
   .ika-footer-brand { grid-column: 1 / -1; }
+  /* サブページ */
+  .ika-map-layout { grid-template-columns: 1fr; }
+  .ika-map-col { position: static; }
+  .ika-map { height: clamp(300px, 48vh, 440px); }
+  .ika-sea-guide { grid-template-columns: 1fr 1fr; }
+  .ika-atlas-grid, .ika-gallery, .ika-puns { grid-template-columns: 1fr 1fr; }
+  .ika-recipe-others .ika-recipe-list { grid-template-columns: 1fr 1fr; }
+  .ika-recipe-body { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
 }
 
 @media (max-width: 760px) {
@@ -891,6 +1344,33 @@
   .ika-footer-inner { grid-template-columns: 1fr; gap: 28px; }
   .ika-footer-bottom { flex-direction: column; }
   .ika-page-title { font-size: 27px; }
+  /* サブページ */
+  .ika-chip { min-height: 38px; padding: 5px 13px; font-size: 13px; }
+  .ika-note { padding: 14px 16px; font-size: 14px; }
+  .ika-map-frame { box-shadow: 4px 4px 0 var(--ika-sea); }
+  .ika-spot { padding: 14px 14px 16px; }
+  .ika-spot-name { font-size: 16.5px; }
+  .ika-sea-tab { min-width: 0; flex: 1 1 calc(33.333% - 8px); min-height: 48px; padding: 5px 8px; }
+  .ika-sea-tab-en { font-size: 13px; }
+  .ika-sea-guide { grid-template-columns: 1fr; }
+  .ika-sea-level { grid-template-columns: 80px 1fr; gap: 10px; font-size: 13px; }
+  .ika-sea-thresholds { grid-template-columns: 1fr; }
+  .ika-kitchen-intro { grid-template-columns: 1fr; }
+  .ika-recipe-list, .ika-recipe-others .ika-recipe-list { grid-template-columns: 1fr; }
+  .ika-recipe-card { box-shadow: 4px 4px 0 var(--ika-sea); }
+  .ika-recipe-body { grid-template-columns: 1fr; }
+  .ika-steps li { padding: 12px 14px 12px 56px; font-size: 14.5px; }
+  .ika-steps li::before { left: 12px; width: 32px; height: 32px; font-size: 18px; }
+  .ika-search { flex-direction: column; align-items: stretch; gap: 6px; }
+  .ika-atlas-grid, .ika-gallery, .ika-puns, .ika-sheets, .ika-socials, .ika-source-cols { grid-template-columns: 1fr; }
+  .ika-species, .ika-photo, .ika-pun, .ika-sheet { box-shadow: 4px 4px 0 var(--ika-sea); }
+  .ika-photo--own { box-shadow: 4px 4px 0 var(--ika-orange); }
+  .ika-species-head { padding: 14px 16px 44px; }
+  .ika-species-name { font-size: 18px; }
+  .ika-lightbox { max-width: 100vw; max-height: 100vh; border-radius: 0; }
+  .ika-lightbox-figure img { max-height: 60vh; }
+  .ika-pun-jp { font-size: 26px; }
+  .ika-source-photo { grid-template-columns: 96px 1fr; gap: 12px; }
 }
 
 .sp-only { display: none; }

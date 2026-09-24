@@ -5,18 +5,19 @@
 //   4. 画面に入ったら現れる演出（.ika-reveal）
 import '../analytics.js';
 import { mountShell } from './shell.js';
-import { langFromPath } from './i18n.js';
+import { langFromPath, recipeIdFromPath } from './i18n.js';
 
 export function boot(render) {
   const lang = langFromPath(location.pathname);
   const page = document.body.dataset.page || 'index';
+  const recipeId = recipeIdFromPath(location.pathname); // /ikabu/recipes/<id>.html のときだけ入る
   mountShell({ lang, page });
 
   const main = document.getElementById('main');
-  if (main && !main.innerHTML.trim()) main.innerHTML = render(lang);
+  if (main && !main.innerHTML.trim()) main.innerHTML = render(lang, { recipeId });
 
   initReveal();
-  return { lang, page, main };
+  return { lang, page, main, recipeId };
 }
 
 function initReveal() {

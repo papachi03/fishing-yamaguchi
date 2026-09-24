@@ -31,11 +31,15 @@ export async function closePrerenderIkabu() {
   server = null;
 }
 
-// ファイル名から page と lang を取り出す。/ikabu/ 配下でなければ null
+// ファイル名から page と lang を取り出す。/ikabu/ 配下でなければ null。
+// /ikabu/recipes/<id>.html（/ikabu/en/recipes/<id>.html）は page='recipe' ＋ recipeId
 export function parseIkabuPath(filename) {
-  const m = filename.replace(/\\/g, '/').match(/\/ikabu\/(en\/)?([a-z]+)\.html$/);
+  const p = filename.replace(/\\/g, '/');
+  const r = p.match(/\/ikabu\/(en\/)?recipes\/([a-z0-9-]+)\.html$/);
+  if (r) return { lang: r[1] ? 'en' : 'ja', page: 'recipe', recipeId: r[2] };
+  const m = p.match(/\/ikabu\/(en\/)?([a-z]+)\.html$/);
   if (!m) return null;
-  return { lang: m[1] ? 'en' : 'ja', page: m[2] };
+  return { lang: m[1] ? 'en' : 'ja', page: m[2], recipeId: null };
 }
 
 const MARKS = {
@@ -47,7 +51,7 @@ const MARKS = {
 export async function prerenderIkabu(html, { filename, root, base }) {
   const target = parseIkabuPath(filename);
   if (!target) return html;
-  const { page, lang } = target;
+  const { page, lang, recipeId } = target;
 
   for (const [k, mark] of Object.entries(MARKS)) {
     if (!html.includes(mark)) throw new Error(`[prerender-ikabu] ${filename}: ${k} の目印 ${mark} が見つかりません（scripts/gen-ikabu-shells.mjs で作り直してください）`);
@@ -60,7 +64,7 @@ export async function prerenderIkabu(html, { filename, root, base }) {
 
   // replace の第2引数に関数を渡す：本文に "$&" などがあっても置換パターンとして解釈されない
   return html
-    .replace(MARKS.header, () => `<header id="ika-header">${shell.headerHTML(lang, page)}</header>`)
-    .replace(MARKS.main, () => `<main id="main">${view.render(lang)}</main>`)
+    .replace(MARKS.header, () => `<header id="ika-header">${shell.headerHTML(lang, page, { recipeId })}</header>`)
+    .replace(MARKS.main, () => `<main id="main">${view.render(lang, { recipeId })}</main>`)
     .replace(MARKS.footer, () => `<footer id="ika-footer">${shell.footerHTML(lang)}</footer>`);
 }

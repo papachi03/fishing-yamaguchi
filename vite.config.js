@@ -2,14 +2,11 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { prerenderSea } from './scripts/prerender-sea.mjs';
 import { prerenderIkabu, closePrerenderIkabu } from './scripts/prerender-ikabu.mjs';
-import { IKABU_PAGES } from './scripts/gen-ikabu-shells.mjs';
+import { ikabuShells } from './scripts/gen-ikabu-shells.mjs';
 
-// イカ部：ikabu/<page>.html と ikabu/en/<page>.html（殻は scripts/gen-ikabu-shells.mjs が作る）
+// イカ部：ikabu/<page>.html、ikabu/en/<page>.html、ikabu/(en/)recipes/<id>.html（殻は scripts/gen-ikabu-shells.mjs が作る）
 const ikabuInputs = Object.fromEntries(
-  IKABU_PAGES.flatMap((p) => [
-    [`ikabu-${p}`, resolve(__dirname, `ikabu/${p}.html`)],
-    [`ikabu-en-${p}`, resolve(__dirname, `ikabu/en/${p}.html`)],
-  ])
+  ikabuShells().map((s) => [`ikabu-${s.file.replace(/^ikabu\//, '').replace(/\.html$/, '').replace(/\//g, '-')}`, resolve(__dirname, s.file)])
 );
 
 export default defineConfig({

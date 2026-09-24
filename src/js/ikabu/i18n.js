@@ -22,8 +22,14 @@ export const esc = (s) =>
 export const pageUrl = (page = 'index', lang = 'ja') =>
   `/ikabu/${lang === 'en' ? 'en/' : ''}${page === 'index' ? '' : `${page}.html`}`;
 
+// レシピ1品は静的ページ（/ikabu/recipes/<id>.html、/ikabu/en/recipes/<id>.html）。
+// 「recipe.html?id=」だと検索エンジンに1ページとしか見えないため、品ごとに URL を分けている
+export const recipeUrl = (id, lang = 'ja') => `/ikabu/${lang === 'en' ? 'en/' : ''}recipes/${id}.html`;
+export const recipeIdFromPath = (pathname = '') => pathname.match(/\/ikabu\/(?:en\/)?recipes\/([a-z0-9-]+)\.html$/)?.[1] ?? null;
+
 // 画面に出す用（サイトのベースパス付き）。ビルド時は vite の base、ブラウザでは import.meta.env.BASE_URL で同じ値になる
 export const pageHref = (page, lang) => url(pageUrl(page, lang));
+export const recipeHref = (id, lang) => url(recipeUrl(id, lang));
 export const assetHref = (p) => url(p);
 
 // 7つの部活動（ヘッダーのナビ・トップの入口カード・フッターで共有）

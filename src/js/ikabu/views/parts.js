@@ -1,5 +1,31 @@
 // 各ページで使い回す部品（純粋関数）。
-import { t, pageHref, SECTIONS } from '../i18n.js';
+import { t, esc, pageHref, SECTIONS } from '../i18n.js';
+
+// 絞り込みチップ（写真部・図鑑・地図で共通）。items は [key, pair] の配列。attr はキーを入れる data 属性名
+export function chipsHTML(lang, items, { attr, current = 'all', label, id }) {
+  return `
+  <div class="ika-chips" role="group"${id ? ` id="${id}"` : ''} aria-label="${t(lang, label)}">
+    ${items.map(([k, v]) => `<button type="button" class="ika-chip" data-${attr}="${k}" aria-pressed="${String(k === current)}">${t(lang, v)}</button>`).join('')}
+  </div>`;
+}
+
+// 写真のクレジット1行：撮影者 ・ ライセンス（リンク） ・ 出典。自分たちの写真は © 表記だけ
+export function creditHTML(lang, p, { withSource = true } = {}) {
+  if (!p) return '';
+  if (p.own) return `<p class="ika-credit">© ${esc(p.author)}${withSource ? ` ・ <a href="${esc(p.source)}">${t(lang, '釣果記録', 'Fishing log')}</a>` : ''}</p>`;
+  const lic = p.licenseUrl ? `<a href="${esc(p.licenseUrl)}" target="_blank" rel="noopener license">${esc(t(lang, p.license))}</a>` : esc(t(lang, p.license));
+  const src = withSource && p.source ? ` ・ <a href="${esc(p.source)}" target="_blank" rel="noopener">${t(lang, '出典', 'Source')} ↗</a>` : '';
+  return `<p class="ika-credit">${t(lang, '写真', 'Photo')}: ${esc(p.author)} ・ ${lic}${src}</p>`;
+}
+
+// 注意書きの箱（釣り場の目安・食の安全など）
+export function noteHTML(lang, { label, html, tone = 'sea' }) {
+  return `
+  <aside class="ika-note ika-note--${tone}">
+    ${label ? `<p class="ika-note-label">${t(lang, label)}</p>` : ''}
+    <div class="ika-note-body">${html}</div>
+  </aside>`;
+}
 
 // ページの見出し：パンくず＋英字の小見出し＋タイトル＋一言
 export function pageHead(lang, { eyebrow, title, desc, num }) {

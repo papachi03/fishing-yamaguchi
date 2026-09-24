@@ -1,11 +1,12 @@
-// イカ部の HTML の殻（ikabu/*.html と ikabu/en/*.html、計20枚）を1か所から作る。
+// イカ部の HTML の殻（ikabu/*.html と ikabu/en/*.html、レシピ1品ずつの ikabu/recipes/*.html）を1か所から作る。
 //   node scripts/gen-ikabu-shells.mjs
 // 殻は「head の情報 ＋ 空の header / main / footer ＋ 入口スクリプト」だけ。
 // 本文はビルド時に vite.config.js の prerender-ikabu が書き込み、dev ではブラウザで描く。
-// 20枚を手で直すと必ずズレるので、直したいときはこのファイルを直して作り直す。
+// 枚数が多く手で直すと必ずズレるので、直したいときはこのファイルを直して作り直す。
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { recipes } from '../src/js/ikabu/data.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGIN = 'https://yamaguchifishing.com';
@@ -17,15 +18,15 @@ const PAGES = {
     ja: ['山口イカ部 — イカが好き。それだけで、部員。', '山口在住の釣り人が始めた、イカ好きの部活。釣っても、食べても、眺めるだけでも部員。山口マップ、風と波、イカ食堂、世界のイカ図鑑、写真部、あそび場、スタンプ。'],
     en: ['Yamaguchi Ika Club — Love squid? You are already a member.', 'A squid-lovers’ club started by an angler in Yamaguchi, Japan. Map, sea conditions, recipes, a squid atlas, a photo club, games and stickers.'],
   },
-  map: { ja: ['山口マップ', '公開されている遊漁船の案内と、イカの食文化を楽しむ立ち寄り先。ピンはエリアの目安。'], en: ['Map', 'Public boat-trip information and stops to explore local squid food culture in Yamaguchi.'] },
-  sea: { ja: ['風と波', '萩・長門・下関の風と波。ジャーナル本編の海況を部室から。'], en: ['Sea conditions', 'Wind and waves for Hagi, Nagato and Shimonoseki, from the journal’s sea page.'] },
-  recipes: { ja: ['イカ食堂', '家庭で作る４つの加熱料理。人数に合わせて分量を切り替えられます。'], en: ['Recipes', 'Four home recipes using cooked squid. Switch quantities for two or four servings.'] },
+  map: { ja: ['山口マップ', '萩・長門・下関の遊漁船の公開案内と、須佐・特牛のイカの食文化スポットを地図に。ピンはエリアの目安で、釣り場そのものは示しません。'], en: ['Map', 'Public boat-trip information for Hagi, Nagato and Shimonoseki, plus squid food-culture stops in Susa and Kottoi. Pins mark areas, never exact fishing spots.'] },
+  sea: { ja: ['風と波', '萩・長門・下関・下松・防府の天気、風速、突風、波高、潮汐と堤防の安全判定。ジャーナル本編の海況を部室から。'], en: ['Sea conditions', 'Weather, wind, gusts, wave height, tide and a breakwater safety guide for Hagi, Nagato, Shimonoseki, Kudamatsu and Hofu, from the journal’s sea page.'] },
+  recipes: { ja: ['イカ食堂', 'バター醤油、生姜煮、トマトパスタ、酢味噌和え。家庭で作る４つの加熱料理。人数に合わせて分量を切り替えられます。'], en: ['Recipes', 'Soy butter, ginger simmer, tomato pasta and vinegar miso. Four home recipes using cooked squid, with quantities for two or four servings.'] },
   recipe: { ja: ['材料と作り方', '1品ずつのレシピページ。分量と手順を台所で見やすく。'], en: ['Ingredients & steps', 'One recipe per page, with quantities and steps laid out for the kitchen.'] },
-  atlas: { ja: ['世界のイカ', '沿岸から深海まで、山口→日本→世界の順に約12種。'], en: ['Squid atlas', 'About twelve species, from Yamaguchi to Japan to the world.'] },
-  gallery: { ja: ['写真部', '海、生きもの、食卓。撮影者と撮影地を添えた参考アルバム。'], en: ['Gallery', 'Sea, wildlife and food. A reference album with photographers and locations credited.'] },
+  atlas: { ja: ['世界のイカ', 'アオリイカ、ケンサキイカ、ヤリイカからダイオウイカまで。沿岸から深海まで、山口→日本→世界の順に13種の入門図鑑。'], en: ['Squid atlas', 'From bigfin reef squid and swordtip squid to the giant squid. An introductory atlas of thirteen species, from Yamaguchi to Japan to the world.'] },
+  gallery: { ja: ['写真部', '部員の釣果、山口の海、イカの姿、食卓。撮影者と出典を添えた参考アルバム。'], en: ['Gallery', 'Our catches, the Yamaguchi coast, squid life and the table. A reference album with photographers and sources credited.'] },
   play: { ja: ['イカ部のあそび場', 'エギングゲームと「墨つなぎ」。釣りに行けない日のために。'], en: ['Play', 'An eging game and Ink Link, for days you cannot get to the water.'] },
-  studio: { ja: ['スタンプとSNS', '紺とオレンジのイカのスタンプ案と、ダジャレの解説。'], en: ['Stickers & social', 'Sticker concepts with our navy-and-orange squid, and a pun glossary.'] },
-  sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information.'] },
+  studio: { ja: ['スタンプとSNS', '紺とオレンジのイカのスタンプ案（ダジャレ編・山口の地名編）と、ダジャレの解説。YouTube・Instagramは準備中。'], en: ['Stickers & social', 'Sticker concepts with our navy-and-orange squid (puns and Yamaguchi place names), a pun glossary, and what is coming on YouTube and Instagram.'] },
+  sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと Open-Meteo の利用条件についても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and Open-Meteo terms.'] },
 };
 
 const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika Club' };
@@ -33,12 +34,13 @@ const FONTS =
   'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap';
 
 const pagePath = (page, lang) => `/ikabu/${lang === 'en' ? 'en/' : ''}${page === 'index' ? '' : `${page}.html`}`;
+const recipePath = (id, lang) => `/ikabu/${lang === 'en' ? 'en/' : ''}recipes/${id}.html`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-function shell(page, lang) {
-  const [name, desc] = PAGES[page][lang];
+// 1枚の殻。path(lang) は同じページの各言語の URL（hreflang と canonical に使う）
+function shell({ page, lang, name, desc, path }) {
   const title = page === 'index' ? name : `${name} | ${SITE[lang]}`;
-  const canonical = ORIGIN + pagePath(page, lang);
+  const canonical = ORIGIN + path(lang);
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -47,9 +49,9 @@ function shell(page, lang) {
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(desc)}" />
   <link rel="canonical" href="${canonical}" />
-  <link rel="alternate" hreflang="ja" href="${ORIGIN + pagePath(page, 'ja')}" />
-  <link rel="alternate" hreflang="en" href="${ORIGIN + pagePath(page, 'en')}" />
-  <link rel="alternate" hreflang="x-default" href="${ORIGIN + pagePath(page, 'ja')}" />
+  <link rel="alternate" hreflang="ja" href="${ORIGIN + path('ja')}" />
+  <link rel="alternate" hreflang="en" href="${ORIGIN + path('en')}" />
+  <link rel="alternate" hreflang="x-default" href="${ORIGIN + path('ja')}" />
   <meta property="og:title" content="${esc(title)}" />
   <meta property="og:description" content="${esc(desc)}" />
   <meta property="og:type" content="website" />
@@ -80,17 +82,35 @@ function shell(page, lang) {
 
 // vite.config.js の input に登録する名前の一覧（同じ規則で作る）
 export const IKABU_PAGES = Object.keys(PAGES);
+export const IKABU_RECIPE_IDS = recipes.map((r) => r.id);
+
+// 作る殻の一覧：{ file（ROOT からの相対）, page, lang, name, desc, path }
+export function ikabuShells() {
+  const out = [];
+  for (const lang of ['ja', 'en']) {
+    const dir = lang === 'en' ? 'ikabu/en' : 'ikabu';
+    for (const page of IKABU_PAGES) {
+      const [name, desc] = PAGES[page][lang];
+      out.push({ file: `${dir}/${page}.html`, page, lang, name, desc, path: (l) => pagePath(page, l) });
+    }
+    for (const r of recipes) {
+      // 1品の title は料理名、description は一言＋分数
+      const name = r.name[lang];
+      const desc = lang === 'en' ? `${r.intro.en} About ${r.time} minutes. Ingredients for 2 or 4 servings, numbered steps and a print view.` : `${r.intro.ja} 目安${r.time}分。2人分／4人分の材料と手順、印刷用の表示つき。`;
+      out.push({ file: `${dir}/recipes/${r.id}.html`, page: 'recipe', lang, name, desc, path: (l) => recipePath(r.id, l) });
+    }
+  }
+  return out;
+}
 
 // 直接実行したときだけ書き出す（vite.config.js から import しても副作用が出ないように）
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   let n = 0;
-  for (const lang of ['ja', 'en']) {
-    const dir = resolve(ROOT, 'ikabu', lang === 'en' ? 'en' : '');
-    mkdirSync(dir, { recursive: true });
-    for (const page of IKABU_PAGES) {
-      writeFileSync(resolve(dir, `${page}.html`), shell(page, lang), 'utf8');
-      n++;
-    }
+  for (const s of ikabuShells()) {
+    const file = resolve(ROOT, s.file);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, shell(s), 'utf8');
+    n++;
   }
   console.log(`[gen-ikabu-shells] ${n} files written`);
 }

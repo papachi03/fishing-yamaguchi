@@ -1,24 +1,25 @@
 // イカ部のヘッダーとフッター。
 // headerHTML / footerHTML は文字列を返すだけの純粋関数（ビルド時にも使う）。
 // mountShell だけがブラウザで動き、殻が空のときに埋める＋メニュー・言語切替の操作を付ける。
-import { t, pageHref, assetHref, SECTIONS, navPageOf, esc } from './i18n.js';
+import { t, pageHref, recipeHref, recipeIdFromPath, assetHref, SECTIONS, navPageOf, esc } from './i18n.js';
 
 const LOGO = '/assets/ikabu/logo_600.png';
 const YFJ_HOME = '/';
 
-export function headerHTML(lang, page = 'index') {
+// recipeId があるとき（/ikabu/recipes/<id>.html）は、言語切替も同じ品の静的ページを指す
+export function headerHTML(lang, page = 'index', { recipeId = null } = {}) {
   const active = navPageOf(page);
-  const other = lang === 'en' ? 'ja' : 'en';
   const nav = SECTIONS.map(
     (s) =>
       `<li><a href="${pageHref(s.page, lang)}"${active === s.page ? ' aria-current="page"' : ''}><span class="ika-nav-num">${s.num}</span>${t(lang, s.label)}</a></li>`
   ).join('');
   // 言語リンクは同じページを指す。クエリとハッシュは mountShell がブラウザで足す
+  const altHref = (l) => (recipeId ? recipeHref(recipeId, l) : pageHref(page, l));
   const langSwitch = `
     <div class="ika-lang" aria-label="Language">
-      <a href="${pageHref(page, 'ja')}" lang="ja" data-lang="ja"${lang === 'ja' ? ' aria-current="true"' : ''}>日本語</a>
+      <a href="${altHref('ja')}" lang="ja" data-lang="ja"${lang === 'ja' ? ' aria-current="true"' : ''}>日本語</a>
       <span aria-hidden="true">｜</span>
-      <a href="${pageHref(page, 'en')}" lang="en" data-lang="en"${lang === 'en' ? ' aria-current="true"' : ''}>EN</a>
+      <a href="${altHref('en')}" lang="en" data-lang="en"${lang === 'en' ? ' aria-current="true"' : ''}>EN</a>
     </div>`;
   return `
   <div class="ika-header-bar">
@@ -91,7 +92,7 @@ export function footerHTML(lang) {
 export function mountShell({ lang, page }) {
   const header = document.getElementById('ika-header');
   const footer = document.getElementById('ika-footer');
-  if (header && !header.innerHTML.trim()) header.innerHTML = headerHTML(lang, page);
+  if (header && !header.innerHTML.trim()) header.innerHTML = headerHTML(lang, page, { recipeId: recipeIdFromPath(location.pathname) });
   if (footer && !footer.innerHTML.trim()) footer.innerHTML = footerHTML(lang);
 
   // 言語を切り替えても、同じクエリ（?id=…）とハッシュを保つ
