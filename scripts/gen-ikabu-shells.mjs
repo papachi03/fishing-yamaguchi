@@ -3,7 +3,7 @@
 // 殻は「head の情報 ＋ 空の header / main / footer ＋ 入口スクリプト」だけ。
 // 本文はビルド時に vite.config.js の prerender-ikabu が書き込み、dev ではブラウザで描く。
 // 枚数が多く手で直すと必ずズレるので、直したいときはこのファイルを直して作り直す。
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recipes } from '../src/js/ikabu/data.js';
@@ -39,6 +39,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 // 1枚の殻。path(lang) は同じページの各言語の URL（hreflang と canonical に使う）
 function shell({ page, lang, name, desc, path }) {
+  // 「recipe.html」は旧URLからの転送と1品を選ぶだけのページなので検索には載せない（1品ずつのページを載せる）
+  const robots = path(lang).endsWith('/recipe.html') ? '  <meta name="robots" content="noindex" />\n' : '';
   const title = page === 'index' ? name : `${name} | ${SITE[lang]}`;
   const canonical = ORIGIN + path(lang);
   return `<!doctype html>
@@ -60,9 +62,7 @@ function shell({ page, lang, name, desc, path }) {
   <meta property="og:image" content="${OG_IMAGE}" />
   <meta property="og:locale" content="${lang === 'en' ? 'en_US' : 'ja_JP'}" />
   <meta name="twitter:card" content="summary_large_image" />
-  <!-- ぱっぱのOKが出るまで検索に載せない。正式公開のときに gen-ikabu-shells.mjs から外して作り直す -->
-  <meta name="robots" content="noindex" />
-  <link rel="icon" href="/assets/images/logo_cd_96.png" />
+${robots}  <link rel="icon" href="/assets/images/logo_cd_96.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="${FONTS}" rel="stylesheet" />
@@ -113,4 +113,21 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     n++;
   }
   console.log(`[gen-ikabu-shells] ${n} files written`);
+  // サイトマップ（公開ページだけ。recipe.html は除く）。YFJ 本体の分は手で書いたまま触らない
+  const today = new Date().toISOString().slice(0, 10);
+  const entries = ikabuShells()
+    .map((sh) => sh.path(sh.lang))
+    .filter((u) => !u.endsWith('/recipe.html'))
+    .map((u) => `  <url>\n    <loc>${ORIGIN}${u}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${u.includes('/sea.html') ? 'daily' : 'monthly'}</changefreq>\n    <priority>${/\/ikabu\/(en\/)?$/.test(u) ? '0.8' : '0.6'}</priority>\n  </url>`)
+    .join('\n');
+  const smFile = resolve(ROOT, 'public/sitemap.xml');
+  const sm = readFileSync(smFile, 'utf8');
+  const START = '  <!-- ikabu:start（scripts/gen-ikabu-shells.mjs が書く） -->';
+  const END = '  <!-- ikabu:end -->';
+  const block = `${START}\n${entries}\n${END}`;
+  const next = sm.includes(START)
+    ? sm.replace(new RegExp(`${START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${END}`), block)
+    : sm.replace('</urlset>', `${block}\n</urlset>`);
+  writeFileSync(smFile, next, 'utf8');
+  console.log(`[gen-ikabu-shells] sitemap: ${entries.split('<url>').length - 1} urls`);
 }
