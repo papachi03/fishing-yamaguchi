@@ -21,6 +21,10 @@
     # 毎朝7:00（日本時間）の堤防判定のX投稿下書き（src/morning.js）。UTC表記
     [triggers]
     crons = ["0 22 * * *"]
+
+    # 実行の記録を残す（Cloudflareダッシュボードの Workers → yfj-reports → Logs で後から見られる）
+    [observability]
+    enabled = true
     ```
   - secretの登録も同じ場所から：`printf '%s' '<値>' | npx wrangler secret put <名前>`
   - `npx wrangler login` は要らない（このPCは既に認証済み。Avastが `wrangler login` を誤検知する問題があるので、loginはやり直さない）
@@ -63,3 +67,8 @@ KVの読み取りは無料枠で1日10万回。絞り込みは**まず公開用�
 ## 釣り場・魚の選択肢を変えるとき
 
 `src/js/data/spot-list.js`・`report-options.js` を直す → `npm test` → **サイトとWorkerの両方を出し直す**（Workerも同じファイルを取り込んでいるため。片方だけだと、新しい釣り場を選んだ投稿が「場所を選んでください」で弾かれる）。IDは変えない・消さない。
+
+
+## 朝の堤防判定を手で送り直す
+管理ページ（/admin）の一番上「朝の堤防判定を今すぐDiscordへ送る」。定期実行の確認や、通知が来なかった日の取り返しに使う。
+予報・Discordはそれぞれ10秒で見切る（応答が無いまま止まってDiscordに届かなかった事故の対策、2026-09-24）。

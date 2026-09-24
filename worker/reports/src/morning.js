@@ -13,12 +13,18 @@ import { fetchWeather } from '../../../src/js/api/weather.js';
 import { assessSafety } from '../../../src/js/api/safety.js';
 import { composeMorningPost, morningDiscordContent } from '../../../src/js/lib/morning-post.js';
 
+// 予報APIが応答しないまま止まると、Discordまで届かずに終わる（2026-09-24、手動送信が途中で切れた）。
+// 1エリア10秒で見切って「取得できず」として先へ進む
+const WEATHER_TIMEOUT_MS = 10000;
+const withTimeout = (p, ms, label) =>
+  Promise.race([p, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timeout ${ms}ms`)), ms))]);
+
 /** 5エリアの判定。予報を取れなかったエリアは level: null */
 export async function morningRows(fetchW = fetchWeather) {
   return Promise.all(
     areas.map(async (area) => {
       try {
-        const w = await fetchW(area);
+        const w = await withTimeout(fetchW(area), WEATHER_TIMEOUT_MS, `weather ${area.id}`);
         const s = assessSafety({
           wind: w.current.wind,
           gust: w.current.gust,
@@ -42,13 +48,15 @@ export async function sendMorningDraft(env, { now = new Date(), fetchW = fetchWe
     console.error('morning: DISCORD_WEBHOOK_URL missing');
     return false;
   }
+  const t0 = Date.now();
   const rows = await morningRows(fetchW);
+  console.log('morning: rows', Date.now() - t0, 'ms', rows.map((r) => `${r.nameJa}:${r.level}`).join(' '));
   const text = composeMorningPost({ date: now, rows });
   const draft = morningDiscordContent(text, rows.every((r) => r.level == null));
   // 通知を鳴らすためのメンション。IDは wrangler.toml の [vars]（git管理外）に置く
   const mentionId = /^\d{17,20}$/.test(env.DISCORD_MENTION_USER_ID ?? '') ? env.DISCORD_MENTION_USER_ID : null;
   const content = mentionId ? `<@${mentionId}>\n${draft}` : draft;
-  const res = await fetch(env.DISCORD_WEBHOOK_URL, {
+  const res = await withTimeout(fetch(env.DISCORD_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -58,7 +66,12 @@ export async function sendMorningDraft(env, { now = new Date(), fetchW = fetchWe
       allowed_mentions: mentionId ? { parse: [], users: [mentionId] } : { parse: [] },
       flags: 4, // リンクのプレビュー（埋め込み）を出さない。通知が長くなりすぎるため
     }),
+  }), WEATHER_TIMEOUT_MS, 'discord').catch((err) => {
+    console.error('morning: discord error', String(err));
+    return null;
   });
-  if (!res.ok) console.error('morning: discord failed', res.status);
+  if (!res) return false;
+  if (!res.ok) console.error('morning: discord failed', res.status, (await res.text().catch(() => '')).slice(0, 300));
+  else console.log('morning: discord ok', res.status, Date.now() - t0, 'ms');
   return res.ok;
 }

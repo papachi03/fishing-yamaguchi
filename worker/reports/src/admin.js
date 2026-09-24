@@ -4,6 +4,7 @@ import { checkPassphrase, makeAdminCookie, isAdmin, readDeleteToken } from './au
 import { allowLogin, ipHashOf } from './guard.js';
 import { listPosts, getPost, putPost, removePost, rebuildIndex, getPhoto, isId } from './store.js';
 import { placeById } from '../../../src/js/data/spot-list.js';
+import { sendMorningDraft } from './morning.js';
 import { FISH, WIND_FEEL, nameOf } from '../../../src/js/data/report-options.js';
 
 // 管理ページに出す件数。1ページに全部出す代わりの上限（ページ送りは作らない）
@@ -59,6 +60,7 @@ ${photo}`;
 
 const listPage = (posts, truncated) =>
   html(`<h1>現地の声 管理（${posts.length}件）</h1>
+<form method="post" action="/admin/morning"><button type="submit">朝の堤防判定を今すぐDiscordへ送る</button></form>
 ${posts.length ? '' : '<p>投稿はまだありません。</p>'}
 ${truncated ? `<p class="msg">新しい${LIST_LIMIT}件だけを表示しています。これより古い投稿はこの画面には出ません。</p>` : ''}
 ${posts
@@ -165,6 +167,15 @@ export async function handleAdmin(request, env, url) {
     return new Response(value, {
       headers: { 'content-type': 'image/jpeg', 'x-content-type-options': 'nosniff', 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex, nofollow' },
     });
+  }
+
+  // 朝の堤防判定を今の予報で送り直す（定期実行の確認・送り忘れの取り返し用。2026-09-24追加）
+  if (path === '/admin/morning' && method === 'POST') {
+    if (!sameOrigin(request, url)) return (logRefusal(request, path), forbidden());
+    const ok = await sendMorningDraft(env);
+    return ok
+      ? html('<h1>送りました</h1><p>Discordの「釣り通知」を確認してください。</p><p><a href="/admin">管理ページに戻る</a></p>')
+      : html('<h1>送れませんでした</h1><p>Discordへの送信に失敗しました。時間をおいてもう一度お試しください。</p><p><a href="/admin">管理ページに戻る</a></p>', 502);
   }
 
   const action = path.match(/^[/]admin[/]posts[/]([^/]+)[/](delete|restore)$/);
