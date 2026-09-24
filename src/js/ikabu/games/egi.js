@@ -210,6 +210,12 @@ const BITE_MIX = {
 //   すぐしゃくる（PUNCH_SPOOK 秒以内）と警戒して気が引ける／ときどき離れていく。
 //   しゃくらずに PUNCH_WAIT 秒待つと「抱かせる間」になって、気になる度合いが上がる（本物の定石）。
 //   抱く判定とは別に起きる接触なので、パンチがあっても釣れる数そのものは直接は減らない
+// ジェット噴射の間隔と疲れ（fight 中）
+export const JET_GAP = 1.2;
+export const JET_BURST = 3;
+export const JET_WINDOW = 8;
+export const JET_REST = 4;
+
 export const PUNCH_SHARE = 0.35;   // 抱く勢い（rate）に対するパンチの出やすさ
 export const PUNCH_SPOOK = 1.2;
 export const PUNCH_WAIT = 2.0;
@@ -556,10 +562,20 @@ export function tick(s, dt) {
         s.tension -= 45 * dt;
         s.dist += 0.6 * p * dt;
       }
-      // ジェット噴射：大きいイカほどよく走る。波が高いとやり取りが荒れる
-      if (s.rand() < 0.7 * p * (1 + 0.3 * Math.min(3, s.cond.wave)) * dt) {
+      // ジェット噴射：大きいイカほどよく走る。波が高いとやり取りが荒れる。
+      // ただし連発すると疲れる（ダディ指摘 2026-09-25：春の大型アオリが走りすぎて寄せられない）：
+      //   噴射のあと JET_GAP 秒は次を出せない／JET_BURST 回続けたら JET_REST 秒休む／噴射のたびに体力が減って出にくくなる
+      const hk = s.hooking;
+      hk.stamina ??= 1;
+      hk.jets ??= [];
+      const recent = hk.jets.filter((t) => s.t - t < JET_WINDOW);
+      const resting = recent.length >= JET_BURST && s.t - recent[recent.length - 1] < JET_REST;
+      const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
+      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * dt) {
         if (s.pressing) s.tension += 22;
         else s.dist += 1;
+        hk.jets.push(s.t);
+        hk.stamina = Math.max(0.25, hk.stamina - 0.15);
         emit(s, 'jet');
       }
       s.tension = Math.max(0, s.tension);
