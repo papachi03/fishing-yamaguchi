@@ -1461,6 +1461,21 @@
 .ika-egi-over-bouzu { font-family: var(--font-maru); font-weight: 900; font-size: 16px; line-height: 1.6; }
 
 .ika-egi-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 14px; margin-top: 18px; }
+.ika-egi-main-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 14px; }
+/* ダート：主ボタンの隣の小さめの副ボタン（親指で届き、押し間違えない間隔） */
+.ika-egi-dart {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  min-width: 64px; min-height: 66px; padding: 6px 12px;
+  border: 3px solid var(--ika-ink); border-radius: 16px;
+  background: var(--ika-sea); color: var(--ika-white);
+  font-family: var(--font-maru); font-weight: 900; font-size: 13px; line-height: 1.2;
+  box-shadow: 4px 4px 0 var(--ika-ink);
+  cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s;
+}
+.ika-egi-dart-arrow { font-size: 20px; line-height: 1; }
+.ika-egi-dart:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ika-ink); }
+.ika-egi-dart:disabled { opacity: 0.35; box-shadow: none; cursor: not-allowed; }
 .ika-egi-btn {
   min-height: 66px;
   padding: 8px 20px;
@@ -1649,6 +1664,8 @@
   .ika-egi-card-title { font-size: 17px; }
   .ika-egi-controls { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
   .ika-egi-btn { min-height: 62px; font-size: 18px; }
+  .ika-egi-main-row { gap: 12px; }
+  .ika-egi-dart { min-width: 68px; min-height: 62px; }
   .ika-m3-board { gap: 5px; padding: 6px; box-shadow: 4px 4px 0 var(--ika-ink); }
   .ika-m3-cell { border-radius: 8px; }
   .ika-m3-callout { font-size: 24px; padding: 6px 16px; }

@@ -37,7 +37,7 @@ export const EGI_TEXT = {
   rules: [
     pair('エギを選ぶ：号数は重いほど遠くへ飛び速く沈む。秋の新子は2.5号、春の親イカは3.5号が目安。タイプはシャロー（ゆっくり沈む・根掛かりしにくい）／ノーマル／ディープ（速い・根掛かりしやすい）。投げる前ならいつでも替えられる。', 'Choose your egi: heavier sizes cast farther and sink faster. Size 2.5 for autumn juveniles, 3.5 for big spring squid. Shallow sinks slowly and snags less; deep sinks fast and snags more. Swap any time before a cast.'),
     pair('長押しで力をため、離すと投げる。着水したら「カウント」を数えて沈める。', 'Hold to load the rod, release to cast. After the splash, count the fall.'),
-    pair('しゃくり：タップ1回。テンポよく2回で2段しゃくり。上へ強くスワイプ（PCは↑キー）でダート。やる気のある日はダートや2段が効き、渋い日は控えめの誘いと長いフォールが効く。', 'Jerks: tap once. Two quick taps make a double jerk. A fast upward swipe (ArrowUp on PC) makes a dart. Lively squid love darts and doubles; on slow days, keep it subtle and fall longer.'),
+    pair('しゃくり：タップ1回。テンポよく2回で2段しゃくり。ダートは「ダート」ボタンか上へスワイプ（PCは↑キー・ホイール上）。やる気のある日はダートや2段が効き、渋い日は控えめの誘いと長いフォールが効く。', 'Jerks: tap once. Two quick taps make a double jerk. Dart with the Dart button or an upward swipe (ArrowUp or wheel-up on PC). Lively squid love darts and doubles; on slow days, keep it subtle and fall longer.'),
     pair('フォール：しゃくった後に押したまま＝テンションフォール（ゆっくり沈み手前に寄る。アタリが手に出やすい）。離せばフリーフォール（速く沈む）。イカが抱くのはフォール中だけ。', 'Falls: keep holding after a jerk for a tension fall (slow sink, drifting back toward you; bites show in the rod). Release for a free fall (faster). Squid only hug on the fall.'),
     pair('アタリは4種類。ラインが走る／竿先にコン（テンションフォールで出る）／ラインが止まる（沈みが止まる）／ラインがフケる（糸がたるむ）。気づいたらタップでアワセ。猶予はアタリの種類で違い、軽い抱きは短い。', 'Four kinds of bite: the line runs / a knock in the rod tip (tension fall) / the line stops (the sink stops) / the line goes slack (the squid lifted the egi). Tap to set the hook. Each bite gives a different window; light bites give less.'),
     pair('やり取りは押している間だけ巻く。張りすぎは身切れ、ゆるめすぎはバレ。', 'Reel only while holding. Too tight tears the hook out; too slack and it slips off.'),
@@ -61,8 +61,10 @@ export const EGI_TEXT = {
   },
   gestures: {
     title: pair('操作', 'Controls'),
-    row: pair('タップ：しゃくり／2回：2段／上スワイプ：ダート／押したまま：テンションフォール', 'Tap: jerk / two taps: double / swipe up: dart / hold: tension fall'),
-    keys: pair('PC：Space・Enter＝タップと長押し、↑＝ダート', 'PC: Space or Enter = tap and hold, ArrowUp = dart'),
+    row: pair('タップ：しゃくり／2回：2段／押したまま：テンションフォール／ダート：ダートボタン・上へスワイプ', 'Tap: jerk / two taps: double / hold: tension fall / dart: Dart button or swipe up'),
+    keys: pair('PC：Space・Enter＝タップと長押し、ダート＝↑キー・ホイール上・上へ短くドラッグ', 'PC: Space or Enter = tap and hold; dart = ArrowUp, wheel up, or a short upward drag'),
+    dart: pair('ダート', 'Dart'),
+    dartHint: pair('大きく横へ跳ばす誘い（沈下・フォール中）', 'A big sideways dart (while sinking or falling)'),
   },
   fall: { tension: pair('テンションフォール', 'Tension fall'), free: pair('フリーフォール', 'Free fall') },
   cue: {

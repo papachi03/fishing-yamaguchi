@@ -48,7 +48,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
-    cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'),
+    cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -371,6 +371,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
+    el.dartBtn.disabled = key !== 'sink';   // ダートは沈下・フォール中だけ
   }
   function setText(node, keyName, value) {
     if (last[keyName] === value) return;
@@ -633,15 +634,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 指：押した瞬間に決めず 150ms だけ待ち、その間に上へ 24px 以上動いたらダート。動かなければ押下（しゃくり／長押し）。
   //   150ms より早く離したらその場でタップ。マウス・キーボードはすぐ押下（ダートは ↑ キー）
   let ptr = null;   // { id, x, y, timer, pressed, darted }
-  const SWIPE_MS = 150, SWIPE_PX = 24;
+  const SWIPE = { touch: { ms: 150, px: 24 }, mouse: { ms: 140, px: 16 }, pen: { ms: 150, px: 20 } };
   const canSwipe = () => s && (s.phase === 'sinking' || s.phase === 'action');
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details')) return;
     if (ptr) return;
-    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false };
-    if (e.pointerType === 'touch' && canSwipe()) {
-      ptr.timer = setTimeout(() => { if (ptr && !ptr.pressed && !ptr.darted) { ptr.pressed = true; doPress(); } }, SWIPE_MS);
+    const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
+    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
+    if (canSwipe()) {
+      ptr.timer = setTimeout(() => { if (ptr && !ptr.pressed && !ptr.darted) { ptr.pressed = true; doPress(); } }, sw.ms);
     } else {
       ptr.pressed = true;
       doPress();
@@ -650,7 +652,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onMove = (e) => {
     if (!ptr || ptr.id !== e.pointerId || ptr.pressed || ptr.darted) return;
-    if (ptr.y - e.clientY >= SWIPE_PX && Math.abs(e.clientX - ptr.x) < 60) {
+    if (ptr.y - e.clientY >= ptr.px && Math.abs(e.clientX - ptr.x) < 60) {
       clearTimeout(ptr.timer);
       ptr.darted = true;
       doDart();
@@ -681,6 +683,22 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.btn.addEventListener('click', (e) => e.preventDefault());
   el.stage.addEventListener('contextmenu', (e) => e.preventDefault());
+  // ダートボタン（どの端末でも確実に）
+  // 押した瞬間に反応させる（click 待ちの遅れを無くす）。キーボードは Enter/Space
+  el.dartBtn.addEventListener('pointerdown', (e) => { if (e.button === 0 || e.pointerType !== 'mouse') { e.preventDefault(); doDart(); } });
+  el.dartBtn.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doDart(); } });
+  el.dartBtn.addEventListener('click', (e) => e.preventDefault());
+  // マウスのホイール上＝ダート（舞台とボタンの上。ダートできる時だけ画面のスクロールを止め、0.35秒に1回）
+  let wheelAt = 0;
+  const onWheel = (e) => {
+    if (!canSwipe() || e.deltaY >= 0) return;
+    e.preventDefault();
+    if (now - wheelAt < 0.35) return;
+    wheelAt = now;
+    doDart();
+  };
+  el.stage.addEventListener('wheel', onWheel, { passive: false });
+  el.btn.addEventListener('wheel', onWheel, { passive: false });
 
   /* ---------- 毎フレーム ---------- */
   let raf = 0, running = false, lastNow = 0;
