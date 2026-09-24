@@ -1258,7 +1258,10 @@
 .ika-play-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ika-orange); }
 .ika-play-card--egi { background: linear-gradient(135deg, var(--ika-white) 0 55%, var(--ika-mist) 100%); }
 .ika-play-card-art { position: absolute; right: 22px; top: 16px; display: flex; gap: 6px; align-items: center; }
-.ika-play-card-art--marks svg { padding: 4px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 8px; }
+.ika-play-card-art--marks img { width: 40px; height: 40px; padding: 3px; border-radius: 9px; border: 2px solid #164887; }
+.ika-play-card-art--marks img:nth-child(1) { background: #327de0; }
+.ika-play-card-art--marks img:nth-child(2) { background: #f87735; border-color: #a84117; }
+.ika-play-card-art--marks img:nth-child(3) { background: radial-gradient(circle at 35% 25%, #566687, #102332 70%); border-color: #ffc747; }
 .ika-play-card-tag { align-self: flex-start; padding: 3px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-size: 12px; font-weight: 900; letter-spacing: 0.06em; }
 .ika-play-card-no { margin-top: 14px; font-family: var(--font-varsity); font-weight: 800; font-size: 15px; letter-spacing: 0.24em; color: var(--ika-sea); }
 .ika-play-card-name { margin-top: 4px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(22px, 2.6vw, 28px); line-height: 1.35; }
@@ -1291,6 +1294,43 @@
 .ika-egi-around-list a { display: inline-block; padding: 3px 12px; border-radius: 999px; background: var(--ika-mist); border: 2px solid var(--ika-sea); color: var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; line-height: 1.6; }
 .ika-egi-around-list a:hover { background: var(--ika-sea); color: var(--ika-white); }
 .ika-egi-setup-locked { font-size: 12px; color: var(--ika-orange-deep); font-weight: 700; }
+/* 今日の萩の海（YFJ の海況をそのまま） */
+.ika-egi-live { display: grid; gap: 10px; padding: 4px 0 6px; }
+.ika-egi-live-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; }
+.ika-egi-live-time { font-family: var(--font-varsity); font-weight: 800; font-size: 12px; letter-spacing: 0.14em; color: var(--ika-orange-deep); }
+.ika-egi-live-loading { font-size: 13px; color: var(--ika-ink-soft); }
+.ika-egi-live-body { display: grid; gap: 8px; }
+.ika-egi-live-exp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.ika-egi-live-stars { font-size: 17px; letter-spacing: 0.08em; color: var(--ika-orange-deep); }
+.ika-egi-live-exp b { font-family: var(--font-varsity); font-weight: 800; font-size: 26px; line-height: 1; color: var(--ika-sea); }
+.ika-egi-live-exp b small { font-size: 13px; margin-left: 2px; color: var(--ika-ink-soft); }
+.ika-egi-live-msg { font-family: var(--font-maru); font-weight: 700; font-size: 14px; }
+.ika-egi-live-rows { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.ika-egi-live-rows div { display: grid; min-width: 78px; padding: 6px 10px; background: var(--ika-mist); border-radius: 10px; }
+.ika-egi-live-rows dt { font-family: var(--font-varsity); font-weight: 800; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ika-sea); }
+.ika-egi-live-rows dd { font-family: var(--font-varsity); font-weight: 800; font-size: 19px; line-height: 1.1; color: var(--ika-ink); }
+.ika-egi-live-rows dd small { display: inline-block; margin-left: 3px; font-family: var(--font-text); font-weight: 400; font-size: 11px; color: var(--ika-ink-soft); }
+.ika-egi-live-safety { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; border: 2px solid var(--safe-ok, #2f6b66); border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.ika-egi-live-badge { padding: 2px 10px; border-radius: 8px; background: var(--safe-ok, #2f6b66); color: #fff; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; letter-spacing: 0.12em; }
+.ika-egi-live-safety.lv1 { border-color: var(--safe-caution, #b8860b); } .ika-egi-live-safety.lv1 .ika-egi-live-badge { background: var(--safe-caution, #b8860b); }
+.ika-egi-live-safety.lv2 { border-color: var(--safe-danger, #c2571f); } .ika-egi-live-safety.lv2 .ika-egi-live-badge { background: var(--safe-danger, #c2571f); }
+.ika-egi-live-safety.lv3 { border-color: var(--safe-stop, #9b2226); background: rgba(155, 34, 38, 0.08); } .ika-egi-live-safety.lv3 .ika-egi-live-badge { background: var(--safe-stop, #9b2226); }
+.ika-egi-live-notice { padding: 10px 14px; border-left: 6px solid var(--ika-orange); background: #fff4ea; border-radius: 0 12px 12px 0; font-family: var(--font-maru); font-weight: 700; font-size: 14px; line-height: 1.7; }
+.ika-egi-live-notice[hidden] { display: none; }
+.ika-egi-live[data-state='stop'] .ika-egi-live-notice { border-left-color: var(--safe-stop, #9b2226); }
+.ika-egi-live-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.ika-egi-live-actions .ika-btn { min-height: 46px; padding: 6px 18px; font-size: 14px; }
+.ika-egi-live-actions .ika-btn:disabled { opacity: 0.45; box-shadow: none; transform: none; cursor: not-allowed; }
+.ika-egi-live.is-active .ika-egi-live-head .ika-egi-setup-label::after, .ika-egi-practice.is-active > .ika-egi-setup-label::after { content: '●'; margin-left: 8px; font-size: 10px; color: var(--ika-orange-deep); vertical-align: middle; }
+.ika-egi-live-source { font-size: 11.5px; line-height: 1.7; color: var(--ika-ink-soft); }
+.ika-egi-practice { display: grid; gap: 10px; padding: 12px 14px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; }
+.ika-egi-practice[hidden] { display: none; }
+.ika-egi-range { width: 150px; accent-color: var(--ika-orange); }
+.ika-egi-range-out { font-family: var(--font-varsity); font-weight: 800; font-size: 16px; color: var(--ika-sea); min-width: 3em; }
+.ika-egi-mode { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-sea); }
+.ika-egi-windnote { display: block; margin-top: 4px; max-width: 12em; font-size: 10.5px; line-height: 1.5; color: var(--ika-orange-deep); font-weight: 700; }
+.ika-egi-windnote[hidden] { display: none; }
+.ika-egi-card-cond { font-size: 11.5px; line-height: 1.6; color: var(--ika-ink-soft); }
 
 .ika-egi-main { min-width: 0; }
 .ika-egi-stage {
@@ -1456,22 +1496,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ika-m3-cell {
+  --tile: #327de0; --edge: #164887;
   position: relative;
   aspect-ratio: 1;
   display: grid; place-items: center;
   padding: 0;
-  background: var(--ika-white);
-  border: 3px solid transparent; border-radius: 10px;
+  background: linear-gradient(155deg, #ffffff25, transparent 55%), var(--tile);
+  border: 2px solid var(--edge); border-radius: 11px;
+  box-shadow: inset 0 3px 0 #ffffff75, inset 0 -4px 0 #0002, 0 2px 0 #061e2c;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.ika-m3-cell svg { width: 70%; height: 70%; }
-.ika-m3-cell[data-kind='9'] { background: #e4ebf1; }
-.ika-m3-cell:hover { border-color: var(--ika-orange-light); }
+.ika-m3-cell[data-kind='0'] { --tile: #327de0; --edge: #164887; }
+.ika-m3-cell[data-kind='1'] { --tile: #f87735; --edge: #a84117; }
+.ika-m3-cell[data-kind='2'] { --tile: #16bea1; --edge: #08685c; }
+.ika-m3-cell[data-kind='3'] { --tile: #ffcf30; --edge: #957114; }
+.ika-m3-cell[data-kind='4'] { --tile: #b066d4; --edge: #653483; }
+.ika-m3-cell[data-kind='9'] { --tile: #102332; --edge: #ffc747; background: radial-gradient(circle at 35% 25%, #566687, #102332 70%); box-shadow: inset 0 2px 0 #ffffff40, 0 0 0 2px #ffc74755, 0 0 14px #ffc74766, 0 2px 0 #061e2c; }
+.ika-m3-cell img { width: 82%; height: 82%; display: block; filter: drop-shadow(0 2px 1px #10344877); pointer-events: none; }
+/* 色覚に頼らない記号のチップ（右下） */
+.ika-m3-cell i { position: absolute; right: 3px; bottom: 3px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 5px; background: #f4ead8; border: 1.5px solid #182c47; color: #182c47; font-size: 10px; line-height: 1; font-style: normal; font-weight: 700; }
+.ika-m3-cell[data-kind='9'] i { background: #ffc747; }
+.ika-m3-cell:hover { transform: translateY(-1px); }
 .ika-m3-cell:focus-visible { outline: 3px solid var(--ika-orange); outline-offset: 1px; }
-.ika-m3-cell.is-selected { border-color: var(--ika-orange); transform: scale(1.08); z-index: 1; box-shadow: 0 0 0 3px var(--ika-white); }
+.ika-m3-cell.is-selected { transform: scale(1.08); z-index: 1; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 6px var(--ika-orange), 0 2px 0 #061e2c; }
 .ika-m3-cell.is-hint { animation: ika-m3-hint 0.5s ease-in-out infinite alternate; }
-@keyframes ika-m3-hint { from { border-color: var(--ika-orange); transform: scale(1); } to { border-color: var(--ika-orange); transform: scale(1.1); } }
+@keyframes ika-m3-hint { from { box-shadow: 0 0 0 0 var(--ika-orange); transform: scale(1); } to { box-shadow: 0 0 0 5px var(--ika-orange); transform: scale(1.08); } }
 .ika-m3-cell.is-clear { animation: ika-m3-clear 0.26s ease-in forwards; }
 @keyframes ika-m3-clear { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(0.2); opacity: 0; } }
 .ika-m3-cell.is-born { animation: ika-m3-born 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
@@ -1539,7 +1589,9 @@
 .ika-m3-badge-date { grid-column: 2; font-family: var(--font-varsity); font-weight: 800; font-size: 11px; letter-spacing: 0.1em; color: var(--ika-orange-deep); }
 .ika-m3-legend { display: grid; gap: 4px; font-size: 12.5px; }
 .ika-m3-legend li { display: flex; align-items: center; gap: 8px; }
-.ika-m3-legend svg { flex: none; }
+.ika-m3-legend img { flex: none; width: 26px; height: 26px; padding: 2px; border-radius: 7px; background: var(--legend, #327de0); }
+.ika-m3-badge-mark img { width: 24px; height: 24px; filter: grayscale(1); opacity: 0.6; }
+.ika-m3-badge.is-earned .ika-m3-badge-mark img { filter: none; opacity: 1; }
 
 @media (max-width: 960px) {
   .ika-egi, .ika-m3 { grid-template-columns: 1fr; }
@@ -1574,7 +1626,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ika-egi-callout.is-pop, .ika-egi-flash, .ika-egi-btn.is-signal, .ika-m3-callout.is-pop, .ika-m3-cell.is-hint, .ika-m3-cell.is-born, .ika-m3-cell.is-shake, .ika-m3-ink.is-full .ika-m3-ink-track { animation: none; }
   .ika-m3-cell.is-clear { animation: none; opacity: 0.2; }
-  .ika-m3-cell.is-hint { border-color: var(--ika-orange); }
+  .ika-m3-cell.is-hint { box-shadow: 0 0 0 4px var(--ika-orange); }
   .ika-m3-cell, .ika-m3-goal-track i, .ika-m3-ink-track i { transition: none; }
 }
 

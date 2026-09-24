@@ -4,10 +4,10 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL } from './match3.js';
 import { utcDay } from './rng.js';
-import { markSVG } from './marks.js';
+import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
 import { readJSON, writeJSON, recordM3, emptyM3, KEY_M3 } from './records.js';
-import { t } from '../i18n.js';
+import { t, assetHref } from '../i18n.js';
 
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
@@ -43,7 +43,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function paint(i, kind) {
     const c = cells[i];
     c.dataset.kind = String(kind);
-    c.innerHTML = markSVG(kind, { size: 40 });
+    c.innerHTML = `${tileImg(kind, { href: assetHref, size: 56 })}<i aria-hidden="true">${tileSymbol(kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
     c.disabled = false;
   }
@@ -363,10 +363,21 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     }
   }
 
-  /* ---------- 起動 ---------- */
+  /* ---------- 起動：コマの絵を先に読んでから盤面を出す（ポップインしないように。2秒で諦めて出す） ---------- */
+  async function preloadTiles() {
+    const jobs = [0, 1, 2, 3, 4, RARE].map((k) => new Promise((res) => {
+      const im = new Image();
+      im.onload = im.onerror = () => res();
+      im.src = assetHref(tileSrc(k, 128));
+    }));
+    await Promise.race([Promise.all(jobs), sleep(2000)]);
+  }
   newGame();
   syncBadges();
-  if (demo) runDemo(demo);
+  preloadTiles().then(() => {
+    renderBoard(g.board);
+    if (demo) runDemo(demo);
+  });
 
   return { get game() { return g; }, newGame, trySwap, useFlash };
 }

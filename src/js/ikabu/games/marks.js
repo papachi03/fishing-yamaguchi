@@ -20,6 +20,17 @@ const ICONS = [
 // 黒いレアイカ：胴が上、足が下（泳ぐ姿）。白い目で黒い地から浮く
 const RARE_ICON = `<path d="M32 4l14 26c4 8-2 14-8 14H26c-6 0-12-6-8-14z" fill="#0b0f1a" stroke="#0b0f1a" stroke-width="3" stroke-linejoin="round"/><path d="M22 44q-4 12 2 18M28 45q-2 10 2 16M32 45v18M36 45q2 10-2 16M42 44q4 12-2 18" fill="none" stroke="#0b0f1a" stroke-width="4.5" stroke-linecap="round"/><circle cx="26" cy="38" r="3.4" fill="#fff"/><circle cx="38" cy="38" r="3.4" fill="#fff"/><circle cx="26.8" cy="38.6" r="1.4" fill="#0b0f1a"/><circle cx="38.8" cy="38.6" r="1.4" fill="#0b0f1a"/>`;
 
+// 小松氏デザインのコマ（public/assets/ikabu/tiles/）。KINDS の順＝いかり・太陽・波・星・貝、RARE＝黒いレアイカ
+export const TILE_FILES = ['anchor', 'sun', 'wave', 'star', 'shell'];
+export const TILE_SYMBOLS = ['⚓', '☀', '≈', '★', '◆'];   // 色覚に頼らない小さな記号
+export const tileFile = (kind) => (kind === RARE ? 'rare' : TILE_FILES[kind]);
+export const tileSrc = (kind, size = 128) => `/assets/ikabu/tiles/${tileFile(kind)}_${size}.webp`;
+export const tileSymbol = (kind) => (kind === RARE ? '★' : TILE_SYMBOLS[kind]);
+// <img>（サイトのベースパスは href() で付ける）
+export function tileImg(kind, { href = (p) => p, size = 40, alt = '' } = {}) {
+  return `<img src="${href(tileSrc(kind, 128))}" srcset="${href(tileSrc(kind, 128))} 128w, ${href(tileSrc(kind, 256))} 256w" sizes="${size}px" width="${size}" height="${size}" alt="${alt}" decoding="async" draggable="false" />`;
+}
+
 export function markSVG(kind, { size = 40 } = {}) {
   const inner = kind === RARE ? RARE_ICON : ICONS[kind];
   const color = kind === RARE ? '#0b0f1a' : MARK_COLORS[kind];
