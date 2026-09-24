@@ -35,8 +35,9 @@ const STORY = {
   drag: 2.4,    // ドラグが滑る（〜2.9）
   rise: 4.5,    // 寄せ・浮上：墨を吐く
   land: 6.0,    // 取り込み：「ゲット！」
-  settle: 7.0,  // 休みへ戻る（イカを外し、エギを投げ直す）
-  end: 8.0,
+  hold: 7.0,    // 余韻：釣ったイカが糸の先で揺れる（3秒。ぱっぱ指定）
+  settle: 10.0, // 投げ直し：イカを外し、振りかぶってエギを投げ直す
+  end: 11.4,
 };
 
 const loadImage = (src) => new Promise((resolve, reject) => {
@@ -46,12 +47,24 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   im.src = src;
 });
 
+// エギ：オレンジの胴に紺の縁、目、背中の布の筋。原点は糸の結び目で、+y 方向に伸びる
+function egiShape() {
+  const g = svgEl('g');
+  g.append(
+    svgEl('path', { d: 'M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z', fill: '#f47321', stroke: '#16233a', 'stroke-width': '3', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22', stroke: '#ffd2a8', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+    svgEl('circle', { cx: '0', cy: '3.5', r: '1.8', fill: '#16233a' }),
+    svgEl('path', { d: 'M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35', stroke: '#16233a', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+  );
+  return g;
+}
+
 /* ------------------------------------------------------------------
    組み立て
    ------------------------------------------------------------------ */
 
 // view: .ika-hero-view。demo（dev のみ）：'static' 動かさない／'fallback' レイヤー失敗を装う／
-//   'hooked'（= phase:hookset）／'phase:bite|hookset|fight|drag|ink|landing' その場面で止める
+//   'hooked'（= phase:hookset）／'phase:bite|hookset|fight|drag|ink|landing|hold|windup|recast' その場面で止める
 export async function mountHeroAnim(view, { lang = 'ja', demo = null, config = HERO_ANIM } = {}) {
   if (!view) return false;
   const svg = view.querySelector('svg.ika-scene');
@@ -132,17 +145,48 @@ function collect(view, svg, cfg) {
   sc.ink.append(sc.inkRim, ...sc.inkArms, sc.inkBody);
   // 持ち上げたイカから落ちるしずく（墨2つ・水2つ）
   sc.drips = [0, 1, 2, 3].map((i) => svgEl('circle', { r: i < 2 ? '6' : '4', fill: i < 2 ? '#050c1a' : C.glow, opacity: '0' }));
+  // 釣れたイカ。イカはエギを足（ゲソ）で抱くので、糸の先＝エギ＝足の側。胴は下に垂れる
+  // （ぱっぱ指摘：頭から釣れ上がることはない）。原点が糸の結び目で、+y が下
   sc.catchG = svgEl('g', { class: 'ika-sc-catch', opacity: '0' });
-  const body = 'M0,-52 L-18,-16 Q-26,6 -16,12 L-6,14 Q-9,30 -3,36 Q0,26 0,18 Q0,26 3,36 Q9,30 6,14 L16,12 Q26,6 18,-16 Z';
+  const arm = (d, front) => {
+    // 紺の太線の上にアイボリーの細線を重ねて、縁取りのある足にする
+    const g = svgEl('g', { class: front ? 'ika-arm-front' : 'ika-arm-back' });
+    g.append(
+      svgEl('path', { d, fill: 'none', stroke: C.navy, 'stroke-width': '7', 'stroke-linecap': 'round' }),
+      svgEl('path', { d, fill: 'none', stroke: C.ivory, 'stroke-width': '3.6', 'stroke-linecap': 'round' }),
+    );
+    return g;
+  };
   sc.catchG.append(
-    svgEl('path', { d: 'M0,-52 L-15,-32 L-11,-20 M0,-52 L15,-32 L11,-20', fill: C.ivory, stroke: C.navy, 'stroke-width': '5', 'stroke-linejoin': 'round' }),
-    svgEl('path', { d: body, fill: C.ivory, stroke: C.navy, 'stroke-width': '5', 'stroke-linejoin': 'round' }),
-    svgEl('circle', { cx: '-6', cy: '-2', r: '2.6', fill: C.navy }),
-    svgEl('circle', { cx: '6', cy: '-2', r: '2.6', fill: C.navy }),
+    // 奥の足と、エギに巻きついた2本の長い触腕
+    arm('M-10,36 Q-16,20 -8,8', false),
+    arm('M10,36 Q16,20 8,8', false),
+    arm('M-5,36 Q-14,16 -2,2', false),
+    arm('M5,36 Q14,16 2,2', false),
+    egiShape(),
+    // 手前の足（エギを抱えこむ）
+    arm('M-7,37 Q-9,24 -3,16', true),
+    arm('M7,37 Q9,24 3,16', true),
+    arm('M-2,38 Q-3,28 1,20', true),
+    // ヒレ（胴の先の左右）
+    svgEl('path', { d: 'M-6,74 L-19,90 L-3,97 Z M6,74 L19,90 L3,97 Z', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4', 'stroke-linejoin': 'round' }),
+    // 胴（下に垂れる）
+    svgEl('path', { d: 'M-12,44 Q-15,70 0,100 Q15,70 12,44 Z', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M-5,52 Q-6,70 -1,86', fill: 'none', stroke: C.navy, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0.55' }),
+    // 頭と目
+    svgEl('ellipse', { cx: '0', cy: '41', rx: '12', ry: '8.5', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6' }),
+    svgEl('circle', { cx: '-5.5', cy: '41', r: '2.8', fill: C.navy }),
+    svgEl('circle', { cx: '5.5', cy: '41', r: '2.8', fill: C.navy }),
+    svgEl('circle', { cx: '-4.7', cy: '40.2', r: '0.9', fill: C.ivory }),
+    svgEl('circle', { cx: '6.3', cy: '40.2', r: '0.9', fill: C.ivory }),
   );
+  // 投げ直しで宙を飛ぶエギ（同じ形）
+  sc.egiFly = svgEl('g', { class: 'ika-sc-egi', opacity: '0' });
+  sc.egiFly.append(egiShape());
   svg.insertBefore(sc.ink, sc.lineGlow);
   svg.insertBefore(sc.wake, sc.lineGlow);
   svg.insertBefore(sc.catchG, sc.rodOutline);
+  svg.insertBefore(sc.egiFly, sc.rodOutline);
   sc.drips.forEach((d) => svg.insertBefore(d, sc.rodOutline));
   return sc;
 }
@@ -256,31 +300,47 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       o.lean = -4;
       o.ink = clamp01((k - 0.15) / 0.7);
       const show = clamp01((k - 0.3) / 0.4);
-      o.catch = { x: o.entry.x, y: o.entry.y + 30 * (1 - show), scale: 0.6 + 0.4 * show, rot: 70 - 20 * show, opacity: show, alongLine: 0 };
+      o.catch = { x: o.entry.x, y: o.entry.y + 30 * (1 - show), scale: 0.6 + 0.4 * show, rot: -72 + 17 * show, opacity: show, alongLine: 0 };
       return o;
     }
-    if (a < STORY.settle) {
+    if (a < STORY.hold) {
       // 取り込み：糸の先（＝イカ）が糸に沿って持ち上がる。糸はイカで終わり、海には残らない
-      const k = easeInOut((a - STORY.land) / (STORY.settle - STORY.land));
+      const k = easeInOut((a - STORY.land) / (STORY.hold - STORY.land));
       o.entry = { ...pierPoint };
       o.pull = lerp(0.6, 0.25, k);
       o.taut = 1;
       o.lean = -4 + 6 * k;
       o.ink = 1 - k * 0.6;
-      o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 20 - 20 * k, opacity: 1, alongLine: 0.42 * k };
+      o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: -55 * (1 - k), opacity: 1, alongLine: 0.42 * k };
       o.lineTo = 'catch';
       return o;
     }
-    // 休みへ：イカを外して、エギを投げ直す（糸の先が弧を描いて元の入水点へ落ちる）
+    if (a < STORY.settle) {
+      // 余韻：釣ったイカが糸の先でゆらゆら揺れる。墨はゆっくり海に溶けていく
+      const h = a - STORY.hold;
+      const damp = Math.exp(-h * 0.45);
+      o.entry = { ...pierPoint };
+      o.pull = 0.25 + 0.04 * Math.sin(h * 3.1) * damp;
+      o.taut = 1;
+      o.lean = 2;
+      o.ink = 0.4 * (1 - clamp01(h / (STORY.settle - STORY.hold)));
+      o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 14 * Math.sin(h * 2.6) * damp, opacity: 1, alongLine: 0.42 };
+      o.lineTo = 'catch';
+      return o;
+    }
+    // 投げ直し：イカを外す → 振りかぶる → 竿を振り出し、エギが弧を描いて元の入水点へ落ちる
     const k = (a - STORY.settle) / (STORY.end - STORY.settle);
+    const windUp = easeInOut(clamp01(k / 0.3));          // 0→0.3：振りかぶる
+    const swing = easeOut(clamp01((k - 0.3) / 0.15));     // 0.3→0.45：振り出す
+    const rest = easeInOut(clamp01((k - 0.45) / 0.55));   // 0.45→1：落ち着く
     o.entry = { ...cfg.lineWater };
-    o.pull = 0.25 * (1 - easeInOut(k));
-    o.taut = 1 - k;
-    o.lean = 2 * (1 - k);
-    o.ink = 0.4 * (1 - k);
-    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - clamp01(k / 0.3), alongLine: 0.42 };
+    o.pull = 0.25 * (1 - windUp) + 0.35 * swing * (1 - rest);
+    o.taut = 1 - rest;
+    o.lean = 2 - 16 * windUp + 22 * swing - 8 * rest;
+    o.ink = 0;
+    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - clamp01(k / 0.15), alongLine: 0.42 };
     o.lineTo = 'drop';
-    o.dropK = clamp01((k - 0.15) / 0.75);
+    o.dropK = clamp01((k - 0.3) / 0.6);
     return o;
   }
 
@@ -318,6 +378,16 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       lineEnd = { x: lerp(liftPoint.x, cfg.lineWater.x, k), y: lerp(liftPoint.y, cfg.lineWater.y, k * k) - 90 * Math.sin(Math.PI * k) };
     }
     const inWater = !o.lineTo || (o.lineTo === 'drop' && o.dropK >= 1);
+    if (o.lineTo === 'drop' && o.dropK < 1) {
+      // 振りかぶる間は竿先からぶら下がり、振り出したら弧に沿って飛ぶ
+      const k2 = Math.min(1, o.dropK + 0.03);
+      const next = { x: lerp(liftPoint.x, cfg.lineWater.x, k2), y: lerp(liftPoint.y, cfg.lineWater.y, k2 * k2) - 90 * Math.sin(Math.PI * k2) };
+      const ang = o.dropK > 0 ? (Math.atan2(next.y - lineEnd.y, next.x - lineEnd.x) * 180) / Math.PI - 90 : 0;
+      sc.egiFly.setAttribute('transform', `translate(${f1(lineEnd.x)} ${f1(lineEnd.y)}) rotate(${f1(ang)}) scale(2.8)`);
+      sc.egiFly.setAttribute('opacity', '1');
+    } else {
+      sc.egiFly.setAttribute('opacity', '0');
+    }
 
     // 糸：休みはたるんで揺れ、張ると真っ直ぐで明るい
     const taut = Math.max(o.taut, dip > 0 ? 0.5 : 0);
@@ -375,13 +445,13 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       const px = lerp(c.x, tip.x, c.alongLine);
       const py = lerp(c.y, tip.y, c.alongLine);
       const swing = c.alongLine ? 7 * Math.sin(s * 7.5) * Math.min(1, c.alongLine / 0.2) : 0;
-      sc.catchG.setAttribute('transform', `translate(${f1(px)} ${f1(py)}) rotate(${f1(c.rot + swing)}) scale(${(3.2 * c.scale).toFixed(3)})`);
+      sc.catchG.setAttribute('transform', `translate(${f1(px)} ${f1(py)}) rotate(${f1(c.rot + swing)}) scale(${(2.8 * c.scale).toFixed(3)})`);
       sc.catchG.setAttribute('opacity', c.opacity.toFixed(2));
       // しずく：持ち上がっているあいだ、触手の先から落ちる
       sc.drips.forEach((d, i) => {
         if (!c.alongLine) { d.setAttribute('opacity', '0'); return; }
         const ph = (s * 1.3 + i * 0.27) % 1;
-        setAttrs(d, { cx: f1(px + [-14, 12, -4, 20][i] + swing * 5), cy: f1(py + 110 + ph * ph * 160), opacity: (c.opacity * (1 - ph) * 0.9).toFixed(2) });
+        setAttrs(d, { cx: f1(px + [-10, 8, -3, 14][i] - swing * 4), cy: f1(py + 2.8 * 100 * c.scale + ph * ph * 160), opacity: (c.opacity * (1 - ph) * 0.9).toFixed(2) });
       });
     } else {
       sc.catchG.setAttribute('opacity', '0');
@@ -488,7 +558,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     },
     // 開発用：物語のある場面で止める
     freezePhase(name) {
-      const at = { bite: 0.2, hookset: 0.62, fight: 1.9, drag: 2.7, ink: 5.3, landing: 6.7 }[name];
+      const at = { bite: 0.2, hookset: 0.62, fight: 1.9, drag: 2.7, ink: 5.3, landing: 6.7, hold: 8.5, windup: 10.35, recast: 10.9 }[name];
       if (at == null) return;
       st.freeze = at;
       if (at >= STORY.hookset) showCallout(at >= STORY.land ? 'got' : 'hooked');
