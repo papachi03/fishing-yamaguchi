@@ -11,6 +11,7 @@ export const TOD = {
 };
 export const SEASON = {
   spring: pair('春', 'Spring'),
+  earlySummer: pair('初夏', 'Early summer'),
   summer: pair('夏', 'Summer'),
   autumn: pair('秋', 'Autumn'),
   winter: pair('冬', 'Winter'),
@@ -182,7 +183,7 @@ export const EGI_TEXT = {
     stop: pair('今日の萩は釣行中止レベルの風と波。本物の海はお休みして、練習モードでどうぞ。', 'Hagi is at stop level today: too much wind and wave. Let the real sea rest and try practice mode.'),
     partial: pair('一部のデータが取れなかったので、足りない分はふつうの日の値で補っています。', 'Some data was unavailable; missing values use an average day.'),
     playLive: pair('今日の萩の海で釣る', "Fish today's Hagi sea"),
-    playPractice: pair('条件を変えて練習', 'Practice with custom conditions'),
+    playPractice: pair('季節を選んで遊ぶ', 'Pick a season'),
     expectation: pair('期待値', 'Expectation'),
     wind: pair('風', 'Wind'),
     gust: pair('突風', 'Gust'),
@@ -194,6 +195,20 @@ export const EGI_TEXT = {
     modeLive: pair('今日の萩', "Today's Hagi"),
     modePractice: pair('練習', 'Practice'),
     now: pair('いま', 'Now'),
+  },
+  seasons: {
+    title: pair('季節モード', 'Season mode'),
+    note: pair('釣れない季節でも、その季節の主役を狙えます。山口・日本海側の釣果記録と部員の実釣をもとにしています', 'Fish any season, even out of season. Based on Yamaguchi Sea-of-Japan catch records and our own trips'),
+    detail: pair('くわしい条件（月・時間帯・期待値・風）', 'Fine-tune (month, time, expectation, wind)'),
+    zone: { bottom: pair('ボトム', 'Bottom'), mid: pair('中層', 'Mid-water'), shallow: pair('シャロー', 'Shallow'), shallowMid: pair('シャロー〜中層', 'Shallow–mid'), midShallow: pair('中層〜浅め', 'Mid–shallow') },
+    modes: {
+      spring: { months: pair('4〜5月', 'Apr–May'), star: pair('春の親アオリイカ（0.9〜2.5kg）・コウイカ', 'Spawning bigfin reef squid (0.9–2.5 kg), cuttlefish'), zone: 'bottom', tod: pair('夕まずめ', 'Dusk'), egi: '3.5' },
+      earlySummer: { months: pair('5月下旬〜7月', 'Late May–Jul'), star: pair('大型モンゴウイカ（1〜2.5kg）・シリヤケイカ', 'Big kisslip cuttlefish (1–2.5 kg), shiriyake cuttlefish'), zone: 'shallowMid', tod: pair('夕まずめ', 'Dusk'), egi: '3.5' },
+      summer: { months: pair('7〜8月', 'Jul–Aug'), star: pair('夜のケンサキイカ', 'Swordtip squid at night'), zone: 'shallowMid', tod: pair('夜・常夜灯', 'Night, under the lamps'), egi: '2.5' },
+      autumn: { months: pair('9〜11月', 'Sep–Nov'), star: pair('新子のアオリイカ（100〜800g）', 'Young bigfin reef squid (100–800 g)'), zone: 'shallow', tod: pair('日中・まずめ', 'Daytime, dawn and dusk'), egi: '2.5' },
+      winter: { months: pair('12〜3月', 'Dec–Mar'), star: pair('ヤリイカ', 'Spear squid'), zone: 'midShallow', tod: pair('夜', 'Night'), egi: '2.5' },
+    },
+    labels: { star: pair('主役', 'Target'), zone: pair('棚', 'Depth'), tod: pair('時間', 'Time'), egi: pair('エギ', 'Egi') },
   },
   practice: {
     title: pair('練習の条件', 'Practice conditions'),
@@ -213,7 +228,7 @@ export const EGI_TEXT = {
       morning: pair('朝は活性が高い。手早く探ろう', 'Active in the morning. Work the water fast'),
       day: pair('日中は渋め。底を丁寧に', 'Slow in daylight. Work the bottom carefully'),
       evening: pair('夕マズメは一番の時合', 'Dusk is the prime time'),
-      night: pair('夜は灯りの下。冬はヤリイカ・ヒイカ', 'Under the lamp at night. Winter brings spear squid and hi-ika'),
+      night: pair('夜は灯りの下。夏はケンサキ、冬はヤリイカ', 'Under the lamp at night. Swordtip in summer, spear squid in winter'),
     },
   },
   a11y: {

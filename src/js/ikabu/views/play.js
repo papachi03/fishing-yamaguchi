@@ -6,7 +6,7 @@ import { pageHead, noteHTML } from './parts.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
-import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter } from '../games/egi.js';
+import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES } from '../games/egi.js';
 import { recommendedSizes, distRank, snagRank } from '../games/egi-advice.js';
 import { SIZE, MOVES, GOAL, RARE } from '../games/match3.js';
 
@@ -85,6 +85,19 @@ export function aroundHTML(lang, month, tod, { links = true } = {}) {
   return ids.map((id) => (links ? `<li><a href="${pageHref('atlas', lang)}#sp-${id}">${esc(speciesName(lang, id))}</a></li>` : `<li><span>${esc(speciesName(lang, id))}</span></li>`)).join('');
 }
 
+// 季節モードのカード（春・初夏・夏・秋・冬）。押すとその季節の代表の月・時間帯で遊ぶ（egi-ui.js）
+export function seasonCardsHTML(lang) {
+  const S = EGI_TEXT.seasons;
+  return SEASON_MODES.map((m) => {
+    const x = S.modes[m.key];
+    return `<button type="button" class="ika-egi-season-card" data-season="${m.key}" aria-pressed="false">
+      <span class="ika-egi-season-name">${t(lang, SEASON[m.key])}<small>${t(lang, x.months)}</small></span>
+      <span class="ika-egi-season-star">${t(lang, x.star)}</span>
+      <span class="ika-egi-season-meta">${t(lang, S.labels.zone)}：${t(lang, S.zone[x.zone])} ・ ${t(lang, S.labels.tod)}：${t(lang, x.tod)} ・ ${t(lang, S.labels.egi)}：${x.egi}${lang === 'en' ? '' : '号'}</span>
+    </button>`;
+  }).join('');
+}
+
 export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } = {}) {
   const T = EGI_TEXT;
   const chips = TIMES.map((k) => `<button type="button" class="ika-chip" data-tod="${k}" aria-pressed="${String(k === tod)}">${t(lang, TOD[k])}</button>`).join('');
@@ -130,7 +143,11 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       <span class="ika-egi-cue-note">${t(lang, T.feel.note)}</span>
     </div>
     <div class="ika-egi-practice" id="ika-egi-practice" hidden>
-      <p class="ika-egi-setup-label">${t(lang, T.practice.title)}</p>
+      <p class="ika-egi-setup-label">${t(lang, T.seasons.title)}</p>
+      <div class="ika-egi-seasons" id="ika-egi-seasons" role="group" aria-label="${t(lang, T.seasons.title)}">${seasonCardsHTML(lang)}</div>
+      <p class="ika-egi-cue-note">${t(lang, T.seasons.note)}</p>
+      <details class="ika-egi-detail">
+      <summary>${t(lang, T.seasons.detail)}</summary>
       <div class="ika-egi-setup-row">
         <div class="ika-egi-setup-item">
           <span class="ika-egi-setup-label">${t(lang, T.setup.tod)}</span>
@@ -156,6 +173,7 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <span class="ika-egi-setup-label">${t(lang, T.setup.around)}</span>
         <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod, { links: !solo })}</ul>
       </div>
+      </details>
     </div>
     <p class="ika-egi-mode" id="ika-egi-mode"></p>
     <p class="ika-egi-setup-locked" id="ika-egi-locked" hidden>${t(lang, T.setup.locked)}</p>`;

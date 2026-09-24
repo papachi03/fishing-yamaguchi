@@ -8,7 +8,7 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
+import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
@@ -52,7 +52,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
-    catches: q('ika-egi-catches'), records: q('ika-egi-records'),
+    catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -222,11 +222,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.mode.textContent = condLine();
     el.live.classList.toggle('is-active', settings.mode === 'live');
     el.practice.classList.toggle('is-active', settings.mode === 'practice');
+    const sm = SEASON_MODES.find((m) => m.months.includes(settings.month));
+    el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));
   }
   const started = () => s && !(s.phase === 'ready' && s.casts === CASTS) && s.phase !== 'over';
   function syncSetupLock() {
     const lock = started();
-    root.querySelectorAll('#ika-egi-tod .ika-chip, #ika-egi-wind .ika-chip').forEach((b) => { b.disabled = lock; });
+    root.querySelectorAll('#ika-egi-tod .ika-chip, #ika-egi-wind .ika-chip, #ika-egi-seasons [data-season]').forEach((b) => { b.disabled = lock; });
     el.month.disabled = lock;
     el.exp.disabled = lock;
     el.playLive.disabled = lock || !settings.live || settings.live.conditions.safety === 'stop';
@@ -329,6 +331,24 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!b || started()) return;
     el.wind.querySelectorAll('.ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
     settings.cond = { ...settings.cond, ...WIND_PRESET[b.dataset.wind], safety: 'ok' };
+    usePractice();
+  });
+  // 季節モード：その季節の代表の月・時間帯、よくある日（期待値7・穏やか）、主役に合うエギで遊ぶ
+  el.seasons?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-season]');
+    if (!b || started()) return;
+    const m = SEASON_MODES.find((x) => x.key === b.dataset.season);
+    if (!m) return;
+    settings.month = m.month;
+    settings.tod = m.tod;
+    settings.cond = { ...settings.cond, expectation: 7, ...WIND_PRESET.calm, safety: 'ok' };
+    el.exp.value = '7';
+    el.wind.querySelectorAll('.ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.wind === 'calm')));
+    const star = speciesPool(m.month, m.tod).find((p) => p.key === m.stars);
+    if (star) {
+      const [z0, z1] = star.zone;
+      chooseEgi({ size: star.ideal, type: z1 <= 0.6 ? 'shallow' : z0 >= 0.6 ? 'deep' : 'normal' });
+    }
     usePractice();
   });
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });

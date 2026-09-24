@@ -1346,6 +1346,18 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-live-source { font-size: 11.5px; line-height: 1.7; color: var(--ika-ink-soft); }
 .ika-egi-practice { display: grid; gap: 10px; padding: 12px 14px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; }
 .ika-egi-practice[hidden] { display: none; }
+.ika-egi-seasons { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.ika-egi-season-card { display: grid; gap: 4px; padding: 10px 12px; text-align: left; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 12px; color: var(--ika-ink); cursor: pointer; font: inherit; transition: background 0.15s, box-shadow 0.15s; }
+.ika-egi-season-card:hover:not(:disabled) { background: var(--ika-mist); }
+.ika-egi-season-card[aria-pressed='true'] { background: var(--ika-sea); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-orange); }
+.ika-egi-season-card:disabled { opacity: 0.5; cursor: not-allowed; }
+.ika-egi-season-name { font-family: var(--font-maru); font-weight: 900; font-size: 17px; }
+.ika-egi-season-name small { margin-left: 8px; font-size: 12px; font-weight: 700; opacity: 0.75; }
+.ika-egi-season-star { font-family: var(--font-maru); font-weight: 700; font-size: 13px; line-height: 1.5; }
+.ika-egi-season-meta { font-size: 11.5px; line-height: 1.5; opacity: 0.85; }
+.ika-egi-detail { margin-top: 4px; }
+.ika-egi-detail summary { cursor: pointer; font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); }
+.ika-egi-detail[open] > summary { margin-bottom: 8px; }
 .ika-egi-range { width: 150px; accent-color: var(--ika-orange); }
 .ika-egi-range-out { font-family: var(--font-varsity); font-weight: 800; font-size: 16px; color: var(--ika-sea); min-width: 3em; }
 .ika-egi-mode { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-sea); }
