@@ -10,13 +10,8 @@
 import { HERO_ANIM, TAU, lerp, bez, rodPose, rodPathD, lineD, waveD, computeViewBox, project } from './hero-scene.js';
 import { t } from './i18n.js';
 import { url } from '../base.js';
+import { svgEl, egiShape } from './squid-art.js';   // エギの絵はあそび場のゲームと共有
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-const svgEl = (name, attrs = {}) => {
-  const e = document.createElementNS(SVG_NS, name);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  return e;
-};
 const setAttrs = (e, attrs) => { for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); };
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const easeOut = (k) => 1 - (1 - k) * (1 - k);
@@ -46,18 +41,6 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   im.onerror = () => reject(new Error(`hero layer failed: ${src}`));
   im.src = src;
 });
-
-// エギ：オレンジの胴に紺の縁、目、背中の布の筋。原点は糸の結び目で、+y 方向に伸びる
-function egiShape() {
-  const g = svgEl('g');
-  g.append(
-    svgEl('path', { d: 'M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z', fill: '#f47321', stroke: '#16233a', 'stroke-width': '3', 'stroke-linejoin': 'round' }),
-    svgEl('path', { d: 'M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22', stroke: '#ffd2a8', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
-    svgEl('circle', { cx: '0', cy: '3.5', r: '1.8', fill: '#16233a' }),
-    svgEl('path', { d: 'M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35', stroke: '#16233a', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
-  );
-  return g;
-}
 
 /* ------------------------------------------------------------------
    組み立て

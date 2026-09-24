@@ -1,0 +1,139 @@
+// イカとエギの絵（SVG の DOM 要素）。HERO（hero-anim.js）とあそび場のエギングゲーム（games/egi-ui.js）で共有する。
+// 平らなイラストの流儀：アイボリーの体に紺の太い縁、エギは朱。
+//
+// 向きの決まり：原点は「糸の結び目（エギの頭）」で、+y が下。
+//   イカはエギを足（ゲソ）で抱くので、足がエギの側（上）、胴は下に垂れる。
+//   泳いでいる姿は同じ部品を rotate() で回して使う（胴の先が進行方向＝ジェット噴射で後ろ向きに走る）。
+const SVG_NS = 'http://www.w3.org/2000/svg';
+export const svgEl = (name, attrs = {}) => {
+  const e = document.createElementNS(SVG_NS, name);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+};
+
+export const ART = { navy: '#182c47', ivory: '#f4ead8', egi: '#f47321', egiLine: '#16233a', egiStripe: '#ffd2a8' };
+
+// エギ：オレンジの胴に紺の縁、目、背中の布の筋、尻のカンナ。原点は糸の結び目で、+y 方向に伸びる（長さ ≈ 36）
+export function egiShape() {
+  const g = svgEl('g', { class: 'ika-art-egi' });
+  g.append(
+    svgEl('path', { d: 'M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z', fill: ART.egi, stroke: ART.egiLine, 'stroke-width': '3', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22', stroke: ART.egiStripe, 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+    svgEl('circle', { cx: '0', cy: '3.5', r: '1.8', fill: ART.egiLine }),
+    svgEl('path', { d: 'M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35', stroke: ART.egiLine, 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+  );
+  return g;
+}
+
+// 足1本：紺の太線の上にアイボリーの細線を重ねて、縁取りのある足にする
+function arm(d, front, C, sw = 1) {
+  const g = svgEl('g', { class: front ? 'ika-arm-front' : 'ika-arm-back' });
+  g.append(
+    svgEl('path', { d, fill: 'none', stroke: C.navy, 'stroke-width': String(7 * sw), 'stroke-linecap': 'round' }),
+    svgEl('path', { d, fill: 'none', stroke: C.ivory, 'stroke-width': String(3.6 * sw), 'stroke-linecap': 'round' }),
+  );
+  return g;
+}
+
+// 種類ごとの体つき（胴の縦横比・ヒレの形）。len は胴長（描画単位）、ratio は 半幅/胴長
+//   squid   … 細長い胴。ヒレは後ろ半分の菱形（ケンサキ・ヤリ）か胴の全長に沿う楕円（アオリ）
+//   cuttle  … 丸い胴。ヒレは胴のまわりを一周する薄いスカート（コウイカ・モンゴウ・シリヤケ）
+export const BODY = {
+  aori: { kind: 'squid', ratio: 0.36, fin: 'oval' },
+  kensaki: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.5 },
+  yari: { kind: 'squid', ratio: 0.18, fin: 'rhombus', finFrom: 0.42 },
+  hiika: { kind: 'squid', ratio: 0.34, fin: 'round' },
+  kouika: { kind: 'cuttle', ratio: 0.5, fin: 'skirt' },
+  mongo: { kind: 'cuttle', ratio: 0.52, fin: 'skirt', spots: true },
+  shiriyake: { kind: 'cuttle', ratio: 0.48, fin: 'skirt', tailMark: true },
+  default: { kind: 'squid', ratio: 0.22, fin: 'rhombus', finFrom: 0.55 },
+};
+
+// 頭と胴（足は別）。y=36 に頭の付け根、胴は y=44 から len だけ下へ
+function bodyParts(opts, C) {
+  const b = BODY[opts.species] ?? BODY.default;
+  const len = Math.max(24, opts.len ?? 56);
+  const W = Math.max(6, len * b.ratio);
+  const top = 44;
+  const tail = top + len;
+  const parts = [];
+  // ヒレ（胴の後ろに置く）
+  if (b.fin === 'oval') {
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.55), rx: String(W + 7), ry: String(len * 0.47), fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
+  } else if (b.fin === 'rhombus') {
+    const y0 = top + len * (b.finFrom ?? 0.5);
+    const fw = W + Math.max(6, len * 0.16);
+    parts.push(svgEl('path', { d: `M0,${y0} L${fw},${(y0 + tail) / 2 + len * 0.08} L0,${tail + 3} L${-fw},${(y0 + tail) / 2 + len * 0.08} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4', 'stroke-linejoin': 'round' }));
+  } else if (b.fin === 'round') {
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - len * 0.2), rx: String(W + 6), ry: String(len * 0.26), fill: C.ivory, stroke: C.navy, 'stroke-width': '3' }));
+  } else {
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.5), rx: String(W + 5), ry: String(len * 0.5 + 3), fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
+  }
+  // 胴
+  const mantle = b.kind === 'cuttle'
+    ? `M${-W},${top + 6} Q${-W - 2},${top + len * 0.6} 0,${tail} Q${W + 2},${top + len * 0.6} ${W},${top + 6} Q0,${top - 4} ${-W},${top + 6} Z`
+    : `M${-W},${top} Q${-W - 3},${top + len * 0.5} 0,${tail} Q${W + 3},${top + len * 0.5} ${W},${top} Z`;
+  parts.push(svgEl('path', { d: mantle, fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6', 'stroke-linejoin': 'round' }));
+  // 模様：胴の筋（squid）／目玉模様（モンゴウ）／焼けた尻（シリヤケ）
+  if (b.kind === 'squid') parts.push(svgEl('path', { d: `M${-W * 0.4},${top + 8} Q${-W * 0.5},${top + len * 0.5} ${-W * 0.1},${tail - 12}`, fill: 'none', stroke: C.navy, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0.55' }));
+  if (b.spots) for (const [x, y] of [[-W * 0.45, 0.3], [W * 0.4, 0.45], [-W * 0.2, 0.65]]) parts.push(svgEl('circle', { cx: String(x), cy: String(top + len * y), r: '2.6', fill: 'none', stroke: C.navy, 'stroke-width': '1.6', opacity: '0.6' }));
+  if (b.tailMark) parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - 6), rx: String(W * 0.35), ry: '4', fill: '#b5532b', opacity: '0.8' }));
+  // 頭と目（足の付け根）
+  const hr = Math.min(12, W + 2);
+  parts.push(
+    svgEl('ellipse', { cx: '0', cy: '41', rx: String(hr), ry: '8.5', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6' }),
+    svgEl('circle', { cx: String(-hr * 0.46), cy: '41', r: '2.8', fill: C.navy }),
+    svgEl('circle', { cx: String(hr * 0.46), cy: '41', r: '2.8', fill: C.navy }),
+    svgEl('circle', { cx: String(-hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.ivory }),
+    svgEl('circle', { cx: String(hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.ivory }),
+  );
+  return parts;
+}
+
+// エギを抱いたイカ（足がエギを包み、胴が下）。HERO の「釣れたイカ」と同じ組み立て。
+//   species: BODY のキー（省略時は HERO と同じ形）、len: 胴長（描画単位）
+// 大きなイカは足も頭も大きい：胴長 56 を基準に全体を k 倍し、エギだけ実寸のまま置く
+const bodyScale = (len) => Math.min(1.8, Math.max(0.75, len / 56));
+
+export function huggingSquid({ species = 'default', len = 56, colors = ART } = {}) {
+  const C = colors;
+  const k = bodyScale(len);
+  const g = svgEl('g', { class: 'ika-art-hug' });
+  const back = svgEl('g', { transform: `scale(${k.toFixed(3)})` });
+  const front = svgEl('g', { transform: `scale(${k.toFixed(3)})` });
+  back.append(
+    // 奥の足と、エギに巻きついた2本の長い触腕
+    arm('M-10,36 Q-16,20 -8,8', false, C),
+    arm('M10,36 Q16,20 8,8', false, C),
+    arm('M-5,36 Q-14,16 -2,2', false, C),
+    arm('M5,36 Q14,16 2,2', false, C),
+  );
+  front.append(
+    // 手前の足（エギを抱えこむ）
+    arm('M-7,37 Q-9,24 -3,16', true, C),
+    arm('M7,37 Q9,24 3,16', true, C),
+    arm('M-2,38 Q-3,28 1,20', true, C),
+    ...bodyParts({ species, len: len / k }, C),
+  );
+  g.append(back, egiShape(), front);
+  return g;
+}
+
+// 泳いでいるイカ（エギ無し）。足は前（-y）へそろえて伸ばす。抱く前の「気になっている」姿
+export function swimmingSquid({ species = 'default', len = 56, colors = ART } = {}) {
+  const C = colors;
+  const k = bodyScale(len);
+  const g = svgEl('g', { class: 'ika-art-swim', transform: `scale(${k.toFixed(3)})` });
+  len /= k;
+  g.append(
+    arm('M-9,36 Q-12,22 -7,12', false, C),
+    arm('M9,36 Q12,22 7,12', false, C),
+    arm('M-4,36 Q-6,18 -3,6', false, C),
+    arm('M4,36 Q6,18 3,6', false, C),
+    arm('M-6,37 Q-7,26 -4,17', true, C),
+    arm('M6,37 Q7,26 4,17', true, C),
+    arm('M0,38 Q0,26 0,10', true, C),
+    ...bodyParts({ species, len }, C),
+  );
+  return g;
+}
