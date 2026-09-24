@@ -115,6 +115,20 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       </div>
       <span class="ika-egi-cue-note">${t(lang, T.cue.note)}</span>
     </div>
+    <div class="ika-egi-cue-setting ika-egi-feel" id="ika-egi-feel">
+      <span class="ika-egi-setup-label">${t(lang, T.feel.title)}</span>
+      <div class="ika-chips ika-chips--small" id="ika-egi-feel-vibrate" role="group" aria-label="${t(lang, T.feel.vibrate)}" hidden>
+        <span class="ika-egi-feel-name">${t(lang, T.feel.vibrate)}</span>
+        <button type="button" class="ika-chip" data-feel="vibrate" data-on="1" aria-pressed="true">${t(lang, T.feel.on)}</button>
+        <button type="button" class="ika-chip" data-feel="vibrate" data-on="0" aria-pressed="false">${t(lang, T.feel.off)}</button>
+      </div>
+      <div class="ika-chips ika-chips--small" id="ika-egi-feel-sound" role="group" aria-label="${t(lang, T.feel.sound)}">
+        <span class="ika-egi-feel-name">${t(lang, T.feel.sound)}</span>
+        <button type="button" class="ika-chip" data-feel="sound" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
+        <button type="button" class="ika-chip" data-feel="sound" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
+      </div>
+      <span class="ika-egi-cue-note">${t(lang, T.feel.note)}</span>
+    </div>
     <div class="ika-egi-practice" id="ika-egi-practice" hidden>
       <p class="ika-egi-setup-label">${t(lang, T.practice.title)}</p>
       <div class="ika-egi-setup-row">

@@ -382,3 +382,26 @@ test('号数：秋の新子には2.5号、春の親イカには3.5号が合う',
   assert.equal(sizeMatch(2.5, 2.5), 1);
   assert.ok(sizeMatch(3.5, 2.5) < sizeMatch(3, 2.5));
 });
+
+test('イカパンチ：すぐしゃくると警戒される、待てば抱く気が上がる（2026-09-25）', async () => {
+  const M = await import('../src/js/ikabu/games/egi.js');
+  const setup = () => {
+    const s = M.createEgi({ seed: 'punch', month: 10, tod: 'evening', conditions: { expectation: 8 } });
+    Object.assign(s, { phase: 'action', depth: 3, bottom: 9, dist: 20, squid: 2, interest: 0.5, lastJerk: 0, t: 5, judged: true });
+    s.punchAt = s.t; s.punchPending = true;
+    return s;
+  };
+  // すぐしゃくる → spooked（気になる度合いが下がる）
+  const a = setup();
+  a.t += 0.5; M.press(a); M.release(a);
+  const sp = a.events.find((e) => e.type === 'spooked');
+  assert.ok(sp, 'パンチ直後のしゃくりで警戒される');
+  assert.ok(a.interest < 0.5);
+  // 待つ → punch-wait（気になる度合いが上がる）。抱く・パンチの判定は起きないよう、イカが近くにいても乱数を大きく固定
+  const b = setup();
+  b.rand = () => 0.999;
+  let waited = null;
+  for (let i = 0; i < 50 && !waited; i++) { M.tick(b, 0.05); waited = b.events.find((e) => e.type === 'punch-wait'); }
+  assert.ok(waited, '2秒待つと抱かせる間になる');
+  assert.ok(b.interest > 0.5 && !b.punchPending);
+});

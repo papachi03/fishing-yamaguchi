@@ -1366,6 +1366,9 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-pick-rec b { color: var(--ika-orange-deep); }
 .ika-egi-pick-star { color: var(--ika-orange-deep); margin-right: 4px; }
 .ika-egi-cue-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ika-egi-feel .ika-chips { align-items: center; }
+.ika-egi-feel .ika-chips[hidden] { display: none; }
+.ika-egi-feel-name { margin-right: 2px; font-family: var(--font-maru); font-weight: 700; font-size: 12px; color: var(--ika-ink-soft); }
 .ika-egi-cue-note { flex-basis: 100%; font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); }
 /* HUD：いまのエギ・フォールの種類 */
 .ika-egi-stock-spec { margin-left: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 11px; color: var(--ika-ink); }

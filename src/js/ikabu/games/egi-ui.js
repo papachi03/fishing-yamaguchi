@@ -11,6 +11,7 @@
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
+import { createFeel, canVibrate } from './feel.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
@@ -52,6 +53,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'),
+    feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
   const tensionFill = el.tension.querySelector('.ika-egi-gauge-fill');
@@ -62,6 +64,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const now0 = new Date();
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
+  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
   let rec = readJSON(KEY_EGI) ?? emptyEgi();
@@ -266,6 +269,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function syncCueSetting() {
     el.cueSetting.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cue === settings.cue)));
   }
+  // 手ざわり（振動・小さな音）。振動できない端末（iPhone など）には振動の切り替えを出さない
+  if (el.feelVib) el.feelVib.hidden = !canVibrate();
+  function syncFeel() {
+    el.feel?.querySelectorAll('.ika-chip[data-feel]').forEach((b) => {
+      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : feel.sound;
+      b.setAttribute('aria-pressed', String((b.dataset.on === '1') === on));
+    });
+  }
+  el.feel?.addEventListener('click', (e) => {
+    const b = e.target.closest('.ika-chip[data-feel]');
+    if (!b) return;
+    const on = b.dataset.on === '1';
+    if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
+    else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
+    syncFeel();
+  });
+  syncFeel();
 
   // 練習モードに切り替えて、今の練習条件でゲームを作り直す
   function usePractice({ open = true } = {}) {
@@ -443,8 +463,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
             el.cueLabel.textContent = t(lang, TX.cue.kinds[e.kind]);
             el.cueLabel.className = `ika-egi-cue${e.light ? ' is-light' : ''}`;
             el.cueLabel.hidden = false;
-            try { navigator.vibrate?.(e.light ? 30 : [40, 40, 40]); } catch { /* 対応していない端末 */ }
           }
+          // 手に伝わるアタリ（コン・走る）だけ震わせる。止まる・フケるは目で気づくアタリなので震わせない
+          if (e.kind === 'tap' || e.kind === 'run') feel.fire(e.kind);
           el.log.textContent = t(lang, TX.cue.kinds[e.kind]);
           break;
         }
@@ -457,6 +478,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           hookDist = Math.max(s.dist, 1);
           inked = false;
           callout(t(lang, TX.msg.hook), 'good');
+          feel.fire('hook');
           break;
         case 'miss':
         case 'let-go':
@@ -471,20 +493,42 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'jet':
           V.lastJet = now;
+          feel.fire('jet', { power: s.hooking?.power });
           if (now - (V.jetCallout ?? -9) > 2.5) { callout(t(lang, TX.msg.jet)); V.jetCallout = now; }
           break;
         case 'break':
         case 'unhooked':
           escapeSquid();
+          feel.fire('break');
           callout(t(lang, e.type === 'break' ? TX.msg.break : TX.msg.unhooked), 'bad');
           break;
         case 'landed': {
           V.land = { t0: now, from: { x: V.hug.x, y: V.hug.y } };
           burst(V.hug.x, SCENE.surface, 8);
           callout(t(lang, TX.msg.landed), 'good');
+          feel.fire('landed');
           addCatch(e);
           break;
         }
+        case 'punch':
+          // イカパンチ：エギがピクッと弾かれる（描画側）。やさしいモードは文字でも知らせる
+          V.punchAt = now;
+          feel.fire('punch');
+          if (settings.cue === 'easy') {
+            el.cueLabel.textContent = t(lang, TX.cue.punch);
+            el.cueLabel.className = 'ika-egi-cue is-light';
+            el.cueLabel.hidden = false;
+            setTimeout(() => { if (s.phase === 'action') el.cueLabel.hidden = true; }, 900);
+            callout(t(lang, TX.msg.punch));
+          }
+          el.log.textContent = t(lang, TX.cue.punch);
+          break;
+        case 'spooked':
+          callout(t(lang, e.left ? TX.msg.spookedLeft : TX.msg.spooked), 'bad');
+          break;
+        case 'punch-wait':
+          if (settings.cue === 'easy') callout(t(lang, TX.msg.punchWait), 'good');
+          break;
         case 'snag':
           V.egi.mode = 'stuck';
           V.snagAt = now;
@@ -613,6 +657,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 入力 ---------- */
   function doPress() {
+    feel.unlock();   // iPhone は最初に触った後でないと音を鳴らせない
     if (!s || frozen) return;
     if (s.phase === 'over') return;
     if (s.phase === 'result') { press(s); release(s); onEvents(s.events); return; }
@@ -892,6 +937,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         // しゃくった直後は頭を上げて釣り人側へ飛ぶ。テンションフォールは頭を釣り人側へ向けて滑るように、フリーフォールは頭を下げてまっすぐ
         const target = jerkFresh ? (V.jerkKind === 'dart' ? -60 : -35) : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
+        // イカパンチ：足で叩かれてエギが横へ弾かれ、向きがぶれる（0.35秒）
+        const pk = V.punchAt != null ? (now - V.punchAt) / 0.35 : 9;
+        if (pk < 1 && !reduced) {
+          V.egi.x += 8 * Math.sin(Math.PI * pk) * (pk < 0.5 ? 1 : -0.5);
+          V.egi.ang += 20 * Math.sin(2 * Math.PI * pk) * (1 - pk);
+        }
       }
       taut = jerkFresh ? 1 : phase === 'sinking' ? 0.45 : s.tensionFall ? 0.95 : 0.3;
       if (V.splashAt && now - V.splashAt < 1.2) taut *= 0.5 + 0.5 * ((now - V.splashAt) / 1.2);   // 着水直後は糸が水面にたるんで置かれる
@@ -1160,6 +1211,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       liveDone = true;
       renderLive({ conditions: { expectation: 3, wind: 9.2, gust: 14.5, wave: 1.7, safety: 'stop' }, expectation: { message: t(lang, '今は釣れる時間ではないかもしれないです！', 'Probably not the best hour right now.'), tideName: t(lang, '中潮', 'medium tide') }, safety: { key: 'stop', level: 3, label: t(lang, '中止', 'STOP'), message: t(lang, '今日は堤防に立たないでください。', 'Do not go out on the breakwater today.') }, tod: 'day', month: settings.month, now: new Date(), weather: null, tide: null, partial: false });
     }
+    else if (name === 'punch') { cast(); step(2.5); jerk(); step(1.2); s.punchAt = s.t; s.punchPending = true; s.events.push({ type: 'punch', t: s.t }); onEvents(s.events.splice(0)); frozen = true; }
     else if (name === 'snag') { cast(); step(s.bottom / 0.9 + 1.6); s.rand = () => 0; step(0.3); s.rand = Math.random; frozen = true; }
     else if (name === 'tension') { cast(); step(2.5); press(s); onEvents(s.events.splice(0)); step(1.6); frozen = true; }
     else if (name === 'free') { cast(); step(2.5); jerk(); step(1.6); frozen = true; }

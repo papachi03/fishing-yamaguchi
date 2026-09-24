@@ -145,6 +145,15 @@ const BITE_MIX = {
   free: [{ kind: 'run', w: 0.35 }, { kind: 'stop', w: 0.35 }, { kind: 'slack', w: 0.3 }],
 };
 
+// イカパンチ（2026-09-25）：寄ってきたイカが抱かずに足でエギを叩いていく。合わせても掛からない。
+//   すぐしゃくる（PUNCH_SPOOK 秒以内）と警戒して気が引ける／ときどき離れていく。
+//   しゃくらずに PUNCH_WAIT 秒待つと「抱かせる間」になって、気になる度合いが上がる（本物の定石）。
+//   抱く判定とは別に起きる接触なので、パンチがあっても釣れる数そのものは直接は減らない
+export const PUNCH_SHARE = 0.35;   // 抱く勢い（rate）に対するパンチの出やすさ
+export const PUNCH_SPOOK = 1.2;
+export const PUNCH_WAIT = 2.0;
+export const PUNCH_GAIN = 0.25;
+
 // 風が強いと糸がふくらんでアタリが取りにくい：アワセの猶予が短くなる（7m/s を超えるとじわじわ、最大 45% 短く）
 export const windFactor = (cond) => 1 - Math.min(0.45, Math.max(0, (cond.gust - 6) * 0.06));
 export function signalWindows(cond, kind = 'run', light = false) {
@@ -165,6 +174,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     mood: moodOf(month, tod, cond),
     windows: signalWindows(cond), // いまのアタリのアワセ猶予（アタリが出るたびに種類に合わせて入れ替える）
     bite: null, // いまのアタリ { kind, light }
+    punchAt: -99, // 最後のイカパンチの時刻
+    punchPending: false, // パンチの後、まだ「待った／すぐしゃくった」が決まっていない
     squid: 0,
     phase: 'ready',
     t: 0,
@@ -223,6 +234,16 @@ function jerk(s, kind = 'lift') {
   const double = s.jerks.length > 0 && s.t - s.lastJerk <= DOUBLE_JERK;
   s.jerks.push(s.t);
   if (kind === 'dart') s.darts += 1;
+  if (s.punchPending && s.t - s.punchAt < PUNCH_SPOOK) {
+    // パンチに合わせてしまった：掛からないうえに警戒される
+    s.punchPending = false;
+    s.interest = Math.max(0.05, s.interest - 0.2);
+    const left = s.rand() < 0.3;
+    if (left) s.squid = Math.max(0, s.squid - 1);
+    emit(s, 'spooked', { left, squidLeft: s.squid });
+  } else {
+    s.punchPending = false;
+  }
   s.lastJerk = s.t;
   s.judged = false;
   s.tensionFall = false;
@@ -297,6 +318,8 @@ export function release(s) {
     s.judged = true;
     s.hooking = null;
     s.bite = null;
+    s.punchAt = -99;
+    s.punchPending = false;
     s.squid = sampleSquid(s);
     s.phase = 'sinking';
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec });
@@ -368,6 +391,12 @@ export function tick(s, dt) {
       } else if (onBottom(s, dt)) break;
       if (!s.judged && since >= 2) judgeRhythm(s);
       if (since > 9) s.interest = Math.max(0, s.interest - 0.1 * dt);
+      // パンチの後、しゃくらずに待てた（抱かせる間を作れた）
+      if (s.punchPending && s.t - s.punchAt >= PUNCH_WAIT) {
+        s.punchPending = false;
+        s.interest = Math.min(1, s.interest + PUNCH_GAIN);
+        emit(s, 'punch-wait', { interest: s.interest });
+      }
       // フォール中（しゃくって1秒後から）にだけ抱く。近くにイカがいて、底に近いほど、気になっているほど抱きやすい
       if (since >= 1 && s.depth < s.bottom && s.squid > 0) {
         const depthFactor = 0.4 + 0.6 * (s.depth / s.bottom);
@@ -376,7 +405,11 @@ export function tick(s, dt) {
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
         const rate = 0.55 * s.interest * depthFactor * moodFactor * fallFactor * poolMatch(s)
           * TOD_FACTOR[s.tod] * seasonRate(s.month, s.tod);
-        if (s.rand() < rate * dt) {
+        if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
+          s.punchAt = s.t;
+          s.punchPending = true;
+          emit(s, 'punch', { tensionFall: s.tensionFall });
+        } else if (s.rand() < rate * dt) {
           const pool = speciesPool(s.month, s.tod).map((p) => ({ ...p, w: p.w * sizeMatch(s.spec.size, p.ideal) }));
           const sp = pickWeighted(pool, s.rand);
           const weight = Math.round(sp.g[0] + (sp.g[1] - sp.g[0]) * s.rand() ** 1.6);
