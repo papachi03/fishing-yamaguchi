@@ -22,10 +22,19 @@ test('季節と時間帯で顔ぶれが変わる', () => {
   assert.equal(seasonOf(4), 'spring');
   assert.equal(seasonOf(10), 'autumn');
   assert.equal(seasonOf(1), 'winter');
+  assert.equal(seasonOf(6), 'earlySummer');
+  assert.equal(seasonOf(7), 'summer');
   const ids = (m, tod) => new Set(speciesPool(m, tod).map((p) => p.id));
-  assert.ok(ids(1, 'night').has('yari') && ids(1, 'night').has('hiika'), '冬の夜はヤリイカ・ヒイカ');
-  assert.ok(ids(4, 'day').has('kouika') && ids(4, 'day').has('mongo'), '春はコウイカ・モンゴウ');
-  assert.deepEqual([...ids(10, 'day')], ['aori'], '秋の日中は新子のアオリイカ');
+  const top = (m, tod) => [...speciesPool(m, tod)].sort((a, b) => b.w - a.w)[0].id;
+  // 山口・日本海側の実データ（squid-seasons.md）＋ダディの実釣
+  assert.ok(ids(2, 'night').has('yari') && !ids(2, 'night').has('hiika'), '冬の夜はヤリイカ（萩ではヒイカの記録なし）');
+  assert.equal(top(2, 'night'), 'yari');
+  assert.ok(ids(6, 'evening').has('mongo') && ids(6, 'evening').has('shiriyake'), '初夏はモンゴウ・シリヤケ（ダディの実釣）');
+  assert.equal(top(6, 'evening'), 'mongo');
+  assert.equal(top(7, 'night'), 'kensaki', '夏の夜はケンサキイカ');
+  assert.ok(ids(5, 'evening').has('aori') && ids(5, 'evening').has('kouika'), '春は親アオリ・コウイカ');
+  assert.equal(top(10, 'day'), 'aori', '秋は新子のアオリイカ');
+  assert.ok(!ids(8, 'day').has('aori'), '8月の日中はアオリイカがいない');
 });
 
 test('押している間に力がたまり、離すと投げて沈み始める', () => {

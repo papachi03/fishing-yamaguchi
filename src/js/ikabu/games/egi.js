@@ -19,7 +19,6 @@ export const TENSION_HOLD = 0.3; // しゃくった後これ以上押したま�
 export const DOUBLE_JERK = 0.45; // この間隔以内の2回目のしゃくりは「2段しゃくり」
 
 export const TIMES = ['morning', 'day', 'evening', 'night'];
-const TOD_FACTOR = { morning: 1.4, day: 0.8, evening: 1.4, night: 1.0 };
 
 // ---------------- エギ ----------------
 // 沈下速度は実物の目安（秒/m）。ゲームでは TIME_SCALE 倍速で沈める（本物どおりだと待ち時間が長すぎる）
@@ -45,48 +44,110 @@ const FREE_FALL = 0.78; // しゃくった後のフリーフォールは、着�
 const TENSION_FALL = 0.5; // テンションフォールはさらにゆっくり、手前に寄りながら沈む
 
 // ---------------- イカ ----------------
-// w は出やすさ、g は重さの範囲（グラム）、k は胴長の係数（胴長cm ≈ k × 重さ^(1/3)）、ideal は合うエギの号数
-const SQUID = {
-  aoriBig: { id: 'aori', g: [800, 2500], k: 2.5, power: 1.0, ideal: 3.5 },
-  aoriKid: { id: 'aori', g: [100, 500], k: 2.5, power: 0.55, ideal: 2.5 },
-  aoriMid: { id: 'aori', g: [300, 900], k: 2.5, power: 0.7, ideal: 3 },
-  kouika: { id: 'kouika', g: [300, 900], k: 1.9, power: 0.6, ideal: 3 },
-  mongo: { id: 'mongo', g: [800, 2500], k: 2.4, power: 0.9, ideal: 3.5 },
-  shiriyake: { id: 'shiriyake', g: [200, 600], k: 2.0, power: 0.5, ideal: 3 },
-  kensaki: { id: 'kensaki', g: [150, 450], k: 3.7, power: 0.6, ideal: 2.5 },
-  yari: { id: 'yari', g: [150, 350], k: 4.8, power: 0.55, ideal: 2.5 },
-  hiika: { id: 'hiika', g: [20, 60], k: 2.9, power: 0.25, ideal: 2 },
+// 山口県・日本海側（萩）の陸っぱりの実データで作る（2026-09-25）。根拠は C:\Users\my\ikabu-research\squid-seasons.md：
+//   釣具店の釣果（アングル山口 2,043件・CAST釣果写真館 イカ235件ほか）、山口県水産研究センター研究報告、
+//   そしてダディの実釣（モンゴウ・シリヤケは5月下旬〜7月、モンゴウはシャロー〜中層、シリヤケは駆け上がりの巻き上げで食う、
+//   2024-07-18 もモンゴウ・シリヤケがまとまって釣れた、スルメイカは6月の夜、新子アオリは夜にも釣れる）。
+//   推測で足さないこと。萩で記録のないヒイカは出さない。
+//
+// months … 月ごとの釣れやすさ（0 ほぼ釣れない／1 たまに／2 よく／3 最盛期。調査の表そのまま）
+// zone   … 好きな棚。[上, 下] を水深に対する割合で（0＝水面、1＝底）。エギがこの中にあるほど抱く
+// tod    … 時間帯ごとの出やすさの倍率
+// g(m)   … その月の重さの範囲（グラム）。k は胴長の係数（胴長cm ≈ k × 重さ^(1/3)）
+// ideal(m) … 合うエギの号数
+// abund  … 数の多さ（春の親アオリは数が少なく大きい、秋の新子は小さいが数が出る。釣具店の釣果の件数の比を目安に）
+const MONTH_W = [0, 0.25, 0.6, 1.0]; // 「たまに」は最盛期の 1/4 くらい
+export const SPECIES = {
+  aoriSpring: {
+    abund: 0.4,
+    id: 'aori', label: '春の親アオリイカ', months: { 4: 2, 5: 3, 6: 2, 7: 1 }, zone: [0.7, 1],
+    tod: { morning: 1.4, day: 1.0, evening: 1.4, night: 0.5 }, g: () => [900, 2500], big: [2500, 3400], k: 2.5, power: 1.0, ideal: () => 3.5,
+  },
+  aoriKid: {
+    abund: 1.2,
+    id: 'aori', label: '秋の新子アオリイカ', months: { 9: 3, 10: 3, 11: 2, 12: 1, 1: 1, 2: 1, 3: 1 },
+    // 秋はシャロー。12〜3月の越冬個体は深め
+    zone: (m) => (m >= 9 && m <= 11 ? [0, 0.5] : [0.5, 1]),
+    tod: { morning: 1.3, day: 1.2, evening: 1.4, night: 0.9 },   // ダディの実釣：10月の夜0時台に新子4杯
+    g: (m) => ({ 9: [100, 300], 10: [200, 500], 11: [500, 800] })[m] ?? [200, 800],
+    k: 2.5, power: 0.6,
+    ideal: (m) => ({ 9: 2.5, 10: 2.5, 11: 3 })[m] ?? 3.5,
+  },
+  kouika: {
+    abund: 0.45,
+    id: 'kouika', label: 'コウイカ', months: { 1: 1, 2: 1, 3: 1, 4: 2, 5: 3, 6: 2, 7: 1, 11: 1 }, zone: [0.75, 1],
+    tod: { morning: 1.2, day: 1.0, evening: 1.2, night: 0.8 }, g: () => [300, 1000], big: [1000, 1800], k: 1.9, power: 0.6, ideal: () => 3,
+  },
+  mongo: {
+    abund: 0.55,
+    // ダディの実釣：コウイカが終わりかける5月下旬から6月、1〜2.5kg の大型。意外にシャロー〜中層を泳ぐ
+    id: 'mongo', label: '大型モンゴウイカ', months: { 5: 1, 6: 3, 7: 2 }, zone: [0.1, 0.65],
+    tod: { morning: 1.2, day: 1.0, evening: 1.4, night: 0.6 }, g: () => [1000, 2500], k: 2.4, power: 0.9, ideal: () => 3.5,
+  },
+  shiriyake: {
+    abund: 0.25,
+    // ダディの実釣：モンゴウと同じ頃に入る。大きくない。ボトム。駆け上がりから巻き上げたときに食いつく
+    id: 'shiriyake', label: 'シリヤケイカ', months: { 5: 1, 6: 2, 7: 2 }, zone: [0.8, 1], lift: true,
+    tod: { morning: 1.1, day: 1.0, evening: 1.1, night: 0.7 }, g: () => [200, 600], k: 2.0, power: 0.5, ideal: () => 3,
+  },
+  kensaki: {
+    abund: 0.8,
+    // 陸っぱりは夏の夜（6〜8月、7月が最盛期）。表層〜中層、常夜灯
+    id: 'kensaki', label: '夜のケンサキイカ', months: { 5: 1, 6: 2, 7: 3, 8: 2, 9: 1, 10: 1, 11: 1, 12: 1, 1: 1 }, zone: [0, 0.55],
+    tod: { morning: 0.2, day: 0.05, evening: 0.6, night: 1.5 }, g: () => [150, 600], k: 3.7, power: 0.7, ideal: () => 2.5,
+  },
+  surume: {
+    // ダディの実釣：2023-06-10 0:59 に陸から。調査の対象外だった種類。今わかっているのは6月の夜の1件だけなので「たまに」
+    abund: 0.5,
+    id: 'surume', label: 'スルメイカ', months: { 6: 1 }, zone: [0.1, 0.6],
+    tod: { morning: 0.2, day: 0.05, evening: 0.5, night: 1.5 }, g: () => [200, 500], k: 3.9, power: 0.65, ideal: () => 2.5,
+  },
+  yari: {
+    abund: 0.9,
+    // 2〜3月が最盛期。夕まずめ〜夜、中層〜浅め
+    id: 'yari', label: 'ヤリイカ', months: { 12: 1, 1: 2, 2: 3, 3: 3, 4: 1 }, zone: [0.2, 0.7],
+    tod: { morning: 0.2, day: 0.1, evening: 0.9, night: 1.5 }, g: () => [150, 400], k: 4.8, power: 0.55, ideal: () => 2.5,
+  },
 };
 
+// 季節モード（ダディ確定 2026-09-25）：春・初夏・夏・秋・冬。月と時間帯の代表で遊ぶ
+export const SEASON_MODES = [
+  { key: 'spring', months: [4, 5], month: 5, tod: 'evening', stars: 'aoriSpring' },
+  { key: 'earlySummer', months: [6], month: 6, tod: 'evening', stars: 'mongo' },
+  { key: 'summer', months: [7, 8], month: 7, tod: 'night', stars: 'kensaki' },
+  { key: 'autumn', months: [9, 10, 11], month: 10, tod: 'day', stars: 'aoriKid' },
+  { key: 'winter', months: [12, 1, 2, 3], month: 2, tod: 'night', stars: 'yari' },
+];
+
 export function seasonOf(month) {
-  if (month >= 3 && month <= 6) return 'spring';
-  if (month >= 7 && month <= 8) return 'summer';
-  if (month >= 9 && month <= 11) return 'autumn';
-  return 'winter';
+  return SEASON_MODES.find((m) => m.months.includes(month))?.key ?? 'spring';
 }
 
-// 季節・時間帯ごとの顔ぶれ（山口の堤防からのエギングの目安）
+const zoneOf = (sp, month) => (typeof sp.zone === 'function' ? sp.zone(month) : sp.zone);
+const monthW = (sp, month) => MONTH_W[sp.months[month] ?? 0];
+
+// その月・時間帯に出るイカ（出やすさ w 付き）。画面の「周りのイカ」やエギのおすすめもこれを使う
 export function speciesPool(month, tod) {
-  const night = tod === 'night';
-  const pool = {
-    spring: [[SQUID.aoriBig, 5], [SQUID.kouika, 4], [SQUID.mongo, 2], [SQUID.shiriyake, 2]],
-    summer: night ? [[SQUID.kensaki, 4], [SQUID.aoriMid, 2]] : [[SQUID.aoriMid, 3], [SQUID.kouika, 1]],
-    autumn: night ? [[SQUID.aoriKid, 5], [SQUID.kensaki, 2]] : [[SQUID.aoriKid, 8], [SQUID.aoriMid, 1]],
-    winter: night ? [[SQUID.yari, 6], [SQUID.hiika, 6]] : [[SQUID.aoriBig, 1], [SQUID.kouika, 1]],
-  }[seasonOf(month)];
-  return pool.map(([s, w]) => ({ ...s, w }));
+  return Object.entries(SPECIES)
+    .map(([key, sp]) => ({ key, id: sp.id, label: sp.label, w: monthW(sp, month) * (sp.tod[tod] ?? 1) * (sp.abund ?? 1), g: sp.g(month), big: sp.big ?? null,
+      k: sp.k, power: sp.power, ideal: sp.ideal(month), zone: zoneOf(sp, month), lift: Boolean(sp.lift) }))
+    .filter((p) => p.w > 0);
 }
 
 // エギの号数が、そのイカに合っているか（1＝ぴったり。0.5号ずれるごとに下がる）
 export const sizeMatch = (egiSize, ideal) => Math.max(0.35, 1 - 0.5 * Math.abs(egiSize - ideal));
 
-// 季節で抱きやすさが違う（冬の日中はとても渋い）
-const seasonRate = (month, tod) => {
-  const s = seasonOf(month);
-  if (s === 'winter') return tod === 'night' ? 1.0 : 0.35;
-  if (s === 'autumn') return 1.2;
-  return 0.9;
-};
+// 棚が合っているか：好きな棚の中なら1、外れるほど下がる（最低 0.15）
+export function zoneMatch(frac, zone) {
+  const [a, b] = zone;
+  if (frac >= a && frac <= b) return 1;
+  const d = frac < a ? a - frac : frac - b;
+  return Math.max(0.15, 1 - d / 0.35);
+}
+
+// その月・時間帯の「イカの濃さ」。秋の夕まずめ（10月）を 1.68 とした目安（以前の季節×時間帯の倍率に合わせてある）
+const AVAIL_NORM = 1.07;
+export const availability = (month, tod) => speciesPool(month, tod).reduce((a, p) => a + p.w, 0) / AVAIL_NORM;
 
 // イカの気分：秋やまずめで、潮もそこそこなら「やる気あり」（ダート・2段が効く）。それ以外は「渋い」（控えめの誘い＋長いフォール）
 export function moodOf(month, tod, cond) {
@@ -111,7 +172,7 @@ export function normalizeConditions(c = {}) {
 // その投げで、エギの近くにいるイカの数（0〜2）。季節・時間帯・潮（期待値）で平均が決まる。
 // 0 なら、どれだけ上手にしゃくっても抱かない＝本物どおりボウズの投げがある
 export function meanSquid(month, tod, cond) {
-  return seasonRate(month, tod) * TOD_FACTOR[tod] * (0.1 + 0.08 * cond.expectation);
+  return availability(month, tod) * (0.1 + 0.08 * cond.expectation);
 }
 function sampleSquid(s) {
   const lambda = meanSquid(s.month, s.tod, s.cond);
@@ -175,6 +236,7 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     windows: signalWindows(cond), // いまのアタリのアワセ猶予（アタリが出るたびに種類に合わせて入れ替える）
     bite: null, // いまのアタリ { kind, light }
     punchAt: -99, // 最後のイカパンチの時刻
+    liftAt: -99, // 底からエギを持ち上げた時刻（シリヤケイカは巻き上げで食う）
     punchPending: false, // パンチの後、まだ「待った／すぐしゃくった」が決まっていない
     squid: 0,
     phase: 'ready',
@@ -234,6 +296,7 @@ function jerk(s, kind = 'lift') {
   const double = s.jerks.length > 0 && s.t - s.lastJerk <= DOUBLE_JERK;
   s.jerks.push(s.t);
   if (kind === 'dart') s.darts += 1;
+  if (s.depth >= s.bottom - 0.6) s.liftAt = s.t;   // 底から持ち上げた（シリヤケイカが食いつく瞬間）
   if (s.punchPending && s.t - s.punchAt < PUNCH_SPOOK) {
     // パンチに合わせてしまった：掛からないうえに警戒される
     s.punchPending = false;
@@ -320,6 +383,7 @@ export function release(s) {
     s.bite = null;
     s.punchAt = -99;
     s.punchPending = false;
+    s.liftAt = -99;
     s.squid = sampleSquid(s);
     s.phase = 'sinking';
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec });
@@ -338,6 +402,8 @@ function judgeRhythm(s) {
   else if (n === 2) gain = active ? 0.35 : 0.25;
   else if (n === 3) gain = active ? 0.3 : 0.1;
   else gain = 0.05;
+  // 棚が合っていないと、いくら誘ってもイカは寄ってこない（良い誘いほど棚の合い具合で割り引く）
+  if (gain > 0) gain *= 0.25 + 0.75 * zoneFit(s);
   s.interest = Math.min(1, Math.max(0, s.interest + gain));
   s.judged = true;
   emit(s, 'rhythm', { streak: n, darts: s.darts, interest: s.interest, mood: s.mood });
@@ -355,12 +421,35 @@ function onBottom(s, dt) {
   return false;
 }
 
-// いまの投げで、エギの号数がこの季節・時間帯のイカにどれくらい合っているか（出やすさで重みづけした平均）
-function poolMatch(s) {
+// いまのエギ（棚・号数）に対する、イカごとの抱きやすさ。
+//   出やすさ（月・時間帯）× 棚が合っているか × 号数が合っているか。
+//   シリヤケイカは「駆け上がりから巻き上げたとき」に食う（ダディの実釣）：底から持ち上げた直後（1.5秒）と、
+//   手前の駆け上がり（残り8m以内）で抱きやすい
+export const LIFT_WINDOW = 1.5;
+export const SLOPE_DIST = 8;
+export function contactWeights(s) {
+  const frac = s.bottom > 0 ? Math.min(1, s.depth / s.bottom) : 0;
+  const lifting = s.t - s.liftAt < LIFT_WINDOW;
+  return speciesPool(s.month, s.tod).map((p) => {
+    let w = p.w * zoneMatch(frac, p.zone) * sizeMatch(s.spec.size, p.ideal);
+    if (p.lift) w *= (lifting ? 2 : 1) * (s.dist <= SLOPE_DIST ? 1.3 : 1);
+    return { ...p, w };
+  });
+}
+// 今のエギの棚が、その月・時間帯のイカの好きな棚にどれくらい合っているか（出やすさで重みづけ。0.15〜1）
+export function zoneFit(s) {
+  const frac = s.bottom > 0 ? Math.min(1, s.depth / s.bottom) : 0;
   const pool = speciesPool(s.month, s.tod);
   const total = pool.reduce((a, p) => a + p.w, 0);
-  return pool.reduce((a, p) => a + p.w * sizeMatch(s.spec.size, p.ideal), 0) / total;
+  return total > 0 ? pool.reduce((a, p) => a + p.w * zoneMatch(frac, p.zone), 0) / total : 0;
 }
+// 棚が合わない所（合い具合 ZONE_OFF 未満）に ZONE_PATIENCE 秒以上いると、寄っていたイカが離れていく（1秒あたり ZONE_LEAVE の確率）
+export const ZONE_OFF = 0.35;
+export const ZONE_PATIENCE = 4;
+export const ZONE_LEAVE = 0.1;
+
+// 抱く勢いの全体の大きさ（以前の「底ほど抱く×季節×時間帯」と同じくらいになるよう合わせた係数）
+const HUG_SCALE = 0.8;
 
 export function tick(s, dt) {
   s.events = [];
@@ -391,28 +480,44 @@ export function tick(s, dt) {
       } else if (onBottom(s, dt)) break;
       if (!s.judged && since >= 2) judgeRhythm(s);
       if (since > 9) s.interest = Math.max(0, s.interest - 0.1 * dt);
+      // 棚が合わない所に居続けると、寄っていたイカが離れていく
+      if (s.squid > 0 && zoneFit(s) < ZONE_OFF) {
+        s.offZoneFor = (s.offZoneFor ?? 0) + dt;
+        if (s.offZoneFor > ZONE_PATIENCE && s.rand() < ZONE_LEAVE * dt) {
+          s.squid -= 1;
+          s.offZoneFor = 0;
+          emit(s, 'drift-away', { squidLeft: s.squid });
+        }
+      } else {
+        s.offZoneFor = 0;
+      }
       // パンチの後、しゃくらずに待てた（抱かせる間を作れた）
       if (s.punchPending && s.t - s.punchAt >= PUNCH_WAIT) {
         s.punchPending = false;
         s.interest = Math.min(1, s.interest + PUNCH_GAIN);
         emit(s, 'punch-wait', { interest: s.interest });
       }
-      // フォール中（しゃくって1秒後から）にだけ抱く。近くにイカがいて、底に近いほど、気になっているほど抱きやすい
-      if (since >= 1 && s.depth < s.bottom && s.squid > 0) {
-        const depthFactor = 0.4 + 0.6 * (s.depth / s.bottom);
+      // フォール中（しゃくって1秒後から）にだけ抱く。近くにイカがいて、そのイカの好きな棚にエギがあるほど、
+      // 気になっているほど抱きやすい。シリヤケイカだけは、底から持ち上げた直後（0.3秒後から）も食う
+      const lifting = s.t - s.liftAt < LIFT_WINDOW;
+      if ((since >= 1 || (lifting && since >= 0.3)) && s.depth < s.bottom && s.squid > 0) {
+        const weights = contactWeights(s);
+        // しゃくって1秒たつまでは、巻き上げで食うイカ（シリヤケ）だけが候補
+        const cands = weights.filter((p) => p.w > 0 && (since >= 1 || p.lift));
+        const sumW = cands.reduce((a, p) => a + p.w, 0);
         const moodFactor = 0.6 + 0.08 * s.cond.expectation; // 期待値0で0.6倍、10で1.4倍
         // 渋い日は長いテンションフォールが効き、やる気のある日は速いフリーフォールでも抱く
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
-        const rate = 0.55 * s.interest * depthFactor * moodFactor * fallFactor * poolMatch(s)
-          * TOD_FACTOR[s.tod] * seasonRate(s.month, s.tod);
+        const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM);
         if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
           s.punchAt = s.t;
           s.punchPending = true;
           emit(s, 'punch', { tensionFall: s.tensionFall });
-        } else if (s.rand() < rate * dt) {
-          const pool = speciesPool(s.month, s.tod).map((p) => ({ ...p, w: p.w * sizeMatch(s.spec.size, p.ideal) }));
-          const sp = pickWeighted(pool, s.rand);
-          const weight = Math.round(sp.g[0] + (sp.g[1] - sp.g[0]) * s.rand() ** 1.6);
+        } else if (cands.length && s.rand() < rate * dt) {
+          const sp = pickWeighted(cands, s.rand);
+          // 重さは範囲の軽い方に寄せる。まれに大型（春の親アオリの3kg級など）
+          const [g0, g1] = sp.big && s.rand() < 0.06 ? sp.big : sp.g;
+          const weight = Math.round(g0 + (g1 - g0) * s.rand() ** 1.6);
           s.hooking = { id: sp.id, weight, mantle: Math.round(sp.k * Math.cbrt(weight)), power: sp.power };
           const kind = pickWeighted(BITE_MIX[s.tensionFall ? 'tension' : 'free'], s.rand).kind;
           const light = s.rand() < (s.mood === 'calm' ? 0.3 : 0.2); // 軽い抱き（猶予が短い）

@@ -42,6 +42,7 @@ export const BODY = {
   aori: { kind: 'squid', ratio: 0.36, fin: 'oval' },
   kensaki: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.5 },
   yari: { kind: 'squid', ratio: 0.18, fin: 'rhombus', finFrom: 0.42 },
+  surume: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.62 },
   hiika: { kind: 'squid', ratio: 0.34, fin: 'round' },
   kouika: { kind: 'cuttle', ratio: 0.5, fin: 'skirt' },
   mongo: { kind: 'cuttle', ratio: 0.52, fin: 'skirt', spots: true },
