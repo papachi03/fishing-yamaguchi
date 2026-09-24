@@ -18,9 +18,9 @@
     binding = "REPORTS_KV"
     id = "<yfj-reports の KV namespace id>"
 
-    # 毎朝5:00（日本時間）の堤防判定のX投稿下書き（src/morning.js）。UTC表記
+    # 毎朝7:00（日本時間）の堤防判定のX投稿下書き（src/morning.js）。UTC表記
     [triggers]
-    crons = ["0 20 * * *"]
+    crons = ["0 22 * * *"]
     ```
   - secretの登録も同じ場所から：`printf '%s' '<値>' | npx wrangler secret put <名前>`
   - `npx wrangler login` は要らない（このPCは既に認証済み。Avastが `wrangler login` を誤検知する問題があるので、loginはやり直さない）
@@ -53,6 +53,7 @@ KVの読み取りは無料枠で1日10万回。絞り込みは**まず公開用�
 | `SIGN_SECRET` | secret | 管理Cookieと削除リンクの署名（**変えると全員ログアウト・発行済みの削除リンクが無効になる**） |
 | `ADMIN_PASSPHRASE` | secret | 管理ページの合言葉（ダディが決める） |
 | `DISCORD_WEBHOOK_URL` | secret | 通知先（無くても動く） |
+| `DISCORD_MENTION_USER_ID` | var（wrangler.toml の `[vars]`） | 朝の堤防判定でメンションしてスマホを鳴らす相手（ダディ）のDiscordユーザーID。無ければメンションなし |
 | `NOTIFY_MENTION_USER_ID` | secret | 通知でメンションするDiscordのユーザーID（任意。未設定ならメンション無しで通知だけ届く。このリポジトリは公開なので、個人のDiscordユーザーIDはここには書かず、必ずCloudflare側のsecretに入れる） |
 
 ## 管理ページのフォーム送信について

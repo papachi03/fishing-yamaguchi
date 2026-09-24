@@ -1,4 +1,6 @@
-// 毎朝5:00（日本時間）に「堤防判定」のX投稿の下書きをDiscordへ送る（2026-09-22追加）。
+// 毎朝7:00（日本時間）に「堤防判定」のX投稿の下書きをDiscordへ送る（2026-09-22追加）。
+// 2026-09-24：5:00→7:00に変更し、ダディのスマホで鳴るよう@メンションを付けた
+// （投稿忘れ対策。X APIの自動投稿は有料のため見送り、ダディが手で押す運用のまま）。
 // Cloudflareの定期実行（Cron Trigger）から呼ばれる。投稿そのものはダディが手で行う。
 //
 // 判定はSEAページと同じ関数（assessSafety）を同じ現在値で呼ぶ。サイトとXで数字が
@@ -42,14 +44,18 @@ export async function sendMorningDraft(env, { now = new Date(), fetchW = fetchWe
   }
   const rows = await morningRows(fetchW);
   const text = composeMorningPost({ date: now, rows });
-  const content = morningDiscordContent(text, rows.every((r) => r.level == null));
+  const draft = morningDiscordContent(text, rows.every((r) => r.level == null));
+  // 通知を鳴らすためのメンション。IDは wrangler.toml の [vars]（git管理外）に置く
+  const mentionId = /^\d{17,20}$/.test(env.DISCORD_MENTION_USER_ID ?? '') ? env.DISCORD_MENTION_USER_ID : null;
+  const content = mentionId ? `<@${mentionId}>\n${draft}` : draft;
   const res = await fetch(env.DISCORD_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       username: '秘書クロロ',
       content,
-      allowed_mentions: { parse: [] },
+      // 鳴らすのは指定した1人だけ。下書き本文の@や@everyoneは展開させない
+      allowed_mentions: mentionId ? { parse: [], users: [mentionId] } : { parse: [] },
       flags: 4, // リンクのプレビュー（埋め込み）を出さない。通知が長くなりすぎるため
     }),
   });

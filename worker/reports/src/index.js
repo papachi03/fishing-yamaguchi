@@ -78,7 +78,7 @@ export default {
     }
   },
 
-  // Cloudflareの定期実行（wrangler.toml の [triggers] crons）。毎朝5:00に堤防判定の下書きを送る
+  // Cloudflareの定期実行（wrangler.toml の [triggers] crons）。毎朝7:00に堤防判定の下書きを送る
   async scheduled(event, env, ctx) {
     ctx.waitUntil(sendMorningDraft(env));
   },

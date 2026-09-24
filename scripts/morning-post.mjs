@@ -1,7 +1,7 @@
 // 毎朝の「堤防判定」のX投稿の下書きを、手元で今の予報から作って表示する（送信はしない）。
 //   node scripts/morning-post.mjs
 //
-// 本番は Cloudflare Worker（worker/reports）の定期実行が毎朝5:00にDiscordへ送っている。
+// 本番は Cloudflare Worker（worker/reports）の定期実行が毎朝7:00にDiscordへ送っている。
 // ここはそれと同じ部品（worker/reports/src/morning.js）を使うので、表示される文面は本番と同じ。
 
 import { morningRows } from '../worker/reports/src/morning.js';
