@@ -4,6 +4,8 @@
 //
 // 座標系：高さ 620 固定。幅は表示領域の縦横比で egi-ui.js が決め直す（既定 1000）。
 //   左に堤防と釣り人（HERO と同じ squid.png）、水面は y=290、水中は深さに比例して下へ。
+// 世界は画面より広く描く（空は上へ 2H、海と海底は左右へ W ずつ、下へ 2H）。投げの最中にカメラが少し引いても
+//   舞台の地色が見えない＝空・海・堤防が必ず画面を埋める。
 import { t } from '../i18n.js';
 import { HERO_ANIM } from '../hero-scene.js';
 
@@ -31,22 +33,24 @@ export const PALETTE = {
 };
 
 const f1 = (v) => (Math.round(v * 10) / 10).toString();
+// 空の一番上の色（空の最初の色を暗くする）
+const darker = (hex, k = 0.55) => '#' + hex.slice(1).match(/../g).map((h) => Math.round(parseInt(h, 16) * k).toString(16).padStart(2, '0')).join('');
 
 // 深さ（m）→ y、距離（m）→ x（幅 W のとき）
 export const depthY = (depth) => SCENE.surface + (depth / SCENE.maxDepth) * (SCENE.seabed - SCENE.surface);
 export const distX = (dist, W) => SCENE.pierRight + (dist / SCENE.rangeM) * (W - SCENE.pierRight - 70);   // 右端に大物の胴が入る余白
 
-// 海底の線（堤防の壁の下端から右端まで、ゆるい起伏＋岩）
+// 海底の線（世界の左端から右端まで、ゆるい起伏＋岩。堤防の後ろは堤防が隠す）
 export function seabedD(bottom, W, seedish = 0) {
   const y = depthY(bottom);
   const pts = [];
-  const n = 9;
+  const n = 27;
   for (let i = 0; i <= n; i++) {
-    const x = SCENE.pierRight + ((W - SCENE.pierRight) * i) / n;
+    const x = -W + (3 * W * i) / n;
     const bump = Math.sin(i * 1.7 + seedish) * 6 + Math.cos(i * 0.9 + seedish * 2) * 4;
     pts.push(`${f1(x)},${f1(y + bump)}`);
   }
-  return `M${SCENE.pierRight},${f1(SCENE.H)} L${pts.join(' L')} L${W},${SCENE.H} Z`;
+  return `M${-W},${2 * SCENE.H} L${pts.join(' L')} L${2 * W},${2 * SCENE.H} Z`;
 }
 
 // 岩：海底の上に3つほど（根掛かりの「根」）
@@ -72,7 +76,7 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
     ? [0.3, 0.42, 0.5, 0.61, 0.69, 0.9, 0.95, 0.36, 0.55, 0.84].map((k, i) => `<circle cx="${f1(W * k)}" cy="${f1(20 + ((i * 37) % 120))}" r="${1.2 + (i % 3) * 0.5}" fill="#fff" opacity="0.8" />`).join('')
     : '';
   // 遠くの山（水平線の上）
-  const hills = `<path d="M${S.pierRight - 60},${S.surface} Q${f1(W * 0.3)},${S.surface - 48} ${f1(W * 0.45)},${S.surface - 22} Q${f1(W * 0.6)},${S.surface - 62} ${f1(W * 0.78)},${S.surface - 26} Q${f1(W * 0.9)},${S.surface - 40} ${W},${S.surface - 16} L${W},${S.surface} Z" fill="${P.hills}" />`;
+  const hills = `<path d="M${-W},${S.surface} L${S.pierRight - 60},${S.surface} Q${f1(W * 0.3)},${S.surface - 48} ${f1(W * 0.45)},${S.surface - 22} Q${f1(W * 0.6)},${S.surface - 62} ${f1(W * 0.78)},${S.surface - 26} Q${f1(W * 0.9)},${S.surface - 40} ${W},${S.surface - 16} Q${f1(W * 1.2)},${S.surface - 44} ${f1(W * 1.45)},${S.surface - 20} Q${f1(W * 1.7)},${S.surface - 56} ${2 * W},${S.surface - 30} L${2 * W},${S.surface} Z" fill="${P.hills}" />`;
   // 常夜灯（夜だけ）：柱と灯り、水面の照り返し
   const lamp = night
     ? `<g class="ika-eg-lamp"><rect x="${S.lamp.x - 3}" y="${S.lamp.y}" width="6" height="${S.pierTop - S.lamp.y}" fill="#1a2a3a" /><circle cx="${S.lamp.x}" cy="${S.lamp.y - 6}" r="10" fill="#ffe9a8" /><circle cx="${S.lamp.x}" cy="${S.lamp.y - 6}" r="34" fill="url(#ika-eg-lampglow)" /><ellipse cx="${S.pierRight + 70}" cy="${S.surface + 8}" rx="120" ry="14" fill="#ffe9a8" opacity="0.14" /></g>`
@@ -81,25 +85,25 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
   const splash = Array.from({ length: 8 }, () => `<circle class="ika-eg-splash" r="4" fill="#ffffff" opacity="0" />`).join('');
   return `<svg class="ika-eg-svg" viewBox="0 0 ${W} ${S.H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${t(lang, '堤防からエギを投げる横から見た海。ボタンで操作します', 'Side view of the sea from a breakwater. Play with the button below')}" focusable="false" data-tod="${tod}">
   <defs>
-    <linearGradient id="ika-eg-sky" x1="0" y1="0" x2="0" y2="1">${stops(P.sky)}</linearGradient>
+    <linearGradient id="ika-eg-sky" gradientUnits="userSpaceOnUse" x1="0" y1="${-S.H}" x2="0" y2="${S.surface}">${stops([darker(P.sky[0]), ...P.sky])}</linearGradient>
     <linearGradient id="ika-eg-sea" gradientUnits="userSpaceOnUse" x1="0" y1="${S.surface}" x2="0" y2="${S.H}">${stops(P.sea)}</linearGradient>
     <radialGradient id="ika-eg-lampglow"><stop offset="0" stop-color="#ffe9a8" stop-opacity="0.55" /><stop offset="1" stop-color="#ffe9a8" stop-opacity="0" /></radialGradient>
     <linearGradient id="ika-eg-pier" gradientUnits="userSpaceOnUse" x1="0" y1="${S.pierTop}" x2="0" y2="${S.H}"><stop offset="0" stop-color="#d9d2c0" /><stop offset="${((S.surface - S.pierTop) / (S.H - S.pierTop)).toFixed(3)}" stop-color="#c4bcab" /><stop offset="${((S.surface - S.pierTop) / (S.H - S.pierTop) + 0.002).toFixed(3)}" stop-color="#5e6b70" /><stop offset="1" stop-color="#2c3d45" /></linearGradient>
   </defs>
-  <rect class="ika-eg-skyrect" x="0" y="0" width="${W}" height="${S.surface}" fill="url(#ika-eg-sky)" />
+  <rect class="ika-eg-skyrect" x="${-W}" y="${-2 * S.H}" width="${3 * W}" height="${2 * S.H + S.surface}" fill="url(#ika-eg-sky)" />
   ${stars}${sun}${hills}
-  <rect class="ika-eg-searect" x="0" y="${S.surface}" width="${W}" height="${S.H - S.surface}" fill="url(#ika-eg-sea)" />
+  <rect class="ika-eg-searect" x="${-W}" y="${S.surface}" width="${3 * W}" height="${2 * S.H}" fill="url(#ika-eg-sea)" />
   <!-- 海底と岩（投げるたびに深さが変わるので egi-ui.js が書き換える） -->
   <g class="ika-eg-bottom"><path class="ika-eg-seabed" d="${seabedD(bottom, W)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W)}</g>
   <!-- 水中で動くもの（気配のイカ・エギ・抱いたイカ・墨）はここに入る -->
   <g class="ika-eg-under"></g>
   <!-- 水面 -->
-  <path class="ika-eg-wave" d="M${S.pierRight},${S.surface} L${W},${S.surface}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
+  <path class="ika-eg-wave" d="M${S.pierRight},${S.surface} L${2 * W},${S.surface}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
   ${ripples}${splash}
   <!-- 堤防（水面の上は明るいコンクリート、水中は暗い壁） -->
-  <rect x="-20" y="${S.pierTop}" width="${S.pierRight + 20}" height="${S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
-  <rect x="-20" y="${S.pierTop}" width="${S.pierRight + 20}" height="8" fill="#ece5d3" />
-  <rect x="${S.pierRight - 6}" y="${S.pierTop}" width="6" height="${S.H - S.pierTop}" fill="#1f3038" opacity="0.6" />
+  <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
+  <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="8" fill="#ece5d3" />
+  <rect x="${S.pierRight - 6}" y="${S.pierTop}" width="6" height="${2 * S.H - S.pierTop}" fill="#1f3038" opacity="0.6" />
   ${lamp}
   <!-- 釣り人（HERO と同じイカ） -->
   <image class="ika-eg-angler" href="${assetHref(HERO_ANIM.layers.squid)}" x="${S.squidBox.x}" y="${S.squidBox.y}" width="${S.squidBox.w}" height="${S.squidBox.h}" preserveAspectRatio="none" />

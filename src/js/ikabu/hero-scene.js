@@ -145,9 +145,10 @@ export function rodPathD(p0, c, p2, w0, w1, extra = 0) {
   return `M${left.join('L')}L${right.reverse().join('L')}Z`;
 }
 
-// 糸：先端→水面。sway で横にたるむ
-export function lineD(tip, water, sway = 0) {
-  const mid = { x: (tip.x + water.x) / 2 + sway, y: (tip.y + water.y) / 2 };
+// 糸：先端→水面。sway で横にたるむ。droop は長さに対する割合で下にたるむ（飛んでいるエギを追う糸）
+export function lineD(tip, water, sway = 0, droop = 0) {
+  const L = droop ? Math.hypot(water.x - tip.x, water.y - tip.y) : 0;
+  const mid = { x: (tip.x + water.x) / 2 + sway, y: (tip.y + water.y) / 2 + L * droop };
   return `M${f1(tip.x)},${f1(tip.y)}Q${f1(mid.x)},${f1(mid.y)} ${water.x},${water.y}`;
 }
 

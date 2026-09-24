@@ -14,6 +14,7 @@ import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
 import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
+import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID } from './play-text.js';
 import { aroundHTML } from '../views/play.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
@@ -69,8 +70,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 見た目の状態 ---------- */
   const V = {
-    egi: { x: 0, y: 0, ang: 0, mode: 'tip' },       // tip（竿先にぶら下がる）/ flight / water / stuck / lift
-    flight: null,                                    // { t0, from, to, dur, mode }
+    egi: { x: 0, y: 0, ang: 0, mode: 'tip' },       // tip（竿先にぶら下がる・振りかぶり・投げ）/ flight（放たれて飛ぶ・回収の持ち上げ）/ water / stuck
+    flight: null,                                    // 回収の持ち上げ { t0, from, to, dur }
+    cast: null,                                      // 投げ { t0, from, released, rel:{ t0, from, to, T, apex } }
+    pend: createPendulum(SCENE.rod.len / 4),         // タラシの先のエギ（振り子）
+    sinkOffset: 0,                                   // 着水するまでに判定側が沈めた分（着水後に見た目が追いつく）
+    rodLag: 0, rodPrev: null, hold: null, held: false,
+    cam: 1,                                          // 舞台のズーム（1＝ふだん。フルキャストの高い山を追って少し引く）
     hug: { on: false, x: 0, y: 0, ang: 0, alpha: 0, node: null },
     swim: [0, 1].map(() => ({ x: 0, y: 0, ang: -90, alpha: 0, node: null, species: 'aori', len: 50 })),
     escape: null,                                    // 逃げていくイカ { node, x, y, ang, t0 }
@@ -99,6 +105,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.egiWater, n.hugWater, n.jet);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
     updateBottom(bottom);
+    V.camShown = null;
     if (s) draw(0);   // 作り直した直後に1回描く（ループが止まっていても竿と糸が出るように）
   }
   function makeNodes() {
@@ -150,14 +157,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const hangPoint = () => ({ x: SCENE.pierRight + 46, y: Math.max(SCENE.surface - 30 - (V.hug.height ?? 130), tipRest().y + 50) });
 
   // 竿：握りから角度 ang（度、右上向き）に伸び、pull（0〜1）で先が target に引かれてしなる
-  function rodGeom(ang, pull, target) {
+  // lag（度）：振っている向きと逆に竿先が遅れる＝竿がしなる（振りかぶり・キャストで使う）
+  function rodGeom(ang, pull, target, lag = 0) {
     const R = SCENE.rod;
     const a = (ang * Math.PI) / 180;
     const dir = { x: Math.cos(a), y: -Math.sin(a) };
-    const tip0 = { x: SCENE.grip.x + dir.x * R.len, y: SCENE.grip.y + dir.y * R.len };
+    const at = ((ang + lag) * Math.PI) / 180;
+    const tipDir = { x: Math.cos(at), y: -Math.sin(at) };
+    const tip0 = { x: SCENE.grip.x + tipDir.x * R.len, y: SCENE.grip.y + tipDir.y * R.len };
     let tip = tip0;
     if (target && pull > 0) tip = { x: tip0.x + (target.x - tip0.x) * 0.28 * pull, y: tip0.y + (target.y - tip0.y) * 0.28 * pull };
-    const bend = { x: SCENE.grip.x + dir.x * R.len * 0.52 + (tip.x - tip0.x) * 0.15, y: SCENE.grip.y + dir.y * R.len * 0.52 + (tip.y - tip0.y) * 0.15 };
+    const ab = ((ang + lag * 0.3) * Math.PI) / 180;
+    const bend = { x: SCENE.grip.x + Math.cos(ab) * R.len * 0.52 + (tip.x - tip0.x) * 0.15, y: SCENE.grip.y - Math.sin(ab) * R.len * 0.52 + (tip.y - tip0.y) * 0.15 };
     return { tip, bend };
   }
 
@@ -165,12 +176,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function newGame() {
     s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond });
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0;
-    V.egi.mode = 'tip'; V.flight = null; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
+    V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
     const pool = speciesPool(settings.month, settings.tod);
     V.swim.forEach((w, i) => { w.species = (pool[i] ?? pool[0]).id; w.len = 44 + i * 10; setSquidArt(sc.nodes.swim[i], 'swim', w.species, w.len); });
     const tp = tipRest();
-    V.egi.x = tp.x; V.egi.y = tp.y + 30; V.egi.ang = 0;
+    V.pend.reset(tp);
+    V.egi.x = tp.x; V.egi.y = tp.y + SCENE.rod.len / 4; V.egi.ang = 0;
     el.card.hidden = true;
     el.flash.hidden = true;
     el.catches.innerHTML = `<li class="ika-egi-catch-empty">${t(lang, 'まだ釣れていない', 'Nothing yet')}</li>`;
@@ -343,12 +355,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           castAt = s.t;
           signalsThisCast = 0;
           updateBottom(s.bottom);
-          const tp = tipRest();
-          V.flight = { t0: now, from: { x: tp.x, y: tp.y }, to: { x: X(s.castDist), y: SCENE.surface }, dur: 0.55 + s.castDist / 100, mode: 'cast' };
-          V.egi.mode = 'flight';
-          V.castSwing = now;
           V.lineBroken = false;
-          callout(t(lang, TX.msg.cast));
+          V.egi.mode = 'cast';
+          V.cast = { t0: now, from: V.rodAng ?? 100, released: false, rel: null, dist: s.castDist, to: { x: X(s.castDist), y: SCENE.surface } };
+          if (reduced) landEgi();   // 動きを減らす設定：飛ばさずに着水
           syncStock();
           syncSetupLock();
           break;
@@ -442,12 +452,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const tp = tipRest();
     if (V.egi.mode === 'stuck') {
       V.ghost = { x: V.egi.x, y: V.egi.y, ang: V.egi.ang, t0: now };
-      V.egi.mode = 'tip'; V.egi.x = tp.x; V.egi.y = tp.y + 30; V.egi.ang = 0;
+      V.egi.mode = 'tip'; V.egi.x = tp.x; V.egi.y = tp.y + SCENE.rod.len / 4; V.egi.ang = 0; V.pend.reset(tp);
     } else if (V.egi.mode === 'water' || V.egi.mode === 'hugged') {
-      V.flight = { t0: now, from: { x: V.egi.x, y: V.egi.y }, to: { x: tp.x, y: tp.y + 30 }, dur: 0.5, mode: 'lift' };
+      V.flight = { t0: now, from: { x: V.egi.x, y: V.egi.y }, to: { x: tp.x, y: tp.y + SCENE.rod.len / 4 }, dur: 0.5 };
       V.egi.mode = 'flight';
     } else {
-      V.egi.mode = 'tip'; V.egi.x = tp.x; V.egi.y = tp.y + 30;
+      V.egi.mode = 'tip'; V.egi.x = tp.x; V.egi.y = tp.y + SCENE.rod.len / 4; V.pend.reset(tp);
     }
     V.lineBroken = false;
     setButton();
@@ -561,12 +571,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!running) return;
     const dt = Math.min(0.05, (ts - lastNow) / 1000);
     lastNow = ts;
-    now += dt;
-    if (!frozen && s) {
-      const ev = tick(s, dt);
-      if (ev.length) onEvents(ev);
+    if (V.hold && holdReached(V.hold)) { V.hold = null; V.held = true; }   // 開発用：場面で見た目ごと止める
+    if (!V.held) {
+      now += dt;
+      if (!frozen && s) {
+        const ev = tick(s, dt);
+        if (ev.length) onEvents(ev);
+      }
+      draw(dt);
     }
-    draw(dt);
     raf = requestAnimationFrame(frame);
   }
   function start() {
@@ -586,6 +599,21 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   if ('IntersectionObserver' in window) new IntersectionObserver((en) => { inView = en.some((x) => x.isIntersecting); sync(); }, { threshold: 0.05 }).observe(el.stage);
   if ('ResizeObserver' in window) new ResizeObserver(() => relayout()).observe(el.stage); else addEventListener('resize', relayout);
 
+  // 着水：しぶきと波紋、糸はたるみ、ここからカウントと沈下が始まる
+  function landEgi() {
+    const C = V.cast;
+    if (!C) return;
+    V.cast = null;
+    V.egi.mode = 'water';
+    V.egi.x = C.to.x; V.egi.y = C.to.y;
+    V.egi.ang = -150;
+    V.sinkOffset = s.depth;          // 飛んでいる間に判定が沈めた分は、見た目では着水後に追いつかせる
+    castAt = s.t;
+    V.splashAt = now;
+    V.flyDir = null;
+    burst(C.to.x, SCENE.surface, 7);
+    callout(t(lang, TX.msg.cast));
+  }
   function burst(x, y, n = 8) {
     V.splash = Array.from({ length: n }, (_, i) => ({ x, y, vx: lerp(-90, 90, i / (n - 1)) + (Math.random() - 0.5) * 30, vy: 150 + Math.random() * 120, t0: now }));
     V.ripples.push({ x, y: SCENE.surface, t0: now, big: true });
@@ -600,32 +628,82 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const since = s.t - s.lastJerk;
     const wobble = reduced ? 0 : Math.sin(now * 2.1) * 3;
 
+    /* ----- 竿の角度（振りかぶり→振り出し→フォロースルー、しゃくり、やり取り） ----- */
+    const SWING = 0.3;
+    const C = V.cast;
+    let rodAng = S.rod.rest;
+    let pull = 0;
+    if (phase === 'aiming' && !C) rodAng = 88 + 24 * s.power;                       // 振りかぶる：力をためるほど後ろへ
+    else if (C) {
+      const k = (now - C.t0) / SWING;
+      if (k < 1) rodAng = lerp(C.from, 22, swingEase(k));                            // 一気に前へ（行き過ぎて戻る）
+      else {
+        // フォロースルー：着水点の方へ竿先を向ける
+        const aim = clamp((Math.atan2(S.grip.y - C.to.y, C.to.x - S.grip.x) * 180) / Math.PI, 16, 34);
+        rodAng = lerp(22, aim, easeInOut(clamp((now - C.t0 - SWING) / 0.6, 0, 1)));
+      }
+    }
+    else if (phase === 'sinking') rodAng = 30;
+    else if (phase === 'action' || phase === 'signal') { const j = now - V.jerkAt; rodAng = j < 0.5 ? lerp(72, 34, easeOut(j / 0.5)) : 34; pull = j < 0.2 ? 0.6 : 0; }
+    else if (phase === 'fight') { rodAng = 58; pull = clamp(s.tension / 100, 0.15, 1); }
+    else if (V.hug.on) { rodAng = 52; pull = 0.35; }
+    if (phase === 'signal') pull = 0.4;
+    // 竿は目標角へなめらかに（振り出しの最中だけは追従を速く）、しなりは角速度の逆向き
+    const prevAng = V.rodAng ?? rodAng;
+    V.rodAng = V.rodAng == null ? rodAng : V.rodAng + wrap(rodAng - V.rodAng) * (1 - Math.exp(-dt * (C ? 40 : 10)));
+    const rodVel = dt > 0 ? wrap(V.rodAng - prevAng) / dt : 0;
+    V.rodLag += (clamp(-rodVel * 0.03, -16, 16) - V.rodLag) * (1 - Math.exp(-dt * 18));
+    const tipNow = () => rodGeom(V.rodAng, 0, null, V.rodLag).tip;
+
     /* ----- エギの目標位置 ----- */
     let taut = 0.35;
-    if (V.egi.mode === 'flight' && V.flight) {
+    if (V.egi.mode === 'tip' || (V.egi.mode === 'cast' && !C?.released)) {
+      // 竿先のタラシにぶら下がる振り子。振りかぶりでは遅れて後ろへ、振り出しでは遠心力で回る
+      const tp = tipNow();
+      const p = V.pend.step(tp, dt);
+      V.egi.x = p.x; V.egi.y = p.y;
+      const dx = p.x - tp.x, dy = p.y - tp.y, L = Math.hypot(dx, dy) || 1;
+      V.egi.ang += wrap(angleOf(dx / L, dy / L) - V.egi.ang) * 0.6;
+      taut = 0.9;
+      if (C && !C.released) {
+        const k = (now - C.t0) / SWING;
+        // 竿が 10〜11 時（前へ 46° 以下）を通った瞬間に放す。振り切っても放していなければそこで放す
+        if (V.rodAng <= 46 || k >= 1) {
+          C.released = true;
+          const distK = clamp((C.dist - 10) / 30, 0, 1);   // 10m → 0、40m → 1
+          // 山の高さは、引いたカメラで見える空の上から 15% より下に収まるように上限を決める
+          const zT = 1 + 0.36 * distK;
+          const yTop = -S.H * (zT - 1) * 0.82;
+          const apexMax = (p.y + 0.42 * (C.to.y - p.y) - yTop - 0.15 * (S.surface - yTop)) / 0.93;
+          C.rel = { t0: now, from: { x: p.x, y: p.y }, to: C.to, T: flightTime(distK), apex: clamp(flightApex(distK, W / 1000), 16, Math.max(16, apexMax)), distK };
+        }
+      }
+    } else if (V.egi.mode === 'cast' && C?.released) {
+      // 放物線。糸は竿先からゆるく張って追いかける
+      const R = C.rel;
+      const k = (now - R.t0) / R.T;
+      const p = flightPoint(R.from, R.to, k, R.apex);
+      const q = flightPoint(R.from, R.to, Math.min(1, k + 0.02), R.apex);
+      const vl = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+      V.flyDir = { x: (q.x - p.x) / vl, y: (q.y - p.y) / vl };
+      V.flyK = k;
+      V.egi.x = p.x; V.egi.y = p.y;
+      V.egi.ang += wrap(headingDeg(R.from, R.to, k, R.apex) - V.egi.ang) * 0.5;
+      taut = 0.55;
+      if (k >= 1) landEgi();
+    } else if (V.egi.mode === 'flight' && V.flight) {
+      // 回収：糸に沿って竿先へ持ち上げる
       const F = V.flight;
       const k = clamp((now - F.t0) / F.dur, 0, 1);
-      const arc = F.mode === 'cast' ? -140 * Math.sin(Math.PI * k) : -40 * Math.sin(Math.PI * k);
-      const px = lerp(F.from.x, F.to.x, F.mode === 'cast' ? easeOut(k) : easeInOut(k));
-      const py = lerp(F.from.y, F.to.y, F.mode === 'cast' ? k * k : easeInOut(k)) + arc;
-      const vx = px - V.egi.x, vy = py - V.egi.y;
-      V.egi.x = px; V.egi.y = py;
-      if (Math.hypot(vx, vy) > 0.5) V.egi.ang += wrap(angleOf(-vx / Math.hypot(vx, vy), -vy / Math.hypot(vx, vy)) - V.egi.ang) * 0.3;
-      taut = F.mode === 'cast' ? 0.15 : 0.9;
-      if (k >= 1) {
-        V.flight = null;
-        if (F.mode === 'cast') { V.egi.mode = 'water'; burst(F.to.x, S.surface, 7); }
-        else { V.egi.mode = 'tip'; }
-      }
-    } else if (V.egi.mode === 'tip') {
-      const tp = tipRest();
-      const swing = phase === 'aiming' ? Math.sin(now * 7) * 10 : wobble;
-      V.egi.x += (tp.x + swing - V.egi.x) * k8;
-      V.egi.y += (tp.y + 32 - V.egi.y) * k8;
-      V.egi.ang += wrap(swing * 0.8 - V.egi.ang) * k8;
+      V.egi.x = lerp(F.from.x, F.to.x, easeInOut(k));
+      V.egi.y = lerp(F.from.y, F.to.y, easeInOut(k)) - 40 * Math.sin(Math.PI * k);
+      V.egi.ang += wrap(0 - V.egi.ang) * k3;
+      taut = 0.9;
+      if (k >= 1) { V.flight = null; V.egi.mode = 'tip'; V.pend.reset(tipNow()); }
     } else if (V.egi.mode === 'water' || V.egi.mode === 'stuck') {
+      V.sinkOffset = Math.max(0, V.sinkOffset - 0.4 * dt);
       const tx = X(s.dist);
-      const ty = Y(Math.min(s.depth, s.bottom)) - (V.egi.mode === 'stuck' ? 0 : 6);
+      const ty = Y(clamp(s.depth - V.sinkOffset, 0.15, s.bottom)) - (V.egi.mode === 'stuck' ? 0 : 6);
       const jerkFresh = now - V.jerkAt < 0.28;
       const rate = jerkFresh ? 1 - Math.exp(-dt * 16) : k8;
       if (V.egi.mode === 'stuck') {
@@ -641,6 +719,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
       }
       taut = jerkFresh ? 1 : phase === 'sinking' ? 0.45 : 0.4;
+      if (V.splashAt && now - V.splashAt < 1.2) taut *= 0.5 + 0.5 * ((now - V.splashAt) / 1.2);   // 着水直後は糸が水面にたるんで置かれる
       if (V.egi.mode === 'stuck' && now - V.snagAt > 0.6) V.lineBroken = true;
     }
 
@@ -693,19 +772,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       lineEnd = { x: V.hug.x, y: V.hug.y };
     }
 
-    /* ----- 竿 ----- */
-    let rodAng = S.rod.rest;
-    let pull = 0;
-    if (phase === 'aiming') rodAng = 66;
-    else if (now - V.castSwing < 0.35) rodAng = lerp(66, 18, easeOut((now - V.castSwing) / 0.35));
-    else if (now - V.castSwing < 1.2) rodAng = lerp(18, S.rod.rest, easeInOut((now - V.castSwing - 0.35) / 0.85));
-    else if (phase === 'sinking') rodAng = 30;
-    else if (phase === 'action' || phase === 'signal') { const j = now - V.jerkAt; rodAng = j < 0.5 ? lerp(72, 34, easeOut(j / 0.5)) : 34; pull = j < 0.2 ? 0.6 : 0; }
-    else if (phase === 'fight') { rodAng = 58; pull = clamp(s.tension / 100, 0.15, 1); }
-    else if (V.hug.on) { rodAng = 52; pull = 0.35; }
-    if (phase === 'signal') pull = 0.4;
-    V.rodAng = V.rodAng == null ? rodAng : V.rodAng + wrap(rodAng - V.rodAng) * (1 - Math.exp(-dt * 10));
-    const { tip, bend } = rodGeom(V.rodAng, pull, lineEnd);
+    /* ----- 竿を描く ----- */
+    const { tip, bend } = rodGeom(V.rodAng, pull, lineEnd, V.rodLag);
     const R = S.rod;
     sc.rodOutline.setAttribute('d', rodPathD(S.grip, bend, tip, R.width[0], R.width[1], R.outline));
     sc.rod.setAttribute('d', rodPathD(S.grip, bend, tip, R.width[0], R.width[1]));
@@ -714,6 +782,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     let d;
     if (V.lineBroken) {
       d = `M${f1(tip.x)},${f1(tip.y)} q${f1(wobble)},20 ${f1(wobble * 0.5)},46`;
+    } else if (V.egi.mode === 'cast' && C?.released && V.flyDir) {
+      d = trailingLineD(tip, lineEnd, V.flyDir, V.flyK, reduced ? 0 : Math.sin(now * 9) * 6);
     } else {
       const L = Math.hypot(lineEnd.x - tip.x, lineEnd.y - tip.y);
       const sag = (1 - taut) * L * 0.16;
@@ -731,7 +801,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     } else n.entry.setAttribute('opacity', '0');
 
     /* ----- エギの絵（空中と水中で前後を変える） ----- */
-    const egiVisible = !V.hug.on || V.egi.mode === 'flight';
+    const egiVisible = !V.hug.on || V.egi.mode === 'flight' || V.egi.mode === 'cast';
     const egiAir = V.egi.y < S.surface;
     const egiT = `translate(${f1(V.egi.x)} ${f1(V.egi.y)}) rotate(${f1(V.egi.ang)}) scale(1.15)`;
     n.egiAir.setAttribute('transform', egiT); n.egiWater.setAttribute('transform', egiT);
@@ -823,8 +893,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     });
     if (!reduced) {
       const pts = [];
-      for (let x = S.pierRight; x <= W + 30; x += 30) pts.push(`${x},${f1(S.surface + 2.5 * Math.sin(x / 42 - now * 1.6))}`);
+      for (let x = S.pierRight; x <= W * 1.6; x += 30) pts.push(`${x},${f1(S.surface + 2.5 * Math.sin(x / 42 - now * 1.6))}`);
       sc.wave.setAttribute('d', `M${pts.join(' L')}`);
+    }
+
+    /* ----- カメラ：フルキャストの高い山を追って少し引き、着水したら戻る ----- */
+    const camTarget = C?.rel ? 1 + 0.36 * C.rel.distK : 1;
+    V.cam += (camTarget - V.cam) * (1 - Math.exp(-dt * (camTarget > V.cam ? 6 : 2.5)));
+    if (Math.abs(V.cam - (V.camShown ?? 1)) > 0.002) {
+      V.camShown = V.cam;
+      const z = V.cam;
+      sc.svg.setAttribute('viewBox', `${f1(-W * (z - 1) * 0.12)} ${f1(-S.H * (z - 1) * 0.82)} ${f1(W * z)} ${f1(S.H * z)}`);
     }
 
     /* ----- HUD ----- */
@@ -835,7 +914,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.tension.classList.toggle('is-slack', s.tension <= 5);
       setText(el.dist, 'dist', Math.max(0, s.dist).toFixed(0));
     }
-    const inWater = phase === 'sinking' || phase === 'action' || phase === 'signal';
+    const inWater = (phase === 'sinking' || phase === 'action' || phase === 'signal') && !V.cast;
     el.count.hidden = !inWater;
     if (inWater) {
       const onBottom = s.depth >= s.bottom;
@@ -855,15 +934,26 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function runDemo(name) {
     const step = (sec) => { for (let k = 0; k < sec / 0.05; k++) { onEvents(tick(s, 0.05)); now += 0.05; draw(0.05); } };
     const jerk = () => { press(s); onEvents(s.events.splice(0)); release(s); };
-    const cast = () => { press(s); step(0.72); release(s); onEvents(s.events.splice(0)); };
+    const cast = () => { press(s); step(0.72); release(s); onEvents(s.events.splice(0)); step(0.05); landEgi(); };
     const toSignal = () => {
       cast(); step(4.2); jerk(); step(0.3); jerk(); step(2.4);
       const pool = speciesPool(s.month, s.tod);
       s.hooking = { id: pool[0].id, weight: 620, mantle: 21, power: 0.7 };
       s.phase = 'signal'; s.signalAt = s.t; s.events.push({ type: 'signal', t: s.t }); onEvents(s.events.splice(0));
     };
-    if (name === 'aiming') { press(s); step(0.45); onEvents(s.events.splice(0)); frozen = true; }
-    else if (name === 'sinking') { cast(); step(4.5); frozen = true; }
+    // 自動で投げる（実時間で振りかぶり 0.9 秒→放す）。windup / release / flight / splash はその場面で見た目ごと止める
+    // holdMs：押している長さ。判定の力は 0.8 秒で最大なので、full＝800ms・weak＝120ms
+    const autoCast = (holdName, holdMs = 800) => {
+      V.hold = holdName ?? null;
+      setTimeout(() => { press(s); onEvents(s.events.splice(0)); setButton(); }, 300);
+      setTimeout(() => { release(s); onEvents(s.events.splice(0)); setButton(); }, 300 + holdMs);
+    };
+    if (name === 'cast' || name === 'castfull') autoCast(null, 800);
+    else if (name === 'castweak') autoCast(null, 120);
+    else if (name === 'windup') { setTimeout(() => { press(s); onEvents(s.events.splice(0)); setButton(); }, 300); setTimeout(() => { frozen = true; }, 1100); }
+    else if (name === 'release' || name === 'flight' || name === 'splash') autoCast(name);
+    else if (name === 'aiming') { press(s); step(0.45); onEvents(s.events.splice(0)); frozen = true; }
+    else if (name === 'sinking') { cast(); landEgi(); step(4.5); frozen = true; }
     else if (name === 'signal') { toSignal(); step(0.35); frozen = true; }
     else if (name === 'fight') { toSignal(); step(0.3); s.rand = () => 0; press(s); onEvents(s.events.splice(0)); release(s); step(1.4); s.tension = 62; s.dist = 9; press(s); frozen = true; }
     else if (name === 'landed') { toSignal(); step(0.3); s.rand = () => 0; press(s); onEvents(s.events.splice(0)); release(s); step(0.4); s.dist = 0.01; press(s); step(0.2); release(s); s.rand = Math.random; frozen = true; }
@@ -881,6 +971,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 止めた場面でも見た目の動き（揺れ・波）は続ける
     setButton();
     if (s.phase === 'result') showResult();
+  }
+
+  // 開発用：一時停止の条件
+  function holdReached(name) {
+    const C = V.cast;
+    if (name === 'release') return Boolean(C && !C.released && now - C.t0 >= 0.14);
+    if (name === 'flight') return Boolean(C?.rel && (now - C.rel.t0) / C.rel.T >= 0.5);
+    if (name === 'splash') return Boolean(V.splashAt && now - V.splashAt >= 0.1);
+    return false;
   }
 
   /* ---------- 起動 ---------- */

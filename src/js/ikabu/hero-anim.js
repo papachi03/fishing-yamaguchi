@@ -11,6 +11,7 @@ import { HERO_ANIM, TAU, lerp, bez, rodPose, rodPathD, lineD, waveD, computeView
 import { t } from './i18n.js';
 import { url } from '../base.js';
 import { svgEl, egiShape } from './squid-art.js';   // エギの絵はあそび場のゲームと共有
+import { createPendulum, swingEase, flightPoint, headingDeg, trailingLineD } from './cast-physics.js';   // 投げの物理も共有
 
 const setAttrs = (e, attrs) => { for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); };
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -32,8 +33,18 @@ const STORY = {
   land: 6.0,    // 取り込み：「ゲット！」
   hold: 7.0,    // 余韻：釣ったイカが糸の先で揺れる（3秒。ぱっぱ指定）
   settle: 10.0, // 投げ直し：イカを外し、振りかぶってエギを投げ直す
-  end: 11.4,
+  end: 11.9,    // 振りかぶり 0.45 ＋ 振り出し 0.3 ＋ 飛ぶ 0.95 ＋ 着水の余韻
 };
+// 投げ直しの内訳（settle からの秒）：振りかぶり → 振り出し（途中で放す）→ 飛ぶ → 着水
+const RECAST = { windup: 0.45, swing: 0.3, flight: 0.95, apex: 50, tarashi: 110, backMax: 62, release: 0 };   // HERO は入水点が竿先のほぼ真下なので、短いピッチ気味の投げ
+const recastLand = () => {
+  // 放す瞬間は swingEase が (backMax − release)/(backMax + 18) を超える所（決め打ちで計算しておく）
+  const target = (RECAST.backMax - RECAST.release) / (RECAST.backMax + 22);
+  let k = 0;
+  while (k < 1 && swingEase(k) < target) k += 0.005;
+  return RECAST.windup + k * RECAST.swing + RECAST.flight;
+};
+const RECAST_LAND = recastLand();
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const im = new Image();
@@ -47,7 +58,7 @@ const loadImage = (src) => new Promise((resolve, reject) => {
    ------------------------------------------------------------------ */
 
 // view: .ika-hero-view。demo（dev のみ）：'static' 動かさない／'fallback' レイヤー失敗を装う／
-//   'hooked'（= phase:hookset）／'phase:bite|hookset|fight|drag|ink|landing|hold|windup|recast' その場面で止める
+//   'hooked'（= phase:hookset）／'phase:bite|hookset|fight|drag|ink|landing|hold|windup|recast|flight|splash' その場面で止める
 export async function mountHeroAnim(view, { lang = 'ja', demo = null, config = HERO_ANIM } = {}) {
   if (!view) return false;
   const svg = view.querySelector('svg.ika-scene');
@@ -223,6 +234,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     freeze: null,        // 物語の時刻（秒）で止める（開発用）
     ripples: [], splash: [],
     calloutTimer: 0,
+    recast: { pend: createPendulum(RECAST.tarashi), rel: null, landed: false, lastR: -1 },   // 投げ直しの振り子と放物線
   };
   const scheduleNibble = () => { st.nibbleAt = st.now + rand(T.nibbleMin, T.nibbleMax); };
   const seat = cfg.squidSeat;
@@ -311,19 +323,25 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       o.lineTo = 'catch';
       return o;
     }
-    // 投げ直し：イカを外す → 振りかぶる → 竿を振り出し、エギが弧を描いて元の入水点へ落ちる
-    const k = (a - STORY.settle) / (STORY.end - STORY.settle);
-    const windUp = easeInOut(clamp01(k / 0.3));          // 0→0.3：振りかぶる
-    const swing = easeOut(clamp01((k - 0.3) / 0.15));     // 0.3→0.45：振り出す
-    const rest = easeInOut(clamp01((k - 0.45) / 0.55));   // 0.45→1：落ち着く
+    // 投げ直し：イカを外す → 竿を後ろへ倒す（エギはタラシの先で遅れて後ろへ）→ 一気に振り出す（遠心力で頭の上を回る）
+    //   → 10〜11 時で放たれて放物線で飛ぶ → 元の入水点に着水
+    const r = a - STORY.settle;
+    const windUp = easeInOut(clamp01(r / RECAST.windup));
+    const sk = clamp01((r - RECAST.windup) / RECAST.swing);         // 振り出しの進み 0→1
+    const swing = swingEase(sk);
+    const rest = easeInOut(clamp01((r - RECAST.windup - RECAST.swing) / 0.45));
     o.entry = { ...cfg.lineWater };
-    o.pull = 0.25 * (1 - windUp) + 0.35 * swing * (1 - rest);
-    o.taut = 1 - rest;
-    o.lean = 2 - 16 * windUp + 22 * swing - 8 * rest;
+    o.pull = 0;
+    o.taut = 0.6;
+    o.lean = 2 - 16 * windUp + 22 * swing * (1 - rest) - 4 * rest;
     o.ink = 0;
-    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - clamp01(k / 0.15), alongLine: 0.42 };
-    o.lineTo = 'drop';
-    o.dropK = clamp01((k - 0.3) / 0.6);
+    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - clamp01(r / 0.2), alongLine: 0.42 };
+    // 竿の後ろへの倒れ（度）：振りかぶりで backMax、振り出しで −18（前へ振り切る）、そのあと 0 へ
+    o.back = r < RECAST.windup ? RECAST.backMax * windUp : lerp(RECAST.backMax, -22, swing) * (1 - rest);
+    // しなり：振り出しの速さに応じて竿先が遅れる
+    o.rodLag = r >= RECAST.windup && sk < 1 ? 14 * clamp01((swingEase(Math.min(1, sk + 0.02)) - swing) / 0.02 / 3.6) : 0;
+    o.lineTo = 'recast';
+    o.recast = { r, sk, released: r >= RECAST.windup && o.back <= RECAST.release, landed: r >= RECAST_LAND };
     return o;
   }
 
@@ -344,7 +362,17 @@ function createAnimator(cfg, sc, { reduced, lang }) {
 
     // 竿
     const bob = 5 * Math.sin((s / 3.1) * TAU);
-    const { tip, bend } = rodPose(cfg, { pull: o.pull, dip, bob });
+    let { tip, bend } = rodPose(cfg, { pull: o.pull, dip, bob });
+    if (o.back) {
+      // 握りを支点に竿を回す（back > 0 で後ろ＝上・左へ）。しなりは竿先だけ余分に遅らせる
+      const rot = (p, deg) => {
+        const rad = (-deg * Math.PI) / 180;
+        const x = p.x - cfg.rodGrip.x, y = p.y - cfg.rodGrip.y;
+        return { x: cfg.rodGrip.x + x * Math.cos(rad) - y * Math.sin(rad), y: cfg.rodGrip.y + x * Math.sin(rad) + y * Math.cos(rad) };
+      };
+      tip = rot(tip, o.back + (o.rodLag ?? 0));
+      bend = rot(bend, o.back + (o.rodLag ?? 0) * 0.3);
+    }
     sc.rodOutline.setAttribute('d', rodPathD(cfg.rodGrip, bend, tip, cfg.rodWidth.grip, cfg.rodWidth.tip, cfg.rodOutline));
     sc.rod.setAttribute('d', rodPathD(cfg.rodGrip, bend, tip, cfg.rodWidth.grip, cfg.rodWidth.tip));
     cfg.rodGuides.forEach((k, i) => {
@@ -356,26 +384,50 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     const liftPoint = { x: lerp(pierPoint.x, tip.x, 0.42), y: lerp(pierPoint.y, tip.y, 0.42) };
     let lineEnd = o.entry;
     if (o.lineTo === 'catch') lineEnd = { x: lerp(pierPoint.x, tip.x, o.catch.alongLine), y: lerp(pierPoint.y, tip.y, o.catch.alongLine) };
-    else if (o.lineTo === 'drop') {
-      const k = o.dropK;
-      lineEnd = { x: lerp(liftPoint.x, cfg.lineWater.x, k), y: lerp(liftPoint.y, cfg.lineWater.y, k * k) - 90 * Math.sin(Math.PI * k) };
+    let egiAng = null;
+    if (o.lineTo === 'recast') {
+      // 振りかぶり〜振り出し：タラシの先の振り子（実時間で刻む）。放たれたら放物線（物語の時刻で決まる）
+      const RC = st.recast;
+      const dt = Math.max(0, Math.min(0.05, s - (st.lastS ?? s)));
+      if (o.recast.r < 0.05 || RC.lastR > o.recast.r) { RC.pend.reset(liftPoint); RC.rel = null; }
+      RC.lastR = o.recast.r;
+      if (!RC.rel) {
+        const p = RC.pend.step(tip, dt, 3500);
+        if (o.recast.released) RC.rel = { r0: o.recast.r, from: { x: p.x, y: p.y } };
+        lineEnd = { x: p.x, y: p.y };
+        const dx = p.x - tip.x, dy = p.y - tip.y, L = Math.hypot(dx, dy) || 1;
+        egiAng = (Math.atan2(-dx / L, dy / L) * 180) / Math.PI;
+      }
+      if (RC.rel) {
+        const k = (o.recast.r - RC.rel.r0) / RECAST.flight;
+        if (k >= 1) { lineEnd = { ...cfg.lineWater }; RC.landed = true; }
+        else {
+          lineEnd = flightPoint(RC.rel.from, cfg.lineWater, k, RECAST.apex);
+          egiAng = headingDeg(RC.rel.from, cfg.lineWater, k, RECAST.apex);
+          const q = flightPoint(RC.rel.from, cfg.lineWater, Math.min(1, k + 0.02), RECAST.apex);
+          const vl = Math.hypot(q.x - lineEnd.x, q.y - lineEnd.y) || 1;
+          RC.dir = { x: (q.x - lineEnd.x) / vl, y: (q.y - lineEnd.y) / vl };
+          RC.k = k;
+        }
+      } else RC.landed = false;
     }
-    const inWater = !o.lineTo || (o.lineTo === 'drop' && o.dropK >= 1);
-    if (o.lineTo === 'drop' && o.dropK < 1) {
-      // 振りかぶる間は竿先からぶら下がり、振り出したら弧に沿って飛ぶ
-      const k2 = Math.min(1, o.dropK + 0.03);
-      const next = { x: lerp(liftPoint.x, cfg.lineWater.x, k2), y: lerp(liftPoint.y, cfg.lineWater.y, k2 * k2) - 90 * Math.sin(Math.PI * k2) };
-      const ang = o.dropK > 0 ? (Math.atan2(next.y - lineEnd.y, next.x - lineEnd.x) * 180) / Math.PI - 90 : 0;
-      sc.egiFly.setAttribute('transform', `translate(${f1(lineEnd.x)} ${f1(lineEnd.y)}) rotate(${f1(ang)}) scale(2.8)`);
+    const inWater = !o.lineTo || (o.lineTo === 'recast' && (st.recast.landed || o.recast.landed));
+    if (o.lineTo === 'recast' && egiAng != null && !inWater) {
+      sc.egiFly.setAttribute('transform', `translate(${f1(lineEnd.x)} ${f1(lineEnd.y)}) rotate(${f1(egiAng)}) scale(2.8)`);
       sc.egiFly.setAttribute('opacity', '1');
     } else {
       sc.egiFly.setAttribute('opacity', '0');
     }
+    st.lastS = s;
 
     // 糸：休みはたるんで揺れ、張ると真っ直ぐで明るい
     const taut = Math.max(o.taut, dip > 0 ? 0.5 : 0);
     const idleSway = (1 - taut) * (16 * Math.sin((s / 5.3) * TAU) + 6 * Math.sin((s / 1.7) * TAU));
-    const d = lineD(tip, lineEnd, inWater ? idleSway + o.sway : 0);
+    // 飛んでいる間の糸は、竿先からゆるく垂れながらエギを追う（棒のように真っ直ぐにしない）
+    const flying = o.lineTo === 'recast' && !inWater;
+    const d = flying && st.recast.rel && st.recast.dir
+      ? trailingLineD(tip, lineEnd, st.recast.dir, st.recast.k, 10 * Math.sin(s * 9))
+      : flying ? lineD(tip, lineEnd, 0, 0.06) : lineD(tip, lineEnd, inWater ? idleSway + o.sway : 0);
     sc.line.setAttribute('d', d);
     sc.lineGlow.setAttribute('d', d);
     sc.line.setAttribute('opacity', (0.85 + 0.15 * taut).toFixed(2));
@@ -477,7 +529,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     if (passed(STORY.rise + 0.5)) st.ripples.push({ start: st.now, x: o.entry.x, y: o.entry.y, big: true });
     if (passed(STORY.land)) { burst(o.entry); showCallout('got'); }
     // 投げ直したエギが着水（dropK が 1 になる時刻）：小さなしぶきと波紋
-    if (passed(STORY.settle + (STORY.end - STORY.settle) * 0.9)) { burst(cfg.lineWater, 6); st.ripples.push({ start: st.now, x: cfg.lineWater.x, y: cfg.lineWater.y, big: true }); }
+    if (passed(STORY.settle + RECAST_LAND)) { burst(cfg.lineWater, 6); st.ripples.push({ start: st.now, x: cfg.lineWater.x, y: cfg.lineWater.y, big: true }); }
     lastA = a;
   }
   function burst(at, n = 10) {
@@ -541,11 +593,11 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     },
     // 開発用：物語のある場面で止める
     freezePhase(name) {
-      const at = { bite: 0.2, hookset: 0.62, fight: 1.9, drag: 2.7, ink: 5.3, landing: 6.7, hold: 8.5, windup: 10.35, recast: 10.9 }[name];
+      const at = { bite: 0.2, hookset: 0.62, fight: 1.9, drag: 2.7, ink: 5.3, landing: 6.7, hold: 8.5, windup: 10.3, recast: 10.58, flight: STORY.settle + RECAST_LAND - 0.35, splash: STORY.settle + RECAST_LAND + 0.05 }[name];
       if (at == null) return;
       st.freeze = at;
       if (at >= STORY.hookset) showCallout(at >= STORY.land ? 'got' : 'hooked');
-      if (name === 'landing') st.freezeBurst = story(at).entry;
+      if (name === 'landing' || name === 'splash') st.freezeBurst = story(at).entry;
     },
   };
   return api;
