@@ -302,6 +302,80 @@
 }
 .ika-hero-img { width: 100%; height: auto; border-radius: 14px; }
 
+/* 動くHERO（src/js/ikabu/hero-anim.js）
+   レイヤー画像が3枚とも読めたときだけ静止画と入れ替える。読めなければ上の静止画のまま */
+.ika-hero-img.is-replaced { display: none; }
+.ika-hero-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #050a10;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ika-hero-stage:focus-visible { outline-offset: -4px; }   /* 枠が overflow:hidden なので内側に出す */
+.ika-hero-layer, .ika-hero-fx, .ika-hero-rig {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.ika-hero-layer--pier, .ika-hero-layer--squid { inset: auto; }   /* 位置と大きさは hero-anim.js が % で入れる */
+.ika-hero-layer--squid { will-change: transform; }
+
+/* 「抱いた！」のステッカー（枠の外に出す：枠は傾いていて overflow:hidden のため） */
+.ika-hero-callout {
+  position: absolute; z-index: 3;
+  right: 4%; top: 50%;          /* しなった竿の先（高さ 40% あたり）を隠さない位置 */
+  display: grid; gap: 10px; justify-items: end;
+  transform: rotate(4deg);
+  transform-origin: 100% 0;
+}
+.ika-hero-callout[hidden] { display: none; }
+.ika-hero-callout-word {
+  display: inline-block;
+  padding: 8px 20px;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  border: 4px solid var(--ika-white);
+  border-radius: 16px;
+  box-shadow: 5px 5px 0 var(--ika-sea-deep);
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: clamp(24px, 3.2vw, 36px);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ika-hero-callout-link {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--ika-white);
+  color: var(--ika-sea);
+  border: 3px solid var(--ika-sea);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ika-orange);
+  font-family: var(--font-maru);
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.ika-hero-callout-link:hover { background: var(--ika-mist); }
+@keyframes ika-pop {
+  0% { transform: rotate(4deg) scale(0.4); opacity: 0; }
+  60% { transform: rotate(4deg) scale(1.08); opacity: 1; }
+  100% { transform: rotate(4deg) scale(1); opacity: 1; }
+}
+.ika-hero-callout.is-pop { animation: ika-pop 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+@media (prefers-reduced-motion: reduce) { .ika-hero-callout.is-pop { animation: none; } }
+
 .ika-sticker {
   position: absolute; z-index: 2;
   display: inline-block;
@@ -724,6 +798,9 @@
   .ika-sticker { font-size: 12px; padding: 8px 12px; }
   .ika-sticker--a { top: -6px; left: -4px; }
   .ika-sticker--b { bottom: -2px; right: 0; font-size: 14px; }
+  .ika-hero-callout { top: 34%; right: 5%; gap: 6px; }   /* 下の「部費0円」に重ならない高さ */
+  .ika-hero-callout-word { font-size: 22px; padding: 6px 14px; border-width: 3px; }
+  .ika-hero-callout-link { font-size: 12px; padding: 5px 10px; }
   .ika-pennant { font-size: 12px; margin-bottom: 16px; }
   .ika-logo-patch { padding: 12px 16px; border-radius: 16px; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 5px var(--ika-sea), 0 0 0 8px var(--ika-orange), 6px 8px 0 8px var(--ika-sea-deep); }
   .ika-lead { margin-top: 26px; font-size: 26px; }
