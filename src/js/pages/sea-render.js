@@ -12,6 +12,7 @@
 
 import { describeWeather, windDirection } from '../api/weather.js';
 import { calcExpectation, seasonalTargets } from '../api/fishing.js';
+import { guidesForMonth, guideHref } from '../data/guides.js';
 import {
   assessSafety,
   windLevel,
@@ -198,6 +199,9 @@ function seasonPanelHTML(now) {
         <div class="season-group"><dt>Fish</dt>${tag(s.fish)}</div>
         <div class="season-group"><dt>Squid</dt>${tag(s.squid, 'squid')}</div>
       </dl>
+      ${guidesForMonth(s.month)
+        .map((g) => `<p class="season-guide"><a href="${guideHref(g)}"><span class="t-mono">GUIDE</span>${g.title}<span aria-hidden="true">→</span></a></p>`)
+        .join('')}
     </div>`;
 }
 

@@ -1321,6 +1321,20 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 @media (max-width: 760px) { .gear-head { grid-template-columns: 1fr; } }
 .gear-more { margin-top: clamp(28px, 4vw, 44px); text-align: right; }
 
+/* 攻略記事への入口（HOMEのIn My Bag・SEAの今月の旬） */
+.gear-guide, .season-guide { margin-top: clamp(20px, 3vw, 28px); }
+.gear-guide a, .season-guide a {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mincho); font-weight: 700; font-size: 15px; line-height: 1.6; letter-spacing: 0.03em;
+  transition: background 0.2s, color 0.2s;
+}
+.gear-guide a .t-mono, .season-guide a .t-mono { font-size: 11px; letter-spacing: 0.16em; color: var(--amber); font-weight: 500; }
+.gear-guide a > span[aria-hidden], .season-guide a > span[aria-hidden] { margin-left: auto; }
+.gear-guide a:hover { background: var(--paper); color: var(--ink); }
+.season-guide a:hover { background: var(--ink); color: var(--paper); }
+
 /* TACKLE page */
 .tackle-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 26px; }
 .tackle-tabs button {
@@ -1724,4 +1738,213 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 .invite-step li { margin-bottom: 4px; }
 @media (max-width: 560px) {
   .invite-steps { grid-template-columns: 1fr; }
+}
+
+/* ---------- GUIDE（攻略記事） ---------- */
+/* guides/*.html。TACKLEの仲間として、暗いヒーロー＋紙色の本文で「雑誌の特集ページ」として読ませる。
+   本文の文字は720pxの1段組み、道具カードだけ少し幅を広げる。 */
+.guide { --guide-col: 720px; --guide-rule: rgba(32, 35, 42, 0.22); }
+
+/* hero */
+.guide-hero { padding-bottom: clamp(44px, 7vw, 84px); border-bottom: 1px solid rgba(241, 236, 225, 0.1); }
+.guide-hero .wrap { max-width: calc(880px + var(--gutter) * 2); }
+.guide-kicker { font-size: 11.5px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--amber); }
+.guide-kicker a { border-bottom: 1px solid rgba(217, 146, 78, 0.5); transition: border-color 0.2s; }
+.guide-kicker a:hover { border-bottom-color: var(--amber); }
+.guide-title {
+  margin-top: 22px;
+  font-family: var(--font-mincho);
+  font-weight: 800;
+  font-size: clamp(26px, 5vw, 50px);
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  text-wrap: balance;
+}
+.guide-lead {
+  margin-top: 22px;
+  max-width: 34em;
+  font-size: clamp(14px, 1.6vw, 15.5px);
+  line-height: 2;
+  color: var(--paper-ink-dim);
+}
+.guide-meta { margin-top: 26px; font-size: 12px; letter-spacing: 0.12em; color: rgba(241, 236, 225, 0.5); }
+
+/* body column */
+.guide-body { padding-top: clamp(36px, 5vw, 64px); }
+.guide-wrap { max-width: calc(var(--guide-col) + var(--gutter) * 2); }
+.guide-wrap > * + * { margin-top: clamp(22px, 3.5vw, 36px); }
+
+/* PR（広告表示）— 小さくても隠さない */
+.guide-pr {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--guide-rule);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+.guide-pr-badge {
+  display: inline-block; vertical-align: 1px;
+  margin-right: 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--night); background: var(--amber);
+  padding: 1px 6px 0 8px;
+  line-height: 1.6;
+}
+.guide-pr #affiliate-note-top { display: block; margin-top: 4px; }
+.guide-pr #affiliate-note-top:empty { display: none; }
+
+/* 結論ボックス — 記事でいちばん最初に目に入る箱。墨地にアンバーの見出し */
+.guide-summary {
+  background: var(--sumi);
+  color: var(--paper);
+  padding: clamp(22px, 4vw, 34px) clamp(20px, 4vw, 36px) clamp(20px, 3vw, 28px);
+  border-top: 3px solid var(--amber);
+}
+.guide-summary-title {
+  font-family: var(--font-mincho);
+  font-weight: 700;
+  font-size: clamp(17px, 2.4vw, 21px);
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+}
+.guide-spec { margin-top: 18px; }
+.guide-spec > div {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px 18px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(241, 236, 225, 0.12);
+}
+.guide-spec dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; color: var(--paper-ink-dim); padding-top: 2px; }
+.guide-spec dd { font-size: 14.5px; line-height: 1.8; font-weight: 500; }
+.guide-summary-note {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid rgba(241, 236, 225, 0.12);
+  font-size: 13.5px; line-height: 1.9; color: var(--paper-ink-dim);
+}
+@media (min-width: 560px) {
+  .guide-spec > div { grid-template-columns: 7.5em 1fr; }
+}
+
+/* 本文セクション */
+.guide-section { margin-top: clamp(44px, 7vw, 72px); }
+.guide-section h2 {
+  position: relative;
+  padding-top: 16px;
+  font-family: var(--font-mincho);
+  font-weight: 700;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+}
+.guide-section h2::before { content: ""; position: absolute; top: 0; left: 0; width: 42px; height: 2px; background: var(--amber); }
+.guide-section > p { margin-top: 18px; font-size: 15.5px; line-height: 2.05; }
+.guide-section > p + p { margin-top: 14px; }
+.guide-section > .guide-links,
+.guide-section > .guide-table-wrap,
+.guide-section > .guide-tackle,
+.guide-section > .guide-todo,
+.guide-section > .guide-figure { margin-top: clamp(20px, 3vw, 28px); }
+
+.guide-section > p.guide-callout {
+  margin-top: 22px;
+  padding: 14px 18px;
+  background: var(--paper-warm);
+  border-left: 3px solid var(--teal);
+  font-size: 14px; line-height: 1.9;
+}
+.guide-section > p.guide-small { font-size: 12.5px; line-height: 1.8; color: var(--ink-soft); }
+
+/* 【ここに体験】— 公開前に必ず埋める仮置き。破線のアンバーで見落とせないようにする */
+.guide-todo {
+  padding: 16px 18px 14px;
+  border: 2px dashed var(--amber);
+  background: rgba(217, 146, 78, 0.1);
+  color: var(--ink);
+}
+.guide-todo-label {
+  font-family: var(--font-mincho); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.14em; color: #a5652a;
+}
+.guide-todo > p:not(.guide-todo-label) { margin-top: 6px; font-size: 13.5px; line-height: 1.9; color: var(--ink-soft); }
+
+/* ダディのひとこと（本人の体験。【ここに体験】を書き終えた後の姿） */
+.guide-section > .guide-voice { margin-top: clamp(20px, 3vw, 28px); }
+.guide-voice {
+  padding: 16px 18px 14px;
+  background: var(--paper-warm);
+  border-left: 3px solid var(--amber);
+}
+.guide-voice-label {
+  font-family: var(--font-mincho); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.14em; color: #a5652a;
+}
+.guide-voice > p:not(.guide-voice-label) { margin-top: 6px; font-size: 14.5px; line-height: 1.95; }
+
+/* 関連リンク */
+.guide-links { border-top: 1px solid var(--guide-rule); border-bottom: 1px solid var(--guide-rule); }
+.guide-links li + li { border-top: 1px solid var(--guide-rule); }
+.guide-links a {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 12px 4px;
+  font-family: var(--font-mincho); font-weight: 600; font-size: 14.5px; letter-spacing: 0.04em;
+  transition: color 0.2s, padding-left 0.25s;
+}
+.guide-links a::before { content: "\2192"; flex: none; font-family: var(--font-mono); color: var(--amber); }
+.guide-links a:hover { color: var(--teal); padding-left: 10px; }
+
+/* 比較表 — 375pxでは .guide-table-wrap の中だけ横スクロール */
+.guide-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; border-bottom: 1px solid var(--guide-rule); }
+.guide-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13.5px; line-height: 1.75; }
+.guide-table th, .guide-table td { padding: 10px 12px; text-align: left; vertical-align: top; border-top: 1px solid var(--guide-rule); }
+.guide-table th:first-child, .guide-table td:first-child { padding-left: 4px; }
+.guide-table thead th {
+  font-family: var(--font-mincho); font-weight: 700; font-size: 14px; letter-spacing: 0.03em;
+  border-top: none; border-bottom: 2px solid var(--ink);
+}
+.guide-table tbody th {
+  font-family: var(--font-mono); font-weight: 500; font-size: 11.5px; letter-spacing: 0.12em;
+  color: var(--ink-soft); white-space: nowrap;
+}
+.guide-table td { width: 42%; }
+/* スマホでも2本を横に並べて見比べられるよう、横スクロールをやめて文字を詰める */
+@media (max-width: 559px) {
+  .guide-table { min-width: 0; font-size: 12.5px; line-height: 1.65; }
+  .guide-table th, .guide-table td { padding: 9px 6px; }
+  .guide-table thead th { font-size: 12.5px; }
+  .guide-table tbody th { font-size: 10.5px; letter-spacing: 0.04em; white-space: normal; width: 4.8em; }
+}
+
+/* 道具カード（.tackle-card の見た目はそのまま、記事の中では少し幅を広げる） */
+.guide .guide-tackle.tackle-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.guide .guide-tackle .tackle-card { padding: 18px 18px 16px; }
+@media (min-width: 1000px) {
+  .guide .guide-tackle { margin-inline: -60px; }
+}
+
+/* 実績写真 */
+.guide-figure img { width: 100%; height: auto; }
+.guide-figure figcaption { margin-top: 10px; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: var(--ink-soft); }
+
+/* 次に読む */
+.guide-next {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+  margin-top: clamp(48px, 8vw, 84px);
+  padding-top: clamp(24px, 4vw, 36px);
+  border-top: 1px solid var(--guide-rule);
+}
+.guide-next-card {
+  display: grid; gap: 6px;
+  padding: 20px 22px;
+  border: 1px solid rgba(32, 35, 42, 0.3);
+  font-family: var(--font-mincho); font-weight: 700; font-size: 16px; line-height: 1.5; letter-spacing: 0.03em;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+.guide-next-card .t-mono { font-size: 11px; letter-spacing: 0.3em; color: var(--amber); }
+.guide-next-card:hover { background: var(--sumi); color: var(--paper); border-color: var(--sumi); }
+@media (min-width: 560px) {
+  .guide-next { grid-template-columns: 1fr 1fr; }
 }

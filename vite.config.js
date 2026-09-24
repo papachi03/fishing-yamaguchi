@@ -35,6 +35,18 @@ export default defineConfig({
         },
       },
     },
+    {
+      // 攻略記事（guides/*.html）の道具カードを本文に書き込む。devでも同じ見た目にするため apply は付けない
+      name: 'prerender-guide-tackle',
+      transformIndexHtml: {
+        order: 'pre',
+        async handler(html, ctx) {
+          if (!ctx.filename.replace(/\\/g, '/').includes('/guides/')) return html;
+          const { fillGuideTackle } = await import('./src/js/components/guide-tackle-html.js');
+          return fillGuideTackle(html);
+        },
+      },
+    },
   ],
   build: {
     rollupOptions: {
@@ -48,6 +60,7 @@ export default defineConfig({
         tackle: resolve(__dirname, 'tackle.html'),
         reports: resolve(__dirname, 'reports.html'),
         invite: resolve(__dirname, 'invite.html'),
+        'guides/autumn-eging': resolve(__dirname, 'guides/autumn-eging.html'),
       },
     },
   },
