@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { prerenderSea } from './scripts/prerender-sea.mjs';
 
+// SEAの事前描画で取った予報。generateBundle で dist/data/sea-snapshot.json として出す
+let seaSnapshot = null;
+
 export default defineConfig({
   // GitHub Pages のサブフォルダ配置に対応。CIでは SITE_BASE=/fishing-yamaguchi/ を渡す。
   base: process.env.SITE_BASE || '/',
@@ -16,8 +19,13 @@ export default defineConfig({
         async handler(html, ctx) {
           if (!ctx.filename.replace(/\\/g, '/').endsWith('/sea.html')) return html;
           if (process.env.PRERENDER_SEA === '0') return html;
-          return prerenderSea(html, __dirname);
+          return prerenderSea(html, __dirname, (s) => { seaSnapshot = s; });
         },
+      },
+      // 朝の堤防判定（Worker）が読む予報ファイル。1エリアも取れなかったときは出さない（古い値を残さない）
+      generateBundle() {
+        if (!seaSnapshot || !Object.keys(seaSnapshot.areas).length) return;
+        this.emitFile({ type: 'asset', fileName: 'data/sea-snapshot.json', source: JSON.stringify(seaSnapshot) });
       },
     },
     {

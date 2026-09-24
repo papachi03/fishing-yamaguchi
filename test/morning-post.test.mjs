@@ -64,3 +64,15 @@ test('Xの投稿画面を開くリンクは文章を丸ごと渡す', () => {
   assert.ok(url.startsWith('https://x.com/intent/post?text='));
   assert.equal(decodeURIComponent(url.split('text=')[1]), '萩 #釣り\nhttps://a.b/?c=1&d=2');
 });
+
+test('見出しは送る時刻（日本時間）で朝・昼・夜に変わる', async () => {
+  const { jstTimeOfDay } = await import('../src/js/lib/morning-post.js');
+  // 7:00 JST = 前日22:00 UTC
+  assert.equal(jstTimeOfDay(new Date('2026-09-24T22:00:00Z')).ja, '朝');
+  assert.equal(jstTimeOfDay(new Date('2026-09-24T19:59:00Z')).ja, '夜'); // 4:59 JST
+  assert.equal(jstTimeOfDay(new Date('2026-09-24T20:00:00Z')).ja, '朝'); // 5:00 JST
+  assert.equal(jstTimeOfDay(new Date('2026-09-25T02:00:00Z')).ja, '昼'); // 11:00 JST
+  assert.equal(jstTimeOfDay(new Date('2026-09-25T08:00:00Z')).ja, '夜'); // 17:00 JST
+  const night = composeMorningPost({ date: new Date('2026-09-24T13:00:00Z'), rows: [{ nameJa: '萩', level: 0, wind: 1 }] });
+  assert.match(night, /^【9\/24\(木\) 夜の堤防判定】/);
+});

@@ -10,6 +10,10 @@
 //        （開いた人のブラウザで取得に失敗したら「○時○分時点の予報」として代わりに見せる）
 //   GitHub Actions が3時間ごとにビルドし直すので、埋め込んだ予報は最大3時間ほど古いだけ。
 //
+// 2026-09-24追加：同じ予報を dist/data/sea-snapshot.json としても出す（vite.config.js が onSnapshot で受け取る）。
+//   毎朝7:00の堤防判定（worker/reports/src/morning.js）はこれを読む。Cloudflare Worker から
+//   Open-Meteo に直接聞くと応答が返ってこない地域が出るため（3/5地域が10秒待っても返らなかった）。
+//
 // 予報の取得に失敗してもビルドは止めない（天気の欄を省いて潮汐・基準だけ書き込む）。
 // 無効にしたいとき: PRERENDER_SEA=0 npm run build
 
@@ -26,7 +30,7 @@ const withTimeout = (p, ms, label) =>
 // JSON を <script> の中に安全に置く（"</script>" などで途中終了しないように）
 const safeJSON = (obj) => JSON.stringify(obj).replace(/</g, '\\u003c');
 
-export async function prerenderSea(html, root) {
+export async function prerenderSea(html, root, onSnapshot = () => {}) {
   // 日付・時刻はすべて日本時間で扱う（CIのサーバーはUTCのため）
   process.env.TZ = 'Asia/Tokyo';
 
@@ -58,6 +62,8 @@ export async function prerenderSea(html, root) {
         log.push(`${area.id}:NG(${e.message})`);
       }
     }
+
+    onSnapshot(snapshot);
 
     const first = areaById('hagi');
     let t = null;

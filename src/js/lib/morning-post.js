@@ -23,6 +23,17 @@ export function jstDateLabel(date) {
 }
 
 /**
+ * 送る時刻（日本時間）に合わせた見出しの言葉。毎朝7:00の定期送信は「朝」。
+ * 管理ページのボタンで昼や夜に送り直しても不自然にならないようにする（2026-09-24）
+ */
+export function jstTimeOfDay(date) {
+  const h = new Date(date.getTime() + 9 * 3600 * 1000).getUTCHours();
+  if (h >= 5 && h <= 10) return { ja: '朝', icon: '🌅' };
+  if (h >= 11 && h <= 16) return { ja: '昼', icon: '☀️' };
+  return { ja: '夜', icon: '🌙' };
+}
+
+/**
  * @param {{date: Date, rows: {nameJa: string, level: number|null, wind: number|null}[]}} args
  *   level が null のエリアは予報を取れなかったもの
  */
@@ -33,7 +44,7 @@ export function composeMorningPost({ date, rows }) {
     return `${nameJa}　${l.mark}${l.label}　風${wind.toFixed(1)}m`;
   });
   return [
-    `【${jstDateLabel(date)} 朝の堤防判定】`,
+    `【${jstDateLabel(date)} ${jstTimeOfDay(date).ja}の堤防判定】`,
     ...lines,
     '※予報値の目安です。気象庁の注意報・警報を優先してください',
     SEA_URL,
@@ -69,9 +80,10 @@ export const X_LIMIT = 280;
 export const xIntentUrl = (text) => `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 
 /** Discordに送る本文（下書き＋「Xで投稿する」リンク）。最長でも約1350字でDiscordの上限2000字に収まる */
-export function morningDiscordContent(text, allFailed = false) {
+export function morningDiscordContent(text, allFailed = false, date = new Date()) {
+  const t = jstTimeOfDay(date);
   return [
-    allFailed ? '⚠ 今朝は予報を取得できませんでした（下書きは参考になりません）' : '🌅 朝の堤防判定（X投稿の下書き）',
+    allFailed ? '⚠ 予報を取得できませんでした（下書きは参考になりません）' : `${t.icon} ${t.ja}の堤防判定（X投稿の下書き）`,
     '```',
     text,
     '```',

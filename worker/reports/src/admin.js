@@ -27,6 +27,8 @@ function html(body, status = 200) {
   form{display:inline} button{font:inherit;padding:9px 18px;border-radius:999px;border:1px solid #20232a;background:#fff;cursor:pointer;margin:8px 8px 0 0}
   button.danger{background:#c2571f;border-color:#c2571f;color:#fff} input{font:inherit;padding:10px;width:100%;max-width:320px;box-sizing:border-box}
   .msg{color:#c2571f}
+  .tools{display:block;margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid rgba(32,35,42,.15)} .tools button{margin:0}
+  .tools small{display:block;margin-top:6px;font-size:12px;color:#4c5058}
 </style></head><body><main>${body}</main></body></html>`,
     {
       status,
@@ -60,7 +62,7 @@ ${photo}`;
 
 const listPage = (posts, truncated) =>
   html(`<h1>現地の声 管理（${posts.length}件）</h1>
-<form method="post" action="/admin/morning"><button type="submit">朝の堤防判定を今すぐDiscordへ送る</button></form>
+<form class="tools" method="post" action="/admin/morning"><button type="submit">今の堤防判定をDiscordへ送る</button><small>今の時刻の予報で下書きを送ります（見出しは時刻に合わせて朝・昼・夜）</small></form>
 ${posts.length ? '' : '<p>投稿はまだありません。</p>'}
 ${truncated ? `<p class="msg">新しい${LIST_LIMIT}件だけを表示しています。これより古い投稿はこの画面には出ません。</p>` : ''}
 ${posts
@@ -169,7 +171,7 @@ export async function handleAdmin(request, env, url) {
     });
   }
 
-  // 朝の堤防判定を今の予報で送り直す（定期実行の確認・送り忘れの取り返し用。2026-09-24追加）
+  // 堤防判定を今の予報で送り直す（定期実行の確認・送り忘れの取り返し用。2026-09-24追加）
   if (path === '/admin/morning' && method === 'POST') {
     if (!sameOrigin(request, url)) return (logRefusal(request, path), forbidden());
     const ok = await sendMorningDraft(env);
