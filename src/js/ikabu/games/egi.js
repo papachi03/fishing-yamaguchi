@@ -57,11 +57,54 @@ const seasonRate = (month, tod) => {
   return 0.9;
 };
 
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand } = {}) {
+// 海の状況。「今日の萩の海」の実データ（YFJ の海況：期待値・風・突風・波・安全判定）をそのまま渡す。
+// 渡さなければ「ふつうの日」（期待値5・風3m・波0.5m）として遊ぶ
+export const DEFAULT_CONDITIONS = { expectation: 5, wind: 3, gust: 5, wave: 0.5, safety: 'ok' };
+
+export function normalizeConditions(c = {}) {
+  const n = { ...DEFAULT_CONDITIONS, ...c };
+  n.expectation = Math.min(10, Math.max(0, Number(n.expectation) || 0));
+  n.wind = Math.max(0, Number(n.wind) || 0);
+  n.gust = Math.max(n.wind, Number(n.gust) || 0);
+  n.wave = Math.max(0, Number(n.wave) || 0);
+  return n;
+}
+
+// その投げで、エギの近くにいるイカの数（0〜2）。季節・時間帯・潮（期待値）で平均が決まる。
+// 0 なら、どれだけ上手にしゃくっても抱かない＝本物どおりボウズの投げがある
+export function meanSquid(month, tod, cond) {
+  return seasonRate(month, tod) * TOD_FACTOR[tod] * (0.1 + 0.08 * cond.expectation);
+}
+function sampleSquid(s) {
+  const lambda = meanSquid(s.month, s.tod, s.cond);
+  // ポアソン分布（平均 lambda）から引いて、2 匹で頭打ち
+  let k = 0;
+  let p = Math.exp(-lambda);
+  let cum = p;
+  const r = s.rand();
+  while (r > cum && k < 2) {
+    k += 1;
+    p *= lambda / k;
+    cum += p;
+  }
+  return k;
+}
+
+// 風が強いと糸がふくらんでアタリが取りにくい：アワセの猶予が短くなる（7m/s を超えるとじわじわ、最大 45% 短く）
+export function signalWindows(cond) {
+  const k = 1 - Math.min(0.45, Math.max(0, (cond.gust - 6) * 0.06));
+  return { good: SIGNAL_GOOD * k, late: SIGNAL_LATE * k };
+}
+
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions } = {}) {
+  const cond = normalizeConditions(conditions);
   return {
     rand: rand ?? seeded(seed),
     month,
     tod,
+    cond,
+    windows: signalWindows(cond),
+    squid: 0,
     phase: 'ready',
     t: 0,
     casts: CASTS,
@@ -122,18 +165,20 @@ export function press(s) {
     jerk(s);
   } else if (s.phase === 'signal') {
     const late = s.t - s.signalAt;
-    const chance = late <= SIGNAL_GOOD ? 0.92 : late <= SIGNAL_LATE ? 0.35 : 0;
+    const chance = late <= s.windows.good ? 0.92 : late <= s.windows.late ? 0.35 : 0;
     if (s.rand() < chance) {
       s.phase = 'fight';
+      s.squid = Math.max(0, s.squid - 1);
       s.tension = 30;
       s.slackFor = 0;
       s.dist = Math.max(s.dist, 3);
       emit(s, 'hook', { id: s.hooking.id, late });
     } else {
       s.hooking = null;
-      s.interest *= 0.5;
+      s.squid = Math.max(0, s.squid - 1);
+      s.interest = 0.1;
       s.phase = 'action';
-      emit(s, 'miss', { late });
+      emit(s, 'miss', { late, squidLeft: s.squid });
     }
   } else if (s.phase === 'result') {
     s.phase = 'ready';
@@ -157,6 +202,7 @@ export function release(s) {
     s.lastJerk = s.t;
     s.judged = true;
     s.hooking = null;
+    s.squid = sampleSquid(s);
     s.phase = 'sinking';
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom });
   }
@@ -205,9 +251,10 @@ export function tick(s, dt) {
       if (!s.judged && since >= 2) judgeRhythm(s);
       if (since > 9) s.interest = Math.max(0, s.interest - 0.1 * dt);
       // フォール中（しゃくって1秒後から）にだけ抱く。底に近いほど、気になっているほど抱きやすい
-      if (since >= 1 && s.depth < s.bottom) {
+      if (since >= 1 && s.depth < s.bottom && s.squid > 0) {
         const depthFactor = 0.4 + 0.6 * (s.depth / s.bottom);
-        const rate = 0.55 * s.interest * depthFactor * TOD_FACTOR[s.tod] * seasonRate(s.month, s.tod);
+        const moodFactor = 0.6 + 0.08 * s.cond.expectation; // 期待値0で0.6倍、10で1.4倍
+        const rate = 0.55 * s.interest * depthFactor * moodFactor * TOD_FACTOR[s.tod] * seasonRate(s.month, s.tod);
         if (s.rand() < rate * dt) {
           const sp = pickWeighted(speciesPool(s.month, s.tod), s.rand);
           const weight = Math.round(sp.g[0] + (sp.g[1] - sp.g[0]) * s.rand() ** 1.6);
@@ -225,12 +272,13 @@ export function tick(s, dt) {
       break;
     }
     case 'signal': {
-      if (s.t - s.signalAt > SIGNAL_LATE) {
+      if (s.t - s.signalAt > s.windows.late) {
         s.hooking = null;
-        s.interest *= 0.5;
+        s.squid = Math.max(0, s.squid - 1);
+        s.interest = 0.1;
         s.phase = 'action';
         s.lastJerk = s.t - 1; // 見送った直後は少し待つ
-        emit(s, 'let-go');
+        emit(s, 'let-go', { squidLeft: s.squid });
       }
       break;
     }
@@ -244,7 +292,7 @@ export function tick(s, dt) {
         s.dist += 0.6 * p * dt;
       }
       // ジェット噴射：大きいイカほどよく走る
-      if (s.rand() < 0.7 * p * dt) {
+      if (s.rand() < 0.7 * p * (1 + 0.3 * Math.min(3, s.cond.wave)) * dt) {
         if (s.pressing) s.tension += 22;
         else s.dist += 1;
         emit(s, 'jet');

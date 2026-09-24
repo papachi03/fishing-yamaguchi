@@ -178,3 +178,92 @@ test('フォール中は、気になる度が高いといずれ抱いてくる',
   }
   assert.ok(signals >= 5, `抱いた回数 ${signals}/20`);
 });
+
+// ---- 実際に近い難しさ（2026-09-24 ぱっぱ指示：萩の海の状況で釣れ具合を疑似体験） ----
+import { meanSquid, signalWindows, normalizeConditions } from '../src/js/ikabu/games/egi.js';
+
+test('近くにイカがいない投げでは、どれだけ上手にしゃくっても抱かない', () => {
+  const s = createEgi({ seed: 'none', month: 10, tod: 'evening' });
+  cast(s);
+  s.squid = 0;
+  run(s, 4);
+  s.interest = 1;
+  let signal = false;
+  for (let i = 0; i < 12 && !signal; i++) {
+    press(s); release(s); run(s, 0.3);
+    press(s); release(s);
+    signal = run(s, 3).some((e) => e.type === 'signal');
+  }
+  assert.equal(signal, false);
+});
+
+test('掛けそこねたイカは離れていき、残りのイカも警戒する', () => {
+  const s = createEgi({ rand: () => 0.99 });
+  cast(s);
+  s.squid = 2;
+  s.interest = 0.9;
+  s.phase = 'signal';
+  s.signalAt = s.t;
+  s.hooking = { id: 'aori', weight: 500, mantle: 20, power: 0.6 };
+  run(s, 0.3);
+  press(s); // 乱数 0.99 → 掛からない
+  assert.equal(s.squid, 1);
+  assert.ok(s.interest <= 0.1);
+});
+
+test('期待値が高い日・まずめ・秋ほど、エギの近くにイカが多い。冬の日中は少ない', () => {
+  const good = meanSquid(10, 'evening', normalizeConditions({ expectation: 9 }));
+  const bad = meanSquid(10, 'evening', normalizeConditions({ expectation: 1 }));
+  const winterDay = meanSquid(1, 'day', normalizeConditions({ expectation: 5 }));
+  assert.ok(good > bad * 2);
+  assert.ok(winterDay < 0.35);
+});
+
+test('突風が強いとアタリが取りにくい（アワセの猶予が短い）', () => {
+  const calmW = signalWindows(normalizeConditions({ gust: 4 }));
+  const windy = signalWindows(normalizeConditions({ gust: 12 }));
+  assert.equal(calmW.good, SIGNAL_GOOD);
+  assert.ok(windy.good < SIGNAL_GOOD * 0.7);
+});
+
+// 人間らしく遊ぶ自動プレイ：底まで沈めて、2回しゃくって3秒フォール、アタリには0.25秒でアワセ、テンションを見ながら巻く
+function botTrip(seed, month, tod, conditions) {
+  const s = createEgi({ seed, month, tod, conditions });
+  const step = 0.05;
+  let guard = 0;
+  while (s.phase !== 'over' && guard++ < 20000) {
+    if (s.phase === 'ready') { press(s); run(s, 0.8, step); release(s); continue; }
+    if (s.phase === 'result') { press(s); release(s); continue; }
+    if (s.phase === 'sinking') { const ev = run(s, step, step); if (s.depth >= s.bottom - 0.5) { press(s); release(s); } continue; }
+    if (s.phase === 'action') {
+      press(s); release(s); run(s, 0.4, step);
+      if (s.phase !== 'action') continue;
+      press(s); release(s);
+      for (let k = 0; k < 60 && s.phase === 'action'; k++) run(s, step, step);
+      continue;
+    }
+    if (s.phase === 'signal') { run(s, 0.25, step); press(s); release(s); continue; }
+    if (s.phase === 'fight') {
+      // 人はテンションのゲージを見て巻く：60未満なら巻く、70を超えたらゆるめる
+      if (s.tension < 60 && !s.pressing) press(s);
+      else if (s.tension > 70 && s.pressing) release(s);
+      run(s, step, step);
+      if (s.phase !== 'fight' && s.pressing) release(s);
+      continue;
+    }
+    run(s, step, step);
+  }
+  return s.catches.length;
+}
+
+test('良い日（秋の夕まずめ・期待値8）は釣れやすく、悪い日（冬の日中・期待値2）はボウズが多い', () => {
+  const N = 40;
+  const good = Array.from({ length: N }, (_, i) => botTrip('g' + i, 10, 'evening', { expectation: 8 }));
+  const bad = Array.from({ length: N }, (_, i) => botTrip('b' + i, 1, 'day', { expectation: 2 }));
+  const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const bouzu = (a) => a.filter((n) => n === 0).length / a.length;
+  // 良い日でも毎投は釣れない（5投で平均1.5〜3.8杯）。悪い日は半分以上ボウズ
+  assert.ok(avg(good) >= 1.5 && avg(good) <= 3.8, `良い日の平均 ${avg(good)}`);
+  assert.ok(bouzu(bad) >= 0.5, `悪い日のボウズ率 ${bouzu(bad)}`);
+  assert.ok(avg(good) > avg(bad) * 2);
+});
