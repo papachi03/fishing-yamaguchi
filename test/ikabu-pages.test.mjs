@@ -26,9 +26,10 @@ test('殻のパスから page / lang / recipeId を読む', () => {
   assert.equal(parseIkabuPath('/x/sea.html'), null);
 });
 
-test('殻の一覧：10ページ×2言語 ＋ レシピ4品×2言語、hreflang は同じ品を指す', () => {
+test('殻の一覧：11ページ×2言語（エギング専用ページを含む） ＋ レシピ4品×2言語、hreflang は同じ品を指す', () => {
   const shells = ikabuShells();
-  assert.equal(shells.length, 28);
+  assert.equal(shells.length, 30);
+  assert.ok(shells.some((s) => s.file === 'ikabu/egi.html') && shells.some((s) => s.file === 'ikabu/en/egi.html'));
   const butterEn = shells.find((s) => s.file === 'ikabu/en/recipes/butter.html');
   assert.equal(butterEn.page, 'recipe');
   assert.equal(butterEn.path('ja'), '/ikabu/recipes/butter.html');

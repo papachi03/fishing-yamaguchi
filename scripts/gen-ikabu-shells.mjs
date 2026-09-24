@@ -25,6 +25,7 @@ const PAGES = {
   atlas: { ja: ['世界のイカ', 'アオリイカ、ケンサキイカ、ヤリイカからダイオウイカまで。沿岸から深海まで、山口→日本→世界の順に13種の入門図鑑。'], en: ['Squid atlas', 'From bigfin reef squid and swordtip squid to the giant squid. An introductory atlas of thirteen species, from Yamaguchi to Japan to the world.'] },
   gallery: { ja: ['写真部', '部員の釣果、山口の海、イカの姿、食卓。撮影者と出典を添えた参考アルバム。'], en: ['Gallery', 'Our catches, the Yamaguchi coast, squid life and the table. A reference album with photographers and sources credited.'] },
   play: { ja: ['イカ部のあそび場', 'エギングゲームと「墨つなぎ」。釣りに行けない日のために。'], en: ['Play', 'An eging game and Ink Link, for days you cannot get to the water.'] },
+  egi: { ja: ['しゃくって抱かせろ！ エギングゲーム', '山口イカ部のエギングゲーム。投げて、沈めて、しゃくって、フォールで抱かせる。今日の萩の風・波・潮で釣れ具合が変わります。スマホでそのまま遊べます。'], en: ['Jerk, fall, hug! — an eging game', 'The Yamaguchi Ika Club eging game. Cast, sink, jerk and let the squid hug on the fall. Today’s real wind, waves and tide in Hagi set the mood. Plays in your phone browser.'] },
   studio: { ja: ['スタンプとSNS', '紺とオレンジのイカのスタンプ案（ダジャレ編・山口の地名編）と、ダジャレの解説。YouTube・Instagramは準備中。'], en: ['Stickers & social', 'Sticker concepts with our navy-and-orange squid (puns and Yamaguchi place names), a pun glossary, and what is coming on YouTube and Instagram.'] },
   sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと Open-Meteo の利用条件についても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and Open-Meteo terms.'] },
 };

@@ -44,4 +44,5 @@ export const SECTIONS = [
 ];
 
 // recipe（1品のページ）はナビ上は recipes の子として扱う
-export const navPageOf = (page) => (page === 'recipe' ? 'recipes' : page);
+// メニューで「今どこか」を示す親ページ（1品のレシピ→イカ食堂、エギング専用ページ→あそび場）
+export const navPageOf = (page) => ({ recipe: 'recipes', egi: 'play' })[page] ?? page;

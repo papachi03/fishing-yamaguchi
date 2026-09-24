@@ -1275,6 +1275,23 @@
 .ika-play-card-go { margin-top: 16px; align-self: flex-start; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); padding-bottom: 1px; }
 .ika-play-note { margin-top: 16px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
 .ika-play-foot { padding-top: 0; }
+/* エギングだけの専用ページ（/ikabu/egi.html）：開いてすぐ舞台が見えるよう、頭の余白と見出しを詰める */
+body[data-page='egi'] .ika-game--egi { padding-top: clamp(18px, 3vw, 32px); }
+body[data-page='egi'] .ika-game-head { margin-bottom: 14px; }
+body[data-page='egi'] .ika-game-head h1 { margin-top: 6px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(24px, 3.6vw, 36px); line-height: 1.25; }
+body[data-page='egi'] .ika-game-head .ika-head-note { margin-top: 6px; font-size: 14px; line-height: 1.8; }
+/* 専用ページは舞台を一番上に。今日の海・エギ選び・記録はその下（海の条件は読み込まれたら自動で使われる） */
+body[data-page='egi'] .ika-egi-main { order: 1; }
+body[data-page='egi'] .ika-egi-setup { order: 2; }
+body[data-page='egi'] .ika-egi-side { order: 3; }
+@media (min-width: 961px) {
+  body[data-page='egi'] .ika-egi-main { grid-row: 1; grid-column: 1; }
+  body[data-page='egi'] .ika-egi-side { grid-row: 1; grid-column: 2; }
+  body[data-page='egi'] .ika-egi-setup { grid-row: 2; }
+}
+.ika-egi-solo-foot { padding-top: 0; font-size: 13px; line-height: 1.8; color: var(--ika-ink-soft); }
+.ika-egi-solo-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 10px; }
+.ika-egi-solo-links a { font-family: var(--font-maru); font-weight: 900; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
 .ika-play-foot .ika-note { margin-top: 0; }
 
 .ika-game { scroll-margin-top: 90px; }

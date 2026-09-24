@@ -146,17 +146,19 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening' } = {}) {
     <p class="ika-egi-setup-locked" id="ika-egi-locked" hidden>${t(lang, T.setup.locked)}</p>`;
 }
 
-const egiHTML = (lang, month) => {
+// solo：エギングだけの専用ページ（views/egi.js）で使うときは見出しを h1 にし、ページの頭を短くする
+export const egiHTML = (lang, month, { solo = false } = {}) => {
   const T = EGI_TEXT;
+  const H = solo ? 'h1' : 'h2';
   const castIcons = Array.from({ length: CASTS }, () => `<i></i>`).join('');
   const egiIcons = Array.from({ length: EGI_STOCK }, () => `<i></i>`).join('');
   return `
   <section class="ika-section ika-game ika-game--egi" id="egi" aria-labelledby="egi-title">
     <div class="wrap">
       <header class="ika-game-head">
-        <p class="ika-eyebrow"><span class="ika-eyebrow-num">01</span>GAME ONE ・ EGING</p>
-        <h2 id="egi-title">${t(lang, T.name)}</h2>
-        <p class="ika-head-note">${t(lang, T.tagline)}</p>
+        <p class="ika-eyebrow">${solo ? `<span class="ika-eyebrow-num">EGI</span>${t(lang, '山口イカ部のエギングゲーム', 'YAMAGUCHI IKA CLUB ・ EGING')}` : '<span class="ika-eyebrow-num">01</span>GAME ONE ・ EGING'}</p>
+        <${H} id="egi-title">${t(lang, T.name)}</${H}>
+        <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります（海の様子とエギの選び方は、ゲーム画面の下）。', ' Today’s real wind, waves and tide in Hagi set the mood (sea conditions and egi choice are below the game).') : ''}</p>
       </header>
 
       <div class="ika-egi" id="ika-egi" data-lang="${lang}">
