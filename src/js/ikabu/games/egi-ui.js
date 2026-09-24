@@ -473,6 +473,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           const h = s.hooking;
           V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = V.egi.ang; V.hug.t0 = now;
           setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle));
+          // 正体は水面近くまで寄せるまで分からない（影だけ）。重さは竿の曲がりと引きで伝える
+          V.revealed = false;
+          V.heavy = clamp(h.weight / 1500, 0.25, 1.6);
+          sc.nodes.hugWater.style.filter = 'brightness(0.18) saturate(0)';
           setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle));
           V.hug.height = (44 * clamp(mantleUnits(h.mantle) / 56, 0.75, 1.8) + mantleUnits(h.mantle)) * 1.15;
           V.swim.forEach((w) => { w.alpha = 0; });
@@ -497,8 +501,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           hookDepth = Math.max(0.6, s.depth);
           hookDist = Math.max(s.dist, 1);
           inked = false;
-          callout(t(lang, TX.msg.hook), 'good');
-          feel.fire('hook');
+          callout(t(lang, (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
+          feel.fire('hook', { heavy: V.heavy });
           break;
         case 'miss':
         case 'let-go':
@@ -583,6 +587,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.escape = { x: V.hug.x, y: V.hug.y, ang: -90, t0: now };
   }
   function resetForNextCast() {
+    if (sc?.nodes?.hugWater) sc.nodes.hugWater.style.filter = '';
+    V.revealed = false;
     el.card.hidden = true;
     el.flash.hidden = true;
     V.hug.on = false; V.hug.alpha = 0; V.land = null; V.ink = null;
@@ -883,7 +889,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         else if (V.bite.kind === 'slack') pull = 0;
       }
     }
-    else if (phase === 'fight') { rodAng = 58; pull = clamp(s.tension / 100, 0.15, 1); }
+    else if (phase === 'fight') {
+      // 重いイカほど竿が深く曲がり、引き込まれる
+      const hv = V.heavy ?? 0.5;
+      rodAng = 58 - 10 * hv;
+      pull = clamp((s.tension / 100) * (0.75 + 0.45 * hv), 0.15, 1.3);
+    }
     else if (V.hug.on) { rodAng = 52; pull = 0.35; }
     // 竿は目標角へなめらかに（振り出しの最中だけは追従を速く）、しなりは角速度の逆向き
     const prevAng = V.rodAng ?? rodAng;
@@ -1014,13 +1025,20 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         // やり取り：距離に応じて浮いてくる。ジェットで沖へ走る。胴は沖向き
         const frac = clamp(s.dist / hookDist, 0, 1);
         const depth = clamp(hookDepth * frac, 1.7, s.bottom - 0.9);
-        const tx = X(s.dist) + (now - V.lastJet < 0.35 ? 16 : 0);
+        const tx = X(s.dist) + (now - V.lastJet < 0.35 ? 10 + 14 * (V.heavy ?? 0.5) : 0);
         const ty = Y(depth);
         V.hug.x += (tx - V.hug.x) * k8;
         V.hug.y += (ty - V.hug.y) * k8;
         const pull = s.pressing ? -0.15 : 0.25;
         V.hug.ang += wrap(angleOf(0.9, 0.35 + pull) - V.hug.ang) * k3;
         taut = clamp(s.tension / 60, 0.2, 1);
+        if (!V.revealed && depth <= 2.2) {
+          V.revealed = true;
+          sc.nodes.hugWater.style.filter = '';
+          const big = h.weight >= 1000;
+          callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
+          if (big) feel.fire('hook', { heavy: V.heavy });
+        }
         if (!inked && depth <= 1.0) {
           inked = true;
           V.ink = { t0: now, x: V.hug.x - 10, y: S.surface + 10 };

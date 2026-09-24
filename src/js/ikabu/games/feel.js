@@ -29,7 +29,7 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     if (!st.vibrate || !canVibrate()) return;
     // ブラウザは、画面を一度も触っていない間は振動を止める（警告が出る）。触る前は呼ばない
     if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-    const p = kind === 'jet' ? jetPattern(opt.power) : PATTERN[kind];
+    const p = kind === 'jet' ? jetPattern(opt.power) : kind === 'hook' && opt.heavy != null ? [Math.round(50 + 90 * Math.min(1.6, opt.heavy))] : PATTERN[kind];
     if (!p) return;
     try { navigator.vibrate(p); } catch { /* 対応していない端末 */ }
   }
