@@ -199,6 +199,15 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
                 <b class="ika-egi-count-num"><span id="ika-egi-dist">0</span><small>m</small></b>
               </div>
             </div>
+            <!-- 投げる力・テンションのゲージは舞台の右端に縦で（指で隠れず、竿とイカを見ながら読める。ダディ指定 2026-09-25） -->
+            <div class="ika-egi-gauge ika-egi-gauge--power" id="ika-egi-power" hidden aria-hidden="true">
+              <span class="ika-egi-gauge-label">${t(lang, T.hud.power)}</span>
+              <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i><em class="ika-egi-gauge-sweet"></em></span>
+            </div>
+            <div class="ika-egi-gauge ika-egi-gauge--tension" id="ika-egi-tension" hidden aria-hidden="true">
+              <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
+              <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
+            </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
             <div class="ika-egi-cue" id="ika-egi-cue-label" hidden aria-hidden="true"></div>
             <div class="ika-egi-flash" id="ika-egi-flash" hidden aria-hidden="true">${t(lang, T.msg.signal)}</div>
@@ -209,14 +218,6 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             <div class="ika-egi-main-row">
               <button type="button" class="ika-egi-btn" id="ika-egi-btn" data-phase="ready">${t(lang, T.btn.ready)}</button>
               <button type="button" class="ika-egi-dart" id="ika-egi-dart" disabled title="${t(lang, T.gestures.dartHint)}" aria-label="${t(lang, T.gestures.dart)}：${t(lang, T.gestures.dartHint)}"><span class="ika-egi-dart-arrow" aria-hidden="true">↑</span><span>${t(lang, T.gestures.dart)}</span></button>
-            </div>
-            <div class="ika-egi-gauge ika-egi-gauge--power" id="ika-egi-power" hidden aria-hidden="true">
-              <span class="ika-egi-gauge-label">${t(lang, T.hud.power)}</span>
-              <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i><em class="ika-egi-gauge-sweet"></em></span>
-            </div>
-            <div class="ika-egi-gauge ika-egi-gauge--tension" id="ika-egi-tension" hidden aria-hidden="true">
-              <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
-              <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
             </div>
           </div>
           <details class="ika-egi-gestures" open>

@@ -1152,9 +1152,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     }
 
     /* ----- HUD ----- */
-    if (phase === 'aiming') powerFill.style.width = `${(s.power * 100).toFixed(0)}%`;
+    if (phase === 'aiming') powerFill.style.height = `${(s.power * 100).toFixed(0)}%`;   // 縦のゲージ（下から上へ）
     if (phase === 'fight') {
-      tensionFill.style.width = `${clamp(s.tension, 0, 100).toFixed(0)}%`;
+      tensionFill.style.height = `${clamp(s.tension, 0, 100).toFixed(0)}%`;
       el.tension.classList.toggle('is-high', s.tension >= 80);
       el.tension.classList.toggle('is-slack', s.tension <= 5);
       setText(el.dist, 'dist', Math.max(0, s.dist).toFixed(0));
