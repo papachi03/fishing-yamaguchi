@@ -145,10 +145,11 @@ export function render(lang) {
         </div>
       </div></div>
       <!-- シーンの中に浮かぶステッカーと操作。data-world はシーンの世界座標（hero-anim.js が画面上の位置に写す） -->
-      <span class="ika-sticker ika-sticker--a" data-world="1330,60" aria-hidden="true">${t(lang, '釣り場は<br />言わなくてOK', 'Secret spots<br />stay secret')}</span>
-      <span class="ika-sticker ika-sticker--b" data-world="1380,1010" aria-hidden="true">${t(lang, '部費 <b>0</b>円', 'Dues <b>¥0</b>')}</span>
-      <button type="button" class="ika-hook-btn" data-world="720,990" aria-label="${t(lang, 'タップしてイカを釣ろう', 'Tap to hook a squid')}">${t(lang, 'タップで釣る', 'Tap to hook')}</button>
+      <span class="ika-sticker ika-sticker--a" data-world="1330,60" data-world-mobile="600,1010" aria-hidden="true">${t(lang, '釣り場は<br />言わなくてOK', 'Secret spots<br />stay secret')}</span>
+      <span class="ika-sticker ika-sticker--b" data-world="1380,960" data-world-mobile="1390,1090" aria-hidden="true">${t(lang, '部費 <b>0</b>円', 'Dues <b>¥0</b>')}</span>
+      <button type="button" class="ika-hook-btn" data-world="740,950" data-world-mobile="660,1070" aria-label="${t(lang, 'タップしてイカを釣ろう', 'Tap to hook a squid')}">${t(lang, 'タップで釣る', 'Tap to hook')}</button>
       <span class="ika-hero-drag" data-world="700,560" hidden aria-hidden="true">${t(lang, 'ジジジッ', 'Zzzzt!')}</span>
+      <span class="ika-hero-ink" data-world="1120,760" hidden aria-hidden="true">${t(lang, 'ぷしゅっ', 'Squirt!')}</span>
       <div class="ika-hero-callout" data-world="1160,330" hidden aria-live="polite">
         <span class="ika-hero-callout-word">${t(lang, '抱いた！', 'Hooked!')}</span>
         <a class="ika-hero-callout-link" href="${pageHref('play', lang)}" hidden>${t(lang, 'エギングゲームで遊ぶ →', 'Play the egi game →')}</a>

@@ -35,8 +35,8 @@ const STORY = {
   drag: 2.4,    // ドラグが滑る（〜2.9）
   rise: 4.5,    // 寄せ・浮上：墨を吐く
   land: 6.0,    // 取り込み：「ゲット！」
-  settle: 7.0,  // 休みへ戻る
-  end: 7.6,
+  settle: 7.0,  // 休みへ戻る（イカを外し、エギを投げ直す）
+  end: 8.0,
 };
 
 const loadImage = (src) => new Promise((resolve, reject) => {
@@ -118,12 +118,20 @@ function collect(view, svg, cfg) {
     calloutWord: view.querySelector('.ika-hero-callout-word'),
     calloutLink: view.querySelector('.ika-hero-callout-link'),
     dragTag: view.querySelector('.ika-hero-drag'),
+    inkTag: view.querySelector('.ika-hero-ink'),
     worldEls: [...view.querySelectorAll('[data-world]')],
   };
 
   // 引き波（V字）・墨・釣れた小さなイカ（平らな絵柄：アイボリーに紺の縁）。糸の下、竿の上に置く
   sc.wake = svgEl('path', { class: 'ika-sc-wake', fill: 'none', stroke: C.glow, 'stroke-width': '3', 'stroke-linecap': 'round', opacity: '0' });
-  sc.ink = svgEl('ellipse', { class: 'ika-sc-ink', fill: '#0d1b30', opacity: '0' });
+  // 墨：明るい縁（暗い海と分ける）＋濃い本体＋3方向へ伸びる筋
+  sc.ink = svgEl('g', { class: 'ika-sc-ink', opacity: '0' });
+  sc.inkRim = svgEl('ellipse', { fill: 'none', stroke: 'rgba(205, 240, 238, 0.6)', 'stroke-width': '4' });
+  sc.inkBody = svgEl('ellipse', { fill: '#050c1a' });
+  sc.inkArms = [0, 1, 2].map(() => svgEl('ellipse', { fill: '#050c1a' }));
+  sc.ink.append(sc.inkRim, ...sc.inkArms, sc.inkBody);
+  // 持ち上げたイカから落ちるしずく（墨2つ・水2つ）
+  sc.drips = [0, 1, 2, 3].map((i) => svgEl('circle', { r: i < 2 ? '6' : '4', fill: i < 2 ? '#050c1a' : C.glow, opacity: '0' }));
   sc.catchG = svgEl('g', { class: 'ika-sc-catch', opacity: '0' });
   const body = 'M0,-52 L-18,-16 Q-26,6 -16,12 L-6,14 Q-9,30 -3,36 Q0,26 0,18 Q0,26 3,36 Q9,30 6,14 L16,12 Q26,6 18,-16 Z';
   sc.catchG.append(
@@ -135,6 +143,7 @@ function collect(view, svg, cfg) {
   svg.insertBefore(sc.ink, sc.lineGlow);
   svg.insertBefore(sc.wake, sc.lineGlow);
   svg.insertBefore(sc.catchG, sc.rodOutline);
+  sc.drips.forEach((d) => svg.insertBefore(d, sc.rodOutline));
   return sc;
 }
 
@@ -157,7 +166,8 @@ function createLayout(view, svg, sc, cfg) {
     svg.setAttribute('viewBox', `${f1(vb.x)} ${f1(vb.y)} ${f1(vb.w)} ${f1(vb.h)}`);
     svg.setAttribute('preserveAspectRatio', 'none'); // viewBox は表示領域と同じ比率なので歪まない
     for (const el of sc.worldEls) {
-      const [wx, wy] = el.dataset.world.split(',').map(Number);
+      // data-world-mobile があればスマホではそちら（縦長の帯では置き場所が変わる）
+      const [wx, wy] = ((mobile && el.dataset.worldMobile) || el.dataset.world).split(',').map(Number);
       const p = project(vb, w, wx, wy);
       el.style.left = `${p.x.toFixed(0)}px`;
       el.style.top = `${p.y.toFixed(0)}px`;
@@ -250,7 +260,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       return o;
     }
     if (a < STORY.settle) {
-      // 取り込み：糸に沿って持ち上がる
+      // 取り込み：糸の先（＝イカ）が糸に沿って持ち上がる。糸はイカで終わり、海には残らない
       const k = easeInOut((a - STORY.land) / (STORY.settle - STORY.land));
       o.entry = { ...pierPoint };
       o.pull = lerp(0.6, 0.25, k);
@@ -258,16 +268,19 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       o.lean = -4 + 6 * k;
       o.ink = 1 - k * 0.6;
       o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 20 - 20 * k, opacity: 1, alongLine: 0.42 * k };
+      o.lineTo = 'catch';
       return o;
     }
-    // 休みへ：竿を戻し、入水点を元の場所へ
-    const k = easeInOut((a - STORY.settle) / (STORY.end - STORY.settle));
-    o.entry = { x: lerp(pierPoint.x, cfg.lineWater.x, k), y: lerp(pierPoint.y, cfg.lineWater.y, k) };
-    o.pull = 0.25 * (1 - k);
+    // 休みへ：イカを外して、エギを投げ直す（糸の先が弧を描いて元の入水点へ落ちる）
+    const k = (a - STORY.settle) / (STORY.end - STORY.settle);
+    o.entry = { ...cfg.lineWater };
+    o.pull = 0.25 * (1 - easeInOut(k));
     o.taut = 1 - k;
     o.lean = 2 * (1 - k);
     o.ink = 0.4 * (1 - k);
-    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - k, alongLine: 0.42 };
+    o.catch = { x: pierPoint.x, y: pierPoint.y, scale: 1, rot: 0, opacity: 1 - clamp01(k / 0.3), alongLine: 0.42 };
+    o.lineTo = 'drop';
+    o.dropK = clamp01((k - 0.15) / 0.75);
     return o;
   }
 
@@ -296,10 +309,20 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       sc.guides[i].setAttribute('transform', `translate(${f1(p.x)} ${f1(p.y)})`);
     });
 
+    // 糸の先：ふだんは入水点。取り込み中は持ち上げたイカ、投げ直し中は弧を描いて落ちるエギ
+    const liftPoint = { x: lerp(pierPoint.x, tip.x, 0.42), y: lerp(pierPoint.y, tip.y, 0.42) };
+    let lineEnd = o.entry;
+    if (o.lineTo === 'catch') lineEnd = { x: lerp(pierPoint.x, tip.x, o.catch.alongLine), y: lerp(pierPoint.y, tip.y, o.catch.alongLine) };
+    else if (o.lineTo === 'drop') {
+      const k = o.dropK;
+      lineEnd = { x: lerp(liftPoint.x, cfg.lineWater.x, k), y: lerp(liftPoint.y, cfg.lineWater.y, k * k) - 90 * Math.sin(Math.PI * k) };
+    }
+    const inWater = !o.lineTo || (o.lineTo === 'drop' && o.dropK >= 1);
+
     // 糸：休みはたるんで揺れ、張ると真っ直ぐで明るい
     const taut = Math.max(o.taut, dip > 0 ? 0.5 : 0);
     const idleSway = (1 - taut) * (16 * Math.sin((s / 5.3) * TAU) + 6 * Math.sin((s / 1.7) * TAU));
-    const d = lineD(tip, o.entry, idleSway + o.sway);
+    const d = lineD(tip, lineEnd, inWater ? idleSway + o.sway : 0);
     sc.line.setAttribute('d', d);
     sc.lineGlow.setAttribute('d', d);
     sc.line.setAttribute('opacity', (0.85 + 0.15 * taut).toFixed(2));
@@ -309,7 +332,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
 
     // 入水点の輪・引き波（V字。水面なので縦は半分に潰す）
     const rr = 1 + 0.05 * Math.sin((s / 2.2) * TAU) + 0.3 * o.pull;
-    setAttrs(sc.restRipple, { cx: f1(o.entry.x), cy: f1(o.entry.y), rx: f1(cfg.restRipple.rx * rr), ry: f1(cfg.restRipple.ry * rr) });
+    setAttrs(sc.restRipple, { cx: f1(o.entry.x), cy: f1(o.entry.y), rx: f1(cfg.restRipple.rx * rr), ry: f1(cfg.restRipple.ry * rr), opacity: inWater ? '0.75' : '0' });
     const speed = Math.hypot(o.vel.x, o.vel.y);
     if (speed > 0.5) {
       const ux = o.vel.x / speed;
@@ -325,22 +348,44 @@ function createAnimator(cfg, sc, { reduced, lang }) {
       sc.wake.setAttribute('opacity', '0');
     }
 
-    // 墨と釣れたイカ
+    // 墨：ぷしゅっと広がって薄れる。縁は明るく、筋は3方向へ伸びる
     if (o.ink > 0) {
       const g = o.ink;
-      setAttrs(sc.ink, { cx: f1(o.entry.x - 30 * g), cy: f1(o.entry.y + 6), rx: f1(30 + 150 * g), ry: f1(10 + 40 * g), opacity: (0.7 * (1 - g * 0.55)).toFixed(2) });
+      const cx = o.entry.x - 40 * g;
+      const cy = o.entry.y + 8;
+      const rx = 40 + 200 * g;
+      const ry = 14 + 60 * g;
+      setAttrs(sc.inkBody, { cx: f1(cx), cy: f1(cy), rx: f1(rx), ry: f1(ry) });
+      setAttrs(sc.inkRim, { cx: f1(cx), cy: f1(cy), rx: f1(rx + 6), ry: f1(ry + 4) });
+      sc.inkArms.forEach((e, i) => {
+        const ang = [-0.9, 0.25, 1.15][i];
+        const len = (60 + 110 * g) * [1, 0.8, 0.9][i];
+        const ax = cx + Math.cos(ang) * len * 0.9;
+        const ay = cy + Math.sin(ang) * len * 0.3;
+        setAttrs(e, { cx: f1(ax), cy: f1(ay), rx: f1(len * 0.55), ry: f1(10 + 22 * g), transform: `rotate(${(ang * 18).toFixed(1)} ${f1(ax)} ${f1(ay)})` });
+      });
+      sc.ink.setAttribute('opacity', (0.92 * (1 - g * 0.35)).toFixed(2));
     } else {
       sc.ink.setAttribute('opacity', '0');
     }
+    if (sc.inkTag) sc.inkTag.hidden = !(o.ink > 0.05 && o.ink < 0.85 && !o.catch?.alongLine);
     if (o.catch) {
       const c = o.catch;
-      // 取り込みでは糸に沿って持ち上げる（入水点→竿先）
+      // 取り込みでは糸に沿って持ち上げる（入水点→竿先）。持ち上がったら糸に吊られて少し揺れる
       const px = lerp(c.x, tip.x, c.alongLine);
       const py = lerp(c.y, tip.y, c.alongLine);
-      sc.catchG.setAttribute('transform', `translate(${f1(px)} ${f1(py)}) rotate(${f1(c.rot)}) scale(${(1.35 * c.scale).toFixed(3)})`);
+      const swing = c.alongLine ? 7 * Math.sin(s * 7.5) * Math.min(1, c.alongLine / 0.2) : 0;
+      sc.catchG.setAttribute('transform', `translate(${f1(px)} ${f1(py)}) rotate(${f1(c.rot + swing)}) scale(${(3.2 * c.scale).toFixed(3)})`);
       sc.catchG.setAttribute('opacity', c.opacity.toFixed(2));
+      // しずく：持ち上がっているあいだ、触手の先から落ちる
+      sc.drips.forEach((d, i) => {
+        if (!c.alongLine) { d.setAttribute('opacity', '0'); return; }
+        const ph = (s * 1.3 + i * 0.27) % 1;
+        setAttrs(d, { cx: f1(px + [-14, 12, -4, 20][i] + swing * 5), cy: f1(py + 110 + ph * ph * 160), opacity: (c.opacity * (1 - ph) * 0.9).toFixed(2) });
+      });
     } else {
       sc.catchG.setAttribute('opacity', '0');
+      sc.drips.forEach((d) => d.setAttribute('opacity', '0'));
     }
     if (sc.dragTag) sc.dragTag.hidden = !o.drag;
 
@@ -378,11 +423,13 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     if (passed(STORY.hookset)) { showCallout('hooked'); st.ripples.push({ start: st.now, x: o.entry.x, y: o.entry.y, big: true }); }
     if (passed(STORY.rise + 0.5)) st.ripples.push({ start: st.now, x: o.entry.x, y: o.entry.y, big: true });
     if (passed(STORY.land)) { burst(o.entry); showCallout('got'); }
+    // 投げ直したエギが着水（dropK が 1 になる時刻）：小さなしぶきと波紋
+    if (passed(STORY.settle + (STORY.end - STORY.settle) * 0.9)) { burst(cfg.lineWater, 6); st.ripples.push({ start: st.now, x: cfg.lineWater.x, y: cfg.lineWater.y, big: true }); }
     lastA = a;
   }
-  function burst(at) {
-    st.splash = Array.from({ length: 10 }, (_, i) => {
-      const ang = lerp(-2.6, -0.5, i / 9) + rand(-0.15, 0.15);
+  function burst(at, n = 10) {
+    st.splash = Array.from({ length: n }, (_, i) => {
+      const ang = lerp(-2.6, -0.5, i / (n - 1)) + rand(-0.15, 0.15);
       const sp = rand(260, 520);
       return { x: at.x, y: at.y, vx: Math.cos(ang) * sp * 0.55, vy: -Math.sin(ang) * sp, r: rand(5, 10), start: st.now };
     });

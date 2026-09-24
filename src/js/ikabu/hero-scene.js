@@ -70,9 +70,10 @@ export const HERO_ANIM = {
   },
   view: {
     // PC：縦に 1300 世界px を見せ（イカ≈高さの 50%）、水平線を高さの 60% に置く
-    desktop: { height: 1300, horizonFrac: 0.6 },
-    // スマホ：文字ブロックの下の帯に、この矩形（イカ〜糸）が全部入るように縮める
-    mobile: { content: { x0: 90, x1: 1400, y0: 40, y1: 1060 }, gap: 12 },
+    //   textMargin：堤防の左端と文字の列のあいだに空ける世界px。horizonFracNarrow：幅 1366px 以下
+    desktop: { height: 1300, horizonFrac: 0.6, horizonFracNarrow: 0.72, textMargin: 60 },
+    // スマホ：文字ブロックの下の帯に、この矩形（堤防の左端〜糸、上はマントの先、下はステッカーまで）が全部入るように縮める
+    mobile: { content: { x0: -30, x1: 1400, y0: 30, y1: 1120 }, gap: 12 },
     // JS が無いときの既定（16:10 で PC のルールと同じ）。他の比率は右寄せで切る
     fallbackViewBox: '-680 -160 2080 1300',
   },
@@ -170,11 +171,14 @@ export function waveD(cfg, wv, i, s = 0) {
 // w,h = 表示領域のピクセル。mobile のときは文字ブロックの高さ textH を避けた帯に内容を収める
 export function computeViewBox(cfg, w, h, { mobile = false, textH = 0 } = {}) {
   if (!mobile) {
-    // 見せる高さ。幅が狭い（16:10 など）ときは少し引いて、イカの左端が幅の 47% より右に来るようにする
-    //   イカの左端 px = w - (right - squidBox.x) × scale, scale = h / H  →  H ≥ (right - squidBox.x) × h / (0.53 w)
-    const H = Math.max(cfg.view.desktop.height, ((cfg.world.right - cfg.squidBox.x) * h) / (0.53 * w));
+    // 見せる高さ。幅が狭い（16:10 など）ときは引いて、堤防の左端（＋余白）が幅の 47% より右に来るようにする
+    //   堤防の左端 px = w - (right - pierBox.x + margin) × scale, scale = h / H  →  H ≥ (…) × h / (0.53 w)
+    const d = cfg.view.desktop;
+    const H = Math.max(d.height, ((cfg.world.right - cfg.pierBox.x + d.textMargin) * h) / (0.53 * w));
     const W = (w / h) * H;
-    return { x: cfg.world.right - W, y: cfg.horizonY - cfg.view.desktop.horizonFrac * H, w: W, h: H };
+    // 幅 1366px 以下は文字が海にかからないよう水平線を下げる
+    const frac = w <= 1366 ? d.horizonFracNarrow : d.horizonFrac;
+    return { x: cfg.world.right - W, y: cfg.horizonY - frac * H, w: W, h: H };
   }
   const c = cfg.view.mobile.content;
   const cw = c.x1 - c.x0;
