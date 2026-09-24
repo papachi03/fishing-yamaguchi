@@ -1402,6 +1402,9 @@
 .ika-egi-count.is-bottom .ika-egi-count-depth { color: var(--ika-orange-deep); font-weight: 700; }
 .ika-egi-count.is-warn { background: var(--ika-orange); }
 .ika-egi-count.is-warn .ika-egi-count-depth, .ika-egi-count.is-warn .ika-egi-count-label { color: var(--ika-ink); }
+.ika-egi-reel .ika-egi-count-num small { margin-left: 2px; font-size: 0.55em; }
+/* 長押しで iPhone の拡大鏡・メニュー・文字選択が出ないように（ゲームの操作部分だけ） */
+.ika-egi-stage, .ika-egi-controls, .ika-egi-btn, .ika-egi-dart { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
 .ika-egi-callout {
   position: absolute; z-index: 2; left: 50%; top: 13%;
@@ -1508,8 +1511,6 @@
 .ika-egi-gauge--tension .ika-egi-gauge-fill { background: rgba(0, 97, 107, 0.7); }
 .ika-egi-gauge--tension.is-high .ika-egi-gauge-fill { background: rgba(194, 87, 31, 0.85); }
 .ika-egi-gauge--tension.is-slack .ika-egi-gauge-track { box-shadow: inset 0 0 0 3px var(--ika-orange); }
-.ika-egi-gauge-dist { grid-column: 2; white-space: nowrap; font-family: var(--font-maru); font-weight: 700; color: var(--ika-ink-soft); }
-.ika-egi-gauge-dist b { font-family: var(--font-varsity); font-weight: 800; font-size: 20px; color: var(--ika-ink); }
 .ika-egi-log { margin-top: 8px; min-height: 1.6em; font-size: 12.5px; color: var(--ika-ink-soft); }
 
 .ika-egi-side { align-self: start; display: grid; gap: 8px; padding: 16px 18px 18px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; }
@@ -1680,6 +1681,27 @@
   .ika-m3-card-score b { font-size: 36px; }
   .ika-m3-tools { grid-template-columns: 1fr 1fr; }
   .ika-m3-ink { grid-column: 1 / -1; }
+}
+/* 横向きのスマホ（高さが低い）：舞台を画面の高さいっぱいに、操作ボタンとゲージは右の列に縦に並べる */
+@media (orientation: landscape) and (max-height: 540px) {
+  #ika-header { position: relative; }   /* 固定のヘッダーで舞台が隠れないように */
+  .ika-egi { grid-template-columns: 1fr; }
+  .ika-egi-main { display: grid; grid-template-columns: minmax(0, 1fr) clamp(150px, 24vw, 220px); gap: 10px 12px; align-items: stretch; scroll-margin-top: 6px; }
+  .ika-egi-stage { grid-column: 1; grid-row: 1; aspect-ratio: auto; height: calc(100svh - 14px); border-radius: 12px; box-shadow: 3px 3px 0 var(--ika-sea); }
+  .ika-egi-controls { grid-column: 2; grid-row: 1; margin-top: 0; grid-template-columns: 1fr; align-content: end; gap: 10px; height: calc(100svh - 14px); }
+  .ika-egi-main-row { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 10px; }
+  .ika-egi-btn { min-height: 96px; font-size: 15px; padding: 6px 8px; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+  .ika-egi-dart { flex-direction: row; gap: 6px; min-height: 52px; }
+  .ika-egi-gauge { grid-template-columns: 1fr; gap: 2px; }
+  .ika-egi-gauge-label { font-size: 11px; }
+  .ika-egi-gauge-track { height: 20px; }
+  .ika-egi-gestures, .ika-egi-log { grid-column: 1 / -1; }
+  .ika-egi-hud { inset: 6px; }
+  .ika-egi-count { padding: 4px 10px; min-width: 76px; }
+  .ika-egi-count-num { font-size: 24px; }
+  .ika-egi-callout { font-size: 14px; padding: 4px 12px; top: 16%; }
+  .ika-egi-card, .ika-egi-card--over { max-height: 86%; overflow: auto; font-size: 12.5px; padding: 10px 12px; }
+  .ika-egi-card-photo { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ika-egi-callout.is-pop, .ika-egi-flash, .ika-egi-btn.is-signal, .ika-m3-callout.is-pop, .ika-m3-cell.is-hint, .ika-m3-cell.is-born, .ika-m3-cell.is-shake, .ika-m3-ink.is-full .ika-m3-ink-track { animation: none; }

@@ -43,7 +43,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     casts: q('ika-egi-casts'), egis: q('ika-egi-egis'),
     count: q('ika-egi-count'), countLabel: q('ika-egi-count-label'), countNum: q('ika-egi-count-num'), depth: q('ika-egi-depth'),
     callout: q('ika-egi-callout'), flash: q('ika-egi-flash'), card: q('ika-egi-card'),
-    power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), log: q('ika-egi-log'),
+    power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
@@ -683,6 +683,27 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.btn.addEventListener('click', (e) => e.preventDefault());
   el.stage.addEventListener('contextmenu', (e) => e.preventDefault());
+  // スマホの長押し機能（iPhone の拡大鏡・コピーのメニュー・文字選択、Android の選択）を、舞台とボタンの上では出さない。
+  // pointerdown の preventDefault だけでは iOS の長押しは止まらないので、touchstart も止める（pointer イベントはそのまま届く）
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card button, .ika-egi-card a, details')) e.preventDefault(); };
+  for (const node of [el.btn, el.dartBtn, el.stage]) {
+    node.addEventListener('touchstart', noLongPress, { passive: false });
+    node.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+  el.main.addEventListener('selectstart', (e) => {
+    const n = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (!n?.closest('.ika-egi-card, .ika-egi-gestures, .ika-egi-log')) e.preventDefault();
+  });
+  // 横向きのスマホ：舞台を画面の高さいっぱいに出す（CSS の横向きレイアウトと同じ条件）。
+  // 回したとき・横向きで遊び始めたときに、舞台の上端を画面の上端へ合わせる
+  const landscape = matchMedia('(orientation: landscape) and (max-height: 540px)');
+  const fitLandscape = () => {
+    if (!landscape.matches) return;
+    const r = el.main.getBoundingClientRect();
+    if (Math.abs(r.top - 6) > 4) scrollTo({ top: scrollY + r.top - 6, behavior: reduced ? 'auto' : 'smooth' });
+  };
+  landscape.addEventListener?.('change', () => { if (landscape.matches && s && !['ready', 'over'].includes(s.phase)) setTimeout(fitLandscape, 250); });
+  el.btn.addEventListener('pointerdown', () => { if (!s || s.phase === 'ready') fitLandscape(); });
   // ダートボタン（どの端末でも確実に）
   // 押した瞬間に反応させる（click 待ちの遅れを無くす）。キーボードは Enter/Space
   el.dartBtn.addEventListener('pointerdown', (e) => { if (e.button === 0 || e.pointerType !== 'mouse') { e.preventDefault(); doDart(); } });
@@ -1083,6 +1104,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.tension.classList.toggle('is-slack', s.tension <= 5);
       setText(el.dist, 'dist', Math.max(0, s.dist).toFixed(0));
     }
+    el.reel.hidden = phase !== 'fight';   // 残りの距離は舞台の右上に（ゲージの下だと指で隠れて見えない）
     const inWater = (phase === 'sinking' || phase === 'action' || phase === 'signal') && !V.cast;
     el.count.hidden = !inWater;
     if (inWater) {

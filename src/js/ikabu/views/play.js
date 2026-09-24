@@ -177,6 +177,10 @@ const egiHTML = (lang, month) => {
                 <span class="ika-egi-fallmode" id="ika-egi-fallmode" hidden></span>
                 <span class="ika-egi-windnote" id="ika-egi-windnote" hidden>${t(lang, T.msg.windy)}</span>
               </div>
+              <div class="ika-egi-count ika-egi-reel" id="ika-egi-reel" hidden>
+                <span class="ika-egi-count-label">${t(lang, T.hud.dist)}</span>
+                <b class="ika-egi-count-num"><span id="ika-egi-dist">0</span><small>m</small></b>
+              </div>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
             <div class="ika-egi-cue" id="ika-egi-cue-label" hidden aria-hidden="true"></div>
@@ -196,7 +200,6 @@ const egiHTML = (lang, month) => {
             <div class="ika-egi-gauge ika-egi-gauge--tension" id="ika-egi-tension" hidden aria-hidden="true">
               <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
               <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
-              <span class="ika-egi-gauge-dist"><span>${t(lang, T.hud.dist)}</span> <b id="ika-egi-dist">0</b>m</span>
             </div>
           </div>
           <details class="ika-egi-gestures" open>
