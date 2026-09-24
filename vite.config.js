@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [
     {
       // SEAページに予報を書き込む（Googlebot対策。詳細は scripts/prerender-sea.mjs）。
-      // ビルド時だけ動く。npm run dev では従来どおりブラウザで取得する
+      // ビルド時だけ動く。npm run dev では dev-sea-snapshot（下）が予報ファイルをその場で作る
       name: 'prerender-sea',
       apply: 'build',
       transformIndexHtml: {
@@ -26,6 +26,40 @@ export default defineConfig({
       generateBundle() {
         if (!seaSnapshot || !Object.keys(seaSnapshot.areas).length) return;
         this.emitFile({ type: 'asset', fileName: 'data/sea-snapshot.json', source: JSON.stringify(seaSnapshot) });
+      },
+    },
+    {
+      // npm run dev 用：/data/sea-snapshot.json をその場で作って返す（本番はビルド時に dist/data へ出す）。
+      // 2026-09-24 乗り換えで、ブラウザは予報を直接取らず、このファイル（か埋め込み）を読むようになったため。
+      // 取得元（met.no）に負担をかけないよう30分は使い回す
+      name: 'dev-sea-snapshot',
+      apply: 'serve',
+      configureServer(server) {
+        let cache = null;
+        server.middlewares.use(async (req, res, next) => {
+          if (!req.url || !req.url.split('?')[0].endsWith('/data/sea-snapshot.json')) return next();
+          try {
+            if (!cache || Date.now() - cache.at > 30 * 60e3) {
+              const { areas } = await server.ssrLoadModule('/src/js/data/areas.js');
+              const { fetchWeather } = await server.ssrLoadModule('/src/js/api/weather.js');
+              const { trimWeather } = await server.ssrLoadModule('/src/js/pages/sea-render.js');
+              const snap = { fetchedAt: new Date().toISOString(), areas: {} };
+              for (const a of areas) {
+                try {
+                  snap.areas[a.id] = trimWeather(await fetchWeather(a));
+                } catch (e) {
+                  console.warn(`[dev-sea-snapshot] ${a.id}: ${e.message} ${e.cause?.code ?? e.cause?.message ?? ""}`);
+                }
+              }
+              cache = { at: Date.now(), body: JSON.stringify(snap) };
+            }
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(cache.body);
+          } catch (e) {
+            res.statusCode = 500;
+            res.end(String(e));
+          }
+        });
       },
     },
     {

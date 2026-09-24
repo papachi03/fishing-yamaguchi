@@ -1,6 +1,7 @@
 import { mountChrome, mountFooterBottom, initReveal } from '../main.js';
 import { areas, areaById } from '../data/areas.js';
-import { fetchWeather } from '../api/weather.js';
+import { loadSnapshot, atNow } from '../api/sea-snapshot.js';
+import { fetchObservation } from '../api/observation.js';
 import { fetchTide } from '../api/tide.js';
 import { dashHTML, sourceNoteText, toggleHTML, hhmm } from './sea-render.js';
 import { mountAreaReports, cancelAreaReports } from '../components/area-reports.js';
@@ -15,21 +16,15 @@ const sourceNote = document.getElementById('source-note');
 const reportsBox = document.getElementById('sea-reports');
 bindReportButtons(reportsBox);
 
-// ビルド時に取得して埋め込んだ予報（scripts/prerender-sea.mjs）。
-// 開いた時の取得に失敗したら、これを「○時○分時点」として代わりに見せる。
-let snapshot = null;
-try {
-  const el = document.getElementById('sea-snapshot');
-  if (el) snapshot = JSON.parse(el.textContent);
-} catch {
-  snapshot = null;
-}
+// 予報はビルド時（3時間ごと）に取得して埋め込んだもの（scripts/prerender-sea.mjs）を使う。
+// 2026-09-24 乗り換え：予報の取得元（met.no）は User-Agent を名乗れる場所からしか呼べないため、
+// ブラウザからは取りに行かない。開いたときにブラウザが取るのは、気象庁アメダスの実測だけ。
 
 // 事前描画済みのエリア（最初の1回だけ「取得しています…」で中身を消さないために使う）
 let prerendered = dash.dataset.prerendered || null;
 
-const weatherCache = new Map();
 const tideCache = new Map();
+const obsCache = new Map();
 
 const hashId = location.hash.slice(1);
 let current = areas.some((a) => a.id === hashId) ? hashId : 'hagi';
@@ -65,10 +60,19 @@ window.addEventListener('hashchange', () => {
 });
 
 async function loadWeather(area) {
-  if (weatherCache.has(area.id)) return weatherCache.get(area.id);
-  const w = await fetchWeather(area);
-  weatherCache.set(area.id, w); // 成功した時だけ覚える（失敗は次の切り替えで取り直す）
-  return w;
+  const snap = await loadSnapshot(import.meta.env.BASE_URL);
+  const w = snap?.areas?.[area.id];
+  if (!w) throw new Error('snapshot に予報が無い');
+  return { w: atNow(w), fetchedAt: new Date(snap.fetchedAt) };
+}
+
+// アメダスの実測（10分ごと）。5分は使い回す
+async function loadObservation(area) {
+  const hit = obsCache.get(area.id);
+  if (hit && Date.now() - hit.at < 5 * 60e3) return hit.v;
+  const v = await fetchObservation(area.id);
+  obsCache.set(area.id, { at: Date.now(), v });
+  return v;
 }
 
 async function loadTide(area) {
@@ -94,23 +98,16 @@ async function render() {
   cancelAreaReports();
   reportsBox.innerHTML = '';
 
-  const [wr, tr] = await Promise.allSettled([loadWeather(area), loadTide(area)]);
+  const [wr, tr, or] = await Promise.allSettled([loadWeather(area), loadTide(area), loadObservation(area)]);
   if (areaId !== current) return; // 取得中に別のエリアへ切り替えられた
 
   const now = new Date();
-  let w = wr.status === 'fulfilled' ? wr.value : null;
+  const w = wr.status === 'fulfilled' ? wr.value.w : null;
   const t = tr.status === 'fulfilled' ? tr.value : null;
-  let updatedLabel = `UPDATED ${hhmm(now)} JST`;
-  let notice = '';
+  const obs = or.status === 'fulfilled' ? or.value : null;
+  const updatedLabel = w ? `${fmtDateTime(wr.value.fetchedAt)} 発表の予報` : `UPDATED ${hhmm(now)} JST`;
 
-  if (!w && snapshot?.areas?.[areaId]) {
-    w = snapshot.areas[areaId];
-    const at = new Date(snapshot.fetchedAt);
-    updatedLabel = `${fmtDateTime(at)} 時点の予報`;
-    notice = `最新の予報を取得できなかったため、${fmtDateTime(at)} 時点の予報を表示しています。`;
-  }
-
-  dash.innerHTML = dashHTML({ area, w, t, now, updatedLabel, notice });
+  dash.innerHTML = dashHTML({ area, w, t, now, updatedLabel, obs });
   sourceNote.textContent = sourceNoteText(area, t);
   initReveal();
   mountAreaReports(reportsBox, areaId); // 待たない。失敗しても海況には影響させない

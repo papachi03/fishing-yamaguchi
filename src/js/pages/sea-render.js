@@ -16,7 +16,6 @@ import { guidesForMonth, guideHref } from '../data/guides.js';
 import {
   assessSafety,
   windLevel,
-  gustLevel,
   waveLevel,
   isOnshore,
   legendText,
@@ -227,7 +226,17 @@ function tidePanelHTML(t, now) {
     </div>`;
 }
 
-function weatherHTML(area, w, now, updatedLabel) {
+// アメダスの実測（参考）。観測所と時刻を必ず添える。判定には使わない（基準は予報の数字で決めてあるため）
+function obsTileHTML(obs) {
+  if (!obs) {
+    return `<div><dt>Observed</dt><dd>—<small>m/s</small><span class="sub t-mono">アメダス実測</span></dd></div>`;
+  }
+  const d = obs.calm ? '静穏' : windDirection(obs.windDir).ja;
+  const gust = obs.gustMax != null ? ` ・ 今日の最大瞬間 ${fmt1(obs.gustMax)}${obs.gustAt ? `（${obs.gustAt}）` : ''}` : '';
+  return `<div><dt>Observed</dt><dd>${fmt1(obs.wind)}<small>m/s</small><span class="sub t-mono">${obs.station} ${obs.at} 実測 ${d}${gust}</span></dd></div>`;
+}
+
+function weatherHTML(area, w, now, updatedLabel, obs) {
   const cond = describeWeather(w.current.code);
   const dir = windDirection(w.current.windDir);
 
@@ -241,8 +250,8 @@ function weatherHTML(area, w, now, updatedLabel) {
       <dl class="dash-now">
         <div><dt>Weather</dt><dd style="font-family:var(--font-mincho);font-size:clamp(18px,2.2vw,24px);">${cond.ja}<span class="sub t-mono">降水確率 最大 ${fmt0(today?.popMax)}%</span></dd></div>
         <div><dt>Temp</dt><dd>${fmt1(w.current.temp)}<small>°C</small><span class="sub t-mono">H ${fmt0(today?.tMax)}° / L ${fmt0(today?.tMin)}°</span></dd></div>
-        <div><dt>Wind</dt><dd>${fmt1(w.current.wind)}<small>m/s</small><span class="sub t-mono">${dir.en}（${dir.ja}）</span></dd></div>
-        <div><dt>Gust</dt><dd>${fmt1(w.current.gust)}<small>m/s</small><span class="sub t-mono">突風</span></dd></div>
+        <div><dt>Wind</dt><dd>${fmt1(w.current.wind)}<small>m/s</small><span class="sub t-mono">予報 ${dir.en}（${dir.ja}）</span></dd></div>
+        ${obsTileHTML(obs)}
         <div><dt>Wave</dt><dd>${fmt1(w.current.wave)}<small>m</small><span class="sub t-mono">${w.current.wavePeriod != null ? `周期 ${fmt0(w.current.wavePeriod)}秒` : '波高'}</span></dd></div>
         <div style="display:grid;place-items:center;">${bigCompass(dir.deg, dir.ja)}</div>
       </dl>
@@ -266,7 +275,6 @@ function weatherHTML(area, w, now, updatedLabel) {
             <tr><th>気温 °C</th>${hours.map((h) => `<td>${fmt0(h.temp)}</td>`).join('')}</tr>
             <tr><th>降水 %</th>${hours.map((h) => `<td>${fmt0(h.pop)}</td>`).join('')}</tr>
             <tr><th>風 m/s</th>${hours.map((h) => `<td class="lv${windLevel(h.wind, area.seaProfile)}">${arrow(h.windDir)} ${fmt1(h.wind)}</td>`).join('')}</tr>
-            <tr><th>突風 m/s</th>${hours.map((h) => `<td class="lv${gustLevel(h.gust, area.seaProfile)}">${fmt1(h.gust)}</td>`).join('')}</tr>
             <tr><th>波高 m</th>${hours.map((h) => `<td class="lv${waveLevel(h.wave, area.seaProfile)}">${fmt1(h.wave)}</td>`).join('')}</tr>
           </tbody>
         </table>
@@ -282,7 +290,7 @@ function weatherHTML(area, w, now, updatedLabel) {
  *   notice: 見出しの下に出す注意書き（古い予報を出しているとき等）
  * 潮汐・今月の旬・安全基準は、天気が取れなくても必ず出す。
  */
-export function dashHTML({ area, w, t, now, updatedLabel, notice = '' }) {
+export function dashHTML({ area, w, t, now, updatedLabel, notice = '', obs = null }) {
   const exp = t ? calcExpectation(area, t, now) : null;
 
   const head = `
@@ -294,7 +302,7 @@ export function dashHTML({ area, w, t, now, updatedLabel, notice = '' }) {
       ${notice ? `<p class="sea-error" style="margin-bottom:14px;">${notice}</p>` : ''}`;
 
   const body = w
-    ? weatherHTML(area, w, now, updatedLabel).replace('__BITE__', bitePanelHTML(area, exp))
+    ? weatherHTML(area, w, now, updatedLabel, obs).replace('__BITE__', bitePanelHTML(area, exp))
     : `
       <p class="sea-error">天気・風・波の予報を取得できませんでした。時間をおいて開き直してください。潮汐と基準は下に表示しています。</p>
     </div>
@@ -310,7 +318,7 @@ export function sourceNoteText(area, t) {
   // 視聴者の方の釣り場（contributor 付き）は場所が特定できないよう座標を出さない
   const coordNote = area.contributor ? '' : ` / 座標 ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)}`;
   const tideNote = t ? ` / 潮汐: 気象庁 潮位表（${t.stationName}）` : '';
-  return `天気・風: Open-Meteo${tideNote}${coordNote} / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
+  return `予報: 風・天気 MET Norway（地域ごとに補正） / 波 NOAA WaveWatch III・気象庁 / 降水確率 気象庁 ・ 実測: 気象庁アメダス${tideNote}${coordNote} / 出典：気象庁ホームページ（加工して表示） / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
 }
 
 export function toggleHTML(areas, current) {
