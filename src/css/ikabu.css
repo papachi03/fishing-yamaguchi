@@ -317,14 +317,12 @@
 /* シーンの中に浮かぶもの（ステッカー・ボタン・吹き出し・ドラグ音）。
    位置は data-world（世界座標）から hero-anim.js が left/top を入れる。JS が無いときは下の % が既定 */
 [data-world].is-placed { right: auto; bottom: auto; }
-.ika-sticker--a[data-world] { transform: translate(-100%, 0) rotate(-6deg); transform-origin: 100% 0; }
-.ika-sticker--b[data-world] { transform: translate(-100%, -100%) rotate(5deg); transform-origin: 100% 100%; }
 
-/* キーボード用の「タップで釣る」（見た目は小さなステッカー） */
+/* 「タップで釣る」：右下の隅の小さなステッカー。キーボードでも押せる。物語の間は薄くなり、休みに戻ると戻る */
 .ika-hook-btn {
   position: absolute; z-index: 3;
-  left: 56%; bottom: 6%;
-  padding: 8px 14px;
+  right: clamp(16px, 2.5vw, 36px); bottom: 18px;
+  padding: 7px 13px;
   background: var(--ika-white);
   color: var(--ika-sea);
   border: 3px solid var(--ika-sea);
@@ -336,11 +334,19 @@
   line-height: 1.3;
   white-space: nowrap;
   cursor: pointer;
-  transform: translate(0, -100%) rotate(-3deg);   /* data-world の点を左下の角にする（画面の下端で切れない） */
-  transform-origin: 0 100%;
+  transform: rotate(-3deg);
+  transition: opacity 0.5s;
 }
 .ika-hook-btn::before { content: '☝ '; }
 .ika-hook-btn:hover { background: var(--ika-mist); }
+.ika-hero-view.is-playing .ika-hook-btn { opacity: 0.18; }
+.ika-hero-view.is-playing .ika-hook-btn:focus-visible { opacity: 1; }
+
+/* 文字の列の中のステッカー（竿・糸・投げ直しの軌道にかからない） */
+.ika-hero-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-top: 22px; }
+.ika-hero-badges .ika-sticker { position: static; }
+.ika-hero-badges .ika-sticker--a { transform: rotate(-2deg); }
+.ika-hero-badges .ika-sticker--b { transform: rotate(2deg); }
 
 /* ドラグが鳴る音（ファイト中だけ、リールの横に） */
 .ika-hero-drag {
@@ -1762,10 +1768,18 @@
   .ika-hero-copy .ika-sub { margin-inline: auto; }
   .ika-hero-still { max-width: 100%; height: 55%; }
   .ika-hero-scrim { background: linear-gradient(180deg, rgba(0, 8, 23, 0.55) 0%, rgba(0, 8, 23, 0.35) 40%, transparent 62%); }
-  .ika-sticker { font-size: 12px; padding: 8px 12px; }
-  .ika-sticker--a { top: 52%; right: 4%; }
-  .ika-sticker--b { bottom: 4%; right: 4%; font-size: 14px; }
-  .ika-hook-btn { font-size: 12px; padding: 6px 12px; }
+  .ika-sticker { font-size: 12px; padding: 7px 11px; border-width: 2px; }
+  .ika-sticker--b { font-size: 13px; }
+  /* スマホは、投げ直しで振りかぶった竿先が文字の列の下端まで届くので、バッジはロゴのすぐ下へ上げる（ボタンの下には置かない） */
+  .ika-hero-copy-inner { display: flex; flex-direction: column; }
+  .ika-hero-copy-inner > .ika-pennant { order: 1; align-self: center; }
+  .ika-hero-copy-inner > .ika-title { order: 2; }
+  .ika-hero-copy-inner > .ika-hero-badges { order: 3; }
+  .ika-hero-copy-inner > .ika-lead { order: 4; }
+  .ika-hero-copy-inner > .ika-sub { order: 5; }
+  .ika-hero-copy-inner > .ika-cta { order: 6; }
+  .ika-hero-badges { justify-content: center; gap: 10px; margin-top: 14px; }
+  .ika-hook-btn { font-size: 12px; padding: 6px 12px; right: 14px; bottom: 14px; }   /* 親指の届く右下。イカと糸は左〜中央 */
   .ika-hero-callout { gap: 6px; }
   .ika-hero-callout-word { font-size: 22px; padding: 6px 14px; border-width: 3px; }
   .ika-hero-callout-link { font-size: 12px; padding: 5px 10px; }

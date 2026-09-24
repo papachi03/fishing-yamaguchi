@@ -349,6 +349,7 @@ function createAnimator(cfg, sc, { reduced, lang }) {
     const a = st.freeze != null ? st.freeze : s - st.hookAt;
     const inStory = a >= 0 && a < STORY.end;
     const o = story(inStory ? a : -1);
+    sc.view.classList.toggle('is-playing', inStory);   // 「タップで釣る」を物語の間だけ薄くする
 
     // アタリ（物語の外でだけ）
     const nAge = s - st.nibbleAt;

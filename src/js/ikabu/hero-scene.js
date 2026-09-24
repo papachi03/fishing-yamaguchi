@@ -73,7 +73,8 @@ export const HERO_ANIM = {
     //   textMargin：堤防の左端と文字の列のあいだに空ける世界px。horizonFracNarrow：幅 1366px 以下
     desktop: { height: 1300, horizonFrac: 0.6, horizonFracNarrow: 0.72, textMargin: 60 },
     // スマホ：文字ブロックの下の帯に、この矩形（堤防の左端〜糸、上はマントの先、下はステッカーまで）が全部入るように縮める
-    mobile: { content: { x0: -30, x1: 1400, y0: 30, y1: 1120 }, gap: 12 },
+    // y0 は投げ直しで振りかぶった竿先の高さまで含める（含めないと竿先が文字やボタンにかかる）
+    mobile: { content: { x0: -30, x1: 1400, y0: -170, y1: 1120 }, gap: 12 },
     // JS が無いときの既定（16:10 で PC のルールと同じ）。他の比率は右寄せで切る
     fallbackViewBox: '-680 -160 2080 1300',
   },
