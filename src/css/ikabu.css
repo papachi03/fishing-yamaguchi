@@ -2,31 +2,36 @@
    山口イカ部 — /ikabu/ 専用の見た目
    style.css（YFJ）の上に重ねる。ページ全体を .ikabu で包み、色はここでだけ決める。
 
-   配色：マイアミ・ハリケーンズのグリーン #005030 × オレンジ #F47321 × 白。
+   配色：深いアクア #00616B × オレンジ #F47321 × 白（2026-09-24 ぱっぱ決定）。
+   マイアミの「アクア×オレンジ」の空気を、海の部活らしい深い海の色で。
    ロゴとイラストは紺・アイボリー・朱のままなので、白い「ワッペン」や
-   白い「ステッカー枠」に載せてグリーンの地となじませる。
+   白い「ステッカー枠」に載せてアクアの地となじませる。
    空気：大学の運動部（バーシティ文字・3本ストライプ・背番号・チケット）× 海辺。
 
    文字の色の組み合わせ（WCAG AA を確かめたもの）
-     白 on グリーン           9.6 : 1  ○ 本文OK
-     グリーン on 白           9.6 : 1  ○ 本文OK
-     墨（--ika-ink）on オレンジ 5.4 : 1  ○ 本文OK  → オレンジのボタンの文字は墨
-     白 on オレンジ           2.9 : 1  × 使わない
-     オレンジ on 白           2.9 : 1  × 小さな文字には使わない（塗り・線・24px以上の飾り文字だけ）
-     オレンジ on グリーン     3.3 : 1  △ 24px以上の飾り文字だけ
+     白 on 海（--ika-sea）      7.2 : 1  ○ 本文OK
+     海 on 白                   7.2 : 1  ○ 本文OK
+     海 on ミスト               6.5 : 1  ○ 本文OK
+     墨（--ika-ink）on オレンジ 5.3 : 1  ○ 本文OK  → オレンジのボタンの文字は墨
+     白 on オレンジ             2.9 : 1  × 使わない
+     オレンジ on 白             2.9 : 1  × 小さな文字には使わない（塗り・線だけ）
+     オレンジ on 海             2.5 : 1  × 文字には使わない（海の上の飾り文字は --ika-orange-light）
+     明るいオレンジ on 海       4.1 : 1  △ 大きな見出し・飾り文字だけ
+     明るいオレンジ on 深い海   6.1 : 1  ○ 本文OK（フッターの見出しなど）
    ========================================================================== */
 
 .ikabu {
-  --ika-green: #005030;
-  --ika-green-deep: #003b23;
-  --ika-green-line: #0a6a42;      /* グリーンの上の薄い線 */
+  --ika-sea: #00616b;
+  --ika-sea-deep: #00454d;
+  --ika-sea-line: #138c96;        /* 海の上の薄い線 */
   --ika-orange: #f47321;
   --ika-orange-deep: #d95f12;
+  --ika-orange-light: #ffb37a;    /* 海の地の上に置く文字用のオレンジ */
   --ika-white: #ffffff;
-  --ika-mist: #eef4ef;            /* うっすら緑がかった白（帯の背景） */
-  --ika-ink: #0f2a1d;             /* 本文の墨（緑寄りの黒） */
-  --ika-ink-soft: #46584f;        /* 補足の文字（白の上で 7 : 1） */
-  --ika-shadow: var(--ika-green);
+  --ika-mist: #e8f6f7;            /* うっすら海色の白（帯の背景） */
+  --ika-ink: #0b2a2f;             /* 本文の墨（海寄りの黒） */
+  --ika-ink-soft: #41585c;        /* 補足の文字（白の上で 7.6 : 1） */
+  --ika-shadow: var(--ika-sea);
 
   --font-maru: 'Zen Maru Gothic', 'Zen Kaku Gothic New', 'Hiragino Maru Gothic ProN', sans-serif;
   --font-varsity: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
@@ -47,7 +52,7 @@
 /* 3本ストライプ（緑・オレンジ・緑）：ユニフォームの袖の線 */
 .ika-stripe {
   height: 10px;
-  background: linear-gradient(var(--ika-green) 0 30%, var(--ika-white) 30% 40%, var(--ika-orange) 40% 60%, var(--ika-white) 60% 70%, var(--ika-green) 70%);
+  background: linear-gradient(var(--ika-sea) 0 30%, var(--ika-white) 30% 40%, var(--ika-orange) 40% 60%, var(--ika-white) 60% 70%, var(--ika-sea) 70%);
 }
 
 /* 英字の小見出し（バーシティ書体） */
@@ -58,12 +63,12 @@
   font-size: 15px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--ika-green);
+  color: var(--ika-sea);
 }
 .ika-eyebrow-num {
   display: inline-grid; place-items: center;
   min-width: 34px; height: 26px; padding: 0 6px;
-  background: var(--ika-green);
+  background: var(--ika-sea);
   color: var(--ika-white);
   border-radius: 6px;
   font-size: 14px;
@@ -105,20 +110,20 @@
   font-family: var(--font-maru);
   font-weight: 700;
   font-size: 13px;
-  color: var(--ika-green);
+  color: var(--ika-sea);
   white-space: nowrap;
   transition: background 0.2s, color 0.2s;
 }
 .ika-nav a:hover { background: var(--ika-mist); }
-.ika-nav a[aria-current='page'] { background: var(--ika-green); color: var(--ika-white); }
+.ika-nav a[aria-current='page'] { background: var(--ika-sea); color: var(--ika-white); }
 .ika-nav a[aria-current='page'] .ika-nav-num { opacity: 1; color: var(--ika-orange); }
 
 .ika-header-tools { flex: none; display: flex; align-items: center; gap: 14px; }
 
-.ika-lang { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ika-green); }
+.ika-lang { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--ika-sea); }
 .ika-lang a { padding: 6px 8px; border-radius: 999px; line-height: 1; transition: background 0.2s; }
 .ika-lang a:hover { background: var(--ika-mist); }
-.ika-lang a[aria-current='true'] { background: var(--ika-green); color: var(--ika-white); }
+.ika-lang a[aria-current='true'] { background: var(--ika-sea); color: var(--ika-white); }
 .ika-lang span { opacity: 0.4; }
 
 .ika-yfj {
@@ -126,7 +131,7 @@
   font-weight: 800;
   font-size: 12px;
   letter-spacing: 0.16em;
-  color: var(--ika-green);
+  color: var(--ika-sea);
   border-bottom: 2px solid var(--ika-orange);
   padding-bottom: 1px;
   white-space: nowrap;
@@ -138,9 +143,9 @@
   display: none;
   align-items: center; gap: 8px;
   min-height: 44px; padding: 6px 12px;
-  border: 3px solid var(--ika-green);
+  border: 3px solid var(--ika-sea);
   border-radius: 10px;
-  color: var(--ika-green);
+  color: var(--ika-sea);
   font-family: var(--font-varsity);
   font-weight: 800;
   font-size: 14px;
@@ -148,13 +153,13 @@
 }
 .ika-menu-bars { display: grid; gap: 4px; width: 18px; }
 .ika-menu-bars i { display: block; height: 3px; border-radius: 2px; background: currentColor; }
-.ika-menu-btn[aria-expanded='true'] { background: var(--ika-green); color: var(--ika-white); }
+.ika-menu-btn[aria-expanded='true'] { background: var(--ika-sea); color: var(--ika-white); }
 
 .ika-menu {
-  background: var(--ika-green);
+  background: var(--ika-sea);
   color: var(--ika-white);
   padding: 22px 0 26px;
-  box-shadow: 0 20px 40px rgba(0, 59, 35, 0.35);
+  box-shadow: 0 20px 40px rgba(0, 69, 77, 0.35);
 }
 .ika-menu-eyebrow { font-family: var(--font-maru); font-weight: 900; font-size: 18px; margin-bottom: 12px; }
 .ika-menu-list { display: grid; gap: 2px; }
@@ -169,9 +174,9 @@
 .ika-menu-list a:hover, .ika-menu-list a[aria-current='page'] { background: rgba(255, 255, 255, 0.12); }
 .ika-menu-list a[aria-current='page'] .ika-nav-num { color: var(--ika-orange); opacity: 1; }
 .ika-menu-list .ika-nav-num { font-size: 15px; min-width: 2.2em; }
-.ika-menu-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--ika-green-line); }
+.ika-menu-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--ika-sea-line); }
 .ika-lang--menu { color: var(--ika-white); font-size: 15px; }
-.ika-lang--menu a[aria-current='true'] { background: var(--ika-white); color: var(--ika-green); }
+.ika-lang--menu a[aria-current='true'] { background: var(--ika-white); color: var(--ika-sea); }
 .ika-menu .ika-yfj { color: var(--ika-white); }
 
 /* ==========================================================================
@@ -196,7 +201,7 @@
 .ika-btn:hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 var(--ika-ink); }
 .ika-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ika-ink); }
 .ika-btn--primary { background: var(--ika-orange); border-color: var(--ika-ink); color: var(--ika-ink); }
-.ika-btn--green { background: var(--ika-green); border-color: var(--ika-green); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-ink); }
+.ika-btn--sea { background: var(--ika-sea); border-color: var(--ika-sea); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-ink); }
 .ika-btn--ink { background: var(--ika-ink); border-color: var(--ika-ink); color: var(--ika-white); box-shadow: 4px 4px 0 var(--ika-white); }
 .ika-btn--ink:hover { box-shadow: 6px 6px 0 var(--ika-white); }
 .ika-btn--ghost { background: transparent; border-color: var(--ika-white); color: var(--ika-white); box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.35); }
@@ -209,7 +214,7 @@
 
 .ika-hero {
   position: relative;
-  background: var(--ika-green);
+  background: var(--ika-sea);
   color: var(--ika-white);
   overflow: hidden;
 }
@@ -263,7 +268,7 @@
   padding: clamp(14px, 2.4vw, 26px) clamp(18px, 3vw, 34px);
   background: var(--ika-white);
   border-radius: 22px;
-  box-shadow: 0 0 0 4px var(--ika-white), 0 0 0 7px var(--ika-green), 0 0 0 11px var(--ika-orange), 10px 12px 0 11px var(--ika-green-deep);
+  box-shadow: 0 0 0 4px var(--ika-white), 0 0 0 7px var(--ika-sea), 0 0 0 11px var(--ika-orange), 10px 12px 0 11px var(--ika-sea-deep);
   transform: rotate(-1.2deg);
   max-width: 100%;
 }
@@ -291,7 +296,7 @@
   border: 6px solid var(--ika-white);
   border-radius: 20px;
   background: var(--ika-white);
-  box-shadow: 0 0 0 3px var(--ika-green-deep), 12px 12px 0 3px var(--ika-orange);
+  box-shadow: 0 0 0 3px var(--ika-sea-deep), 12px 12px 0 3px var(--ika-orange);
   transform: rotate(-2deg);
   overflow: hidden;
 }
@@ -302,8 +307,8 @@
   display: inline-block;
   padding: 10px 16px;
   background: var(--ika-white);
-  color: var(--ika-green);
-  border: 3px solid var(--ika-green);
+  color: var(--ika-sea);
+  border: 3px solid var(--ika-sea);
   border-radius: 14px;
   box-shadow: 4px 4px 0 var(--ika-orange);
   font-family: var(--font-maru);
@@ -320,7 +325,7 @@
   background: var(--ika-orange);
   color: var(--ika-ink);
   border-color: var(--ika-white);
-  box-shadow: 4px 4px 0 var(--ika-green-deep);
+  box-shadow: 4px 4px 0 var(--ika-sea-deep);
   font-size: 16px;
 }
 .ika-sticker--b b { font-family: var(--font-varsity); font-weight: 800; font-size: 1.6em; line-height: 1; vertical-align: -0.08em; margin: 0 2px; }
@@ -341,7 +346,7 @@
 }
 .ika-ticker-track { display: flex; gap: 44px; width: max-content; animation: ika-marquee 40s linear infinite; }
 .ika-ticker-track span { white-space: nowrap; }
-.ika-ticker-track span::before { content: '◆'; font-size: 9px; margin-right: 16px; vertical-align: middle; color: var(--ika-green); }
+.ika-ticker-track span::before { content: '◆'; font-size: 9px; margin-right: 16px; vertical-align: middle; color: var(--ika-sea); }
 @keyframes ika-marquee { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .ika-ticker-track { animation: none; } }
 
@@ -357,18 +362,18 @@
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 0.22em;
-  color: var(--ika-green);
+  color: var(--ika-sea);
 }
 .ika-rules-label span { font-family: var(--font-maru); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; color: var(--ika-ink-soft); }
-.ika-rules-label::after { content: ''; flex: 1; height: 3px; background: repeating-linear-gradient(90deg, var(--ika-green) 0 12px, transparent 12px 20px); opacity: 0.35; }
+.ika-rules-label::after { content: ''; flex: 1; height: 3px; background: repeating-linear-gradient(90deg, var(--ika-sea) 0 12px, transparent 12px 20px); opacity: 0.35; }
 .ika-rules-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .ika-rules-list li {
   display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px;
   padding: 16px 20px 16px 16px;
   background: var(--ika-white);
-  border: 3px solid var(--ika-green);
+  border: 3px solid var(--ika-sea);
   border-radius: 14px;
-  box-shadow: 5px 5px 0 var(--ika-green);
+  box-shadow: 5px 5px 0 var(--ika-sea);
   font-family: var(--font-maru);
   font-weight: 700;
   font-size: 16.5px;
@@ -400,7 +405,7 @@
 .ika-section { padding: clamp(56px, 8vw, 104px) 0; }
 .ika-section--tint { background: var(--ika-mist); }
 .ika-section--board {
-  background: var(--ika-green);
+  background: var(--ika-sea);
   color: var(--ika-white);
   /* コルクボードのような点 */
   background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1.2px, transparent 1.3px);
@@ -421,7 +426,7 @@
 }
 .ika-head-note { margin-top: 12px; font-size: 15px; line-height: 2; color: var(--ika-ink-soft); max-width: 40em; }
 .ika-more { margin-top: 30px; font-family: var(--font-maru); font-weight: 700; }
-.ika-more a:not(.ika-btn) { border-bottom: 3px solid var(--ika-orange); padding-bottom: 2px; color: var(--ika-green); }
+.ika-more a:not(.ika-btn) { border-bottom: 3px solid var(--ika-orange); padding-bottom: 2px; color: var(--ika-sea); }
 
 /* ==========================================================================
    入口（7つの部活動）：12列のグリッドで 3 + 4 に並べる
@@ -435,9 +440,9 @@
   display: flex; flex-direction: column;
   padding: 22px 22px 20px;
   background: var(--ika-white);
-  border: 3px solid var(--ika-green);
+  border: 3px solid var(--ika-sea);
   border-radius: var(--ika-radius);
-  box-shadow: 6px 6px 0 var(--ika-green);
+  box-shadow: 6px 6px 0 var(--ika-sea);
   color: var(--ika-ink);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
@@ -460,10 +465,10 @@
   font-weight: 800;
   font-size: 13px;
   letter-spacing: 0.24em;
-  color: var(--ika-green);
+  color: var(--ika-sea);
 }
 .ika-entry-name { margin-top: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 22px; line-height: 1.4; }
-.ika-entry-title { margin-top: 10px; font-family: var(--font-maru); font-weight: 700; font-size: 15px; line-height: 1.6; color: var(--ika-green); }
+.ika-entry-title { margin-top: 10px; font-family: var(--font-maru); font-weight: 700; font-size: 15px; line-height: 1.6; color: var(--ika-sea); }
 .ika-entry-desc { margin-top: 8px; font-size: 13.5px; line-height: 1.85; color: var(--ika-ink-soft); flex: 1; }
 .ika-entry-go {
   margin-top: 18px;
@@ -471,7 +476,7 @@
   font-family: var(--font-maru);
   font-weight: 900;
   font-size: 14px;
-  color: var(--ika-green);
+  color: var(--ika-sea);
   border-bottom: 3px solid var(--ika-orange);
   padding-bottom: 1px;
 }
@@ -484,14 +489,14 @@
 .ika-card {
   display: block;
   background: var(--ika-white);
-  border: 3px solid var(--ika-green);
+  border: 3px solid var(--ika-sea);
   border-radius: var(--ika-radius);
   overflow: hidden;
-  box-shadow: 6px 6px 0 var(--ika-green);
+  box-shadow: 6px 6px 0 var(--ika-sea);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .ika-card:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ika-orange); }
-.ika-card figure { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); border-bottom: 3px solid var(--ika-green); }
+.ika-card figure { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); border-bottom: 3px solid var(--ika-sea); }
 .ika-card img { width: 100%; height: 100%; object-fit: cover; }
 .ika-card-body { padding: 16px 18px 18px; }
 .ika-card-tag {
@@ -506,7 +511,7 @@
   letter-spacing: 0.06em;
 }
 .ika-card h3 { margin-top: 10px; font-family: var(--font-maru); font-size: 19px; font-weight: 900; line-height: 1.5; }
-.ika-card h3 small { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--ika-green); margin-left: 6px; }
+.ika-card h3 small { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--ika-sea); margin-left: 6px; }
 .ika-card p { margin-top: 6px; font-size: 14px; line-height: 1.9; color: var(--ika-ink-soft); }
 
 /* ==========================================================================
@@ -521,7 +526,7 @@
   color: var(--ika-ink);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 10px 24px rgba(0, 30, 18, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 40, 46, 0.35);
 }
 .ika-voice:nth-child(3n + 1) { transform: rotate(-0.8deg); }
 .ika-voice:nth-child(3n + 2) { transform: rotate(0.5deg); }
@@ -532,7 +537,7 @@
   position: absolute; z-index: 1; top: 10px; left: 50%;
   width: 16px; height: 16px; margin-left: -8px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffb27a, var(--ika-orange) 55%, var(--ika-orange-deep));
+  background: radial-gradient(circle at 35% 35%, var(--ika-orange-light), var(--ika-orange) 55%, var(--ika-orange-deep));
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
 }
 .ika-voice-photo { margin: 0; aspect-ratio: 4 / 3; background: var(--ika-mist); }
@@ -541,14 +546,14 @@
 .ika-voice-place { font-family: var(--font-maru); font-size: 18px; font-weight: 900; line-height: 1.5; }
 .ika-voice-meta { margin: 2px 0 10px; font-size: 12px; letter-spacing: 0.04em; color: var(--ika-ink-soft); }
 .ika-voice-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.ika-voice-tags span { font-family: var(--font-maru); font-size: 12px; font-weight: 900; line-height: 1.7; padding: 2px 10px; border-radius: 999px; background: var(--ika-green); color: var(--ika-white); }
+.ika-voice-tags span { font-family: var(--font-maru); font-size: 12px; font-weight: 900; line-height: 1.7; padding: 2px 10px; border-radius: 999px; background: var(--ika-sea); color: var(--ika-white); }
 .ika-voice-comment { font-size: 14px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ika-voice-flag {
   align-self: flex-start; margin-top: auto; padding: 14px 0 0;
   font-size: 11px; letter-spacing: 0.04em; color: var(--ika-ink-soft);
   text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
 }
-.ika-voice-flag:disabled { text-decoration: none; cursor: default; color: var(--ika-green); }
+.ika-voice-flag:disabled { text-decoration: none; cursor: default; color: var(--ika-sea); }
 .ika-voice--sample .ika-voice-meta { color: var(--ika-ink-soft); }
 
 /* ==========================================================================
@@ -569,7 +574,7 @@
   pointer-events: none;
 }
 .ika-join-inner { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(24px, 4vw, 56px); }
-.ika-join-badge { width: clamp(130px, 16vw, 210px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(0, 59, 35, 0.35)); }
+.ika-join-badge { width: clamp(130px, 16vw, 210px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(0, 69, 77, 0.35)); }
 .ika-join p:not(.ika-eyebrow) { margin-top: 14px; font-size: 16px; line-height: 2; max-width: 36em; }
 
 /* ==========================================================================
@@ -577,7 +582,7 @@
    ========================================================================== */
 
 .ika-page-head {
-  background: var(--ika-green);
+  background: var(--ika-sea);
   color: var(--ika-white);
   padding: clamp(28px, 5vw, 56px) 0 clamp(36px, 6vw, 64px);
   position: relative;
@@ -601,7 +606,7 @@
 .ika-locker {
   position: relative;
   padding: clamp(28px, 4vw, 44px) clamp(20px, 4vw, 44px);
-  border: 3px dashed var(--ika-green);
+  border: 3px dashed var(--ika-sea);
   border-radius: var(--ika-radius);
   background: var(--ika-mist);
 }
@@ -616,7 +621,7 @@
   font-weight: 900;
   letter-spacing: 0.08em;
 }
-.ika-locker-title { margin-top: 14px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.5; color: var(--ika-green); }
+.ika-locker-title { margin-top: 14px; font-family: var(--font-maru); font-weight: 900; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.5; color: var(--ika-sea); }
 .ika-locker-note { margin-top: 8px; font-size: 15px; line-height: 2; max-width: 40em; }
 .ika-locker-sub { margin-top: 22px; font-family: var(--font-maru); font-weight: 700; font-size: 14px; color: var(--ika-ink-soft); }
 .ika-locker-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
@@ -624,21 +629,21 @@
   display: inline-flex; align-items: center;
   min-height: 44px; padding: 8px 16px;
   background: var(--ika-white);
-  border: 2px solid var(--ika-green);
+  border: 2px solid var(--ika-sea);
   border-radius: 999px;
-  color: var(--ika-green);
+  color: var(--ika-sea);
   font-family: var(--font-maru);
   font-weight: 700;
   font-size: 14px;
   transition: background 0.2s, color 0.2s;
 }
-.ika-locker-links a:hover { background: var(--ika-green); color: var(--ika-white); }
+.ika-locker-links a:hover { background: var(--ika-sea); color: var(--ika-white); }
 
 /* ==========================================================================
    フッター
    ========================================================================== */
 
-#ika-footer { background: var(--ika-green-deep); color: var(--ika-white); }
+#ika-footer { background: var(--ika-sea-deep); color: var(--ika-white); }
 .ika-footer-inner {
   display: grid;
   grid-template-columns: 1.4fr 1fr 1fr;
@@ -653,7 +658,7 @@
   border-radius: 14px;
 }
 .ika-footer-motto { margin-top: 18px; font-family: var(--font-maru); font-weight: 700; font-size: 15px; line-height: 2; color: rgba(255, 255, 255, 0.9); }
-.ika-footer-head { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.24em; color: var(--ika-orange); margin-bottom: 12px; }
+.ika-footer-head { font-family: var(--font-varsity); font-weight: 800; font-size: 14px; letter-spacing: 0.24em; color: var(--ika-orange-light); margin-bottom: 12px; }
 .ika-footer-nav ul, .ika-footer-links ul { display: grid; gap: 4px; }
 .ika-footer-nav a, .ika-footer-links a {
   display: inline-block; padding: 4px 0;
@@ -666,7 +671,7 @@
 .ika-footer-bottom {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
   padding-top: 18px; padding-bottom: 28px;
-  border-top: 1px solid var(--ika-green-line);
+  border-top: 1px solid var(--ika-sea-line);
   font-size: 12px;
   color: rgba(255, 255, 255, 0.72);
 }
@@ -714,13 +719,13 @@
   .ika-brand img { height: 38px; }
   .ika-hero-grid { grid-template-columns: 1fr; gap: 22px; padding-top: 24px; padding-bottom: 44px; }
   .ika-hero-art { order: -1; padding: 8px 10px 14px 6px; }
-  .ika-hero-frame { transform: rotate(-1.2deg); border-width: 4px; box-shadow: 0 0 0 3px var(--ika-green-deep), 8px 8px 0 3px var(--ika-orange); }
+  .ika-hero-frame { transform: rotate(-1.2deg); border-width: 4px; box-shadow: 0 0 0 3px var(--ika-sea-deep), 8px 8px 0 3px var(--ika-orange); }
   .ika-hero::after { width: 90vw; height: 90vw; right: -30vw; bottom: auto; top: -20vw; border-width: 14px; }
   .ika-sticker { font-size: 12px; padding: 8px 12px; }
   .ika-sticker--a { top: -6px; left: -4px; }
   .ika-sticker--b { bottom: -2px; right: 0; font-size: 14px; }
   .ika-pennant { font-size: 12px; margin-bottom: 16px; }
-  .ika-logo-patch { padding: 12px 16px; border-radius: 16px; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 5px var(--ika-green), 0 0 0 8px var(--ika-orange), 6px 8px 0 8px var(--ika-green-deep); }
+  .ika-logo-patch { padding: 12px 16px; border-radius: 16px; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 5px var(--ika-sea), 0 0 0 8px var(--ika-orange), 6px 8px 0 8px var(--ika-sea-deep); }
   .ika-lead { margin-top: 26px; font-size: 26px; }
   .ika-sub { font-size: 14px; line-height: 1.95; }
   .ika-btn { min-height: 48px; padding: 8px 20px; font-size: 14px; }

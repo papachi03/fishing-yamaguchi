@@ -186,7 +186,7 @@ export function render(lang) {
     <div class="wrap">
       ${sectionHead(lang, { num: 'BOARD', en: 'MEMBERS’ BOARD', title: pair('部員の掲示板', 'The members’ board'), note: pair('「現地の声」のうち、イカの投稿だけをここに集めます。仕組みはジャーナルと同じ、見た目だけイカ部仕様。', 'Squid posts from the journal’s field reports, gathered here. Same system, club colours.') })}
       <div class="ika-voices" id="ika-voices" data-lang="${lang}">${samples}</div>
-      <p class="ika-more"><a class="ika-btn ika-btn--green" href="${assetHref('/reports.html')}">${t(lang, 'イカの声を投稿する', 'Post a squid report')}</a></p>
+      <p class="ika-more"><a class="ika-btn ika-btn--sea" href="${assetHref('/reports.html')}">${t(lang, 'イカの声を投稿する', 'Post a squid report')}</a></p>
     </div>
   </section>
 
@@ -199,7 +199,7 @@ export function render(lang) {
         <h2>${t(lang, '入部届は、<br class="sp-only" />いりません。', 'No application form.<br class="sp-only" /> Really.')}</h2>
         <p>${t(lang, 'Instagramをフォローして、イカの投稿に「いかしてる！」と書けば、もう部員です。', 'Follow us on Instagram and leave an “ikashiteru!” on any squid post. That is the whole ceremony.')}</p>
         <div class="ika-cta">
-          <a class="ika-btn ika-btn--green" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">${t(lang, 'Instagramをフォロー', 'Follow on Instagram')}</a>
+          <a class="ika-btn ika-btn--sea" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">${t(lang, 'Instagramをフォロー', 'Follow on Instagram')}</a>
           <a class="ika-btn ika-btn--ink" href="${assetHref('/reports.html')}">${t(lang, '掲示板に書く', 'Write on the board')}</a>
         </div>
       </div>
