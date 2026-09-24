@@ -2,6 +2,7 @@
 // 部員の掲示板の「本物の投稿」だけはブラウザで後から差し替える（pages/index.js）。
 import { t, pair, esc, pageHref, assetHref, SECTIONS } from '../i18n.js';
 import { sectionHead } from './parts.js';
+import { HERO_ANIM, sceneSVG } from '../hero-scene.js';
 import { vlogs } from '../../data/vlogs.js';
 import { placeById } from '../../data/spot-list.js';
 import { FISH, nameOf } from '../../data/report-options.js';
@@ -120,14 +121,16 @@ export function render(lang) {
   const samples = SAMPLE_POSTS.map((p) => voiceCardHTML(p, lang, { sample: true })).join('');
 
   return `
-  <!-- ===== HERO ===== -->
+  <!-- ===== HERO：夜の海のシーンが HERO そのもの（hero-scene.js が静止 SVG、hero-anim.js が動かす） ===== -->
   <section class="ika-hero">
-    <div class="wrap ika-hero-grid">
-      <div class="ika-hero-text">
+    <div class="ika-hero-view">
+      <div class="ika-hero-scene">${sceneSVG(HERO_ANIM, assetHref, lang)}</div>
+      <div class="ika-hero-scrim" aria-hidden="true"></div>
+      <div class="wrap ika-hero-copy"><div class="ika-hero-copy-inner">
         <p class="ika-pennant"><span>EST. 2026</span><span>YAMAGUCHI, JAPAN</span></p>
         <h1 class="ika-title">
           <span class="ika-logo-patch">
-            <img class="ika-logo" src="${assetHref('/assets/ikabu/logo_1200.png')}" srcset="${assetHref('/assets/ikabu/logo_600.png')} 600w, ${assetHref('/assets/ikabu/logo_1200.png')} 1200w" sizes="(max-width: 760px) 80vw, 520px" alt="${t(lang, '山口イカ部 — YAMAGUCHI IKA CLUB', 'Yamaguchi Ika Club')}" width="1200" height="438" />
+            <img class="ika-logo" src="${assetHref('/assets/ikabu/logo_1200.png')}" srcset="${assetHref('/assets/ikabu/logo_600.png')} 600w, ${assetHref('/assets/ikabu/logo_1200.png')} 1200w" sizes="(max-width: 760px) 70vw, 460px" alt="${t(lang, '山口イカ部 — YAMAGUCHI IKA CLUB', 'Yamaguchi Ika Club')}" width="1200" height="438" fetchpriority="high" />
           </span>
         </h1>
         <p class="ika-lead">${t(lang, 'イカが好き。<br />それだけで、部員。', 'Love squid?<br />Then you are already a member.')}</p>
@@ -140,13 +143,15 @@ export function render(lang) {
           <a class="ika-btn ika-btn--primary" href="#join">${t(lang, '入部する', 'Join the club')}</a>
           <a class="ika-btn ika-btn--ghost" href="#activities">${t(lang, '部活動を見る', 'See the activities')}</a>
         </div>
-      </div>
-      <div class="ika-hero-art">
-        <div class="ika-hero-frame">
-          <img class="ika-hero-img" src="${assetHref('/assets/ikabu/hero_1600.webp')}" srcset="${assetHref('/assets/ikabu/hero_900.webp')} 900w, ${assetHref('/assets/ikabu/hero_1600.webp')} 1600w" sizes="(max-width: 760px) 100vw, 46vw" alt="${t(lang, '堤防の先でイカが釣り竿を構え、夕日の海を眺めているイラスト', 'Illustration of a squid fishing from a breakwater at dusk')}" width="1600" height="1067" fetchpriority="high" />
-        </div>
-        <span class="ika-sticker ika-sticker--a" aria-hidden="true">${t(lang, '釣り場は<br />言わなくてOK', 'Secret spots<br />stay secret')}</span>
-        <span class="ika-sticker ika-sticker--b" aria-hidden="true">${t(lang, '部費 <b>0</b>円', 'Dues <b>¥0</b>')}</span>
+      </div></div>
+      <!-- シーンの中に浮かぶステッカーと操作。data-world はシーンの世界座標（hero-anim.js が画面上の位置に写す） -->
+      <span class="ika-sticker ika-sticker--a" data-world="1330,60" aria-hidden="true">${t(lang, '釣り場は<br />言わなくてOK', 'Secret spots<br />stay secret')}</span>
+      <span class="ika-sticker ika-sticker--b" data-world="1380,1010" aria-hidden="true">${t(lang, '部費 <b>0</b>円', 'Dues <b>¥0</b>')}</span>
+      <button type="button" class="ika-hook-btn" data-world="720,990" aria-label="${t(lang, 'タップしてイカを釣ろう', 'Tap to hook a squid')}">${t(lang, 'タップで釣る', 'Tap to hook')}</button>
+      <span class="ika-hero-drag" data-world="700,560" hidden aria-hidden="true">${t(lang, 'ジジジッ', 'Zzzzt!')}</span>
+      <div class="ika-hero-callout" data-world="1160,330" hidden aria-live="polite">
+        <span class="ika-hero-callout-word">${t(lang, '抱いた！', 'Hooked!')}</span>
+        <a class="ika-hero-callout-link" href="${pageHref('play', lang)}" hidden>${t(lang, 'エギングゲームで遊ぶ →', 'Play the egi game →')}</a>
       </div>
     </div>
     <div class="ika-ticker" aria-hidden="true"><div class="ika-ticker-track">${tickerItems}</div></div>
