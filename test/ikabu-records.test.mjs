@@ -39,3 +39,18 @@ test('localStorage が無い環境でも読み書きは落ちない', () => {
   assert.equal(readJSON('x'), null);
   assert.equal(writeJSON('x', { a: 1 }), true); // globalThis.localStorage が無いときは何もせず true（?. で抜ける）
 });
+
+// 今日の萩の海：時計と日の出入りから時間帯を決める（純粋関数）
+import { todFromClock } from '../src/js/ikabu/games/sea-live.js';
+test('日の出±1h は朝マズメ、日の入り±1h は夕マズメ、その間は日中、外は夜', () => {
+  const at = (h, m = 0) => new Date(2026, 8, 24, h, m);
+  const sunrise = at(6, 10);
+  const sunset = at(18, 20);
+  assert.equal(todFromClock(at(5, 30), sunrise, sunset), 'morning');
+  assert.equal(todFromClock(at(7, 0), sunrise, sunset), 'morning');
+  assert.equal(todFromClock(at(12, 0), sunrise, sunset), 'day');
+  assert.equal(todFromClock(at(17, 30), sunrise, sunset), 'evening');
+  assert.equal(todFromClock(at(19, 10), sunrise, sunset), 'evening');
+  assert.equal(todFromClock(at(23, 0), sunrise, sunset), 'night');
+  assert.equal(todFromClock(at(12, 0), null, null), 'night', '日の出入りが計算できない緯度では夜扱い');
+});

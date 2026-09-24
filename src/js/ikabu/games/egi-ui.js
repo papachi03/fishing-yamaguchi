@@ -8,11 +8,13 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { createEgi, press, release, tick, speciesPool, seasonOf, totalWeight, CASTS, EGI_STOCK, SIGNAL_LATE } from './egi.js';
+import { createEgi, press, release, tick, speciesPool, seasonOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS } from './egi.js';
+import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
+import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
 import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
-import { EGI_TEXT as TX, TOD, SEASON, speciesName, speciesById, YAMAGUCHI_SQUID } from './play-text.js';
+import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID } from './play-text.js';
 import { aroundHTML } from '../views/play.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
 import { photoById } from '../data.js';
@@ -39,6 +41,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     callout: q('ika-egi-callout'), flash: q('ika-egi-flash'), card: q('ika-egi-card'),
     power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
+    live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
+    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -46,7 +50,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- 設定と記録 ---------- */
-  const settings = { month: new Date().getMonth() + 1, tod: 'evening' };
+  // 条件：mode は 'live'（今日の萩の海）か 'practice'（自分で選ぶ）。時間帯は最初から時計と日の出入りで決める
+  const now0 = new Date();
+  const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
+  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null };
+  const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
+  let signalsThisCast = 0;
   let rec = readJSON(KEY_EGI) ?? emptyEgi();
   let s = null;            // ゲームの状態（egi.js）
   let W = SCENE.W0;        // 舞台の幅（表示領域の比率で決まる）
@@ -154,8 +163,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- ゲームの作り直し ---------- */
   function newGame() {
-    s = createEgi({ month: settings.month, tod: settings.tod });
-    castAt = 0; inked = false; firstSpecies = [];
+    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond });
+    castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0;
     V.egi.mode = 'tip'; V.flight = null; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
     const pool = speciesPool(settings.month, settings.tod);
@@ -171,35 +180,127 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     setButton();
   }
 
-  /* ---------- 設定パネル ---------- */
+  /* ---------- 設定パネル：今日の萩の海 ／ 練習 ---------- */
+  const stars = (n) => '★'.repeat(Math.round(n)) + '☆'.repeat(10 - Math.round(n));
+  const f1m = (v) => (v == null ? '—' : Number(v).toFixed(1));
+  const condLine = () => {
+    const c = settings.cond;
+    return settings.mode === 'live'
+      ? `${t(lang, TX.live.modeLive)}：${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m・${t(lang, TOD[settings.tod])}`
+      : `${t(lang, TX.live.modePractice)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m`;
+  };
   function syncSetup() {
     el.tod.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tod === settings.tod)));
     el.month.value = String(settings.month);
     el.season.textContent = t(lang, SEASON[seasonOf(settings.month)]);
     el.hint.textContent = t(lang, TX.setup.hint[settings.tod]);
     el.around.innerHTML = aroundHTML(lang, settings.month, settings.tod);
+    el.expOut.textContent = `★${Math.round(settings.cond.expectation)}`;
+    el.mode.textContent = condLine();
+    el.live.classList.toggle('is-active', settings.mode === 'live');
+    el.practice.classList.toggle('is-active', settings.mode === 'practice');
   }
   const started = () => s && !(s.phase === 'ready' && s.casts === CASTS) && s.phase !== 'over';
   function syncSetupLock() {
     const lock = started();
-    el.tod.querySelectorAll('.ika-chip').forEach((b) => { b.disabled = lock; });
+    root.querySelectorAll('#ika-egi-tod .ika-chip, #ika-egi-wind .ika-chip').forEach((b) => { b.disabled = lock; });
     el.month.disabled = lock;
+    el.exp.disabled = lock;
+    el.playLive.disabled = lock || !settings.live || settings.live.conditions.safety === 'stop';
+    el.playPractice.disabled = lock;
     el.locked.hidden = !lock;
+  }
+  // 練習モードに切り替えて、今の練習条件でゲームを作り直す
+  function usePractice({ open = true } = {}) {
+    settings.mode = 'practice';
+    if (open) { el.practice.hidden = false; el.playPractice.setAttribute('aria-expanded', 'true'); }
+    syncSetup();
+    buildScene();
+    newGame();
+  }
+  // 今日の萩の海の条件でゲームを作り直す
+  function useLive() {
+    const L = settings.live;
+    if (!L || L.conditions.safety === 'stop') return;
+    settings.mode = 'live';
+    settings.month = L.month;
+    settings.tod = L.tod;
+    settings.cond = { ...L.conditions };
+    syncSetup();
+    buildScene();
+    newGame();
   }
   el.tod.addEventListener('click', (e) => {
     const b = e.target.closest('.ika-chip[data-tod]');
     if (!b || started()) return;
     settings.tod = b.dataset.tod;
-    syncSetup();
-    buildScene();
-    newGame();
+    usePractice();
   });
   el.month.addEventListener('change', () => {
     if (started()) { syncSetup(); return; }
     settings.month = Number(el.month.value) || settings.month;
-    syncSetup();
-    newGame();
+    usePractice();
   });
+  el.exp.addEventListener('input', () => { el.expOut.textContent = `★${el.exp.value}`; });
+  el.exp.addEventListener('change', () => {
+    if (started()) { syncSetup(); return; }
+    settings.cond = { ...settings.cond, expectation: Number(el.exp.value) };
+    usePractice();
+  });
+  el.wind.addEventListener('click', (e) => {
+    const b = e.target.closest('.ika-chip[data-wind]');
+    if (!b || started()) return;
+    el.wind.querySelectorAll('.ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+    settings.cond = { ...settings.cond, ...WIND_PRESET[b.dataset.wind], safety: 'ok' };
+    usePractice();
+  });
+  el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
+  el.playPractice.addEventListener('click', () => {
+    if (started()) return;
+    if (settings.mode === 'practice' && !el.practice.hidden) { el.practice.hidden = true; el.playPractice.setAttribute('aria-expanded', 'false'); return; }
+    usePractice();
+  });
+
+  // 今日の萩の海を取って、パネルに出す。中止レベルなら練習に、失敗したら練習に（そう言う）
+  function renderLive(L) {
+    settings.live = L;
+    const c = L.conditions;
+    const exp = L.expectation;
+    const sf = L.safety;
+    el.liveBody.innerHTML = `
+      <div class="ika-egi-live-exp"><span class="ika-egi-live-stars" aria-label="${t(lang, TX.live.expectation)} ${Math.round(c.expectation)}/10">${stars(c.expectation)}</span><b>${Math.round(c.expectation)}<small>/10</small></b><span class="ika-egi-live-msg">${exp ? esc(exp.message) : ''}</span></div>
+      <dl class="ika-egi-live-rows">
+        <div><dt>${t(lang, TX.live.wind)}</dt><dd>${f1m(c.wind)}<small>m/s</small></dd></div>
+        <div><dt>${t(lang, TX.live.gust)}</dt><dd>${f1m(c.gust)}<small>m/s</small></dd></div>
+        <div><dt>${t(lang, TX.live.wave)}</dt><dd>${f1m(c.wave)}<small>m</small></dd></div>
+        <div><dt>${t(lang, TX.live.tide)}</dt><dd>${exp ? esc(exp.tideName) : '—'}</dd></div>
+        <div><dt>${t(lang, TX.live.tod)}</dt><dd>${t(lang, TOD[L.tod])}<small>${monthLabel(lang, L.month)}・${t(lang, SEASON[seasonOf(L.month)])}</small></dd></div>
+      </dl>
+      ${sf ? `<p class="ika-egi-live-safety lv${sf.level}"><span class="ika-egi-live-badge">${esc(sf.label)}</span>${esc(sf.message)}</p>` : ''}`;
+    el.live.dataset.state = 'ready';
+    const at = L.weather?.fetchedAt ? new Date(L.weather.fetchedAt) : L.now;
+    el.liveTime.textContent = `${t(lang, TX.live.fetched)} ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')} JST`;
+    el.liveNotice.hidden = true;
+    if (L.partial) { el.liveNotice.textContent = t(lang, TX.live.partial); el.liveNotice.hidden = false; }
+    if (c.safety === 'stop') {
+      el.liveNotice.textContent = t(lang, TX.live.stop);
+      el.liveNotice.hidden = false;
+      el.live.dataset.state = 'stop';
+      if (!started()) usePractice();
+    } else if (!started() && !demo) {
+      useLive();
+    }
+    syncSetupLock();
+  }
+  function failLive(err) {
+    el.live.dataset.state = 'failed';
+    el.liveBody.innerHTML = '';
+    el.liveNotice.textContent = t(lang, TX.live.failed);
+    el.liveNotice.hidden = false;
+    if (import.meta.env.DEV) console.warn('[egi] live sea unavailable', err);
+    if (!started()) usePractice({ open: false });
+    syncSetupLock();
+  }
 
   /* ---------- HUD ---------- */
   function syncStock() {
@@ -240,6 +341,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       switch (e.type) {
         case 'cast': {
           castAt = s.t;
+          signalsThisCast = 0;
           updateBottom(s.bottom);
           const tp = tipRest();
           V.flight = { t0: now, from: { x: tp.x, y: tp.y }, to: { x: X(s.castDist), y: SCENE.surface }, dur: 0.55 + s.castDist / 100, mode: 'cast' };
@@ -258,6 +360,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           callout(t(lang, TX.msg.rhythm[clamp(e.streak, 1, 5)]), e.streak >= 2 && e.streak <= 3 ? 'good' : e.streak >= 5 ? 'bad' : '');
           break;
         case 'signal': {
+          signalsThisCast += 1;
           const h = s.hooking;
           V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = V.egi.ang; V.hug.t0 = now;
           setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle));
@@ -280,6 +383,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.flash.hidden = true;
           escapeSquid();
           callout(t(lang, e.type === 'miss' ? TX.msg.miss : TX.msg.letgo), 'bad');
+          // 逃げた後の気配：残りがいればそう言う（居ないときは「消えた」）
+          setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 1800);
           break;
         case 'jet':
           V.lastJet = now;
@@ -304,7 +409,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           syncStock();
           break;
         case 'recover':
-          callout(t(lang, TX.msg.recover));
+          callout(t(lang, signalsThisCast === 0 ? TX.msg.noSign : TX.msg.recover));
           break;
         case 'ready':
           resetForNextCast();
@@ -372,10 +477,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         <dl class="ika-egi-card-rows"><div><dt>${t(lang, T.mantle)}</dt><dd>${c.mantle} cm</dd></div><div><dt>${t(lang, T.weight)}</dt><dd>${c.weight.toLocaleString()} g</dd></div></dl>
         <p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`;
     } else {
-      const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: T.recoverNote }[why];
+      const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
-    el.card.innerHTML = `${html}<button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button>`;
+    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button>`;
     el.card.className = 'ika-egi-card';
     el.card.hidden = false;
   }
@@ -396,6 +501,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
       ${list}${noEgi}
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
+      <p class="ika-egi-card-cond">${esc(condLine())}</p>
       <button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>`;
     el.card.className = 'ika-egi-card ika-egi-card--over';
     el.card.hidden = false;
@@ -659,7 +765,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.swim.forEach((w, i) => {
       const node = n.swim[i];
       let ta = 0, tx = W + 120, ty = Y(5);
-      if (underwater && s.interest > 0.2) {
+      if (underwater && s.interest > 0.2 && i < s.squid) {
         const near = falling ? 1 : 0;
         const off = lerp(150 + i * 70, 62 + i * 46, near);
         tx = V.egi.x + off + (reduced ? 0 : Math.sin(now * 1.3 + i * 2) * 10);
@@ -738,6 +844,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       setText(el.countNum, 'count', String(Math.max(0, Math.floor(phase === 'sinking' ? s.t - castAt : since))));
       setText(el.depth, 'depth', onBottom ? `${t(lang, TX.hud.bottom)}！` : `${t(lang, TX.hud.depth)} ${t(lang, '約', '~')}${s.bottom}m`);
       el.count.classList.toggle('is-bottom', onBottom);
+      el.windnote.hidden = !(s.windows.good < SIGNAL_GOOD - 0.01 && phase !== 'signal');
       el.count.classList.toggle('is-warn', onBottom && s.bottomFor > 1.2);
     }
     el.btn.classList.toggle('is-signal', phase === 'signal');
@@ -760,6 +867,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (name === 'signal') { toSignal(); step(0.35); frozen = true; }
     else if (name === 'fight') { toSignal(); step(0.3); s.rand = () => 0; press(s); onEvents(s.events.splice(0)); release(s); step(1.4); s.tension = 62; s.dist = 9; press(s); frozen = true; }
     else if (name === 'landed') { toSignal(); step(0.3); s.rand = () => 0; press(s); onEvents(s.events.splice(0)); release(s); step(0.4); s.dist = 0.01; press(s); step(0.2); release(s); s.rand = Math.random; frozen = true; }
+    else if (name === 'nosignal') { cast(); step(3); s.squid = 0; s.dist = 2.5; jerk(); step(0.3); frozen = true; }
+    else if (name === 'stop') {
+      // 取得を待たず、中止レベルの海況を差し込む
+      liveDone = true;
+      renderLive({ conditions: { expectation: 3, wind: 9.2, gust: 14.5, wave: 1.7, safety: 'stop' }, expectation: { message: t(lang, '今は釣れる時間ではないかもしれないです！', 'Probably not the best hour right now.'), tideName: t(lang, '中潮', 'medium tide') }, safety: { key: 'stop', level: 3, label: t(lang, '中止', 'STOP'), message: t(lang, '今日は堤防に立たないでください。', 'Do not go out on the breakwater today.') }, tod: 'day', month: settings.month, now: new Date(), weather: null, tide: null, partial: false });
+    }
     else if (name === 'snag') { cast(); step(s.bottom / 0.9 + 1.6); s.rand = () => 0; step(0.3); s.rand = Math.random; frozen = true; }
     else if (name === 'over') {
       s.catches = [{ id: 'aori', weight: 420, mantle: 19 }, { id: 'kouika', weight: 610, mantle: 16 }];
@@ -777,7 +890,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   newGame();
   syncRecords();
   el.btn.disabled = false;
+  let liveDone = false;
   if (demo) runDemo(demo);
+  if (!liveDone) loadHagiSea({ lang }).then(renderLive).catch(failLive);
   start();
 
   return {

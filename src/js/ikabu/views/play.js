@@ -5,7 +5,7 @@ import { t, pair, esc, assetHref, pageHref } from '../i18n.js';
 import { pageHead, noteHTML } from './parts.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
-import { markSVG } from '../games/marks.js';
+import { tileImg } from '../games/marks.js';
 import { TIMES, CASTS, EGI_STOCK, speciesPool, seasonOf } from '../games/egi.js';
 import { SIZE, MOVES, GOAL, RARE } from '../games/match3.js';
 
@@ -33,7 +33,7 @@ const hubHTML = (lang) => `
           <span class="ika-play-card-go">${t(lang, HUB_TEXT.play)} <span aria-hidden="true">↓</span></span>
         </a>
         <a class="ika-play-card ika-play-card--sumi" href="#sumi">
-          <span class="ika-play-card-art ika-play-card-art--marks">${markSVG(0, { size: 30 })}${markSVG(1, { size: 30 })}${markSVG(RARE, { size: 30 })}</span>
+          <span class="ika-play-card-art ika-play-card-art--marks">${tileImg(0, { href: assetHref, size: 40 })}${tileImg(1, { href: assetHref, size: 40 })}${tileImg(RARE, { href: assetHref, size: 40 })}</span>
           <span class="ika-play-card-tag">${t(lang, HUB_TEXT.daily)}</span>
           <span class="ika-play-card-no">02</span>
           <span class="ika-play-card-name">${t(lang, M3_TEXT.name)}</span>
@@ -54,26 +54,56 @@ export function aroundHTML(lang, month, tod) {
 }
 
 export function egiSetupHTML(lang, { month = 9, tod = 'evening' } = {}) {
+  const T = EGI_TEXT;
   const chips = TIMES.map((k) => `<button type="button" class="ika-chip" data-tod="${k}" aria-pressed="${String(k === tod)}">${t(lang, TOD[k])}</button>`).join('');
   const months = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}"${i + 1 === month ? ' selected' : ''}>${monthLabel(lang, i + 1)}</option>`).join('');
+  const winds = [['calm', T.practice.calm], ['breezy', T.practice.breezy], ['strong', T.practice.strong]]
+    .map(([k, v], i) => `<button type="button" class="ika-chip" data-wind="${k}" aria-pressed="${String(i === 0)}">${t(lang, v)}</button>`).join('');
   return `
-    <div class="ika-egi-setup-row">
-      <div class="ika-egi-setup-item">
-        <span class="ika-egi-setup-label">${t(lang, EGI_TEXT.setup.tod)}</span>
-        <div class="ika-chips ika-chips--small" id="ika-egi-tod" role="group" aria-label="${t(lang, EGI_TEXT.setup.tod)}">${chips}</div>
+    <!-- 今日の萩の海：ブラウザで YFJ の海況を取って埋める（取れなければ練習モード） -->
+    <div class="ika-egi-live" id="ika-egi-live" data-state="loading">
+      <div class="ika-egi-live-head">
+        <span class="ika-egi-setup-label">${t(lang, T.live.title)}</span>
+        <span class="ika-egi-live-time" id="ika-egi-live-time"></span>
       </div>
-      <div class="ika-egi-setup-item">
-        <label class="ika-egi-setup-label" for="ika-egi-month">${t(lang, EGI_TEXT.setup.month)}</label>
-        <select id="ika-egi-month" class="ika-egi-select">${months}</select>
-        <span class="ika-tag ika-tag--orange" id="ika-egi-season">${t(lang, SEASON[seasonOf(month)])}</span>
+      <div class="ika-egi-live-body" id="ika-egi-live-body"><p class="ika-egi-live-loading">${t(lang, T.live.loading)}</p></div>
+      <p class="ika-egi-live-notice" id="ika-egi-live-notice" hidden></p>
+      <div class="ika-egi-live-actions">
+        <button type="button" class="ika-btn ika-btn--primary" id="ika-egi-play-live" disabled>${t(lang, T.live.playLive)}</button>
+        <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice">${t(lang, T.live.playPractice)}</button>
+      </div>
+      <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
+    </div>
+    <div class="ika-egi-practice" id="ika-egi-practice" hidden>
+      <p class="ika-egi-setup-label">${t(lang, T.practice.title)}</p>
+      <div class="ika-egi-setup-row">
+        <div class="ika-egi-setup-item">
+          <span class="ika-egi-setup-label">${t(lang, T.setup.tod)}</span>
+          <div class="ika-chips ika-chips--small" id="ika-egi-tod" role="group" aria-label="${t(lang, T.setup.tod)}">${chips}</div>
+        </div>
+        <div class="ika-egi-setup-item">
+          <label class="ika-egi-setup-label" for="ika-egi-month">${t(lang, T.setup.month)}</label>
+          <select id="ika-egi-month" class="ika-egi-select">${months}</select>
+          <span class="ika-tag ika-tag--orange" id="ika-egi-season">${t(lang, SEASON[seasonOf(month)])}</span>
+        </div>
+        <div class="ika-egi-setup-item">
+          <label class="ika-egi-setup-label" for="ika-egi-exp">${t(lang, T.practice.expectation)}</label>
+          <input type="range" id="ika-egi-exp" class="ika-egi-range" min="0" max="10" step="1" value="5" />
+          <output class="ika-egi-range-out" id="ika-egi-exp-out" for="ika-egi-exp">★5</output>
+        </div>
+        <div class="ika-egi-setup-item">
+          <span class="ika-egi-setup-label">${t(lang, T.practice.wind)}</span>
+          <div class="ika-chips ika-chips--small" id="ika-egi-wind" role="group" aria-label="${t(lang, T.practice.wind)}">${winds}</div>
+        </div>
+      </div>
+      <p class="ika-egi-setup-hint" id="ika-egi-hint">${t(lang, T.setup.hint[tod])}</p>
+      <div class="ika-egi-around">
+        <span class="ika-egi-setup-label">${t(lang, T.setup.around)}</span>
+        <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod)}</ul>
       </div>
     </div>
-    <p class="ika-egi-setup-hint" id="ika-egi-hint">${t(lang, EGI_TEXT.setup.hint[tod])}</p>
-    <div class="ika-egi-around">
-      <span class="ika-egi-setup-label">${t(lang, EGI_TEXT.setup.around)}</span>
-      <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod)}</ul>
-    </div>
-    <p class="ika-egi-setup-locked" id="ika-egi-locked" hidden>${t(lang, EGI_TEXT.setup.locked)}</p>`;
+    <p class="ika-egi-mode" id="ika-egi-mode"></p>
+    <p class="ika-egi-setup-locked" id="ika-egi-locked" hidden>${t(lang, T.setup.locked)}</p>`;
 }
 
 const egiHTML = (lang, month) => {
@@ -104,6 +134,7 @@ const egiHTML = (lang, month) => {
                 <span class="ika-egi-count-label" id="ika-egi-count-label">${t(lang, T.hud.count)}</span>
                 <b class="ika-egi-count-num" id="ika-egi-count-num">0</b>
                 <span class="ika-egi-count-depth" id="ika-egi-depth"></span>
+                <span class="ika-egi-windnote" id="ika-egi-windnote" hidden>${t(lang, T.msg.windy)}</span>
               </div>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
@@ -152,14 +183,17 @@ const egiHTML = (lang, month) => {
 const m3HTML = (lang) => {
   const T = M3_TEXT;
   const cells = Array.from({ length: SIZE * SIZE }, (_, i) => `<button type="button" class="ika-m3-cell" role="gridcell" data-i="${i}" tabindex="-1" disabled></button>`).join('');
+  // バッジの絵：小松氏のコマを流用（入部＝いかり、一つ星＝星、腕前＝太陽、連鎖＝波、墨＝レアイカ、部長＝貝）
+  const BADGE_TILE = { join: 0, star1: 3, skilled: 1, chain: 2, ink: RARE, captain: 4 };
   const badges = Object.entries(T.badges).map(([id, b]) => `
         <li class="ika-m3-badge" data-badge="${id}">
-          <span class="ika-m3-badge-mark" aria-hidden="true">★</span>
+          <span class="ika-m3-badge-mark" aria-hidden="true">${tileImg(BADGE_TILE[id], { href: assetHref, size: 24 })}</span>
           <span class="ika-m3-badge-name">${t(lang, b.name)}</span>
           <span class="ika-m3-badge-how">${t(lang, b.how)}</span>
           <span class="ika-m3-badge-date" data-badge-date></span>
         </li>`).join('');
-  const legend = MARKS.map((m, i) => `<li>${markSVG(i, { size: 22 })}<span>${t(lang, m.name)}</span></li>`).join('') + `<li>${markSVG(RARE, { size: 22 })}<span>${t(lang, RARE_NAME)}</span></li>`;
+  const TILE_BG = ['#327de0', '#f87735', '#16bea1', '#ffcf30', '#b066d4'];
+  const legend = MARKS.map((m, i) => `<li style="--legend:${TILE_BG[i]}">${tileImg(i, { href: assetHref, size: 26 })}<span>${t(lang, m.name)}</span></li>`).join('') + `<li style="--legend:#102332">${tileImg(RARE, { href: assetHref, size: 26 })}<span>${t(lang, RARE_NAME)}</span></li>`;
   return `
   <section class="ika-section ika-section--tint ika-game ika-game--sumi" id="sumi" aria-labelledby="sumi-title">
     <div class="wrap">
