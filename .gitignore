@@ -3,3 +3,4 @@ dist
 .env
 .env.bak
 worker/reports/wrangler.toml
+dist-egi

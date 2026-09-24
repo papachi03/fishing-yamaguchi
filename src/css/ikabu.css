@@ -1290,8 +1290,6 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
   body[data-page='egi'] .ika-egi-setup { grid-row: 2; }
 }
 .ika-egi-solo-foot { padding-top: 0; font-size: 13px; line-height: 1.8; color: var(--ika-ink-soft); }
-.ika-egi-solo-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 10px; }
-.ika-egi-solo-links a { font-family: var(--font-maru); font-weight: 900; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
 .ika-play-foot .ika-note { margin-top: 0; }
 
 .ika-game { scroll-margin-top: 90px; }
@@ -1477,6 +1475,8 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-card-rows dt { font-family: var(--font-maru); font-weight: 900; font-size: 11px; color: var(--ika-sea); }
 .ika-egi-card-rows dd { font-family: var(--font-varsity); font-weight: 800; font-size: 22px; line-height: 1.1; }
 .ika-egi-card-link a { font-family: var(--font-maru); font-weight: 900; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); }
+.ika-egi-card-credit { font-size: 11px; line-height: 1.6; color: var(--ika-ink-soft); }
+.ika-egi-around-list span { display: inline-block; padding: 3px 12px; border-radius: 999px; background: var(--ika-mist); border: 2px solid var(--ika-sea); color: var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; line-height: 1.6; }
 .ika-egi-card-note { font-size: 13px; line-height: 1.7; color: var(--ika-ink-soft); }
 .ika-egi-card-btn { min-height: 44px; padding: 6px 18px; font-size: 14px; justify-self: start; }
 .ika-egi-over-total { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-family: var(--font-maru); font-weight: 900; }

@@ -6,8 +6,16 @@ import { t, pageHref, recipeHref, recipeIdFromPath, assetHref, SECTIONS, navPage
 const LOGO = '/assets/ikabu/logo_600.png';
 const YFJ_HOME = '/';
 
+// 単独で人に渡すページ（エギング専用ページ）。釣り仲間に試してもらう用で、イカ部の中身は見せない
+// （ぱっぱ指示 2026-09-24：小松さん以外にはイカ部の中身を見せない）。
+// ＝部活動のメニュー・出典ページ（イカ部のページ）へのリンクを出さない。YFJ は公開中の本番ドメインを指す
+// （釣り仲間用の確認URLにはこのページしか載せないので、相対リンクだと行き先が無い）
+export const SOLO_PAGES = new Set(['egi']);
+const YFJ_PUBLIC = 'https://yamaguchifishing.com';
+
 // recipeId があるとき（/ikabu/recipes/<id>.html）は、言語切替も同じ品の静的ページを指す
 export function headerHTML(lang, page = 'index', { recipeId = null } = {}) {
+  if (SOLO_PAGES.has(page)) return soloHeaderHTML(lang, page);
   const active = navPageOf(page);
   const nav = SECTIONS.map(
     (s) =>
@@ -55,7 +63,29 @@ export function headerHTML(lang, page = 'index', { recipeId = null } = {}) {
   </div>`;
 }
 
-export function footerHTML(lang) {
+// 単独ページのヘッダー：ロゴ（リンクなし）・言語切替・YFJ だけ。部活動のメニューは出さない
+function soloHeaderHTML(lang, page) {
+  return `
+  <div class="ika-header-bar">
+    <div class="wrap ika-header-inner">
+      <span class="ika-brand"><img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika Club')}" width="600" height="219" /></span>
+      <div class="ika-header-tools">
+        <div class="ika-lang" aria-label="Language">
+          <a href="${pageHref(page, 'ja')}" lang="ja" data-lang="ja"${lang === 'ja' ? ' aria-current="true"' : ''}>日本語</a>
+          <span aria-hidden="true">｜</span>
+          <a href="${pageHref(page, 'en')}" lang="en" data-lang="en"${lang === 'en' ? ' aria-current="true"' : ''}>EN</a>
+        </div>
+        <a class="ika-yfj" href="${YFJ_PUBLIC}/" title="YAMAGUCHI FISHING JOURNAL" aria-label="YAMAGUCHI FISHING JOURNAL">
+          <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">YAMAGUCHI FISHING JOURNAL</span><span class="ika-yfj-short" aria-hidden="true">YFJ</span>
+        </a>
+      </div>
+    </div>
+    <div class="ika-stripe" aria-hidden="true"></div>
+  </div>`;
+}
+
+export function footerHTML(lang, page = 'index') {
+  const solo = SOLO_PAGES.has(page);
   const nav = SECTIONS.map((s) => `<li><a href="${pageHref(s.page, lang)}"><span class="ika-nav-num">${s.num}</span>${t(lang, s.label)}</a></li>`).join('');
   return `
   <div class="ika-stripe" aria-hidden="true"></div>
@@ -68,17 +98,17 @@ export function footerHTML(lang) {
         'A shared love of squid. Secret fishing spots can stay secret.'
       )}</p>
     </div>
-    <nav class="ika-footer-nav" aria-label="${t(lang, '部活動', 'Club sections')}">
+    ${solo ? '' : `<nav class="ika-footer-nav" aria-label="${t(lang, '部活動', 'Club sections')}">
       <p class="ika-footer-head">CLUB ACTIVITIES</p>
       <ul>${nav}</ul>
-    </nav>
+    </nav>`}
     <div class="ika-footer-links">
       <p class="ika-footer-head">LINKS</p>
       <ul>
-        <li><a href="${pageHref('sources', lang)}">${t(lang, '写真と情報の出典', 'Sources & photo credits')}</a></li>
+        ${solo ? '' : `<li><a href="${pageHref('sources', lang)}">${t(lang, '写真と情報の出典', 'Sources & photo credits')}</a></li>`}
         <li><a href="https://www.pref.yamaguchi.lg.jp/soshiki/108/21930.html" target="_blank" rel="noopener">${t(lang, '山口県の遊漁ルール ↗', 'Yamaguchi fishing rules ↗')}</a></li>
-        <li><a href="${assetHref(YFJ_HOME)}">YAMAGUCHI FISHING JOURNAL</a></li>
-        <li><a href="${assetHref('/reports.html')}">${t(lang, '現地の声（YFJ）', 'Field reports (YFJ)')}</a></li>
+        <li><a href="${solo ? `${YFJ_PUBLIC}/` : assetHref(YFJ_HOME)}">YAMAGUCHI FISHING JOURNAL</a></li>
+        <li><a href="${solo ? `${YFJ_PUBLIC}/reports.html` : assetHref('/reports.html')}">${t(lang, '現地の声（YFJ）', 'Field reports (YFJ)')}</a></li>
       </ul>
     </div>
   </div>
@@ -93,7 +123,7 @@ export function mountShell({ lang, page }) {
   const header = document.getElementById('ika-header');
   const footer = document.getElementById('ika-footer');
   if (header && !header.innerHTML.trim()) header.innerHTML = headerHTML(lang, page, { recipeId: recipeIdFromPath(location.pathname) });
-  if (footer && !footer.innerHTML.trim()) footer.innerHTML = footerHTML(lang);
+  if (footer && !footer.innerHTML.trim()) footer.innerHTML = footerHTML(lang, page);
 
   // 言語を切り替えても、同じクエリ（?id=…）とハッシュを保つ
   const tail = location.search + location.hash;

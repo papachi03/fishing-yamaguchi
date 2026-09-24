@@ -66,5 +66,5 @@ export async function prerenderIkabu(html, { filename, root, base }) {
   return html
     .replace(MARKS.header, () => `<header id="ika-header">${shell.headerHTML(lang, page, { recipeId })}</header>`)
     .replace(MARKS.main, () => `<main id="main">${view.render(lang, { recipeId })}</main>`)
-    .replace(MARKS.footer, () => `<footer id="ika-footer">${shell.footerHTML(lang)}</footer>`);
+    .replace(MARKS.footer, () => `<footer id="ika-footer">${shell.footerHTML(lang, page)}</footer>`);
 }

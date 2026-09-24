@@ -79,12 +79,13 @@ export function egiTraitsHTML(lang, egi) {
 }
 
 // 季節と時間帯で出てくるイカ（名前のチップ）。ブラウザでも同じ関数で差し替える
-export function aroundHTML(lang, month, tod) {
+// links=false（エギング専用ページ）は図鑑ページへのリンクを付けず、名前だけ並べる
+export function aroundHTML(lang, month, tod, { links = true } = {}) {
   const ids = [...new Set(speciesPool(month, tod).map((p) => p.id))];
-  return ids.map((id) => `<li><a href="${pageHref('atlas', lang)}#sp-${id}">${esc(speciesName(lang, id))}</a></li>`).join('');
+  return ids.map((id) => (links ? `<li><a href="${pageHref('atlas', lang)}#sp-${id}">${esc(speciesName(lang, id))}</a></li>` : `<li><span>${esc(speciesName(lang, id))}</span></li>`)).join('');
 }
 
-export function egiSetupHTML(lang, { month = 9, tod = 'evening' } = {}) {
+export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } = {}) {
   const T = EGI_TEXT;
   const chips = TIMES.map((k) => `<button type="button" class="ika-chip" data-tod="${k}" aria-pressed="${String(k === tod)}">${t(lang, TOD[k])}</button>`).join('');
   const months = Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}"${i + 1 === month ? ' selected' : ''}>${monthLabel(lang, i + 1)}</option>`).join('');
@@ -139,7 +140,7 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening' } = {}) {
       <p class="ika-egi-setup-hint" id="ika-egi-hint">${t(lang, T.setup.hint[tod])}</p>
       <div class="ika-egi-around">
         <span class="ika-egi-setup-label">${t(lang, T.setup.around)}</span>
-        <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod)}</ul>
+        <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod, { links: !solo })}</ul>
       </div>
     </div>
     <p class="ika-egi-mode" id="ika-egi-mode"></p>
@@ -161,8 +162,8 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
         <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります（海の様子とエギの選び方は、ゲーム画面の下）。', ' Today’s real wind, waves and tide in Hagi set the mood (sea conditions and egi choice are below the game).') : ''}</p>
       </header>
 
-      <div class="ika-egi" id="ika-egi" data-lang="${lang}">
-        <div class="ika-egi-setup" id="ika-egi-setup">${egiSetupHTML(lang, { month, tod: 'evening' })}</div>
+      <div class="ika-egi" id="ika-egi" data-lang="${lang}"${solo ? ' data-solo="1"' : ''}>
+        <div class="ika-egi-setup" id="ika-egi-setup">${egiSetupHTML(lang, { month, tod: 'evening', solo })}</div>
 
         <div class="ika-egi-main">
           <div class="ika-egi-stage" id="ika-egi-stage">

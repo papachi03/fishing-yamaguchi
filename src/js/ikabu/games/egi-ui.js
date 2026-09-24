@@ -38,6 +38,8 @@ const mantleUnits = (cm) => clamp(cm * 3.4, 26, 120);   // 胴長 cm → 描画�
 export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   if (!root) return null;
   const q = (id) => root.querySelector(`#${id}`);
+  // エギング専用ページ（釣り仲間に渡す用）：イカ部の他のページへはリンクしない。写真の出典はその場に書く
+  const solo = root.dataset.solo === '1';
   const el = {
     stage: q('ika-egi-stage'), scene: q('ika-egi-scene'), btn: q('ika-egi-btn'),
     casts: q('ika-egi-casts'), egis: q('ika-egi-egis'),
@@ -212,7 +214,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.month.value = String(settings.month);
     el.season.textContent = t(lang, SEASON[seasonOf(settings.month)]);
     el.hint.textContent = t(lang, TX.setup.hint[settings.tod]);
-    el.around.innerHTML = aroundHTML(lang, settings.month, settings.tod);
+    el.around.innerHTML = aroundHTML(lang, settings.month, settings.tod, { links: !solo });
     el.expOut.textContent = `★${Math.round(settings.cond.expectation)}`;
     el.mode.textContent = condLine();
     el.live.classList.toggle('is-active', settings.mode === 'live');
@@ -556,7 +558,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         ${p ? `<img class="ika-egi-card-photo" src="${assetHref(p.thumb ?? p.file)}" alt="${esc(t(lang, p.caption))}" width="160" height="120" loading="lazy" />` : ''}
         <p class="ika-egi-card-name">${esc(speciesName(lang, c.id))}${first ? ` <span class="ika-tag ika-tag--orange">${t(lang, TX.over.firstCatch)}</span>` : ''}</p>
         <dl class="ika-egi-card-rows"><div><dt>${t(lang, T.mantle)}</dt><dd>${c.mantle} cm</dd></div><div><dt>${t(lang, T.weight)}</dt><dd>${c.weight.toLocaleString()} g</dd></div></dl>
-        <p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`;
+        ${solo
+          ? (p ? `<p class="ika-egi-card-credit">${t(lang, '写真', 'Photo')}：${esc(p.author)}${p.licenseUrl ? `（<a href="${esc(p.licenseUrl)}" target="_blank" rel="noopener">${esc(t(lang, p.license))}</a>）` : ''}</p>` : '')
+          : `<p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`}`;
     } else {
       const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;

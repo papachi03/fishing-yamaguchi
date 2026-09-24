@@ -1,6 +1,7 @@
 // egi：エギングゲームだけの専用ページ（知り合いに URL を送って、開いてすぐ遊んでもらう用）。
 // ゲームの土台はあそび場（views/play.js）と同じ部品を使い、ここではページの頭と足だけを持つ。
-import { t, pageHref } from '../i18n.js';
+// 公開前のクラブの各ページへのリンクは置かない（ヘッダー・フッターも shell.js の SOLO_PAGES で伏せる）
+import { t } from '../i18n.js';
 import { egiHTML } from './play.js';
 
 export function render(lang) {
@@ -13,10 +14,6 @@ export function render(lang) {
         'ゲームはブラウザの中だけで動き、記録もこのブラウザにだけ残ります。判定は遊びのための単純化で、実際の釣りの安全や成果を保証するものではありません。',
         'The game runs entirely in your browser and records stay here. It is a playful simplification and says nothing about real-world safety or results.'
       )}</p>
-      <p class="ika-egi-solo-links">
-        <a href="${pageHref('play', lang)}">${t(lang, 'パズル「墨つなぎ」も遊ぶ', 'Also play Ink Link, the puzzle')} →</a>
-        <a href="${pageHref('index', lang)}">${t(lang, '山口イカ部のトップへ', 'Yamaguchi Ika Club home')} →</a>
-      </p>
     </div>
   </section>`;
 }
