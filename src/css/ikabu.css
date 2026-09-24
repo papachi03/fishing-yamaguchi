@@ -1328,6 +1328,39 @@
 .ika-egi-range { width: 150px; accent-color: var(--ika-orange); }
 .ika-egi-range-out { font-family: var(--font-varsity); font-weight: 800; font-size: 16px; color: var(--ika-sea); min-width: 3em; }
 .ika-egi-mode { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-sea); }
+/* エギ選び */
+.ika-egi-pick { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--ika-sea); border-radius: 12px; background: var(--ika-mist); transition: box-shadow 0.3s; }
+.ika-egi-pick.is-flash { box-shadow: 0 0 0 4px var(--ika-orange); }
+.ika-egi-pick.is-locked { opacity: 0.85; }
+.ika-egi-pick-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ika-egi-pick-icon-wrap { display: inline-grid; place-items: center; width: 44px; height: 48px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 10px; }
+.ika-egi-pick-current { font-family: var(--font-maru); font-weight: 900; font-size: 15px; color: var(--ika-ink); }
+.ika-egi-size.is-rec::after { content: '★'; margin-left: 4px; font-size: 11px; color: var(--ika-orange-deep); }
+.ika-egi-size.is-rec[aria-pressed='true']::after { color: var(--ika-orange-light); }
+.ika-egi-pick-traits { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.ika-egi-pick-traits div { display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; background: var(--ika-white); border-radius: 8px; font-size: 13px; }
+.ika-egi-pick-traits dt { font-family: var(--font-maru); font-weight: 900; font-size: 11.5px; color: var(--ika-sea); }
+.ika-egi-pick-traits dd { font-family: var(--font-varsity); font-weight: 800; font-size: 15px; letter-spacing: 0.04em; }
+.ika-egi-pick-rec { font-size: 12.5px; color: var(--ika-ink-soft); }
+.ika-egi-pick-rec b { color: var(--ika-orange-deep); }
+.ika-egi-pick-star { color: var(--ika-orange-deep); margin-right: 4px; }
+.ika-egi-cue-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ika-egi-cue-note { flex-basis: 100%; font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); }
+/* HUD：いまのエギ・フォールの種類 */
+.ika-egi-stock-spec { margin-left: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 11px; color: var(--ika-ink); }
+.ika-egi-fallmode { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; background: var(--ika-sea); color: var(--ika-white); font-family: var(--font-maru); font-weight: 900; font-size: 10.5px; }
+.ika-egi-fallmode[data-mode='free'] { background: var(--ika-ink-soft); }
+.ika-egi-fallmode[hidden] { display: none; }
+/* やさしいモードのアタリのラベル（小さく、上の方） */
+.ika-egi-cue { position: absolute; z-index: 2; left: 50%; top: 30%; transform: translateX(-50%); padding: 5px 14px; background: var(--ika-orange); color: var(--ika-ink); border: 3px solid var(--ika-white); border-radius: 12px; box-shadow: 3px 3px 0 var(--ika-sea-deep); font-family: var(--font-maru); font-weight: 900; font-size: 16px; white-space: nowrap; pointer-events: none; animation: ika-egi-pop 0.3s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+.ika-egi-cue.is-light { font-size: 13px; padding: 3px 10px; opacity: 0.9; }
+.ika-egi-cue[hidden] { display: none; }
+/* 操作の説明 */
+.ika-egi-gestures { margin-top: 10px; padding: 6px 12px; border: 2px dashed var(--ika-sea-line); border-radius: 10px; font-size: 12.5px; line-height: 1.7; color: var(--ika-ink); }
+.ika-egi-gestures summary { cursor: pointer; font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; color: var(--ika-sea); }
+.ika-egi-gestures p { margin-top: 2px; }
+.ika-egi-gestures-keys { color: var(--ika-ink-soft); font-size: 11.5px; }
+.ika-egi-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .ika-egi-windnote { display: block; margin-top: 4px; max-width: 12em; font-size: 10.5px; line-height: 1.5; color: var(--ika-orange-deep); font-weight: 700; }
 .ika-egi-windnote[hidden] { display: none; }
 .ika-egi-card-cond { font-size: 11.5px; line-height: 1.6; color: var(--ika-ink-soft); }
@@ -1336,13 +1369,13 @@
 .ika-egi-stage {
   position: relative;
   aspect-ratio: 16 / 10;
+  touch-action: none;   /* 上スワイプ＝ダート。舞台の上では画面をスクロールさせない */
   border: 3px solid var(--ika-sea);
   border-radius: var(--ika-radius);
   overflow: hidden;
   background: #0a4f66;
   box-shadow: 6px 6px 0 var(--ika-sea);
   cursor: pointer;
-  touch-action: manipulation;
   user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1436,7 +1469,7 @@
   font-family: var(--font-maru); font-weight: 900; font-size: 20px; letter-spacing: 0.04em;
   box-shadow: 5px 5px 0 var(--ika-ink);
   cursor: pointer;
-  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s;
 }
@@ -1611,6 +1644,8 @@
   /* 結果カードは舞台の下の帯に（吊ったイカは上に見えたまま） */
   .ika-egi-card, .ika-egi-card--over { inset: auto 8px 8px 8px; width: auto; max-height: 68%; overflow: auto; transform: none; top: auto; left: auto; right: 8px; padding: 12px 14px; font-size: 13px; }
   .ika-egi-card-photo { display: none; }
+  .ika-egi-cue { font-size: 14px; top: 34%; }
+  .ika-egi-stock-spec { display: block; margin: 2px 0 0; }
   .ika-egi-card-title { font-size: 17px; }
   .ika-egi-controls { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
   .ika-egi-btn { min-height: 62px; font-size: 18px; }

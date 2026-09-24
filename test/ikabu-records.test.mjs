@@ -54,3 +54,20 @@ test('日の出±1h は朝マズメ、日の入り±1h は夕マズメ、その�
   assert.equal(todFromClock(at(23, 0), sunrise, sunset), 'night');
   assert.equal(todFromClock(at(12, 0), null, null), 'night', '日の出入りが計算できない緯度では夜扱い');
 });
+
+// エギングの手ほどき（純粋関数）
+import { sizeScores, recommendedSizes, rhythmHintKey } from '../src/js/ikabu/games/egi-advice.js';
+test('号数のおすすめ：秋の新子は2.5号、春の親イカは3.5号', () => {
+  assert.ok(recommendedSizes(10, 'day').includes(2.5));
+  assert.ok(!recommendedSizes(10, 'day').includes(3.5));
+  const spring = sizeScores(4, 'morning');
+  assert.ok(spring[3.5] > spring[2.5]);
+});
+test('しゃくりの手ほどき：やる気のある日のダートは褒め、渋い日のダートはたしなめる。5回以上はしゃくりすぎ', () => {
+  assert.equal(rhythmHintKey({ streak: 2, darts: 1, mood: 'active' }), 'dartActive');
+  assert.equal(rhythmHintKey({ streak: 2, darts: 1, mood: 'calm' }), 'dartCalm');
+  assert.equal(rhythmHintKey({ streak: 6, darts: 0, mood: 'active' }), 'tooMany');
+  assert.equal(rhythmHintKey({ streak: 1, darts: 0, mood: 'calm' }), 'calmOne');
+  assert.equal(rhythmHintKey({ streak: 2, darts: 0, mood: 'active' }), 'goodRhythm');
+  assert.equal(rhythmHintKey({ streak: 4, darts: 0, mood: 'active' }), null);
+});

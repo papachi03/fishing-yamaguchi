@@ -8,7 +8,9 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { createEgi, press, release, tick, speciesPool, seasonOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS } from './egi.js';
+import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
+import { rhythmHintKey } from './egi-advice.js';
+import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
@@ -16,7 +18,8 @@ import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID } from './play-text.js';
-import { aroundHTML } from '../views/play.js';
+import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
+import { recommendedSizes } from './egi-advice.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
 import { photoById } from '../data.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
@@ -44,6 +47,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
+    pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
+    cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -54,7 +59,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 条件：mode は 'live'（今日の萩の海）か 'practice'（自分で選ぶ）。時間帯は最初から時計と日の出入りで決める
   const now0 = new Date();
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
-  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null };
+  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
   let rec = readJSON(KEY_EGI) ?? emptyEgi();
@@ -174,7 +179,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- ゲームの作り直し ---------- */
   function newGame() {
-    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond });
+    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi });
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0;
     V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
@@ -202,6 +207,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       : `${t(lang, TX.live.modePractice)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m`;
   };
   function syncSetup() {
+    syncEgiPick();
     el.tod.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tod === settings.tod)));
     el.month.value = String(settings.month);
     el.season.textContent = t(lang, SEASON[seasonOf(settings.month)]);
@@ -222,6 +228,43 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.playPractice.disabled = lock;
     el.locked.hidden = !lock;
   }
+  /* ---------- エギ選び：投げる前（構え・結果表示）ならいつでも替えられる ---------- */
+  const typeName = (type) => t(lang, TX.egi.types[type]);
+  function syncEgiPick() {
+    const e = settings.egi;
+    el.pickSize.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.size) === e.size)));
+    el.pickType.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === e.type)));
+    const rec = recommendedSizes(settings.month, settings.tod);
+    el.pickSize.querySelectorAll('.ika-chip').forEach((b) => b.classList.toggle('is-rec', rec.includes(Number(b.dataset.size))));
+    el.pickRec.textContent = rec.map((x) => `${x}${t(lang, '号', '')}`).join(' / ');
+    el.pickIcon.innerHTML = egiIconHTML(e.size, e.type);
+    el.pickCurrent.textContent = TX.egi.current(lang, e.size, typeName(e.type));
+    el.pickTraits.innerHTML = egiTraitsHTML(lang, e);
+    el.spec.textContent = TX.egi.current(lang, e.size, typeName(e.type));
+    const canPick = !s || s.phase === 'ready' || s.phase === 'result' || s.phase === 'over';
+    root.querySelectorAll('#ika-egi-size .ika-chip, #ika-egi-type .ika-chip').forEach((b) => { b.disabled = !canPick; });
+    el.pick.classList.toggle('is-locked', !canPick);
+  }
+  function chooseEgi(patch) {
+    const next = normalizeEgi({ ...settings.egi, ...patch });
+    if (s && s.phase !== 'over' && !setEgi(s, next)) return;   // 投げている最中は替えられない
+    settings.egi = next;
+    syncEgiPick();
+    if (s?.phase === 'result') callout(`${t(lang, TX.egi.changed)}：${TX.egi.current(lang, next.size, typeName(next.type))}`);
+  }
+  el.pickSize.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-size]'); if (b) chooseEgi({ size: Number(b.dataset.size) }); });
+  el.pickType.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-type]'); if (b) chooseEgi({ type: b.dataset.type }); });
+  el.cueSetting.addEventListener('click', (e) => {
+    const b = e.target.closest('.ika-chip[data-cue]');
+    if (!b) return;
+    settings.cue = b.dataset.cue;
+    writePref('ikabu.egi.cue', settings.cue);
+    syncCueSetting();
+  });
+  function syncCueSetting() {
+    el.cueSetting.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cue === settings.cue)));
+  }
+
   // 練習モードに切り替えて、今の練習条件でゲームを作り直す
   function usePractice({ open = true } = {}) {
     settings.mode = 'practice';
@@ -324,7 +367,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const key = s.phase === 'over' ? 'over' : s.phase === 'result' ? 'result' : s.phase === 'aiming' ? 'aiming' : s.phase === 'signal' ? 'signal' : s.phase === 'fight' ? 'fight' : s.phase === 'ready' ? 'ready' : 'sink';
     if (last.btn === key) return;
     last.btn = key;
-    el.btn.textContent = t(lang, TX.btn[key]);
+    el.btn.textContent = t(lang, TX.btn[key === 'signal' && settings.cue === 'real' ? 'sink' : key]);
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
@@ -365,10 +408,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         }
         case 'jerk':
           V.jerkAt = now;
+          V.jerkKind = e.kind;
+          V.jerkDouble = e.double;
+          if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
+          else if (e.double) callout(t(lang, TX.cue.double));
+          setFallMode(null);
           break;
-        case 'rhythm':
-          callout(t(lang, TX.msg.rhythm[clamp(e.streak, 1, 5)]), e.streak >= 2 && e.streak <= 3 ? 'good' : e.streak >= 5 ? 'bad' : '');
+        case 'fall':
+          setFallMode(e.mode);
           break;
+        case 'rhythm': {
+          // 手ほどきは毎回は言わない（ダート・しゃくりすぎ・渋い日の助言は毎回、ふつうの評価は2回に1回）
+          const key = rhythmHintKey(e);
+          V.rhythmN = (V.rhythmN ?? 0) + 1;
+          const always = key === 'tooMany' || key === 'dartActive' || key === 'dartCalm' || key === 'calmMany';
+          if (key && (always || V.rhythmN % 2 === 1)) callout(t(lang, TX.hint[key]), key === 'goodRhythm' || key === 'dartActive' ? 'good' : key === 'tooMany' || key === 'dartCalm' || key === 'calmMany' ? 'bad' : '');
+          break;
+        }
         case 'signal': {
           signalsThisCast += 1;
           const h = s.hooking;
@@ -377,12 +433,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle));
           V.hug.height = (44 * clamp(mantleUnits(h.mantle) / 56, 0.75, 1.8) + mantleUnits(h.mantle)) * 1.15;
           V.swim.forEach((w) => { w.alpha = 0; });
-          el.flash.hidden = false;
-          el.log.textContent = t(lang, TX.msg.signal);
+          // アタリの出方：走る／竿先にコン／止まる／フケる。本格モードでは糸と竿先だけで見せる
+          V.bite = { kind: e.kind, light: e.light, t0: now, amp: e.light ? 0.6 : 1 };
+          V.lastBite = V.bite;
+          if (settings.cue === 'easy') {
+            el.cueLabel.textContent = t(lang, TX.cue.kinds[e.kind]);
+            el.cueLabel.className = `ika-egi-cue${e.light ? ' is-light' : ''}`;
+            el.cueLabel.hidden = false;
+            try { navigator.vibrate?.(e.light ? 30 : [40, 40, 40]); } catch { /* 対応していない端末 */ }
+          }
+          el.log.textContent = t(lang, TX.cue.kinds[e.kind]);
           break;
         }
         case 'hook':
           el.flash.hidden = true;
+          el.cueLabel.hidden = true;
+          V.bite = null;
+          setFallMode(null);
           hookDepth = Math.max(0.6, s.depth);
           hookDist = Math.max(s.dist, 1);
           inked = false;
@@ -391,10 +458,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'miss':
         case 'let-go':
           el.flash.hidden = true;
+          el.cueLabel.hidden = true;
           escapeSquid();
           callout(t(lang, e.type === 'miss' ? TX.msg.miss : TX.msg.letgo), 'bad');
-          // 逃げた後の気配：残りがいればそう言う（居ないときは「消えた」）
-          setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 1800);
+          // 逃げた後：今のアタリが何だったかを教え、残りの気配を言う
+          { const bite = V.lastBite; V.bite = null;
+            setTimeout(() => { if (s.phase === 'action' && bite) callout(TX.cue.lesson(lang, t(lang, TX.cue.names[bite.kind]))); }, 1500);
+            setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 3200); }
           break;
         case 'jet':
           V.lastJet = now;
@@ -490,7 +560,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
-    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button>`;
+    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button><button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button></div>`;
+    syncEgiPick();
     el.card.className = 'ika-egi-card';
     el.card.hidden = false;
   }
@@ -525,6 +596,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.card.addEventListener('click', (e) => {
     if (e.target.closest('[data-next]')) { press(s); release(s); onEvents(s.events); }
+    else if (e.target.closest('[data-egi]')) {
+      // エギ選びへ（替えたら「次の一投へ」でそのまま続けられる）
+      el.pick.classList.add('is-flash');
+      setTimeout(() => el.pick.classList.remove('is-flash'), 1600);
+      el.pick.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+      el.pickSize.querySelector('.ika-chip')?.focus({ preventScroll: true });
+    }
     else if (e.target.closest('[data-restart]')) { newGame(); }
   });
 
@@ -545,23 +623,62 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     onEvents(s.events.splice(0));
     setButton();
   }
-  let pointerDown = false;
+  function doDart() {
+    if (!s || frozen) return;
+    if (s.phase !== 'sinking' && s.phase !== 'action') return;
+    dart(s);
+    onEvents(s.events.splice(0));
+    setButton();
+  }
+  // 指：押した瞬間に決めず 150ms だけ待ち、その間に上へ 24px 以上動いたらダート。動かなければ押下（しゃくり／長押し）。
+  //   150ms より早く離したらその場でタップ。マウス・キーボードはすぐ押下（ダートは ↑ キー）
+  let ptr = null;   // { id, x, y, timer, pressed, darted }
+  const SWIPE_MS = 150, SWIPE_PX = 24;
+  const canSwipe = () => s && (s.phase === 'sinking' || s.phase === 'action');
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (e.target.closest('a, .ika-egi-card, select, .ika-chip')) return;
-    pointerDown = true;
-    doPress();
+    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details')) return;
+    if (ptr) return;
+    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false };
+    if (e.pointerType === 'touch' && canSwipe()) {
+      ptr.timer = setTimeout(() => { if (ptr && !ptr.pressed && !ptr.darted) { ptr.pressed = true; doPress(); } }, SWIPE_MS);
+    } else {
+      ptr.pressed = true;
+      doPress();
+    }
     if (e.target === el.btn || e.target.closest('.ika-egi-scene')) e.preventDefault();   // 長押しでスクロール・選択を始めない
   };
-  const onUp = () => { if (pointerDown) { pointerDown = false; doRelease(); } };
+  const onMove = (e) => {
+    if (!ptr || ptr.id !== e.pointerId || ptr.pressed || ptr.darted) return;
+    if (ptr.y - e.clientY >= SWIPE_PX && Math.abs(e.clientX - ptr.x) < 60) {
+      clearTimeout(ptr.timer);
+      ptr.darted = true;
+      doDart();
+    }
+  };
+  const onUp = (e) => {
+    if (!ptr || (e && e.pointerId != null && ptr.id !== e.pointerId)) return;
+    clearTimeout(ptr.timer);
+    if (ptr.pressed) doRelease();
+    else if (!ptr.darted) { doPress(); doRelease(); }   // 素早いタップ
+    ptr = null;
+  };
   el.btn.addEventListener('pointerdown', onDown);
   el.stage.addEventListener('pointerdown', onDown);
+  addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerup', onUp);
   addEventListener('pointercancel', onUp);
   el.btn.addEventListener('keydown', (e) => {
     if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doPress(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); doDart(); }
   });
   el.btn.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); doRelease(); } });
+  // フォールの種類の表示
+  function setFallMode(mode) {
+    V.fallMode = mode;
+    el.fallmode.hidden = !mode;
+    if (mode) { el.fallmode.textContent = t(lang, TX.fall[mode]); el.fallmode.dataset.mode = mode; }
+  }
   el.btn.addEventListener('click', (e) => e.preventDefault());
   el.stage.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -644,10 +761,22 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       }
     }
     else if (phase === 'sinking') rodAng = 30;
-    else if (phase === 'action' || phase === 'signal') { const j = now - V.jerkAt; rodAng = j < 0.5 ? lerp(72, 34, easeOut(j / 0.5)) : 34; pull = j < 0.2 ? 0.6 : 0; }
+    else if (phase === 'action' || phase === 'signal') {
+      const j = now - V.jerkAt;
+      const top = V.jerkKind === 'dart' ? 80 : V.jerkDouble ? 66 : 72;
+      rodAng = j < 0.5 ? lerp(top, 34, easeOut(j / 0.5)) : 34;
+      pull = j < 0.2 ? 0.6 : 0;
+      if (s.tensionFall) { rodAng = 40; pull = 0.25; }   // テンションフォール：竿を少し立てて糸を張る
+      // アタリ：竿先にコン＝一度だけ下へ叩く。走る＝竿先が引かれる
+      if (phase === 'signal' && V.bite) {
+        const b = now - V.bite.t0;
+        if (V.bite.kind === 'tap') { const knock = b < 0.18 ? Math.sin((b / 0.18) * Math.PI) : b < 0.3 ? 0.35 * Math.sin(((b - 0.18) / 0.12) * Math.PI) : 0; rodAng -= 9 * knock * V.bite.amp; pull = 0.5 * knock * V.bite.amp; }
+        else if (V.bite.kind === 'run') pull = 0.45 * V.bite.amp;
+        else if (V.bite.kind === 'slack') pull = 0;
+      }
+    }
     else if (phase === 'fight') { rodAng = 58; pull = clamp(s.tension / 100, 0.15, 1); }
     else if (V.hug.on) { rodAng = 52; pull = 0.35; }
-    if (phase === 'signal') pull = 0.4;
     // 竿は目標角へなめらかに（振り出しの最中だけは追従を速く）、しなりは角速度の逆向き
     const prevAng = V.rodAng ?? rodAng;
     V.rodAng = V.rodAng == null ? rodAng : V.rodAng + wrap(rodAng - V.rodAng) * (1 - Math.exp(-dt * (C ? 40 : 10)));
@@ -711,14 +840,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         V.egi.x += (tx + shake - V.egi.x) * k8; V.egi.y += (ty + 2 - V.egi.y) * k8;
         V.egi.ang += wrap(-140 - V.egi.ang) * k3;
       } else {
-        V.egi.x += (tx - V.egi.x) * rate;
-        V.egi.y += (ty - V.egi.y) * rate;
+        // ダート：大きく横へ跳ねてから戻る（ジグザグ）。2段：小さく2回目の跳ね
+        const dartK = V.dartAt != null ? (now - V.dartAt) / 0.45 : 9;
+        const dartX = dartK < 1 ? 48 * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;
+        V.egi.x += (tx + dartX - V.egi.x) * rate;
+        V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
-        // しゃくった直後は頭を上げて釣り人側へ飛ぶ
-        const target = jerkFresh ? -35 : phase === 'sinking' ? -145 : -135;
+        // しゃくった直後は頭を上げて釣り人側へ飛ぶ。テンションフォールは頭を釣り人側へ向けて滑るように、フリーフォールは頭を下げてまっすぐ
+        const target = jerkFresh ? (V.jerkKind === 'dart' ? -60 : -35) : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
       }
-      taut = jerkFresh ? 1 : phase === 'sinking' ? 0.45 : 0.4;
+      taut = jerkFresh ? 1 : phase === 'sinking' ? 0.45 : s.tensionFall ? 0.95 : 0.3;
       if (V.splashAt && now - V.splashAt < 1.2) taut *= 0.5 + 0.5 * ((now - V.splashAt) / 1.2);   // 着水直後は糸が水面にたるんで置かれる
       if (V.egi.mode === 'stuck' && now - V.snagAt > 0.6) V.lineBroken = true;
     }
@@ -739,12 +871,31 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         hugInAir = V.hug.y < S.surface - 10;
         taut = 1;
       } else if (phase === 'signal') {
-        // 抱いた直後：エギごと沖へ引っぱる（ラインが走る）
+        // 抱いた直後。アタリの種類で見え方が違う：
+        //   run   … エギごと沖へ走り、糸がピンと張る（はっきり）
+        //   tap   … その場で抱いて竿先を一度叩く（竿側で表現）。糸は張ったまま
+        //   stop  … その場で抱いて沈みが止まる（エギが動かない）。糸は少しだけ張る
+        //   slack … エギを持ち上げて糸がフケる（大きくたるむ）
+        const B = V.bite ?? { kind: 'run', amp: 1 };
         const k = clamp((now - V.hug.t0) / 0.5, 0, 1);
-        V.hug.x = V.egi.x + 28 * easeOut(k) + (reduced ? 0 : Math.sin(now * 30) * 1.5);
-        V.hug.y = Math.min(V.egi.y + 10 * easeOut(k), Y(s.bottom) - 26);
-        V.hug.ang += wrap(angleOf(0.95, 0.3) - V.hug.ang) * k8;
-        taut = 1;
+        const jitter = reduced ? 0 : Math.sin(now * 30) * 1.5;
+        if (B.kind === 'run') {
+          V.hug.x = V.egi.x + 60 * B.amp * easeOut(k) + jitter;
+          V.hug.y = Math.min(V.egi.y + 14 * easeOut(k), Y(s.bottom) - 26);
+          V.hug.ang += wrap(angleOf(0.95, 0.3) - V.hug.ang) * k8;
+          taut = 1;
+        } else if (B.kind === 'slack') {
+          V.hug.x = V.egi.x - 6 * easeOut(k);
+          V.hug.y = V.egi.y - 26 * B.amp * easeOut(k);
+          V.hug.ang += wrap(angleOf(0.5, -0.85) - V.hug.ang) * k8;
+          taut = 0.02;
+        } else {
+          V.hug.x = V.egi.x + jitter * 0.5;
+          V.hug.y = Math.min(V.egi.y + 2, Y(s.bottom) - 26);
+          V.hug.ang += wrap(angleOf(0.9, 0.45) - V.hug.ang) * k8;
+          taut = B.kind === 'tap' ? 0.95 : 0.6;
+        }
+        V.hug.alpha = B.kind === 'stop' || B.kind === 'slack' ? 0.6 : 1;
       } else if (phase === 'fight' && h) {
         // やり取り：距離に応じて浮いてくる。ジェットで沖へ走る。胴は沖向き
         const frac = clamp(s.dist / hookDist, 0, 1);
@@ -816,7 +967,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const hugT = `translate(${f1(V.hug.x)} ${f1(V.hug.y)}) rotate(${f1(V.hug.ang)}) scale(1.15)`;
     n.hugAir.setAttribute('transform', hugT); n.hugWater.setAttribute('transform', hugT);
     n.hugAir.setAttribute('opacity', V.hug.on && hugInAir ? '1' : '0');
-    n.hugWater.setAttribute('opacity', V.hug.on && !hugInAir ? '1' : '0');
+    n.hugWater.setAttribute('opacity', V.hug.on && !hugInAir ? String(V.hug.alpha ?? 1) : '0');
     // 吊ったイカから落ちるしずく
     n.drips.forEach((dp, i) => {
       if (!(V.hug.on && hugInAir) || reduced) { dp.setAttribute('opacity', '0'); return; }
@@ -926,7 +1077,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.windnote.hidden = !(s.windows.good < SIGNAL_GOOD - 0.01 && phase !== 'signal');
       el.count.classList.toggle('is-warn', onBottom && s.bottomFor > 1.2);
     }
-    el.btn.classList.toggle('is-signal', phase === 'signal');
+    el.btn.classList.toggle('is-signal', phase === 'signal' && settings.cue === 'easy');
+    el.flash.hidden = true;   // 帯は使わない（本格：糸と竿先で読む／やさしい：小さなラベル）
+    if (phase !== 'signal' && !el.cueLabel.hidden) el.cueLabel.hidden = true;
     el.btn.classList.toggle('is-pressing', s.pressing && phase === 'fight');
   }
 
@@ -964,6 +1117,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       renderLive({ conditions: { expectation: 3, wind: 9.2, gust: 14.5, wave: 1.7, safety: 'stop' }, expectation: { message: t(lang, '今は釣れる時間ではないかもしれないです！', 'Probably not the best hour right now.'), tideName: t(lang, '中潮', 'medium tide') }, safety: { key: 'stop', level: 3, label: t(lang, '中止', 'STOP'), message: t(lang, '今日は堤防に立たないでください。', 'Do not go out on the breakwater today.') }, tod: 'day', month: settings.month, now: new Date(), weather: null, tide: null, partial: false });
     }
     else if (name === 'snag') { cast(); step(s.bottom / 0.9 + 1.6); s.rand = () => 0; step(0.3); s.rand = Math.random; frozen = true; }
+    else if (name === 'tension') { cast(); step(2.5); press(s); onEvents(s.events.splice(0)); step(1.6); frozen = true; }
+    else if (name === 'free') { cast(); step(2.5); jerk(); step(1.6); frozen = true; }
+    else if (name === 'dart') { cast(); step(2.5); dart(s); onEvents(s.events.splice(0)); step(0.12); frozen = true; }
+    else if (name === 'mood') { cast(); step(2.5); dart(s); onEvents(s.events.splice(0)); step(0.3); release(s); step(2.2); frozen = true; }
+    else if (name.startsWith('bite:')) {
+      // bite:<run|tap|stop|slack>[:easy]
+      const [, kind, mode] = name.split(':');
+      if (mode === 'easy') { settings.cue = 'easy'; syncCueSetting(); }
+      cast(); step(3.2);
+      if (kind === 'tap') { press(s); onEvents(s.events.splice(0)); step(0.6); } else { jerk(); step(1.4); }
+      const pool = speciesPool(s.month, s.tod);
+      s.hooking = { id: pool[0].id, weight: 520, mantle: 20, power: 0.7 };
+      s.bite = { kind, light: false };
+      s.phase = 'signal'; s.signalAt = s.t; s.events.push({ type: 'signal', t: s.t, kind, light: false, tensionFall: s.tensionFall }); onEvents(s.events.splice(0));
+      step(kind === 'tap' ? 0.12 : 0.4);
+      frozen = true;
+    }
     else if (name === 'over') {
       s.catches = [{ id: 'aori', weight: 420, mantle: 19 }, { id: 'kouika', weight: 610, mantle: 16 }];
       s.casts = 1; toSignal(); step(0.3); s.rand = () => 0; press(s); onEvents(s.events.splice(0)); release(s); step(0.4); s.dist = 0.01; press(s); step(0.2); release(s); s.rand = Math.random; frozen = true;
@@ -984,6 +1154,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 起動 ---------- */
   syncSetup();
+  syncCueSetting();
   relayout();
   if (!sc) buildScene();
   newGame();

@@ -6,7 +6,8 @@ import { pageHead, noteHTML } from './parts.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
-import { TIMES, CASTS, EGI_STOCK, speciesPool, seasonOf } from '../games/egi.js';
+import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter } from '../games/egi.js';
+import { recommendedSizes, distRank, snagRank } from '../games/egi-advice.js';
 import { SIZE, MOVES, GOAL, RARE } from '../games/match3.js';
 
 export const HEAD = {
@@ -47,6 +48,36 @@ const hubHTML = (lang) => `
 
 /* ---------- しゃくって抱かせろ！ ---------- */
 
+// エギの絵（号数で大きさ、タイプで色）。ブラウザ側でも同じ関数で描き直す
+export function egiIconHTML(size = 3, type = 'normal') {
+  const k = { 2.5: 0.85, 3: 1, 3.5: 1.15 }[size] ?? 1;
+  const fill = { shallow: '#ff9a4d', normal: '#f47321', deep: '#d0451e' }[type] ?? '#f47321';
+  return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${k.toFixed(2)})"><path d="M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z" fill="${fill}" stroke="#16233a" stroke-width="3" stroke-linejoin="round"/><path d="M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22" stroke="#ffd2a8" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="3.5" r="1.8" fill="#16233a"/><path d="M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35" stroke="#16233a" stroke-width="1.6" stroke-linecap="round"/></g></svg>`;
+}
+
+// エギ選び。ブラウザ側は中身（おすすめ・特徴）だけ差し替える
+export function egiPickerHTML(lang, { month = 9, tod = 'evening', egi = DEFAULT_EGI } = {}) {
+  const T = EGI_TEXT.egi;
+  const rec = recommendedSizes(month, tod);
+  const sizes = EGI_SIZES.map((s) => `<button type="button" class="ika-chip ika-egi-size${rec.includes(s) ? ' is-rec' : ''}" data-size="${s}" aria-pressed="${String(s === egi.size)}">${s}${t(lang, '号', '')}</button>`).join('');
+  const types = EGI_TYPES.map((k) => `<button type="button" class="ika-chip" data-type="${k}" aria-pressed="${String(k === egi.type)}">${t(lang, T.types[k])}</button>`).join('');
+  return `
+    <div class="ika-egi-pick-head"><span class="ika-egi-pick-icon-wrap" id="ika-egi-pick-icon">${egiIconHTML(egi.size, egi.type)}</span><span class="ika-egi-setup-label">${t(lang, T.title)}</span><b class="ika-egi-pick-current" id="ika-egi-pick-current">${T.current(lang, egi.size, t(lang, T.types[egi.type]))}</b></div>
+    <div class="ika-egi-setup-row">
+      <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.size)}</span><div class="ika-chips ika-chips--small" id="ika-egi-size" role="group" aria-label="${t(lang, T.size)}">${sizes}</div></div>
+      <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.type)}</span><div class="ika-chips ika-chips--small" id="ika-egi-type" role="group" aria-label="${t(lang, T.type)}">${types}</div></div>
+    </div>
+    <dl class="ika-egi-pick-traits" id="ika-egi-pick-traits">${egiTraitsHTML(lang, egi)}</dl>
+    <p class="ika-egi-pick-rec"><span class="ika-egi-pick-star" aria-hidden="true">★</span>${t(lang, T.recommend)}: <b id="ika-egi-pick-rec">${rec.map((s) => `${s}${t(lang, '号', '')}`).join(' / ')}</b></p>`;
+}
+export function egiTraitsHTML(lang, egi) {
+  const T = EGI_TEXT.egi;
+  return `
+      <div><dt>${t(lang, T.sink)}</dt><dd>${T.sinkUnit(lang, egiSecPerMeter(egi).toFixed(1))}</dd></div>
+      <div><dt>${t(lang, T.dist)}</dt><dd>${t(lang, T.distRank[distRank(egi.size)])}</dd></div>
+      <div><dt>${t(lang, T.snag)}</dt><dd>${t(lang, T.snagRank[snagRank(egi.type)])}</dd></div>`;
+}
+
 // 季節と時間帯で出てくるイカ（名前のチップ）。ブラウザでも同じ関数で差し替える
 export function aroundHTML(lang, month, tod) {
   const ids = [...new Set(speciesPool(month, tod).map((p) => p.id))];
@@ -73,6 +104,15 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening' } = {}) {
         <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice">${t(lang, T.live.playPractice)}</button>
       </div>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
+    </div>
+    <div class="ika-egi-pick" id="ika-egi-pick">${egiPickerHTML(lang, { month, tod })}</div>
+    <div class="ika-egi-cue-setting">
+      <span class="ika-egi-setup-label">${t(lang, T.cue.title)}</span>
+      <div class="ika-chips ika-chips--small" id="ika-egi-cue" role="group" aria-label="${t(lang, T.cue.title)}">
+        <button type="button" class="ika-chip" data-cue="real" aria-pressed="true">${t(lang, T.cue.real)}</button>
+        <button type="button" class="ika-chip" data-cue="easy" aria-pressed="false">${t(lang, T.cue.easy)}</button>
+      </div>
+      <span class="ika-egi-cue-note">${t(lang, T.cue.note)}</span>
     </div>
     <div class="ika-egi-practice" id="ika-egi-practice" hidden>
       <p class="ika-egi-setup-label">${t(lang, T.practice.title)}</p>
@@ -128,16 +168,18 @@ const egiHTML = (lang, month) => {
             <div class="ika-egi-hud">
               <div class="ika-egi-stock">
                 <span class="ika-egi-stock-row"><span class="ika-egi-stock-label">${t(lang, T.hud.casts)}</span><span class="ika-egi-casts" id="ika-egi-casts">${castIcons}</span></span>
-                <span class="ika-egi-stock-row"><span class="ika-egi-stock-label">${t(lang, T.hud.egi)}</span><span class="ika-egi-egis" id="ika-egi-egis">${egiIcons}</span></span>
+                <span class="ika-egi-stock-row"><span class="ika-egi-stock-label">${t(lang, T.hud.egi)}</span><span class="ika-egi-egis" id="ika-egi-egis">${egiIcons}</span><span class="ika-egi-stock-spec" id="ika-egi-spec">${T.egi.current(lang, DEFAULT_EGI.size, t(lang, T.egi.types[DEFAULT_EGI.type]))}</span></span>
               </div>
               <div class="ika-egi-count" id="ika-egi-count" hidden>
                 <span class="ika-egi-count-label" id="ika-egi-count-label">${t(lang, T.hud.count)}</span>
                 <b class="ika-egi-count-num" id="ika-egi-count-num">0</b>
                 <span class="ika-egi-count-depth" id="ika-egi-depth"></span>
+                <span class="ika-egi-fallmode" id="ika-egi-fallmode" hidden></span>
                 <span class="ika-egi-windnote" id="ika-egi-windnote" hidden>${t(lang, T.msg.windy)}</span>
               </div>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
+            <div class="ika-egi-cue" id="ika-egi-cue-label" hidden aria-hidden="true"></div>
             <div class="ika-egi-flash" id="ika-egi-flash" hidden aria-hidden="true">${t(lang, T.msg.signal)}</div>
             <div class="ika-egi-card" id="ika-egi-card" hidden></div>
           </div>
@@ -154,6 +196,11 @@ const egiHTML = (lang, month) => {
               <span class="ika-egi-gauge-dist"><span>${t(lang, T.hud.dist)}</span> <b id="ika-egi-dist">0</b>m</span>
             </div>
           </div>
+          <details class="ika-egi-gestures" open>
+            <summary>${t(lang, T.gestures.title)}</summary>
+            <p>${t(lang, T.gestures.row)}</p>
+            <p class="ika-egi-gestures-keys">${t(lang, T.gestures.keys)}</p>
+          </details>
           <p class="ika-egi-log" id="ika-egi-log" role="status" aria-live="polite" aria-label="${t(lang, T.a11y.log)}"></p>
         </div>
 
