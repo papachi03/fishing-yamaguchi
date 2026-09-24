@@ -33,7 +33,7 @@ test('押している間に力がたまり、離すと投げて沈み始める',
   cast(s, 0.8); // ちょうど力いっぱい
   assert.equal(s.phase, 'sinking');
   assert.equal(s.casts, CASTS - 1);
-  assert.ok(s.castDist >= 38, `遠くへ飛ぶ（${s.castDist}m）`);
+  assert.ok(s.castDist >= 36, `遠くへ飛ぶ（${s.castDist}m、既定の3号）`);
   const s2 = createEgi({ rand: calm });
   cast(s2, 0.1);
   assert.ok(s2.castDist < 16, '力が弱いと近くに落ちる');
@@ -266,4 +266,119 @@ test('良い日（秋の夕まずめ・期待値8）は釣れやすく、悪い�
   assert.ok(avg(good) >= 1.5 && avg(good) <= 3.8, `良い日の平均 ${avg(good)}`);
   assert.ok(bouzu(bad) >= 0.5, `悪い日のボウズ率 ${bouzu(bad)}`);
   assert.ok(avg(good) > avg(bad) * 2);
+});
+
+// ---- 再現度（2026-09-24 ぱっぱ選択：エギの号数と沈下・フォールの種類／アタリの出方／しゃくりの種類） ----
+import { sinkRate, egiSecPerMeter, sizeMatch, moodOf, dart, setEgi, BITES, TENSION_HOLD } from '../src/js/ikabu/games/egi.js';
+
+test('エギ：シャローはゆっくり、ディープは速く沈む。3.5号ノーマルは本物の目安で約3.5秒/m', () => {
+  assert.equal(egiSecPerMeter({ size: 3.5, type: 'normal' }), 3.5);
+  assert.ok(sinkRate({ size: 3, type: 'shallow' }) < sinkRate({ size: 3, type: 'normal' }));
+  assert.ok(sinkRate({ size: 3, type: 'deep' }) > sinkRate({ size: 3, type: 'normal' }));
+  const a = createEgi({ rand: calm, egi: { size: 3, type: 'shallow' } });
+  const b = createEgi({ rand: calm, egi: { size: 3, type: 'deep' } });
+  cast(a); cast(b);
+  run(a, 3); run(b, 3);
+  assert.ok(b.depth > a.depth * 2, `ディープ ${b.depth.toFixed(1)}m／シャロー ${a.depth.toFixed(1)}m`);
+});
+
+test('エギ：重い号数ほど遠くへ飛ぶ', () => {
+  const d = (size) => { const s = createEgi({ rand: calm, egi: { size } }); cast(s); return s.castDist; };
+  assert.ok(d(3.5) > d(3) && d(3) > d(2.5));
+});
+
+test('エギ：ディープは底で根掛かりしやすく、シャローはしにくい', () => {
+  const snagged = (type) => {
+    const s = createEgi({ rand: () => 0.99, egi: { size: 3, type } });
+    cast(s);
+    run(s, 20);
+    s.rand = () => 0.004; // 1コマあたりの根掛かり確率をこの値と比べる
+    return run(s, 3).some((e) => e.type === 'snag');
+  };
+  assert.equal(snagged('deep'), true);
+  assert.equal(snagged('shallow'), false);
+});
+
+test('エギは投げる前（構え中・結果表示中）だけ替えられる', () => {
+  const s = createEgi({ rand: calm });
+  assert.equal(setEgi(s, { size: 2.5, type: 'shallow' }), true);
+  cast(s);
+  assert.equal(setEgi(s, { size: 3.5 }), false);
+  assert.deepEqual(s.spec, { size: 2.5, type: 'shallow' });
+});
+
+test('フォール：しゃくった後に押したままだとテンションフォール（ゆっくり沈み、手前に寄る）、離すとフリーフォール', () => {
+  const s = createEgi({ rand: calm });
+  cast(s);
+  run(s, 2);
+  press(s); // しゃくり
+  const ev = run(s, TENSION_HOLD + 0.1);
+  assert.ok(ev.some((e) => e.type === 'fall' && e.mode === 'tension'));
+  assert.equal(s.tensionFall, true);
+  const d0 = s.depth, x0 = s.dist;
+  run(s, 1);
+  const tensionSink = s.depth - d0;
+  assert.ok(s.dist < x0, 'テンションフォールは手前に寄ってくる');
+  release(s);
+  assert.equal(s.tensionFall, false);
+  const d1 = s.depth;
+  run(s, 1);
+  assert.ok(s.depth - d1 > tensionSink, 'フリーフォールの方が速く沈む');
+});
+
+test('アタリ：テンションフォールでは「竿先にコン」「走る」、フリーフォールでは「止まる」「フケる」も出る', () => {
+  const kinds = { tension: new Set(), free: new Set() };
+  for (let k = 0; k < 120; k++) {
+    for (const mode of ['tension', 'free']) {
+      const s = createEgi({ seed: `bite-${mode}-${k}`, month: 10, tod: 'evening', conditions: { expectation: 9 } });
+      cast(s);
+      run(s, 3);
+      s.squid = 2;
+      s.interest = 1;
+      press(s);
+      if (mode === 'free') release(s);
+      const ev = run(s, 4).find((e) => e.type === 'signal');
+      if (ev) kinds[mode].add(ev.kind);
+    }
+  }
+  assert.ok(kinds.tension.has('tap') && !kinds.tension.has('slack'));
+  assert.ok(kinds.free.has('stop') && kinds.free.has('slack') && !kinds.free.has('tap'));
+});
+
+test('アタリ：「竿先にコン」は猶予が短く、「止まる」は長い。軽い抱きはさらに短い', () => {
+  assert.ok(BITES.tap.good < BITES.run.good && BITES.stop.good > BITES.run.good);
+  const cond = normalizeConditions({});
+  assert.ok(signalWindows(cond, 'run', true).good < signalWindows(cond, 'run').good);
+});
+
+test('しゃくり：テンポよく2回＝2段しゃくり', () => {
+  const s = createEgi({ rand: calm });
+  cast(s);
+  run(s, 2);
+  press(s); release(s);
+  const first = run(s, 0.3);
+  press(s); release(s);
+  const ev = s.events.find((e) => e.type === 'jerk');
+  assert.equal(ev.double, true);
+});
+
+test('しゃくり：やる気のある日はダートが効き、渋い日はダートで警戒される', () => {
+  assert.equal(moodOf(10, 'evening', normalizeConditions({ expectation: 7 })), 'active');
+  assert.equal(moodOf(1, 'day', normalizeConditions({ expectation: 3 })), 'calm');
+  const after = (month, tod, exp) => {
+    const s = createEgi({ rand: calm, month, tod, conditions: { expectation: exp } });
+    cast(s);
+    run(s, 2);
+    s.interest = 0.5;
+    dart(s);
+    run(s, 2.1);
+    return s.interest;
+  };
+  assert.ok(after(10, 'evening', 7) > 0.8);
+  assert.ok(after(1, 'day', 3) < 0.5);
+});
+
+test('号数：秋の新子には2.5号、春の親イカには3.5号が合う', () => {
+  assert.equal(sizeMatch(2.5, 2.5), 1);
+  assert.ok(sizeMatch(3.5, 2.5) < sizeMatch(3, 2.5));
 });
