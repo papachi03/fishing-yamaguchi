@@ -36,6 +36,25 @@ export default defineConfig({
       },
     },
     {
+      // HOMEの「攻略ガイド」写真カードを本文に書き込む（JS無し・検索エンジンでも読める）。
+      // 「今月」はビルドした日の月。サイトは3時間ごとに再ビルドされるので月替わりも追従する。
+      // devでも同じ見た目にするため apply は付けない
+      name: 'prerender-home-guides',
+      transformIndexHtml: {
+        order: 'pre',
+        async handler(html, ctx) {
+          // トップの index.html だけ。イカ部（ikabu/**/index.html）など下の階層の index.html は対象外
+          if (ctx.filename.replace(/\\/g, '/') !== resolve(__dirname, 'index.html').replace(/\\/g, '/')) return html;
+          const mark = '<div class="home-guides" id="home-guides"></div>';
+          if (!html.includes(mark)) throw new Error('index.html に攻略ガイドの目印が見つかりません');
+          const { guideCardsHTML, homeGuides } = await import('./src/js/components/guide-card-html.js');
+          const list = homeGuides(new Date().getMonth() + 1);
+          const base = process.env.SITE_BASE || '';
+          return html.replace(mark, () => `<div class="home-guides" id="home-guides">${guideCardsHTML(list, { base })}</div>`);
+        },
+      },
+    },
+    {
       // 攻略記事（guides/*.html）の道具カードを本文に書き込む。devでも同じ見た目にするため apply は付けない
       name: 'prerender-guide-tackle',
       transformIndexHtml: {
