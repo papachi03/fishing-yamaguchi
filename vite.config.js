@@ -21,7 +21,8 @@ export default defineConfig({
       transformIndexHtml: {
         order: 'pre',
         async handler(html, ctx) {
-          if (!ctx.filename.replace(/\\/g, '/').endsWith('/sea.html')) return html;
+          // YFJ 本体の sea.html だけ（イカ部の ikabu/sea.html・ikabu/en/sea.html も末尾が同じなので、場所まで比べる）
+          if (resolve(ctx.filename) !== resolve(__dirname, 'sea.html')) return html;
           if (process.env.PRERENDER_SEA === '0') return html;
           return prerenderSea(html, __dirname);
         },
@@ -34,7 +35,7 @@ export default defineConfig({
       transformIndexHtml: {
         order: 'pre',
         async handler(html, ctx) {
-          if (!ctx.filename.replace(/\\/g, '/').endsWith('/reports.html')) return html;
+          if (resolve(ctx.filename) !== resolve(__dirname, 'reports.html')) return html;
           const mark = '<dl class="spot-names-list" id="spot-names"></dl>';
           if (!html.includes(mark)) throw new Error('reports.html に釣り場一覧の目印が見つかりません');
           const { spotListHTML } = await import('./src/js/components/spot-list-html.js');
