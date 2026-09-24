@@ -18,7 +18,7 @@ import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from '.
 import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
-import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID } from './play-text.js';
+import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
 import { recommendedSizes } from './egi-advice.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
@@ -53,6 +53,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
+    zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -501,7 +502,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           hookDepth = Math.max(0.6, s.depth);
           hookDist = Math.max(s.dist, 1);
           inked = false;
-          callout(t(lang, (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
+          callout(t(lang, s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
           feel.fire('hook', { heavy: V.heavy });
           break;
         case 'miss':
@@ -612,7 +613,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const li = document.createElement('li');
     li.innerHTML = `<span>${esc(speciesName(lang, c.id))}</span><b>${c.weight.toLocaleString()} g</b>`;
     el.catches.appendChild(li);
-    if (!rec.species[c.id] && !firstSpecies.includes(c.id)) firstSpecies.push(c.id);
+    if (settings.mode === 'live' && !rec.species[c.id] && !firstSpecies.includes(c.id)) firstSpecies.push(c.id);
   }
   function showResult() {
     const why = s.last;
@@ -643,7 +644,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function finishSession() {
     const catches = s.catches;
     const before = rec.best;
-    const { rec: r, fresh, total } = recordEgi(rec, catches);
+    const counted = settings.mode === 'live';
+    const { rec: r, fresh, total } = recordEgi(rec, catches, { counted });
     rec = r;
     writeJSON(KEY_EGI, rec);
     syncRecords();
@@ -654,7 +656,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const noEgi = s.egi <= 0 ? `<p class="ika-egi-card-note">${t(lang, TX.result.noEgi)}</p>` : '';
     el.card.innerHTML = `
       <p class="ika-egi-card-title">${t(lang, O.title)}</p>
-      <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
+      <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${counted && total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
+      ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, O.notCounted)}</p>` : ''}
       ${list}${noEgi}
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
@@ -663,10 +666,36 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.card.hidden = false;
     syncSetupLock();
   }
+  // マイ図鑑：釣った種は絵・最大・数・初めて釣った日、まだの種は影と手がかり。「今日の萩の海」の釣果だけが残る
+  function syncZukan() {
+    if (!el.zukanGrid) return;
+    const Z = TX.zukan;
+    el.zukanGrid.innerHTML = '';
+    let got = 0;
+    for (const z of GAME_ZUKAN) {
+      const r = rec.species[z.id];
+      if (r) got += 1;
+      const li = document.createElement('li');
+      li.className = `ika-egi-zukan-card${r ? ' is-got' : ''}${z.boss ? ' is-boss' : ''}`;
+      const svg = svgEl('svg', { viewBox: '-38 0 76 112', width: '64', height: '94', 'aria-hidden': 'true' });
+      const art = swimmingSquid({ species: z.id, len: 56, colors: r ? ART : { ...ART, ivory: '#2b3a4f', navy: '#101b2b' } });
+      svg.append(art);
+      const body = r
+        ? `<p class="ika-egi-zukan-name">${esc(speciesName(lang, z.id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}</p>
+           <p class="ika-egi-zukan-meta">${t(lang, Z.best)} ${r.weight.toLocaleString()} g・${r.mantle} cm<br>${t(lang, Z.count)} ${r.count}${r.first ? `・${t(lang, Z.first)} ${r.first}` : ''}</p>`
+        : `<p class="ika-egi-zukan-name">${t(lang, Z.unknown)}${z.boss ? ` <span class="ika-tag">${t(lang, Z.boss)}</span>` : ''}</p>
+           <p class="ika-egi-zukan-meta">${t(lang, z.hint)}</p>`;
+      li.append(svg);
+      li.insertAdjacentHTML('beforeend', `<div>${body}</div>`);
+      el.zukanGrid.append(li);
+    }
+    if (el.zukanCount) el.zukanCount.textContent = String(got);
+  }
   function syncRecords() {
+    syncZukan();
     const set = (k, v) => { const b = el.records.querySelector(`[data-rec="${k}"]`); if (b) b.textContent = String(v); };
     set('best', rec.best.toLocaleString());
-    set('zukan', YAMAGUCHI_SQUID.filter((id) => rec.species[id]).length);
+    set('zukan', GAME_ZUKAN.filter((z) => rec.species[z.id]).length);
     set('sessions', rec.sessions);
   }
   el.card.addEventListener('click', (e) => {
@@ -1036,7 +1065,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.revealed = true;
           sc.nodes.hugWater.style.filter = '';
           const big = h.weight >= 1000;
-          callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
+          if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good');
+          else callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
           if (big) feel.fire('hook', { heavy: V.heavy });
         }
         if (!inked && depth <= 1.0) {

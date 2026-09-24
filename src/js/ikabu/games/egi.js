@@ -210,8 +210,26 @@ const BITE_MIX = {
 //   すぐしゃくる（PUNCH_SPOOK 秒以内）と警戒して気が引ける／ときどき離れていく。
 //   しゃくらずに PUNCH_WAIT 秒待つと「抱かせる間」になって、気になる度合いが上がる（本物の定石）。
 //   抱く判定とは別に起きる接触なので、パンチがあっても釣れる数そのものは直接は減らない
+// ---------------- ボス（ごくまれ） ----------------
+// 山口近海の実在の記録から（squid-seasons.md）。ふつうのイカの「近くにいる数」とは別に、条件が合うと1秒あたり rate の確率で抱く。
+//   ソデイカ  … ダディの実釣：2021-05-09 12:39、アオリ狙いのエギに日中ボトムで食った。研報：萩沖・長門で5〜8月の記録。最大20kg
+//   アカイカ  … 2023-04-01 萩市大島の沿岸で採捕（外套長55cm）。春の夜
+//   ダイオウイカ … 2015年2月 角島、2022年2月 萩市大井浦、2023年3月 萩市大島（いずれも漂着）。冬の夜の伝説
+export const BOSSES = {
+  sodeika: { id: 'sodeika', months: [4, 5, 6, 7, 8], tods: ['morning', 'day', 'evening'], zone: [0.7, 1], rate: 0.0006, g: [6000, 16000], mantle: [55, 80], power: 1.5 },
+  akaika: { id: 'akaika', months: [3, 4, 5], tods: ['evening', 'night'], zone: [0.2, 0.7], rate: 0.0003, g: [2500, 5000], mantle: [45, 60], power: 1.3 },
+  daiou: { id: 'daiou', months: [12, 1, 2, 3], tods: ['night'], zone: [0.8, 1], rate: 0.0003, g: [60000, 150000], mantle: [70, 130], power: 1.8 },
+};
+export function bossesFor(month, tod) {
+  return Object.values(BOSSES).filter((b) => b.months.includes(month) && b.tods.includes(tod));
+}
+// ボスはとても重いが、巻き寄せの遅さは BOSS_REEL_CAP（g）相当で頭打ち（ソデイカ約4〜5分、ダイオウイカ約6〜7分の大一番）
+export const BOSS_REEL_CAP = 3500;
+
 // ジェット噴射の間隔と疲れ（fight 中）
-export const REEL_WEIGHT = 0.3; // 重さ1kgごとに巻き寄せが遅くなる割合（2kg級を30〜40mから寄せて約2〜2.5分）
+export const REEL_WEIGHT = 0.8; // 重さ1kgごとに巻き寄せが遅くなる割合（2kg級を30〜40mから寄せて約2分。体力の減りと合わせて調整）
+export const STAMINA_MIN = 0.1;
+export const STAMINA_DECAY = 0.006; // 1秒あたりの体力の減り（約2分半で 1→0.1）
 export const JET_GAP = 1.2;
 export const JET_BURST = 3;
 export const JET_WINDOW = 8;
@@ -504,6 +522,23 @@ export function tick(s, dt) {
         s.interest = Math.min(1, s.interest + PUNCH_GAIN);
         emit(s, 'punch-wait', { interest: s.interest });
       }
+      // ボス：近くのイカの数に関係なく、条件（月・時間帯・棚）が合うとごくまれに抱く
+      if (since >= 1 && s.depth < s.bottom) {
+        const frac = s.bottom > 0 ? s.depth / s.bottom : 0;
+        const boss = bossesFor(s.month, s.tod).find((b) => zoneMatch(frac, b.zone) >= 1 && s.rand() < b.rate * s.interest * 2 * dt);
+        if (boss) {
+          const weight = Math.round(boss.g[0] + (boss.g[1] - boss.g[0]) * s.rand() ** 1.4);
+          const mantle = Math.round(boss.mantle[0] + (boss.mantle[1] - boss.mantle[0]) * s.rand());
+          s.hooking = { id: boss.id, weight, mantle, power: boss.power, boss: true };
+          const kind = s.tensionFall ? 'run' : 'stop';   // 大物は走るか、重く止まる
+          s.bite = { kind, light: false };
+          s.windows = signalWindows(s.cond, kind, false);
+          s.phase = 'signal';
+          s.signalAt = s.t;
+          emit(s, 'signal', { kind, light: false, tensionFall: s.tensionFall, boss: true });
+          break;
+        }
+      }
       // フォール中（しゃくって1秒後から）にだけ抱く。近くにイカがいて、そのイカの好きな棚にエギがあるほど、
       // 気になっているほど抱きやすい。シリヤケイカだけは、底から持ち上げた直後（0.3秒後から）も食う
       const lifting = s.t - s.liftAt < LIFT_WINDOW;
@@ -556,13 +591,16 @@ export function tick(s, dt) {
     }
     case 'fight': {
       const p = s.hooking.power;
+      // イカの体力：ジェットのたび、また時間とともに減る。ゆるめた時に糸を引き出す力も体力に比例（大物も最後は寄る）
+      s.hooking.stamina ??= 1;
+      s.hooking.stamina = Math.max(STAMINA_MIN, s.hooking.stamina - STAMINA_DECAY * dt);
       if (s.pressing) {
         // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）
-        s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * (s.hooking.weight ?? 0) / 1000)) * dt);
+        s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * dt);
         s.tension += (22 + p * 22) * dt;
       } else {
         s.tension -= 45 * dt;
-        s.dist += 0.6 * p * dt;
+        s.dist += 0.6 * p * s.hooking.stamina * dt;
       }
       // ジェット噴射：大きいイカほどよく走る。波が高いとやり取りが荒れる。
       // ただし連発すると疲れる（ダディ指摘 2026-09-25：春の大型アオリが走りすぎて寄せられない）：
@@ -577,7 +615,7 @@ export function tick(s, dt) {
         if (s.pressing) s.tension += 22;
         else s.dist += 1;
         hk.jets.push(s.t);
-        hk.stamina = Math.max(0.25, hk.stamina - 0.15);
+        hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);
         emit(s, 'jet');
       }
       s.tension = Math.max(0, s.tension);
@@ -591,7 +629,7 @@ export function tick(s, dt) {
         s.hooking = null;
         endCast(s, 'unhooked');
       } else if (s.dist <= 0) {
-        const c = { id: s.hooking.id, weight: s.hooking.weight, mantle: s.hooking.mantle };
+        const c = { id: s.hooking.id, weight: s.hooking.weight, mantle: s.hooking.mantle, ...(s.hooking.boss ? { boss: true } : {}) };
         s.catches.push(c);
         emit(s, 'landed', c);
         s.hooking = null;

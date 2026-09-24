@@ -1356,6 +1356,15 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-season-star { font-family: var(--font-maru); font-weight: 700; font-size: 13px; line-height: 1.5; }
 .ika-egi-season-meta { font-size: 11.5px; line-height: 1.5; opacity: 0.85; }
 .ika-egi-detail { margin-top: 4px; }
+.ika-egi-zukan { grid-column: 1 / -1; order: 4; display: grid; gap: 8px; padding: 14px 16px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; }
+.ika-egi-zukan .ika-egi-side-head b { font-size: 16px; color: var(--ika-orange-deep); }
+.ika-egi-zukan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ika-egi-zukan-card { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 8px; padding: 8px 10px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; background: var(--ika-mist); }
+.ika-egi-zukan-card svg { width: 52px; height: auto; }
+.ika-egi-zukan-card.is-got { border-style: solid; border-color: var(--ika-sea); background: var(--ika-white); }
+.ika-egi-zukan-card.is-boss { border-color: var(--ika-orange); }
+.ika-egi-zukan-name { font-family: var(--font-maru); font-weight: 900; font-size: 14px; }
+.ika-egi-zukan-meta { font-size: 11.5px; line-height: 1.55; color: var(--ika-ink-soft); }
 .ika-egi-detail summary { cursor: pointer; font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); }
 .ika-egi-detail[open] > summary { margin-bottom: 8px; }
 .ika-egi-range { width: 150px; accent-color: var(--ika-orange); }

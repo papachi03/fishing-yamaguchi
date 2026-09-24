@@ -21,11 +21,28 @@ export const monthLabel = (lang, m) => (lang === 'en' ? MONTHS_EN[m - 1] : `${m}
 
 // 図鑑の種名（短い呼び名）。モンゴウイカ（カミナリイカ）→ モンゴウイカ
 export const speciesById = (id) => species.find((s) => s.id === id) ?? null;
+// ゲームだけに出る種（図鑑ページに無いもの）の名前
+const GAME_NAMES = { akaika: pair('アカイカ', 'Neon flying squid'), daiou: pair('ダイオウイカ', 'Giant squid') };
 export const speciesName = (lang, id) => {
+  if (GAME_NAMES[id]) return t(lang, GAME_NAMES[id]);
   const s = speciesById(id);
   if (!s) return id;
   return t(lang, s.name).replace(/[（(].*$/, '').trim();
 };
+
+// ゲームの図鑑（1年を通してそろえる）。hint はまだ釣っていない種の手がかり（季節・時間・棚）
+export const GAME_ZUKAN = [
+  { id: 'aori', hint: pair('春はボトムの大物、秋はシャローの新子', 'Big ones on the bottom in spring, young ones in the shallows in autumn') },
+  { id: 'kouika', hint: pair('春、ボトムをじっくり', 'Spring, work the bottom slowly') },
+  { id: 'mongo', hint: pair('初夏の夕方、シャロー〜中層に大型', 'Early-summer dusk, big ones shallow to mid-water') },
+  { id: 'shiriyake', hint: pair('初夏、底から巻き上げた瞬間に', 'Early summer, the moment you lift off the bottom') },
+  { id: 'kensaki', hint: pair('夏の夜、常夜灯の下', 'Summer nights, under the harbour lamps') },
+  { id: 'yari', hint: pair('冬の夜、中層〜浅め', 'Winter nights, mid-water or shallower') },
+  { id: 'surume', hint: pair('初夏の夜。堤防ではめったに会えない', 'Early-summer nights. Rare from the pier') },
+  { id: 'sodeika', boss: true, hint: pair('ボス。春〜夏の昼、アオリを狙って底を探っていると…', 'Boss. Spring–summer days, working the bottom for bigfin reef squid…') },
+  { id: 'akaika', boss: true, hint: pair('ボス。春の夜、中層に…', 'Boss. Spring nights, in mid-water…') },
+  { id: 'daiou', boss: true, hint: pair('伝説。冬の夜、深い底に…', 'Legend. Winter nights, deep on the bottom…') },
+];
 
 // 山口で会えるイカ（マイ図鑑の分母）
 export const YAMAGUCHI_SQUID = species.filter((s) => s.group === 'yamaguchi').map((s) => s.id);
@@ -127,6 +144,8 @@ export const EGI_TEXT = {
     signal: pair('ラインが走った！', 'The line jumped!'),
     hook: pair('乗った！', 'Hooked!'),
     heavy: pair('重い…！', 'Heavy…!'),
+    bossHook: pair('な、なんだこの重さは…！？', 'What… what is this weight…!?'),
+    bossReveal: (lang, name) => (lang === 'en' ? `BOSS! ${name}!!` : `ボス級！${name}だ！！`),
     reveal: (lang, name, big) => (lang === 'en' ? (big ? `A big one! ${name}!` : `It's a ${name}!`) : (big ? `デカい！${name}だ！` : `${name}だ！`)),
     kilo: pair('キロアップ！', 'Over a kilo!'),
     miss: pair('すっぽ抜け…', 'Missed the hookset…'),
@@ -177,6 +196,7 @@ export const EGI_TEXT = {
     newBest: pair('自己ベスト更新！', 'New personal best!'),
     zukan: pair('マイ図鑑', 'My atlas'),
     firstCatch: pair('初めての種！', 'First of this species!'),
+    notCounted: pair('季節モードの釣果は図鑑と記録に残りません。実際のシーズンで「今日の萩の海」で釣って、図鑑に記録しよう！', "Season-mode catches don't go in your atlas or records. Catch them in the real season with “Today in Hagi” to log them!"),
     sessions: pair('釣行', 'Sessions'),
   },
   live: {
@@ -199,9 +219,18 @@ export const EGI_TEXT = {
     modePractice: pair('練習', 'Practice'),
     now: pair('いま', 'Now'),
   },
+  zukan: {
+    title: pair('マイ図鑑', 'My atlas'),
+    note: pair('「今日の萩の海」で釣ったイカだけが記録されます。1年を通して全種をそろえよう', 'Only catches with “Today in Hagi” are logged. Fill it across the whole year'),
+    unknown: pair('？？？', '???'),
+    count: pair('釣った数', 'Caught'),
+    best: pair('最大', 'Best'),
+    first: pair('初めて', 'First'),
+    boss: pair('ボス', 'BOSS'),
+  },
   seasons: {
     title: pair('季節モード', 'Season mode'),
-    note: pair('釣れない季節でも、その季節の主役を狙えます。山口・日本海側の釣果記録と部員の実釣をもとにしています', 'Fish any season, even out of season. Based on Yamaguchi Sea-of-Japan catch records and our own trips'),
+    note: pair('釣れない季節でも、その季節の主役を狙えます。山口・日本海側の釣果記録と部員の実釣をもとにしています。季節モードの釣果は図鑑には残りません', 'Fish any season, even out of season. Based on Yamaguchi Sea-of-Japan catch records and our own trips. Season-mode catches are not logged in your atlas'),
     detail: pair('くわしい条件（月・時間帯・期待値・風）', 'Fine-tune (month, time, expectation, wind)'),
     zone: { bottom: pair('ボトム', 'Bottom'), mid: pair('中層', 'Mid-water'), shallow: pair('シャロー', 'Shallow'), shallowMid: pair('シャロー〜中層', 'Shallow–mid'), midShallow: pair('中層〜浅め', 'Mid–shallow') },
     modes: {

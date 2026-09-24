@@ -414,3 +414,22 @@ test('イカパンチ：すぐしゃくると警戒される、待てば抱く�
   assert.ok(waited, '2秒待つと抱かせる間になる');
   assert.ok(b.interest > 0.5 && !b.punchPending);
 });
+
+test('図鑑：季節モード（練習）の釣果は数えず、今日の萩の海の釣果だけ残る（ダディ指示 2026-09-25）', async () => {
+  const { recordEgi, emptyEgi } = await import('../src/js/ikabu/games/records.js');
+  const c = [{ id: 'mongo', weight: 2180, mantle: 30 }];
+  const a = recordEgi(emptyEgi(), c, { counted: false });
+  assert.deepEqual(a.fresh, []);
+  assert.equal(a.rec.best, 0);
+  assert.equal(Object.keys(a.rec.species).length, 0);
+  const b = recordEgi(emptyEgi(), c, { counted: true, date: new Date(2026, 5, 10) });
+  assert.deepEqual(b.fresh, ['mongo']);
+  assert.equal(b.rec.species.mongo.first, '2026-06-10');
+});
+
+test('ボス：季節・時間帯が合うときだけ候補になる', async () => {
+  const { bossesFor } = await import('../src/js/ikabu/games/egi.js');
+  assert.deepEqual(bossesFor(5, 'day').map((b) => b.id), ['sodeika']);
+  assert.ok(bossesFor(2, 'night').some((b) => b.id === 'daiou'));
+  assert.deepEqual(bossesFor(10, 'day'), []);
+});

@@ -60,16 +60,19 @@ export function recordM3(rec, g, { day = null, today = new Date().toISOString().
 
 export const emptyEgi = () => ({ best: 0, sessions: 0, species: {}, bestOne: null });
 
-// 1釣行の結果（catches = [{ id, weight, mantle }]）を記録に足す。初めて釣った種の id を返す
-export function recordEgi(rec, catches) {
+// 1釣行の結果（catches = [{ id, weight, mantle }]）を記録に足す。初めて釣った種の id を返す。
+// counted=false（季節モード・練習）は図鑑にも自己ベストにも数えない（ダディ指示 2026-09-25：
+// 「実際のシーズンで釣って図鑑に記録しよう！」＝簡単にコンプさせない）。date は初めて釣った日の記録用
+export function recordEgi(rec, catches, { counted = true, date = new Date() } = {}) {
   const r = rec ?? emptyEgi();
+  if (!counted) return { rec: r, fresh: [], total: catches.reduce((s, c) => s + c.weight, 0), counted: false };
   r.sessions += 1;
   const total = catches.reduce((s, c) => s + c.weight, 0);
   r.best = Math.max(r.best, total);
   const fresh = [];
   for (const c of catches) {
     if (!r.species[c.id]) {
-      r.species[c.id] = { count: 0, weight: 0, mantle: 0 };
+      r.species[c.id] = { count: 0, weight: 0, mantle: 0, first: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` };
       fresh.push(c.id);
     }
     const sp = r.species[c.id];
@@ -78,5 +81,5 @@ export function recordEgi(rec, catches) {
     sp.mantle = Math.max(sp.mantle, c.mantle);
     if (!r.bestOne || c.weight > r.bestOne.weight) r.bestOne = { id: c.id, weight: c.weight, mantle: c.mantle };
   }
-  return { rec: r, fresh, total };
+  return { rec: r, fresh, total, counted: true };
 }

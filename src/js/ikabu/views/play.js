@@ -3,7 +3,7 @@
 // 動く部分は pages/play.js が games/egi-ui.js と games/match3-ui.js を結びつける。
 import { t, pair, esc, assetHref, pageHref } from '../i18n.js';
 import { pageHead, noteHTML } from './parts.js';
-import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID } from '../games/play-text.js';
+import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID, GAME_ZUKAN } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
 import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES } from '../games/egi.js';
@@ -246,13 +246,18 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           <p class="ika-egi-log" id="ika-egi-log" role="status" aria-live="polite" aria-label="${t(lang, T.a11y.log)}"></p>
         </div>
 
+        <section class="ika-egi-zukan" id="ika-egi-zukan" aria-labelledby="ika-egi-zukan-title">
+          <p class="ika-egi-side-head" id="ika-egi-zukan-title">${t(lang, T.zukan.title)} <b id="ika-egi-zukan-count">0</b> / ${GAME_ZUKAN.length}</p>
+          <p class="ika-egi-cue-note">${t(lang, T.zukan.note)}</p>
+          <ul class="ika-egi-zukan-grid" id="ika-egi-zukan-grid"></ul>
+        </section>
         <aside class="ika-egi-side" id="ika-egi-side" aria-label="${t(lang, '記録', 'Records')}">
           <p class="ika-egi-side-head">${t(lang, '今日の釣果', 'This session')}</p>
           <ol class="ika-egi-catches" id="ika-egi-catches"><li class="ika-egi-catch-empty">${t(lang, 'まだ釣れていない', 'Nothing yet')}</li></ol>
           <p class="ika-egi-side-head">${t(lang, '記録', 'Records')}</p>
           <dl class="ika-egi-records" id="ika-egi-records">
             <div><dt>${t(lang, T.over.best)}</dt><dd><b data-rec="best">0</b> g</dd></div>
-            <div><dt>${t(lang, T.over.zukan)}</dt><dd><b data-rec="zukan">0</b> / ${YAMAGUCHI_SQUID.length}</dd></div>
+            <div><dt>${t(lang, T.over.zukan)}</dt><dd><b data-rec="zukan">0</b> / ${GAME_ZUKAN.length}</dd></div>
             <div><dt>${t(lang, T.over.sessions)}</dt><dd><b data-rec="sessions">0</b></dd></div>
           </dl>
         </aside>
