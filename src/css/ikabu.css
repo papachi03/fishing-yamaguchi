@@ -1437,6 +1437,8 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-gestures p { margin-top: 2px; }
 .ika-egi-gestures-keys { color: var(--ika-ink-soft); font-size: 11.5px; }
 .ika-egi-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* 結果カードが舞台より高くなってもボタンは常に見えるよう、カードの下に貼りつける（ぱっぱ指摘：スマホで釣れた後のボタンが見えない） */
+.ika-egi-card .ika-egi-card-actions { position: sticky; bottom: 0; z-index: 1; margin: 0 -4px; padding: 6px 4px 2px; background: var(--ika-white); }
 .ika-egi-windnote { display: block; margin-top: 4px; max-width: 12em; font-size: 10.5px; line-height: 1.5; color: var(--ika-orange-deep); font-weight: 700; }
 .ika-egi-windnote[hidden] { display: none; }
 .ika-egi-card-cond { font-size: 11.5px; line-height: 1.6; color: var(--ika-ink-soft); }
@@ -1748,6 +1750,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   /* 結果カードは舞台の下の帯に（吊ったイカは上に見えたまま） */
   .ika-egi-card, .ika-egi-card--over { inset: auto 8px 8px 8px; width: auto; max-height: 68%; overflow: auto; transform: none; top: auto; left: auto; right: 8px; padding: 12px 14px; font-size: 13px; }
   .ika-egi-card-photo { display: none; }
+  .ika-egi-card-art { width: 52px; height: 60px; }
+  .ika-egi-card-tip { font-size: 11.5px; line-height: 1.5; padding: 4px 8px; }
+  .ika-egi-card-rows dd { font-size: 19px; }
   .ika-egi-cue { font-size: 14px; top: 34%; }
   .ika-egi-stock-spec { display: block; margin: 2px 0 0; }
   .ika-egi-card-title { font-size: 17px; }
@@ -1785,6 +1790,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-egi-hud { inset: 6px; }
   .ika-egi-callout { font-size: 14px; padding: 4px 12px; top: 16%; }
   .ika-egi-card, .ika-egi-card--over { max-height: 86%; overflow: auto; font-size: 12.5px; padding: 10px 12px; }
+  .ika-egi-card-art { width: 52px; height: 60px; }
+  .ika-egi-card-tip { font-size: 11.5px; line-height: 1.5; padding: 4px 8px; }
+  .ika-egi-card { gap: 6px; }
   .ika-egi-card-photo { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
