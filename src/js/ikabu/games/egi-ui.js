@@ -114,7 +114,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 動く部品（1回だけ作り、舞台を作り直したときは付け直す）
     if (!sc.nodes) sc.nodes = makeNodes();
     const n = sc.nodes;
-    sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.egiWater, n.hugWater, n.jet);
+    sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.egiWater, n.hugWater, n.jet, n.fx);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
     paintEgi();
     updateBottom(bottom);
@@ -131,9 +131,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       egiWater: mk('ika-eg-egi'), egiAir: mk('ika-eg-egi'),
       hugWater: mk('ika-eg-hug'), hugAir: mk('ika-eg-hug'),
       jet: svgEl('ellipse', { class: 'ika-eg-jet', fill: '#dff6f8', opacity: '0' }),
+      // エフェクト（2026-09-25）：ジェットの水流の筋、泡、パンチの足の影と波紋
+      fx: svgEl('g', { class: 'ika-eg-fx' }),
       entry: svgEl('ellipse', { class: 'ika-eg-entry', rx: '10', ry: '3.5', fill: 'none', stroke: '#fff', 'stroke-width': '2', opacity: '0' }),
       drips: [0, 1, 2].map((i) => svgEl('circle', { r: i === 0 ? '4' : '3', fill: i === 0 ? '#050c1a' : '#dff6f8', opacity: '0' })),
     };
+    n.jetStreak = svgEl('path', { fill: 'rgba(223,246,248,0.55)', opacity: '0' });
+    n.jetCore = svgEl('path', { fill: 'none', stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0' });
+    n.bubbles = Array.from({ length: 18 }, () => svgEl('circle', { r: '2', fill: 'none', stroke: 'rgba(230,250,252,0.85)', 'stroke-width': '1.2', opacity: '0' }));
+    n.punchRing = svgEl('ellipse', { fill: 'none', stroke: 'rgba(230,250,252,0.9)', 'stroke-width': '2', opacity: '0' });
+    n.punchArms = [0, 1, 2].map(() => svgEl('path', { fill: 'none', stroke: 'rgba(12,30,40,0.75)', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0' }));
+    n.fx.append(n.jetStreak, n.jetCore, n.punchRing, ...n.punchArms, ...n.bubbles);
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
     // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
@@ -260,6 +268,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.pick.classList.toggle('is-locked', !canPick);
   }
   // エギの色：舞台のエギ・アイコン・色のボタンをそろえる
+  // 泡：dir=-1 は釣り人側（左）へ吹き出す、1 はエギのまわりに散る。ゆらゆら上へ浮いて消える
+  const bubbles = [];
+  function spawnBubbles(x, y, count, dir) {
+    if (reduced) return;
+    for (let i = 0; i < count; i++) {
+      bubbles.push({ x, y, vx: dir < 0 ? -(40 + Math.random() * 90) : (Math.random() - 0.5) * 60, vy: -(15 + Math.random() * 30), r: 1.5 + Math.random() * 3, t0: now, life: 0.9 + Math.random() * 0.8, ph: Math.random() * 6 });
+    }
+    if (bubbles.length > 18) bubbles.splice(0, bubbles.length - 18);
+  }
   function paintEgi() {
     const hex = EGI_COLOR_HEX[settings.egi.color] ?? EGI_COLOR_HEX.orange;
     const n = sc?.nodes;
@@ -568,6 +585,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'jet':
           V.lastJet = now;
+          spawnBubbles(V.hug.x - 10, V.hug.y, 6 + Math.round(6 * Math.min(1.6, V.heavy ?? 0.5)), -1);
           feel.fire('jet', { power: s.hooking?.power });
           if (now - (V.jetCallout ?? -9) > 2.5) { callout(t(lang, TX.msg.jet)); V.jetCallout = now; }
           break;
@@ -588,6 +606,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'punch':
           // イカパンチ：エギがピクッと弾かれる（描画側）。やさしいモードは文字でも知らせる
           V.punchAt = now;
+          spawnBubbles(V.egi.x, V.egi.y, 5, 1);
           feel.fire('punch');
           if (settings.cue === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.punch);
@@ -982,7 +1001,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (phase === 'fight') {
       // 重いイカほど竿が深く曲がり、引き込まれる
       const hv = V.heavy ?? 0.5;
-      rodAng = 58 - 10 * hv;
+      rodAng = 58 - 10 * hv - (now - V.lastJet < 0.25 ? 7 * (1 - (now - V.lastJet) / 0.25) * Math.min(1.4, hv + 0.4) : 0);   // ジェットで竿先がガクッと入る
       pull = clamp((s.tension / 100) * (0.75 + 0.45 * hv), 0.15, 1.3);
     }
     else if (V.hug.on) { rodAng = 52; pull = 0.35; }
@@ -1210,11 +1229,42 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const ph = (now * 1.1 + i * 0.33) % 1;
       setAttrs(dp, { cx: f1(V.hug.x + [-8, 6, 1][i]), cy: f1(V.hug.y + 120 + ph * ph * 90), opacity: (0.85 * (1 - ph)).toFixed(2) });
     });
-    // ジェット噴射の水流（胴の先から後ろへ）
-    if (V.hug.on && now - V.lastJet < 0.4) {
-      const a = 1 - (now - V.lastJet) / 0.4;
-      setAttrs(n.jet, { cx: f1(V.hug.x + 70 + 40 * (1 - a)), cy: f1(V.hug.y + 30), rx: f1(18 + 30 * (1 - a)), ry: f1(6 + 4 * (1 - a)), opacity: (0.5 * a).toFixed(2) });
-    } else n.jet.setAttribute('opacity', '0');
+    // ジェット噴射：頭の下の漏斗から釣り人側へ水を噴いて、胴の先の方向（沖）へ飛ぶ。
+    // 太い水流の筋（大きいイカほど長く太い）＋白い芯＋泡
+    n.jet.setAttribute('opacity', '0');
+    if (V.hug.on && !reduced && now - V.lastJet < 0.5) {
+      const a = 1 - (now - V.lastJet) / 0.5;
+      const hv = Math.min(1.6, V.heavy ?? 0.5);
+      const L = (60 + 70 * hv) * (0.6 + 0.4 * (1 - a));
+      const w = 5 + 7 * hv;
+      const x0 = V.hug.x - 6, y0 = V.hug.y + 4;
+      n.jetStreak.setAttribute('d', `M${f1(x0)},${f1(y0 - w * 0.5)} Q${f1(x0 - L * 0.5)},${f1(y0 - w)} ${f1(x0 - L)},${f1(y0)} Q${f1(x0 - L * 0.5)},${f1(y0 + w)} ${f1(x0)},${f1(y0 + w * 0.5)} Z`);
+      n.jetStreak.setAttribute('opacity', (0.75 * a).toFixed(2));
+      n.jetCore.setAttribute('d', `M${f1(x0 - 4)},${f1(y0)} L${f1(x0 - L * 0.8)},${f1(y0 + Math.sin(now * 40) * 1.5)}`);
+      n.jetCore.setAttribute('opacity', (0.8 * a).toFixed(2));
+    } else { n.jetStreak.setAttribute('opacity', '0'); n.jetCore.setAttribute('opacity', '0'); }
+    // イカパンチ：エギのまわりに水の輪が広がり、沖側からイカの足の影が一瞬のびて叩く
+    const pp = V.punchAt != null ? (now - V.punchAt) / 0.45 : 9;
+    if (pp < 1 && !reduced) {
+      setAttrs(n.punchRing, { cx: f1(V.egi.x), cy: f1(V.egi.y + 10), rx: f1(8 + 26 * pp), ry: f1(4 + 10 * pp), opacity: (0.9 * (1 - pp)).toFixed(2) });
+      const reach = Math.sin(Math.PI * Math.min(1, pp * 1.6));
+      n.punchArms.forEach((arm, i) => {
+        const sx = V.egi.x + 34 + i * 5, sy = V.egi.y + 4 + (i - 1) * 7;
+        const ex = V.egi.x + 34 - 30 * reach, ey = V.egi.y + 10 + (i - 1) * 4;
+        arm.setAttribute('d', `M${f1(sx)},${f1(sy)} Q${f1((sx + ex) / 2)},${f1(sy - 8 + i * 4)} ${f1(ex)},${f1(ey)}`);
+        arm.setAttribute('opacity', (0.8 * reach).toFixed(2));
+      });
+    } else { n.punchRing.setAttribute('opacity', '0'); n.punchArms.forEach((a) => a.setAttribute('opacity', '0')); }
+    // 泡
+    n.bubbles.forEach((b, i) => {
+      const p = bubbles[i];
+      if (!p) { b.setAttribute('opacity', '0'); return; }
+      const t = now - p.t0;
+      if (t > p.life) { b.setAttribute('opacity', '0'); return; }
+      const k = t / p.life;
+      setAttrs(b, { cx: f1(p.x + p.vx * t * (1 - k * 0.5) + Math.sin(p.ph + t * 9) * 2), cy: f1(Math.max(S.surface + 4, p.y + p.vy * t - 20 * t * t)), r: f1(p.r * (1 + 0.4 * k)), opacity: (0.9 * (1 - k)).toFixed(2) });
+    });
+    for (let i = bubbles.length - 1; i >= 0; i--) if (now - bubbles[i].t0 > bubbles[i].life) bubbles.splice(i, 1);
 
     /* ----- 気配のイカ：フォール中、気になっているほど寄ってくる（しゃくりの最中は距離をとる） ----- */
     const underwater = V.egi.mode === 'water' && !V.hug.on;
