@@ -6,7 +6,7 @@ import { pageHead, noteHTML } from './parts.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID, GAME_ZUKAN } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
-import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES } from '../games/egi.js';
+import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, EGI_COLORS, EGI_COLOR_HEX, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES } from '../games/egi.js';
 import { recommendedSizes, distRank, snagRank } from '../games/egi-advice.js';
 import { SIZE, MOVES, GOAL, RARE } from '../games/match3.js';
 
@@ -49,10 +49,15 @@ const hubHTML = (lang) => `
 /* ---------- しゃくって抱かせろ！ ---------- */
 
 // エギの絵（号数で大きさ、タイプで色）。ブラウザ側でも同じ関数で描き直す
-export function egiIconHTML(size = 3, type = 'normal') {
+export function egiIconHTML(size = 3, type = 'normal', color = 'orange') {
   const k = { 2.5: 0.85, 3: 1, 3.5: 1.15 }[size] ?? 1;
-  const fill = { shallow: '#ff9a4d', normal: '#f47321', deep: '#d0451e' }[type] ?? '#f47321';
+  const fill = EGI_COLOR_HEX[color] ?? '#f47321';
   return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${k.toFixed(2)})"><path d="M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z" fill="${fill}" stroke="#16233a" stroke-width="3" stroke-linejoin="round"/><path d="M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22" stroke="#ffd2a8" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="3.5" r="1.8" fill="#16233a"/><path d="M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35" stroke="#16233a" stroke-width="1.6" stroke-linecap="round"/></g></svg>`;
+}
+
+// エギの色の丸いボタン（エギ選び欄と、舞台の色選びで同じものを使う）
+export function colorChipsHTML(lang, current = 'orange') {
+  return EGI_COLORS.map((c) => `<button type="button" class="ika-egi-colorchip" data-color="${c}" aria-pressed="${String(c === current)}" title="${t(lang, EGI_TEXT.egi.colors[c])}" style="--c:${EGI_COLOR_HEX[c]}"><i aria-hidden="true"></i><span>${t(lang, EGI_TEXT.egi.colors[c])}</span></button>`).join('');
 }
 
 // エギ選び。ブラウザ側は中身（おすすめ・特徴）だけ差し替える
@@ -62,10 +67,11 @@ export function egiPickerHTML(lang, { month = 9, tod = 'evening', egi = DEFAULT_
   const sizes = EGI_SIZES.map((s) => `<button type="button" class="ika-chip ika-egi-size${rec.includes(s) ? ' is-rec' : ''}" data-size="${s}" aria-pressed="${String(s === egi.size)}">${s}${t(lang, '号', '')}</button>`).join('');
   const types = EGI_TYPES.map((k) => `<button type="button" class="ika-chip" data-type="${k}" aria-pressed="${String(k === egi.type)}">${t(lang, T.types[k])}</button>`).join('');
   return `
-    <div class="ika-egi-pick-head"><span class="ika-egi-pick-icon-wrap" id="ika-egi-pick-icon">${egiIconHTML(egi.size, egi.type)}</span><span class="ika-egi-setup-label">${t(lang, T.title)}</span><b class="ika-egi-pick-current" id="ika-egi-pick-current">${T.current(lang, egi.size, t(lang, T.types[egi.type]))}</b></div>
+    <div class="ika-egi-pick-head"><span class="ika-egi-pick-icon-wrap" id="ika-egi-pick-icon">${egiIconHTML(egi.size, egi.type, egi.color)}</span><span class="ika-egi-setup-label">${t(lang, T.title)}</span><b class="ika-egi-pick-current" id="ika-egi-pick-current">${T.current(lang, egi.size, t(lang, T.types[egi.type]))}</b></div>
     <div class="ika-egi-setup-row">
       <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.size)}</span><div class="ika-chips ika-chips--small" id="ika-egi-size" role="group" aria-label="${t(lang, T.size)}">${sizes}</div></div>
       <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.type)}</span><div class="ika-chips ika-chips--small" id="ika-egi-type" role="group" aria-label="${t(lang, T.type)}">${types}</div></div>
+      <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.color)}</span><div class="ika-egi-colors" id="ika-egi-color" role="group" aria-label="${t(lang, T.color)}">${colorChipsHTML(lang, egi.color)}</div></div>
     </div>
     <dl class="ika-egi-pick-traits" id="ika-egi-pick-traits">${egiTraitsHTML(lang, egi)}</dl>
     <p class="ika-egi-pick-rec"><span class="ika-egi-pick-star" aria-hidden="true">★</span>${t(lang, T.recommend)}: <b id="ika-egi-pick-rec">${rec.map((s) => `${s}${t(lang, '号', '')}`).join(' / ')}</b></p>`;
@@ -225,6 +231,12 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             <div class="ika-egi-gauge ika-egi-gauge--tension" id="ika-egi-tension" hidden aria-hidden="true">
               <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
               <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
+            </div>
+            <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap)}</div>
+            <div class="ika-egi-colorpop" id="ika-egi-colorpop" role="dialog" aria-label="${t(lang, T.egi.colorTitle)}" hidden>
+              <p class="ika-egi-colorpop-title">${t(lang, T.egi.colorTitle)}</p>
+              <div class="ika-egi-colors" id="ika-egi-colorpop-chips">${colorChipsHTML(lang, DEFAULT_EGI.color)}</div>
+              <p class="ika-egi-colorpop-why" id="ika-egi-colorpop-why"></p>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
             <div class="ika-egi-cue" id="ika-egi-cue-label" hidden aria-hidden="true"></div>

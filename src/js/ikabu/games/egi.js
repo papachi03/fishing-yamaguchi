@@ -29,12 +29,48 @@ const TYPE_SINK = { shallow: 1.9, normal: 1, deep: 0.6 }; // シャローは遅�
 const TYPE_SNAG = { shallow: 0.5, normal: 1, deep: 1.6 }; // 速く沈むほど根掛かりしやすい
 const SIZE_DIST = { 2.5: 0.85, 3: 0.93, 3.5: 1 }; // 重いほど遠くへ飛ぶ
 const TIME_SCALE = 3.4;
-export const DEFAULT_EGI = { size: 3, type: 'normal' };
+export const DEFAULT_EGI = { size: 3, type: 'normal', color: 'orange' };
+
+// ---------------- エギの色（布＝背中の色） ----------------
+// YAMASHITA 公式「エギの色の選び方」ほか（2026-09-25 調査）：
+//   布の色は「潮の色・活性」に合わせる（濁り・高活性＝オレンジ/ピンク、澄み・スレ＝茶/緑/青）、
+//   下地は「光の色」＝時間帯に合わせる（マズメ＝赤・ピンク、日中＝金・銀、夜＝赤・夜光）。
+//   ゲームでは布の7色だけを選び、時間帯の考え方もこの7色の合い具合に織り込む。効きは号数・棚より小さく ±25% 以内。
+export const EGI_COLORS = ['red', 'blue', 'green', 'purple', 'orange', 'pink', 'brown'];
+export const EGI_COLOR_HEX = { red: '#d8342c', blue: '#2f6fc9', green: '#5a8a3a', purple: '#7a4bb0', orange: '#f47321', pink: '#f06aa6', brown: '#8a5a34' };
+const FLASHY = ['orange', 'pink', 'red'];
+const NATURAL = ['brown', 'green', 'blue'];
+const COLOR_TOD = {
+  morning: { red: 1.2, pink: 1.2, orange: 1.12, purple: 1.0, brown: 0.9, green: 0.9, blue: 0.85 },
+  evening: { red: 1.2, pink: 1.2, orange: 1.12, purple: 1.0, brown: 0.9, green: 0.9, blue: 0.85 },
+  day: { brown: 1.15, green: 1.15, blue: 1.1, orange: 1.0, purple: 0.95, pink: 0.9, red: 0.85 },
+  night: { purple: 1.2, red: 1.15, pink: 1.1, orange: 0.95, green: 0.95, brown: 0.9, blue: 0.85 },
+};
+// 潮の濁りは実データが無いので、波の高さで代わりに見る（波1m以上＝濁りぎみ、0.5m未満＝澄みぎみ）
+export const clarityOf = (cond) => (cond.wave >= 1.0 ? 'murky' : cond.wave < 0.5 ? 'clear' : 'mid');
+export function colorFit(color, { tod, cond, mood }) {
+  let k = COLOR_TOD[tod]?.[color] ?? 1;
+  const cl = clarityOf(cond);
+  if (cl === 'murky') k += FLASHY.includes(color) && color !== 'red' ? 0.1 : NATURAL.includes(color) ? -0.05 : 0;
+  if (cl === 'clear') k += NATURAL.includes(color) ? 0.05 : FLASHY.includes(color) ? -0.05 : 0;
+  if (mood === 'active') k += FLASHY.includes(color) ? 0.05 : 0;
+  if (mood === 'calm') k += NATURAL.includes(color) ? 0.05 : FLASHY.includes(color) ? -0.05 : 0;
+  return Math.min(1.25, Math.max(0.75, k));
+}
+// いまの条件でいちばん合う色（ヒント・振り返り用）
+export function bestColors(opts) {
+  const scored = EGI_COLORS.map((c) => [c, colorFit(c, opts)]).sort((a, b) => b[1] - a[1]);
+  return scored.filter(([, v]) => v >= scored[0][1] - 0.001).map(([c]) => c);
+}
+// カラーローテーション：同じ色で ROTATE_AFTER 投続けてアタリが無く、色を替えた次の1投は気を引ける
+export const ROTATE_AFTER = 2;
+export const ROTATE_GAIN = 0.1;
 
 export function normalizeEgi(e = {}) {
   const size = EGI_SIZES.includes(Number(e.size)) ? Number(e.size) : DEFAULT_EGI.size;
   const type = EGI_TYPES.includes(e.type) ? e.type : DEFAULT_EGI.type;
-  return { size, type };
+  const color = EGI_COLORS.includes(e.color) ? e.color : DEFAULT_EGI.color;
+  return { size, type, color };
 }
 // 実物の沈下速度（秒/m）と、ゲームでの沈む速さ（m/秒）
 export const egiSecPerMeter = (egi) => SEC_PER_M[egi.size] * TYPE_SINK[egi.type];
@@ -262,6 +298,9 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     bite: null, // いまのアタリ { kind, light }
     punchAt: -99, // 最後のイカパンチの時刻
     liftAt: -99, // 底からエギを持ち上げた時刻（シリヤケイカは巻き上げで食う）
+    dryCasts: 0, // 同じ色でアタリの無かった投げの数（カラーローテーション用）
+    rotated: false, // 色を替えた次の1投（気を引ける）
+    signaled: false, // この投げでアタリがあったか
     punchPending: false, // パンチの後、まだ「待った／すぐしゃくった」が決まっていない
     squid: 0,
     phase: 'ready',
@@ -295,7 +334,12 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
 // 投げ終わってから次の投げまでにエギを替えられる（構え中・結果表示中だけ）
 export function setEgi(s, egi) {
   if (s.phase !== 'ready' && s.phase !== 'result') return false;
+  const before = s.spec?.color;
   s.spec = normalizeEgi(egi);
+  if (before && s.spec.color !== before) {
+    if (s.dryCasts >= ROTATE_AFTER) s.rotated = true;
+    s.dryCasts = 0;
+  }
   return true;
 }
 
@@ -304,6 +348,7 @@ const emit = (s, type, data = {}) => s.events.push({ type, t: s.t, ...data });
 // その回の投げを終えて、次の構えへ（もう投げられなければ終了）
 function endCast(s, why) {
   s.last = why;
+  s.dryCasts = s.signaled ? 0 : (s.dryCasts ?? 0) + 1;
   s.tensionFall = false;
   s.phase = s.casts > 0 && s.egi > 0 ? 'result' : 'over';
   if (s.phase === 'over') emit(s, 'over', { total: totalWeight(s) });
@@ -409,6 +454,8 @@ export function release(s) {
     s.punchAt = -99;
     s.punchPending = false;
     s.liftAt = -99;
+    s.signaled = false;
+    if (s.rotated) { s.interest += ROTATE_GAIN; s.rotated = false; emit(s, 'rotation', {}); }
     s.squid = sampleSquid(s);
     s.phase = 'sinking';
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec });
@@ -550,7 +597,8 @@ export function tick(s, dt) {
         const moodFactor = 0.6 + 0.08 * s.cond.expectation; // 期待値0で0.6倍、10で1.4倍
         // 渋い日は長いテンションフォールが効き、やる気のある日は速いフリーフォールでも抱く
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
-        const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM);
+        const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM)
+          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood });
         if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
           s.punchAt = s.t;
           s.punchPending = true;
@@ -567,6 +615,7 @@ export function tick(s, dt) {
           s.windows = signalWindows(s.cond, kind, light);
           s.phase = 'signal';
           s.signalAt = s.t;
+          s.signaled = true;
           emit(s, 'signal', { kind, light, tensionFall: s.tensionFall });
           break;
         }

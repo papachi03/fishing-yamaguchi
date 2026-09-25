@@ -313,7 +313,7 @@ test('エギは投げる前（構え中・結果表示中）だけ替えられ�
   assert.equal(setEgi(s, { size: 2.5, type: 'shallow' }), true);
   cast(s);
   assert.equal(setEgi(s, { size: 3.5 }), false);
-  assert.deepEqual(s.spec, { size: 2.5, type: 'shallow' });
+  assert.deepEqual(s.spec, { size: 2.5, type: 'shallow', color: 'orange' });
 });
 
 test('フォール：しゃくった後に押したままだとテンションフォール（ゆっくり沈み、手前に寄る）、離すとフリーフォール', () => {
@@ -432,4 +432,18 @@ test('ボス：季節・時間帯が合うときだけ候補になる', async ()
   assert.deepEqual(bossesFor(5, 'day').map((b) => b.id), ['sodeika']);
   assert.ok(bossesFor(2, 'night').some((b) => b.id === 'daiou'));
   assert.deepEqual(bossesFor(10, 'day'), []);
+});
+
+test('エギの色：マズメは赤・ピンク、日中はナチュラル系、夜は紫が合う。濁りはオレンジ・ピンク（YAMASHITAの考え方）', async () => {
+  const { colorFit, bestColors, normalizeConditions: nc } = await import('../src/js/ikabu/games/egi.js');
+  const c = nc({ wave: 0.7 });
+  assert.ok(colorFit('red', { tod: 'evening', cond: c, mood: 'active' }) > colorFit('blue', { tod: 'evening', cond: c, mood: 'active' }));
+  assert.ok(bestColors({ tod: 'day', cond: c, mood: 'calm' }).every((x) => ['brown', 'green', 'blue'].includes(x)));
+  assert.ok(bestColors({ tod: 'night', cond: c, mood: 'calm' }).includes('purple'));
+  const murky = nc({ wave: 1.3 });
+  assert.ok(colorFit('orange', { tod: 'day', cond: murky, mood: 'active' }) > colorFit('brown', { tod: 'day', cond: murky, mood: 'active' }));
+  for (const col of ['red', 'blue', 'green', 'purple', 'orange', 'pink', 'brown']) {
+    const v = colorFit(col, { tod: 'day', cond: c, mood: 'calm' });
+    assert.ok(v >= 0.75 && v <= 1.25);
+  }
 });

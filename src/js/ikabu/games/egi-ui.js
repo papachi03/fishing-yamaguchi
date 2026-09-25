@@ -8,7 +8,7 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
+import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
@@ -54,6 +54,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'),
+    pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
@@ -115,6 +116,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const n = sc.nodes;
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.egiWater, n.hugWater, n.jet);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
+    paintEgi();
     updateBottom(bottom);
     V.camShown = null;
     if (s) draw(0);   // 作り直した直後に1回描く（ループが止まっていても竿と糸が出るように）
@@ -134,6 +136,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     };
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
+    // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
+    n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '26', fill: 'transparent', 'pointer-events': 'all' }));
     n.ghost.append(egiShape());
     n.inkBody = svgEl('ellipse', { fill: '#050c1a' });
     n.inkRim = svgEl('ellipse', { fill: 'none', stroke: 'rgba(205,240,238,0.6)', 'stroke-width': '3' });
@@ -245,7 +249,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const rec = recommendedSizes(settings.month, settings.tod);
     el.pickSize.querySelectorAll('.ika-chip').forEach((b) => b.classList.toggle('is-rec', rec.includes(Number(b.dataset.size))));
     el.pickRec.textContent = rec.map((x) => `${x}${t(lang, '号', '')}`).join(' / ');
-    el.pickIcon.innerHTML = egiIconHTML(e.size, e.type);
+    el.pickIcon.innerHTML = egiIconHTML(e.size, e.type, e.color);
+    syncColorChips();
+    paintEgi();
     el.pickCurrent.textContent = TX.egi.current(lang, e.size, typeName(e.type));
     el.pickTraits.innerHTML = egiTraitsHTML(lang, e);
     el.spec.textContent = TX.egi.current(lang, e.size, typeName(e.type));
@@ -253,6 +259,50 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     root.querySelectorAll('#ika-egi-size .ika-chip, #ika-egi-type .ika-chip').forEach((b) => { b.disabled = !canPick; });
     el.pick.classList.toggle('is-locked', !canPick);
   }
+  // エギの色：舞台のエギ・アイコン・色のボタンをそろえる
+  function paintEgi() {
+    const hex = EGI_COLOR_HEX[settings.egi.color] ?? EGI_COLOR_HEX.orange;
+    const n = sc?.nodes;
+    if (!n) return;
+    [n.egiWater, n.egiAir, n.ghost].forEach((g) => g.querySelector('.ika-art-egi path')?.setAttribute('fill', hex));
+  }
+  const colorOpts = () => ({ tod: settings.tod, cond: settings.cond, mood: moodOf(settings.month, settings.tod, settings.cond) });
+  // なぜその色が効くのか（時間帯と、波から見た濁り）
+  function colorWhy() {
+    const W = TX.egi.colorWhy;
+    const tod = settings.tod === 'day' ? W.day : settings.tod === 'night' ? W.night : W.mazume;
+    const cl = clarityOf(settings.cond);
+    const clear = cl === 'murky' ? W.murky : cl === 'clear' ? W.clear : null;
+    const best = bestColors(colorOpts()).map((c) => t(lang, TX.egi.colors[c])).join('・');
+    return `${t(lang, tod)}${clear ? `。${t(lang, clear)}` : ''}。${t(lang, TX.egi.colorBest)}：${best}`;
+  }
+  function syncColorChips() {
+    for (const box of [el.pickColor, el.colorPopChips]) box?.querySelectorAll('[data-color]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === settings.egi.color)));
+  }
+  const COLOR_SEEN = 'ikabu.egi.colorSeen';
+  let colorSeen = Boolean(readPref(COLOR_SEEN));
+  function openColorPop() {
+    if (!el.colorPop) return;
+    el.colorPopWhy.textContent = colorWhy();
+    syncColorChips();
+    el.colorPop.hidden = false;
+    if (!colorSeen) { colorSeen = true; writePref(COLOR_SEEN, true); }
+    el.colorTip.hidden = true;
+  }
+  function chooseColor(color) {
+    const before = settings.egi.color;
+    chooseEgi({ color });
+    if (settings.egi.color === before) return;
+    const fit = colorFit(color, colorOpts());
+    // 一言は短く：合う色なら◎、合わない色なら今の条件で合う色を添える（くわしい理由は色選びの窓に出ている）
+    const best = bestColors(colorOpts()).map((c) => t(lang, TX.egi.colors[c])).join('・');
+    const mark = fit >= 1.08 ? '◎' : fit <= 0.92 ? '△' : '○';
+    callout(`${t(lang, TX.egi.colors[color])} ${mark}${fit < 1.08 ? `（${t(lang, TX.egi.colorBest)}：${best}）` : ''}`, fit >= 1.08 ? 'good' : fit <= 0.92 ? 'bad' : '');
+    el.colorPop.hidden = true;
+  }
+  el.pickColor?.addEventListener('click', (e) => { const b = e.target.closest('[data-color]'); if (b) chooseColor(b.dataset.color); });
+  el.colorPopChips?.addEventListener('click', (e) => { const b = e.target.closest('[data-color]'); if (b) chooseColor(b.dataset.color); });
+  el.colorPop?.addEventListener('pointerdown', (e) => e.stopPropagation());
   function chooseEgi(patch) {
     const next = normalizeEgi({ ...settings.egi, ...patch });
     if (s && s.phase !== 'over' && !setEgi(s, next)) return;   // 投げている最中は替えられない
@@ -565,6 +615,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'ready':
           resetForNextCast();
+          if (s.dryCasts >= 2) setTimeout(() => { if (s.phase === 'ready') callout(t(lang, TX.egi.rotateHint)); }, 400);
+          break;
+        case 'rotation':
+          callout(t(lang, TX.egi.rotation), 'good');
           break;
         case 'over':
           break;
@@ -659,6 +713,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${counted && total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
       ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, O.notCounted)}</p>` : ''}
       ${list}${noEgi}
+      <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
       <button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>`;
@@ -742,7 +797,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const canSwipe = () => s && (s.phase === 'sinking' || s.phase === 'action');
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details')) return;
+    if (e.target.closest?.('.ika-eg-egi-hit') && s && (s.phase === 'ready' || s.phase === 'result') && !V.flight) {
+      e.preventDefault();
+      openColorPop();
+      return;
+    }
+    if (el.colorPop && !el.colorPop.hidden) { el.colorPop.hidden = true; if (!e.target.closest?.('.ika-egi-btn')) return; }
+    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop')) return;
     if (ptr) return;
     const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
@@ -1117,6 +1178,19 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const egiVisible = !V.hug.on || V.egi.mode === 'flight' || V.egi.mode === 'cast';
     const egiAir = V.egi.y < S.surface;
     const egiT = `translate(${f1(V.egi.x)} ${f1(V.egi.y)}) rotate(${f1(V.egi.ang)}) scale(1.15)`;
+    // 最初だけ：投げる前に「← エギをタップで色が選べる」をエギの右に出す（一度でも色を選んだら出さない）
+    if (el.colorTip) {
+      const showTip = !colorSeen && phase === 'ready' && V.egi.mode === 'tip' && !V.flight;
+      if (showTip) {
+        const eb = n.egiAir.getBoundingClientRect();
+        const sb = el.stage.getBoundingClientRect();
+        if (eb.width) {
+          el.colorTip.style.left = `${Math.round(eb.right - sb.left + 6)}px`;
+          el.colorTip.style.top = `${Math.round(eb.top - sb.top + eb.height / 2)}px`;
+        }
+      }
+      if (el.colorTip.hidden === showTip) el.colorTip.hidden = !showTip;
+    }
     n.egiAir.setAttribute('transform', egiT); n.egiWater.setAttribute('transform', egiT);
     n.egiAir.setAttribute('opacity', egiVisible && egiAir ? '1' : '0');
     n.egiWater.setAttribute('opacity', egiVisible && !egiAir ? '1' : '0');
