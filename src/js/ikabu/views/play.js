@@ -232,7 +232,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
               <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
             </div>
-            <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap)}</div>
+            <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap).split('|').map((w) => `<span>${w}</span>`).join('')}</div>
             <div class="ika-egi-colorpop" id="ika-egi-colorpop" role="dialog" aria-label="${t(lang, T.egi.colorTitle)}" hidden>
               <p class="ika-egi-colorpop-title">${t(lang, T.egi.colorTitle)}</p>
               <div class="ika-egi-colors" id="ika-egi-colorpop-chips">${colorChipsHTML(lang, DEFAULT_EGI.color)}</div>
@@ -264,6 +264,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           <p class="ika-egi-side-head" id="ika-egi-zukan-title">${t(lang, T.zukan.title)} <b id="ika-egi-zukan-count">0</b> / ${GAME_ZUKAN.length}</p>
           <p class="ika-egi-cue-note">${t(lang, T.zukan.note)}</p>
           <ul class="ika-egi-zukan-grid" id="ika-egi-zukan-grid"></ul>
+          <dialog class="ika-egi-zukan-detail" id="ika-egi-zukan-detail" aria-labelledby="ika-egi-zukan-detail-name"></dialog>
         </section>
         <aside class="ika-egi-side" id="ika-egi-side" aria-label="${t(lang, '記録', 'Records')}">
           <p class="ika-egi-side-head">${t(lang, '今日の釣果', 'This session')}</p>

@@ -18,11 +18,10 @@ import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from '.
 import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
-import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN } from './play-text.js';
+import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
 import { recommendedSizes } from './egi-advice.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
-import { photoById } from '../data.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
 
 const f1 = (v) => v.toFixed(1);
@@ -53,7 +52,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
-    zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'),
+    zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
   };
@@ -694,17 +693,19 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     let html = '';
     if (why === 'landed') {
       const c = s.catches[s.catches.length - 1];
-      const sp = speciesById(c.id);
-      const p = sp?.photo ? photoById(sp.photo) : null;
+      const z = zukanById(c.id);
       const first = firstSpecies.includes(c.id);
       html = `
         <p class="ika-egi-card-title is-good">${t(lang, T.landed)}</p>
-        ${p ? `<img class="ika-egi-card-photo" src="${assetHref(p.thumb ?? p.file)}" alt="${esc(t(lang, p.caption))}" width="160" height="120" loading="lazy" />` : ''}
-        <p class="ika-egi-card-name">${esc(speciesName(lang, c.id))}${first ? ` <span class="ika-tag ika-tag--orange">${t(lang, TX.over.firstCatch)}</span>` : ''}</p>
-        <dl class="ika-egi-card-rows"><div><dt>${t(lang, T.mantle)}</dt><dd>${c.mantle} cm</dd></div><div><dt>${t(lang, T.weight)}</dt><dd>${c.weight.toLocaleString()} g</dd></div></dl>
-        ${solo
-          ? (p ? `<p class="ika-egi-card-credit">${t(lang, '写真', 'Photo')}：${esc(p.author)}${p.licenseUrl ? `（<a href="${esc(p.licenseUrl)}" target="_blank" rel="noopener">${esc(t(lang, p.license))}</a>）` : ''}</p>` : '')
-          : `<p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`}`;
+        <div class="ika-egi-card-catch">
+          ${z ? `<img class="ika-egi-card-art" src="${assetHref(zukanArt(c.id))}" alt="" width="72" height="84" decoding="async" />` : ''}
+          <div>
+            <p class="ika-egi-card-name">${esc(speciesName(lang, c.id))}${first ? ` <span class="ika-tag ika-tag--orange">${t(lang, TX.over.firstCatch)}</span>` : ''}</p>
+            <dl class="ika-egi-card-rows"><div><dt>${t(lang, T.mantle)}</dt><dd>${c.mantle} cm</dd></div><div><dt>${t(lang, T.weight)}</dt><dd>${c.weight.toLocaleString()} g</dd></div></dl>
+          </div>
+        </div>
+        ${z ? `<p class="ika-egi-card-tip"><b>${t(lang, TX.zukan.point)}</b> ${t(lang, z.point)}</p>` : ''}
+        ${solo ? '' : `<p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`}`;
     } else {
       const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
@@ -751,20 +752,44 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       if (r) got += 1;
       const li = document.createElement('li');
       li.className = `ika-egi-zukan-card${r ? ' is-got' : ''}${z.boss ? ' is-boss' : ''}`;
-      const svg = svgEl('svg', { viewBox: '-38 0 76 112', width: '64', height: '94', 'aria-hidden': 'true' });
-      const art = swimmingSquid({ species: z.id, len: 56, colors: r ? ART : { ...ART, ivory: '#2b3a4f', navy: '#101b2b' } });
-      svg.append(art);
+      const img = `<img class="ika-egi-zukan-art${r ? '' : ' is-shadow'}" src="${assetHref(zukanArt(z.id))}" alt="" width="56" height="64" loading="lazy" decoding="async" />`;
       const body = r
         ? `<p class="ika-egi-zukan-name">${esc(speciesName(lang, z.id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}</p>
-           <p class="ika-egi-zukan-meta">${t(lang, Z.best)} ${r.weight.toLocaleString()} g・${r.mantle} cm<br>${t(lang, Z.count)} ${r.count}${r.first ? `・${t(lang, Z.first)} ${r.first}` : ''}</p>`
+           <p class="ika-egi-zukan-meta">${t(lang, Z.best)} ${r.weight.toLocaleString()} g・${r.mantle} cm<br>${t(lang, Z.count)} ${r.count}${r.first ? `・${t(lang, Z.first)} ${r.first}` : ''}</p>
+           <p class="ika-egi-zukan-tap">${t(lang, Z.tapHint)} ›</p>`
         : `<p class="ika-egi-zukan-name">${t(lang, Z.unknown)}${z.boss ? ` <span class="ika-tag">${t(lang, Z.boss)}</span>` : ''}</p>
            <p class="ika-egi-zukan-meta">${t(lang, z.hint)}</p>`;
-      li.append(svg);
-      li.insertAdjacentHTML('beforeend', `<div>${body}</div>`);
+      // 釣った種はボタンにして、見分け方とリアルな姿の画面を開く
+      li.innerHTML = r
+        ? `<button type="button" class="ika-egi-zukan-open" data-zukan="${z.id}">${img}<div>${body}</div></button>`
+        : `<div class="ika-egi-zukan-open">${img}<div>${body}</div></div>`;
       el.zukanGrid.append(li);
     }
     if (el.zukanCount) el.zukanCount.textContent = String(got);
   }
+  // 図鑑の詳しい画面：リアル調の絵＋見分け方＋会えるとき＋自分の記録
+  function openZukanDetail(id) {
+    const z = zukanById(id);
+    const r = rec.species[id];
+    const d = el.zukanDetail;
+    if (!z || !r || !d) return;
+    const Z = TX.zukan;
+    d.innerHTML = `
+      <div class="ika-egi-zukan-detail-body">
+        <img class="ika-egi-zukan-detail-real" src="${assetHref(zukanArt(id, true))}" alt="${esc(speciesName(lang, id))}" loading="lazy" decoding="async" />
+        <p class="ika-egi-zukan-detail-name" id="ika-egi-zukan-detail-name">${esc(speciesName(lang, id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}</p>
+        <dl class="ika-egi-zukan-detail-rows">
+          <div><dt>${t(lang, Z.point)}</dt><dd>${t(lang, z.point)}</dd></div>
+          <div><dt>${t(lang, Z.where)}</dt><dd>${t(lang, z.hint)}</dd></div>
+          <div><dt>${t(lang, Z.best)}</dt><dd>${r.weight.toLocaleString()} g・${r.mantle} cm（${t(lang, Z.count)} ${r.count}）</dd></div>
+        </dl>
+        <form method="dialog"><button class="ika-btn ika-btn--primary" value="close">${t(lang, Z.close)}</button></form>
+      </div>`;
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  }
+  el.zukanGrid?.addEventListener('click', (e) => { const b = e.target.closest('[data-zukan]'); if (b) openZukanDetail(b.dataset.zukan); });
+  // 外側（暗いところ）を押しても閉じる
+  el.zukanDetail?.addEventListener('click', (e) => { if (e.target === el.zukanDetail) el.zukanDetail.close?.(); });
   function syncRecords() {
     syncZukan();
     const set = (k, v) => { const b = el.records.querySelector(`[data-rec="${k}"]`); if (b) b.textContent = String(v); };
@@ -1217,7 +1242,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const eb = n.egiAir.getBoundingClientRect();
         const sb = el.stage.getBoundingClientRect();
         if (eb.width) {
-          el.colorTip.style.left = `${Math.round(eb.right - sb.left + 6)}px`;
+          const tipLeft = Math.round(eb.right - sb.left + 6);
+          el.colorTip.style.left = `${tipLeft}px`;
+          // スマホの狭い舞台では右端からはみ出すので、残りの幅で折り返す
+          el.colorTip.style.maxWidth = `${Math.max(90, Math.round(sb.width - tipLeft - 8))}px`;
           el.colorTip.style.top = `${Math.round(eb.top - sb.top + eb.height / 2)}px`;
         }
       }

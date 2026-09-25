@@ -31,18 +31,32 @@ export const speciesName = (lang, id) => {
 };
 
 // ゲームの図鑑（1年を通してそろえる）。hint はまだ釣っていない種の手がかり（季節・時間・棚）
+// point は見分け方（釣ったときと図鑑の詳しい画面に出す）
 export const GAME_ZUKAN = [
-  { id: 'aori', hint: pair('春はボトムの大物、秋はシャローの新子', 'Big ones on the bottom in spring, young ones in the shallows in autumn') },
-  { id: 'kouika', hint: pair('春、ボトムをじっくり', 'Spring, work the bottom slowly') },
-  { id: 'mongo', hint: pair('初夏の夕方、シャロー〜中層に大型', 'Early-summer dusk, big ones shallow to mid-water') },
-  { id: 'shiriyake', hint: pair('初夏、底から巻き上げた瞬間に', 'Early summer, the moment you lift off the bottom') },
-  { id: 'kensaki', hint: pair('夏の夜、常夜灯の下', 'Summer nights, under the harbour lamps') },
-  { id: 'yari', hint: pair('冬の夜、中層〜浅め', 'Winter nights, mid-water or shallower') },
-  { id: 'surume', hint: pair('初夏の夜。堤防ではめったに会えない', 'Early-summer nights. Rare from the pier') },
-  { id: 'sodeika', boss: true, hint: pair('ボス。春〜夏の昼、アオリを狙って底を探っていると…', 'Boss. Spring–summer days, working the bottom for bigfin reef squid…') },
-  { id: 'akaika', boss: true, hint: pair('ボス。春の夜、中層に…', 'Boss. Spring nights, in mid-water…') },
-  { id: 'daiou', boss: true, hint: pair('伝説。冬の夜、深い底に…', 'Legend. Winter nights, deep on the bottom…') },
+  { id: 'aori', hint: pair('春はボトムの大物、秋はシャローの新子', 'Big ones on the bottom in spring, young ones in the shallows in autumn'),
+    point: pair('胴のまわりをぐるっと囲む大きなエンペラ（ヒレ）が1枚。胴の先で丸くつながる', 'One big fin runs all the way around the body and joins in a round tip') },
+  { id: 'kouika', hint: pair('春、ボトムをじっくり', 'Spring, work the bottom slowly'),
+    point: pair('胴の先から「針」（甲の先）が飛び出す。背中に細い横じま。別名ハリイカ', 'A sharp spine (the tip of the cuttlebone) sticks out of the rear. Fine stripes across the back') },
+  { id: 'mongo', hint: pair('初夏の夕方、シャロー〜中層に大型', 'Early-summer dusk, big ones shallow to mid-water'),
+    point: pair('背中いっぱいに、コーヒー豆のような形の模様が散らばる', 'Coffee-bean-shaped marks scattered all over the back') },
+  { id: 'shiriyake', hint: pair('初夏、底から巻き上げた瞬間に', 'Early summer, the moment you lift off the bottom'),
+    point: pair('胴の先（おしり）が焦げたような色。ヒレのつけ根に白い点が並ぶ', 'The rear end looks burnt. A row of white dots along the fin base') },
+  { id: 'kensaki', hint: pair('夏の夜、常夜灯の下', 'Summer nights, under the harbour lamps'),
+    point: pair('赤みの強い細長い胴。胴の後ろ半分に大きな菱形のヒレ', 'A slim, reddish body with a big diamond fin on the rear half') },
+  { id: 'yari', hint: pair('冬の夜、中層〜浅め', 'Winter nights, mid-water or shallower'),
+    point: pair('槍のように細い胴と、矢じり形のヒレ。足が短い', 'A spear-thin body, arrowhead fin and short arms') },
+  { id: 'surume', hint: pair('初夏の夜。堤防ではめったに会えない', 'Early-summer nights. Rare from the pier'),
+    point: pair('背中の真ん中に濃い茶色の帯。胴の先に小さな菱形のヒレ', 'A dark brown stripe down the back and a small diamond fin at the tip') },
+  { id: 'sodeika', boss: true, hint: pair('ボス。春〜夏の昼、アオリを狙って底を探っていると…', 'Boss. Spring–summer days, working the bottom for bigfin reef squid…'),
+    point: pair('胴のほぼ全長にわたる大きなヒレが着物の袖のよう。全身が濃い赤', 'Huge fins run almost the whole body like kimono sleeves. Deep red all over') },
+  { id: 'akaika', boss: true, hint: pair('ボス。春の夜、中層に…', 'Boss. Spring nights, in mid-water…'),
+    point: pair('太く長い筒形の胴。背中の真ん中に黒紫の太い帯', 'A thick, long tube of a body with a broad dark purple stripe down the back') },
+  { id: 'daiou', boss: true, hint: pair('伝説。冬の夜、深い底に…', 'Legend. Winter nights, deep on the bottom…'),
+    point: pair('とても大きな目と、先が平たく広がった長い触腕2本', 'Enormous eyes and two very long tentacles with flat, wide tips') },
 ];
+export const zukanById = (id) => GAME_ZUKAN.find((z) => z.id === id);
+// 図鑑の絵：カード・釣れたとき＝デフォルメ（イカ部のキャラと同じ画風）、詳しい画面＝リアル調
+export const zukanArt = (id, real = false) => `/assets/ikabu/zukan/${real ? '' : 'deform/'}${id}.webp`;
 
 // 山口で会えるイカ（マイ図鑑の分母）
 export const YAMAGUCHI_SQUID = species.filter((s) => s.group === 'yamaguchi').map((s) => s.id);
@@ -78,7 +92,7 @@ export const EGI_TEXT = {
     changed: pair('エギを替えた', 'Egi changed'),
     color: pair('色', 'Colour'),
     colors: { red: pair('赤', 'Red'), blue: pair('青', 'Blue'), green: pair('緑', 'Green'), purple: pair('紫', 'Purple'), orange: pair('オレンジ', 'Orange'), pink: pair('ピンク', 'Pink'), brown: pair('茶色', 'Brown') },
-    colorTap: pair('← エギをタップで色が選べる', '← Tap the egi to change its colour'),
+    colorTap: pair('← エギをタップで|色が選べる', '← Tap the egi|to change its colour'),   // | は狭い画面での折り返し位置
     colorTitle: pair('エギの色', 'Egi colour'),
     colorBest: pair('今の条件で目立つのは', 'Good right now'),
     colorWhy: {
@@ -242,6 +256,10 @@ export const EGI_TEXT = {
     best: pair('最大', 'Best'),
     first: pair('初めて', 'First'),
     boss: pair('ボス', 'BOSS'),
+    point: pair('見分け方', 'How to tell'),
+    where: pair('会えるとき', 'When & where'),
+    tapHint: pair('タップで見分け方', 'Tap for details'),
+    close: pair('閉じる', 'Close'),
   },
   seasons: {
     title: pair('季節モード', 'Season mode'),
