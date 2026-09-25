@@ -158,9 +158,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す。
   // 驚き重視（ぱっぱ 2026-09-25）：正体が分かるまでは全種同じ形（大きさだけ違う）、分かったらその種の形・色・目印
+  const SHADOW = { ...ART, ivory: '#1f3a46', fin: '#1f3a46', arm: '#1f3a46', navy: '#0a1c24', hi: '#1f3a46' };
   function setSquidArt(node, kind, species, len, revealed = false) {
     node.innerHTML = '';
-    if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len }));
+    // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
+    if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
     else node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
   }
   function relayout() {
@@ -545,7 +547,6 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           // 正体は水面近くまで寄せるまで分からない（影だけ）。重さは竿の曲がりと引きで伝える
           V.revealed = false;
           V.heavy = clamp(h.weight / 1500, 0.25, 1.6);
-          sc.nodes.hugWater.style.filter = 'brightness(0.18) saturate(0)';
           setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle), true);
           V.hug.height = (44 * clamp(mantleUnits(h.mantle) / 56, 0.75, 1.8) + mantleUnits(h.mantle)) * 1.15;
           V.swim.forEach((w) => { w.alpha = 0; });
