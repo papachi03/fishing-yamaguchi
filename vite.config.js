@@ -63,6 +63,24 @@ export default defineConfig({
       },
     },
     {
+      // ABOUTの「山口の釣り仲間（Friends）」欄を本文に書き込む（JS無し・検索エンジンでも読める）。
+      // devでも同じ見た目にするため apply は付けない
+      name: 'prerender-about-friends',
+      transformIndexHtml: {
+        order: 'pre',
+        async handler(html, ctx) {
+          // ルートの about.html だけ。下の階層の about.html は対象外
+          if (ctx.filename.replace(/\\/g, '/') !== resolve(__dirname, 'about.html').replace(/\\/g, '/')) return html;
+          const mark = '<div class="friends" id="about-friends"></div>';
+          if (!html.includes(mark)) throw new Error('about.html に釣り仲間の目印が見つかりません');
+          const { friendsSectionHTML } = await import('./src/js/components/friends-html.js');
+          const { friends } = await import('./src/js/data/friends.js');
+          const base = process.env.SITE_BASE || '';
+          return html.replace(mark, () => `<div class="friends" id="about-friends">${friendsSectionHTML(friends, { base })}</div>`);
+        },
+      },
+    },
+    {
       // 攻略記事（guides/*.html）の道具カードを本文に書き込む。devでも同じ見た目にするため apply は付けない
       name: 'prerender-guide-tackle',
       transformIndexHtml: {
