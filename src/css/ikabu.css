@@ -1579,7 +1579,8 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   pointer-events: none;
 }
-.ika-egi-gauge-label { padding: 1px 4px; border-radius: 6px; background: rgba(255, 255, 255, 0.92); font-family: var(--font-maru); font-weight: 900; font-size: 10.5px; line-height: 1.3; color: var(--ika-sea); white-space: nowrap; }
+/* 文字（テンション）はゲージより幅が広いので右端にそろえる。真ん中だと舞台の右端で切れる（ぱっぱ指摘・横向き） */
+.ika-egi-gauge-label { align-self: flex-end; padding: 1px 4px; border-radius: 6px; background: rgba(255, 255, 255, 0.92); font-family: var(--font-maru); font-weight: 900; font-size: 10.5px; line-height: 1.3; color: var(--ika-sea); white-space: nowrap; }
 .ika-egi-gauge-track { position: relative; display: block; flex: 1; width: 22px; border: 3px solid var(--ika-ink); border-radius: 999px; background: var(--ika-white); overflow: hidden; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25); }
 .ika-egi-gauge-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--ika-sea); }
 .ika-egi-gauge-sweet { position: absolute; left: 0; right: 0; top: 0; height: 16%; background: rgba(244, 115, 33, 0.45); }
