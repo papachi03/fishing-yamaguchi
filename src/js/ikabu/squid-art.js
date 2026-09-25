@@ -30,7 +30,7 @@ function arm(d, front, C, sw = 1) {
   const g = svgEl('g', { class: front ? 'ika-arm-front' : 'ika-arm-back' });
   g.append(
     svgEl('path', { d, fill: 'none', stroke: C.navy, 'stroke-width': String(7 * sw), 'stroke-linecap': 'round' }),
-    svgEl('path', { d, fill: 'none', stroke: C.ivory, 'stroke-width': String(3.6 * sw), 'stroke-linecap': 'round' }),
+    svgEl('path', { d, fill: 'none', stroke: C.arm ?? C.ivory, 'stroke-width': String(3.6 * sw), 'stroke-linecap': 'round' }),
   );
   return g;
 }
@@ -42,16 +42,33 @@ export const BODY = {
   aori: { kind: 'squid', ratio: 0.36, fin: 'oval' },
   kensaki: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.5 },
   yari: { kind: 'squid', ratio: 0.18, fin: 'rhombus', finFrom: 0.42 },
-  surume: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.62 },
+  surume: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.62, stripe: 0.3 },
   sodeika: { kind: 'squid', ratio: 0.3, fin: 'rhombus', finFrom: 0.0 },
-  akaika: { kind: 'squid', ratio: 0.22, fin: 'rhombus', finFrom: 0.7 },
-  daiou: { kind: 'squid', ratio: 0.2, fin: 'round' },
+  akaika: { kind: 'squid', ratio: 0.22, fin: 'rhombus', finFrom: 0.7, stripe: 0.45 },
+  daiou: { kind: 'squid', ratio: 0.2, fin: 'round', bigEye: true },
   hiika: { kind: 'squid', ratio: 0.34, fin: 'round' },
-  kouika: { kind: 'cuttle', ratio: 0.5, fin: 'skirt' },
+  kouika: { kind: 'cuttle', ratio: 0.5, fin: 'skirt', spine: true, lines: true },
   mongo: { kind: 'cuttle', ratio: 0.52, fin: 'skirt', spots: true },
-  shiriyake: { kind: 'cuttle', ratio: 0.48, fin: 'skirt', tailMark: true },
+  shiriyake: { kind: 'cuttle', ratio: 0.48, fin: 'skirt', tailMark: true, finDots: true },
   default: { kind: 'squid', ratio: 0.22, fin: 'rhombus', finFrom: 0.55 },
 };
+
+// 種ごとの色（図鑑のイラストに合わせた色）。釣り上げて正体が分かったときだけ使う。
+//   ivory＝胴と頭、fin＝ヒレ、arm＝足、mark＝模様、hi＝目の光
+const HI = '#ffffff';
+export const SPECIES_COLORS = {
+  aori: { ivory: '#efd8b4', fin: '#f3e4c8', arm: '#f2dcbc', mark: '#a0612e', hi: HI },
+  kouika: { ivory: '#b88450', fin: '#dcc298', arm: '#e6cba2', mark: '#f6e7cc', hi: HI },
+  mongo: { ivory: '#b07a44', fin: '#dbbb88', arm: '#e3c69a', mark: '#4f2b12', hi: HI },
+  shiriyake: { ivory: '#c9683a', fin: '#e2a272', arm: '#edc4a0', mark: '#3e1e0e', hi: HI },
+  kensaki: { ivory: '#ea7458', fin: '#f4ab96', arm: '#f2bcac', hi: HI },
+  yari: { ivory: '#f0c3aa', fin: '#f6d6c4', arm: '#f5d3c2', hi: HI },
+  surume: { ivory: '#c96a40', fin: '#dc946c', arm: '#eab99c', mark: '#4e2410', hi: HI },
+  sodeika: { ivory: '#d8332d', fin: '#e4493e', arm: '#f18a7a', hi: HI },
+  akaika: { ivory: '#c2314f', fin: '#d4546c', arm: '#ea92a2', mark: '#35102c', hi: HI },
+  daiou: { ivory: '#cf623f', fin: '#d97c5a', arm: '#e9a283', hi: HI },
+};
+export const speciesColors = (species) => ({ ...ART, ...(SPECIES_COLORS[species] ?? {}) });
 
 // 頭と胴（足は別）。y=36 に頭の付け根、胴は y=44 から len だけ下へ
 function bodyParts(opts, C) {
@@ -63,16 +80,17 @@ function bodyParts(opts, C) {
   const parts = [];
   // ヒレ（胴の後ろに置く）
   if (b.fin === 'oval') {
-    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.55), rx: String(W + 7), ry: String(len * 0.47), fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.55), rx: String(W + 7), ry: String(len * 0.47), fill: C.fin ?? C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
   } else if (b.fin === 'rhombus') {
     const y0 = top + len * (b.finFrom ?? 0.5);
     const fw = W + Math.max(6, len * 0.16);
-    parts.push(svgEl('path', { d: `M0,${y0} L${fw},${(y0 + tail) / 2 + len * 0.08} L0,${tail + 3} L${-fw},${(y0 + tail) / 2 + len * 0.08} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4', 'stroke-linejoin': 'round' }));
+    parts.push(svgEl('path', { d: `M0,${y0} L${fw},${(y0 + tail) / 2 + len * 0.08} L0,${tail + 3} L${-fw},${(y0 + tail) / 2 + len * 0.08} Z`, fill: C.fin ?? C.ivory, stroke: C.navy, 'stroke-width': '3.4', 'stroke-linejoin': 'round' }));
   } else if (b.fin === 'round') {
-    parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - len * 0.2), rx: String(W + 6), ry: String(len * 0.26), fill: C.ivory, stroke: C.navy, 'stroke-width': '3' }));
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - len * 0.2), rx: String(W + 6), ry: String(len * 0.26), fill: C.fin ?? C.ivory, stroke: C.navy, 'stroke-width': '3' }));
   } else {
-    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.5), rx: String(W + 5), ry: String(len * 0.5 + 3), fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
+    parts.push(svgEl('ellipse', { cx: '0', cy: String(top + len * 0.5), rx: String(W + 5), ry: String(len * 0.5 + 3), fill: C.fin ?? C.ivory, stroke: C.navy, 'stroke-width': '3.4' }));
   }
+  if (b.spine) parts.push(svgEl('path', { d: `M-2.6,${tail - 4} L0,${tail + 8} L2.6,${tail - 4} Z`, fill: '#f6ecd8', stroke: C.navy, 'stroke-width': '2', 'stroke-linejoin': 'round' }));
   // 胴
   const mantle = b.kind === 'cuttle'
     ? `M${-W},${top + 6} Q${-W - 2},${top + len * 0.6} 0,${tail} Q${W + 2},${top + len * 0.6} ${W},${top + 6} Q0,${top - 4} ${-W},${top + 6} Z`
@@ -80,6 +98,27 @@ function bodyParts(opts, C) {
   parts.push(svgEl('path', { d: mantle, fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6', 'stroke-linejoin': 'round' }));
   // 模様：胴の筋（squid）／コーヒー豆の模様（モンゴウ）／焼けた尻（シリヤケ）
   if (b.kind === 'squid') parts.push(svgEl('path', { d: `M${-W * 0.4},${top + 8} Q${-W * 0.5},${top + len * 0.5} ${-W * 0.1},${tail - 12}`, fill: 'none', stroke: C.navy, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0.55' }));
+  // 背中の真ん中の帯（スルメ＝こげ茶、アカイカ＝黒紫）。色が付いているとき（正体が分かった後）だけ
+  if (b.stripe && C.mark) {
+    const sw = W * b.stripe;
+    parts.push(svgEl('path', { d: `M${-sw},${top + 4} Q${-sw * 1.1},${top + len * 0.55} 0,${tail - 4} Q${sw * 1.1},${top + len * 0.55} ${sw},${top + 4} Z`, fill: C.mark, opacity: '0.85' }));
+  }
+  // コウイカ：背中の細い横じま
+  if (b.lines && C.mark) {
+    for (let i = 1; i <= 6; i++) {
+      const y = top + len * (0.1 + i * 0.12);
+      const hw = W * Math.sin(Math.PI * Math.min(0.95, (y - top) / len * 0.9 + 0.1)) * 0.75;
+      parts.push(svgEl('path', { d: `M${-hw},${y} L${hw},${y}`, stroke: C.mark, 'stroke-width': '1.3', 'stroke-linecap': 'round', opacity: '0.9' }));
+    }
+  }
+  // シリヤケ：ヒレのつけ根に沿って白い点
+  if (b.finDots) {
+    for (const f of [0.25, 0.45, 0.65, 0.82]) {
+      const y = top + len * f;
+      const hw = W * (f < 0.5 ? 0.98 : 1 - (f - 0.5) * 1.1);
+      for (const sx of [-1, 1]) parts.push(svgEl('circle', { cx: String(sx * (hw - 2)), cy: String(y), r: '1.3', fill: '#fff6ea' }));
+    }
+  }
   // モンゴウは胴に横長の「コーヒー豆」形（楕円＋まん中の筋）が散らばるのが見分けの決め手（ダディ指摘 2026-09-25）
   if (b.spots) {
     const bw = Math.max(2.4, W * 0.2), bh = bw * 0.55;
@@ -87,21 +126,22 @@ function bodyParts(opts, C) {
       const cy = top + len * y;
       const g = svgEl('g', { transform: `rotate(${a} ${x} ${cy})`, opacity: '0.7' });
       g.append(
-        svgEl('ellipse', { cx: String(x), cy: String(cy), rx: String(bw), ry: String(bh), fill: 'none', stroke: C.navy, 'stroke-width': '1.4' }),
+        svgEl('ellipse', { cx: String(x), cy: String(cy), rx: String(bw), ry: String(bh), fill: C.mark ?? 'none', stroke: C.navy, 'stroke-width': '1.4' }),
         svgEl('path', { d: `M${x - bw * 0.6},${cy} Q${x},${cy + bh * 0.35} ${x + bw * 0.6},${cy}`, fill: 'none', stroke: C.navy, 'stroke-width': '1.1', 'stroke-linecap': 'round' }),
       );
       parts.push(g);
     }
   }
-  if (b.tailMark) parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - 6), rx: String(W * 0.35), ry: '4', fill: '#b5532b', opacity: '0.8' }));
+  if (b.tailMark) parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - 7), rx: String(W * 0.5), ry: '6', fill: C.mark ?? '#b5532b', opacity: '0.8' }));
   // 頭と目（足の付け根）
   const hr = Math.min(12, W + 2);
   parts.push(
     svgEl('ellipse', { cx: '0', cy: '41', rx: String(hr), ry: '8.5', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6' }),
-    svgEl('circle', { cx: String(-hr * 0.46), cy: '41', r: '2.8', fill: C.navy }),
-    svgEl('circle', { cx: String(hr * 0.46), cy: '41', r: '2.8', fill: C.navy }),
-    svgEl('circle', { cx: String(-hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.ivory }),
-    svgEl('circle', { cx: String(hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.ivory }),
+    ...(b.bigEye ? [-1, 1].map((sx) => svgEl('circle', { cx: String(sx * hr * 0.46), cy: '41', r: '5', fill: '#fff6ea', stroke: C.navy, 'stroke-width': '1.6' })) : []),
+    svgEl('circle', { cx: String(-hr * 0.46), cy: '41', r: b.bigEye ? '3.4' : '2.8', fill: C.navy }),
+    svgEl('circle', { cx: String(hr * 0.46), cy: '41', r: b.bigEye ? '3.4' : '2.8', fill: C.navy }),
+    svgEl('circle', { cx: String(-hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.hi ?? C.ivory }),
+    svgEl('circle', { cx: String(hr * 0.46 + 0.8), cy: '40.2', r: '0.9', fill: C.hi ?? C.ivory }),
   );
   return parts;
 }

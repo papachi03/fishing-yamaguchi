@@ -15,7 +15,7 @@ import { createFeel, canVibrate } from './feel.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
-import { svgEl, egiShape, huggingSquid, swimmingSquid, ART } from '../squid-art.js';
+import { svgEl, egiShape, huggingSquid, swimmingSquid, ART, speciesColors } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
@@ -156,10 +156,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function updateBottom(bottom) {
     sc.bottomG.innerHTML = `<path class="ika-eg-seabed" d="${seabedD(bottom, W, s?.casts ?? 0)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W, s?.casts ?? 0)}`;
   }
-  // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す
-  function setSquidArt(node, kind, species, len) {
+  // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す。
+  // 驚き重視（ぱっぱ 2026-09-25）：正体が分かるまでは全種同じ形（大きさだけ違う）、分かったらその種の形・色・目印
+  function setSquidArt(node, kind, species, len, revealed = false) {
     node.innerHTML = '';
-    node.append(kind === 'hug' ? huggingSquid({ species, len }) : swimmingSquid({ species, len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
+    if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len }));
+    else node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
   }
   function relayout() {
     const w = el.stage.clientWidth;
@@ -544,7 +546,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.revealed = false;
           V.heavy = clamp(h.weight / 1500, 0.25, 1.6);
           sc.nodes.hugWater.style.filter = 'brightness(0.18) saturate(0)';
-          setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle));
+          setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle), true);
           V.hug.height = (44 * clamp(mantleUnits(h.mantle) / 56, 0.75, 1.8) + mantleUnits(h.mantle)) * 1.15;
           V.swim.forEach((w) => { w.alpha = 0; });
           // アタリの出方：走る／竿先にコン／止まる／フケる。本格モードでは糸と竿先だけで見せる
@@ -1181,6 +1183,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         taut = clamp(s.tension / 60, 0.2, 1);
         if (!V.revealed && depth <= 2.2) {
           V.revealed = true;
+          setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle), true);
           sc.nodes.hugWater.style.filter = '';
           const big = h.weight >= 1000;
           if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good');
