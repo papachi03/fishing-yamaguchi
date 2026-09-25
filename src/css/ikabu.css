@@ -1371,7 +1371,8 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-seasons { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
 .ika-egi-season-card { display: grid; gap: 4px; padding: 10px 12px; text-align: left; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 12px; color: var(--ika-ink); cursor: pointer; font: inherit; transition: background 0.15s, box-shadow 0.15s; }
 .ika-egi-season-card:hover:not(:disabled) { background: var(--ika-mist); }
-.ika-egi-season-card[aria-pressed='true'] { background: var(--ika-sea); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-orange); }
+/* 選んだカードは、マウスを乗せても濃い背景のまま（:hover の薄い背景が勝つと白い文字が読めなくなっていた。2026-09-25 紹介動画の録画で発見） */
+.ika-egi-season-card[aria-pressed='true'], .ika-egi-season-card[aria-pressed='true']:hover:not(:disabled) { background: var(--ika-sea); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-orange); }
 .ika-egi-season-card:disabled { opacity: 0.5; cursor: not-allowed; }
 .ika-egi-season-name { font-family: var(--font-maru); font-weight: 900; font-size: 17px; }
 .ika-egi-season-name small { margin-left: 8px; font-size: 12px; font-weight: 700; opacity: 0.75; }
