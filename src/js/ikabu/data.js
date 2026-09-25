@@ -530,8 +530,8 @@ export const species = [
     how: pair('エギング（堤防）', 'Egi lures from breakwaters'),
     hook: pair('2キロ超えもある、大物のコウイカ。', 'A cuttlefish that can top 2 kg.'),
     desc: pair(
-      'コウイカの仲間の大型種。胴の背中に目玉のような模様が並ぶことがある。お店で「モンゴウイカ」と呼ばれるイカには、この種のほか輸入の別種も含まれる。',
-      'A large member of the cuttlefish family, sometimes with eye-like spots across its back. In Japanese markets the name mongō-ika is also used for other, imported cuttlefish species.'
+      'コウイカの仲間の大型種。茶色い胴の背中いっぱいに、コーヒー豆のような形の模様が散らばるのが見分けの決め手。お店で「モンゴウイカ」と呼ばれるイカには、この種のほか輸入の別種も含まれる。',
+      'A large member of the cuttlefish family. The giveaway is the coffee-bean-shaped marks scattered across its brown back. In Japanese markets the name mongō-ika is also used for other, imported cuttlefish species.'
     ),
     source: 'https://ja.wikipedia.org/wiki/カミナリイカ',
   },

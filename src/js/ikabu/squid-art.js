@@ -78,9 +78,21 @@ function bodyParts(opts, C) {
     ? `M${-W},${top + 6} Q${-W - 2},${top + len * 0.6} 0,${tail} Q${W + 2},${top + len * 0.6} ${W},${top + 6} Q0,${top - 4} ${-W},${top + 6} Z`
     : `M${-W},${top} Q${-W - 3},${top + len * 0.5} 0,${tail} Q${W + 3},${top + len * 0.5} ${W},${top} Z`;
   parts.push(svgEl('path', { d: mantle, fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6', 'stroke-linejoin': 'round' }));
-  // 模様：胴の筋（squid）／目玉模様（モンゴウ）／焼けた尻（シリヤケ）
+  // 模様：胴の筋（squid）／コーヒー豆の模様（モンゴウ）／焼けた尻（シリヤケ）
   if (b.kind === 'squid') parts.push(svgEl('path', { d: `M${-W * 0.4},${top + 8} Q${-W * 0.5},${top + len * 0.5} ${-W * 0.1},${tail - 12}`, fill: 'none', stroke: C.navy, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0.55' }));
-  if (b.spots) for (const [x, y] of [[-W * 0.45, 0.3], [W * 0.4, 0.45], [-W * 0.2, 0.65]]) parts.push(svgEl('circle', { cx: String(x), cy: String(top + len * y), r: '2.6', fill: 'none', stroke: C.navy, 'stroke-width': '1.6', opacity: '0.6' }));
+  // モンゴウは胴に横長の「コーヒー豆」形（楕円＋まん中の筋）が散らばるのが見分けの決め手（ダディ指摘 2026-09-25）
+  if (b.spots) {
+    const bw = Math.max(2.4, W * 0.2), bh = bw * 0.55;
+    for (const [x, y, a] of [[-W * 0.45, 0.24, -8], [W * 0.38, 0.32, 10], [-W * 0.05, 0.45, 0], [-W * 0.5, 0.6, 6], [W * 0.42, 0.62, -6], [W * 0.02, 0.78, 4]]) {
+      const cy = top + len * y;
+      const g = svgEl('g', { transform: `rotate(${a} ${x} ${cy})`, opacity: '0.7' });
+      g.append(
+        svgEl('ellipse', { cx: String(x), cy: String(cy), rx: String(bw), ry: String(bh), fill: 'none', stroke: C.navy, 'stroke-width': '1.4' }),
+        svgEl('path', { d: `M${x - bw * 0.6},${cy} Q${x},${cy + bh * 0.35} ${x + bw * 0.6},${cy}`, fill: 'none', stroke: C.navy, 'stroke-width': '1.1', 'stroke-linecap': 'round' }),
+      );
+      parts.push(g);
+    }
+  }
   if (b.tailMark) parts.push(svgEl('ellipse', { cx: '0', cy: String(tail - 6), rx: String(W * 0.35), ry: '4', fill: '#b5532b', opacity: '0.8' }));
   // 頭と目（足の付け根）
   const hr = Math.min(12, W + 2);
