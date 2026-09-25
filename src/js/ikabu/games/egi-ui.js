@@ -144,7 +144,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
     // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
-    n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '26', fill: 'transparent', 'pointer-events': 'all' }));
+    n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '34', fill: 'transparent', 'pointer-events': 'all' }));   // スマホで指 44px 前後になる大きさ
     n.ghost.append(egiShape());
     n.inkBody = svgEl('ellipse', { fill: '#050c1a' });
     n.inkRim = svgEl('ellipse', { fill: 'none', stroke: 'rgba(205,240,238,0.6)', 'stroke-width': '3' });
@@ -896,7 +896,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.stage.addEventListener('contextmenu', (e) => e.preventDefault());
   // スマホの長押し機能（iPhone の拡大鏡・コピーのメニュー・文字選択、Android の選択）を、舞台とボタンの上では出さない。
   // pointerdown の preventDefault だけでは iOS の長押しは止まらないので、touchstart も止める（pointer イベントはそのまま届く）
-  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card button, .ika-egi-card a, details')) e.preventDefault(); };
+  // 色選びの窓（.ika-egi-colorpop）は除く：touchstart を止めるとスマホでは click が起きず、色のボタンが押せなくなる（ぱっぱ指摘 2026-09-25）
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card button, .ika-egi-card a, details, .ika-egi-colorpop')) e.preventDefault(); };
   for (const node of [el.btn, el.dartBtn, el.stage]) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());
