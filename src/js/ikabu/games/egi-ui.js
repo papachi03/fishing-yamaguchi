@@ -1217,6 +1217,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
     /* ----- 糸：竿先 → エギ（イカ）。根掛かりで切れたら短く垂れる ----- */
     let d;
+    let lineCtrl = null;   // 糸を曲線で描いたときの制御点（水面の輪の位置をこの曲線から求める）
     if (V.lineBroken) {
       d = `M${f1(tip.x)},${f1(tip.y)} q${f1(wobble)},20 ${f1(wobble * 0.5)},46`;
     } else if (V.egi.mode === 'cast' && C?.released && V.flyDir) {
@@ -1226,14 +1227,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const sag = (1 - taut) * L * 0.16;
       const mid = { x: (tip.x + lineEnd.x) / 2, y: (tip.y + lineEnd.y) / 2 + sag };
       d = `M${f1(tip.x)},${f1(tip.y)} Q${f1(mid.x)},${f1(mid.y)} ${f1(lineEnd.x)},${f1(lineEnd.y)}`;
+      lineCtrl = mid;
     }
     sc.line.setAttribute('d', d);
     sc.line.setAttribute('stroke-width', (2 + 1.2 * taut).toFixed(1));
     sc.line.setAttribute('opacity', (0.8 + 0.2 * taut).toFixed(2));
     // 入水点の輪
     if (!V.lineBroken && lineEnd.y > S.surface + 4 && tip.y < S.surface) {
-      const kk = (S.surface - tip.y) / (lineEnd.y - tip.y);
-      const ex = lerp(tip.x, lineEnd.x, kk);
+      // 糸はたるんだ曲線なので、まっすぐな線ではなく曲線が水面と交わる点に輪を置く（ぱっぱ指摘：フリーフォールで輪がずれる）
+      const ex = lineCtrl ? quadCrossX(tip, lineCtrl, lineEnd, S.surface) : lerp(tip.x, lineEnd.x, (S.surface - tip.y) / (lineEnd.y - tip.y));
       setAttrs(n.entry, { cx: f1(ex), cy: f1(S.surface + 1), rx: f1(9 + 2 * Math.sin(now * 3)), opacity: '0.7' });
     } else n.entry.setAttribute('opacity', '0');
 
@@ -1505,4 +1507,21 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     press: doPress, release: doRelease,
     settings, newGame,
   };
+}
+
+// 2次ベジェ曲線 P0→(制御点 C)→P1 が y=Y と交わる点の x（竿先から近い方）。交わらなければ直線で近似
+function quadCrossX(p0, c, p1, Y) {
+  const a = p0.y - 2 * c.y + p1.y, b = 2 * (c.y - p0.y), k = p0.y - Y;
+  let tt = null;
+  if (Math.abs(a) < 1e-6) tt = Math.abs(b) < 1e-9 ? null : -k / b;
+  else {
+    const D = b * b - 4 * a * k;
+    if (D >= 0) {
+      const r = Math.sqrt(D);
+      tt = [(-b - r) / (2 * a), (-b + r) / (2 * a)].filter((v) => v >= 0 && v <= 1).sort((x, y) => x - y)[0] ?? null;
+    }
+  }
+  if (tt == null) return p0.x + (p1.x - p0.x) * ((Y - p0.y) / (p1.y - p0.y));
+  const u = 1 - tt;
+  return u * u * p0.x + 2 * u * tt * c.x + tt * tt * p1.x;
 }
