@@ -1438,6 +1438,8 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-gestures-keys { color: var(--ika-ink-soft); font-size: 11.5px; }
 .ika-egi-card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 /* 結果カードが舞台より高くなってもボタンは常に見えるよう、カードの下に貼りつける（ぱっぱ指摘：スマホで釣れた後のボタンが見えない） */
+/* 舞台は touch-action:none（上スワイプ＝ダート）なので、カードの中だけは指で縦にスクロールできるようにする */
+.ika-egi-card { touch-action: pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .ika-egi-card .ika-egi-card-actions { position: sticky; bottom: 0; z-index: 1; margin: 0 -4px; padding: 6px 4px 2px; background: var(--ika-white); }
 .ika-egi-windnote { display: block; margin-top: 4px; max-width: 12em; font-size: 10.5px; line-height: 1.5; color: var(--ika-orange-deep); font-weight: 700; }
 .ika-egi-windnote[hidden] { display: none; }

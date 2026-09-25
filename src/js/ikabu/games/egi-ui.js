@@ -739,7 +739,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
-      <button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>`;
+      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button></div>`;
     el.card.className = 'ika-egi-card ika-egi-card--over';
     el.card.hidden = false;
     syncSetupLock();
@@ -816,7 +816,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function doPress() {
     feel.unlock();   // iPhone は最初に触った後でないと音を鳴らせない
     if (!s || frozen) return;
-    if (s.phase === 'over') return;
+    if (s.phase === 'over') { newGame(); return; }   // ボタンの表示は「もう一度釣行する」なので、押したら新しい釣行（ぱっぱ指摘 2026-09-25）
     if (s.phase === 'result') { press(s); release(s); onEvents(s.events); return; }
     press(s);
     if (s.phase === 'aiming' && !V.flight) { /* 竿を振りかぶる */ }
@@ -898,7 +898,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // スマホの長押し機能（iPhone の拡大鏡・コピーのメニュー・文字選択、Android の選択）を、舞台とボタンの上では出さない。
   // pointerdown の preventDefault だけでは iOS の長押しは止まらないので、touchstart も止める（pointer イベントはそのまま届く）
   // 色選びの窓（.ika-egi-colorpop）は除く：touchstart を止めるとスマホでは click が起きず、色のボタンが押せなくなる（ぱっぱ指摘 2026-09-25）
-  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card button, .ika-egi-card a, details, .ika-egi-colorpop')) e.preventDefault(); };
+  // 結果・まとめのカード（.ika-egi-card）の中も除く：止めると指でカードの中をスクロールできず、下のボタンに届かない（ぱっぱ指摘 2026-09-25）
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card, details, .ika-egi-colorpop')) e.preventDefault(); };
   for (const node of [el.btn, el.dartBtn, el.stage]) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());
