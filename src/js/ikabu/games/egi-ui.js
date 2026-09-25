@@ -922,9 +922,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 横向き：カウント・距離の箱を舞台の外（右の列）へ。縦向きに戻したら舞台の右上へ戻す
   const sideHud = document.getElementById('ika-egi-sidehud');
   const stageHud = el.stage.querySelector('.ika-egi-hud');
+  let btnFull = false;   // 「⛶ 全画面」ボタンで入った全画面（PC・縦向きのスマホでも）
   const placeHud = () => {
     if (!sideHud || !stageHud) return;
-    const to = landscape.matches ? sideHud : stageHud;
+    const to = landscape.matches || btnFull ? sideHud : stageHud;
     for (const id of ['ika-egi-count', 'ika-egi-reel']) {
       const box = document.getElementById(id);
       if (box && box.parentNode !== to) to.append(box);
@@ -942,13 +943,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     return r.bottom > innerHeight * 0.3 && r.top < innerHeight * 0.7;
   };
   const syncFull = () => {
+    if (btnFull) return;
     const on = landscape.matches && (document.documentElement.classList.contains('is-egi-full') || fullWanted());
     document.documentElement.classList.toggle('is-egi-full', on);
     // 縦に戻したら、ブラウザの全画面（Android など）も解除
     if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   };
   syncFull();
-  landscape.addEventListener?.('change', () => { document.documentElement.classList.remove('is-egi-full'); syncFull(); });
+  landscape.addEventListener?.('change', () => { if (btnFull) return; document.documentElement.classList.remove('is-egi-full'); syncFull(); });
   let fullScrollT = 0;
   addEventListener('scroll', () => { if (!landscape.matches) return; clearTimeout(fullScrollT); fullScrollT = setTimeout(syncFull, 200); }, { passive: true });
   // Android など：全画面の中で指を離したとき、ブラウザの帯（アドレスバー・下のバー）も消す。
@@ -959,6 +961,51 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   el.main.addEventListener('pointerup', goRealFull, true);
   el.main.addEventListener('touchend', goRealFull, true);
+  // 「⛶ 全画面」ボタン：PC・Android はブラウザの全画面＋海いっぱいの並び。iPhone（全画面の仕組みが無い）は並びだけ変えて、横向き・ホーム画面に追加を案内
+  const fullBtn = document.getElementById('ika-egi-fullbtn');
+  const fullNote = document.getElementById('ika-egi-fullnote');
+  let fullNoteT = 0;
+  const setFullBtn = () => {
+    if (!fullBtn) return;
+    fullBtn.textContent = t(lang, btnFull ? TX.fullExit : TX.fullBtn);
+    fullBtn.dataset.full = btnFull ? 'exit' : 'enter';
+    fullBtn.setAttribute('aria-pressed', String(btnFull));
+  };
+  const showFullNote = () => {
+    if (!fullNote) return;
+    fullNote.hidden = false;
+    clearTimeout(fullNoteT); fullNoteT = setTimeout(() => { fullNote.hidden = true; }, 6000);
+  };
+  const enterBtnFull = () => {
+    // 縦向きの画面では海が狭く切れて遊びにくい：横に固定できる端末（Android）だけ全画面＋横固定、それ以外（iPhone）は横に倒す案内だけ
+    const portrait = innerHeight > innerWidth;
+    const canLock = document.fullscreenEnabled && typeof screen.orientation?.lock === 'function';
+    if (portrait && !canLock) { showFullNote(); return; }
+    btnFull = true;
+    document.documentElement.classList.add('is-egi-full', 'is-egi-full-btn');
+    placeHud(); setFullBtn();
+    if (document.fullscreenEnabled) {
+      document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })
+        .then(() => { if (portrait) return screen.orientation.lock('landscape'); })
+        .then(() => {
+          // 固定できたはずでも縦のまま（固定の効かない端末）なら、元に戻して案内
+          if (portrait) setTimeout(() => { if (btnFull && innerHeight > innerWidth) { exitBtnFull(); showFullNote(); } }, 800);
+        })
+        .catch(() => { if (portrait) { exitBtnFull(); showFullNote(); } });   // 横に固定できなければ元に戻して案内
+    }
+  };
+  const exitBtnFull = () => {
+    btnFull = false;
+    document.documentElement.classList.remove('is-egi-full', 'is-egi-full-btn');
+    if (fullNote) fullNote.hidden = true;
+    try { screen.orientation?.unlock?.(); } catch (e) { /* 固定していなければ何もしない */ }
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    placeHud(); setFullBtn(); syncFull();
+  };
+  fullBtn?.addEventListener('pointerdown', (e) => e.stopPropagation());
+  fullBtn?.addEventListener('click', (e) => { e.stopPropagation(); if (btnFull) exitBtnFull(); else enterBtnFull(); });
+  // PC の Esc などでブラウザの全画面が解けたら、並びも元に戻す
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && btnFull) exitBtnFull(); });
   landscape.addEventListener?.('change', () => { if (landscape.matches && s && !['ready', 'over'].includes(s.phase)) setTimeout(fitLandscape, 250); });
   el.btn.addEventListener('pointerdown', () => { if (!s || s.phase === 'ready') fitLandscape(); });
   // ダートボタン（どの端末でも確実に）

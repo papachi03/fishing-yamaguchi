@@ -112,7 +112,13 @@ export const EGI_TEXT = {
     keys: pair('PC：Space・Enter＝タップと長押し、ダート＝↑キー・ホイール上・上へ短くドラッグ', 'PC: Space or Enter = tap and hold; dart = ArrowUp, wheel up, or a short upward drag'),
     dart: pair('ダート', 'Dart'),
     dartHint: pair('大きく横へ跳ばす誘い（沈下・フォール中）', 'A big sideways dart (while sinking or falling)'),
+    // 全画面（ぱっぱ 2026-09-25：操作説明にあると親切）
+    full: pair('全画面：スマホは横に倒すと全画面で遊べます。「⛶ 全画面」ボタンでも（PC は Esc で戻る）。Android は最初のタップで上下のバーも消えます。iPhone は Safari の決まりでバーが残りますが、共有メニューの「ホーム画面に追加」から開くとバーなしで遊べます',
+      'Full screen: on a phone, turn it sideways to play full screen, or use the “⛶ Full screen” button (Esc to leave on a PC). On Android the first tap also hides the browser bars. On iPhone, Safari keeps its bars, but opening from “Add to Home Screen” gives you a bar-free screen'),
   },
+  fullBtn: pair('⛶ 全画面', '⛶ Full screen'),
+  fullExit: pair('✕ もどる', '✕ Exit'),
+  fullNote: pair('スマホを横に倒すと、全画面で遊べます。iPhone は共有メニューの「ホーム画面に追加」から開くと、アドレスバーなしの全画面に', 'Turn your phone sideways to play full screen. On iPhone, open it from “Add to Home Screen” for a bar-free screen'),
   fall: { tension: pair('テンションフォール', 'Tension fall'), free: pair('フリーフォール', 'Free fall') },
   cue: {
     title: pair('アタリ表示', 'Bite cues'),

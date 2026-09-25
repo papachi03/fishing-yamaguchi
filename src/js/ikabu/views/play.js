@@ -232,6 +232,9 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               <span class="ika-egi-gauge-label">${t(lang, T.hud.tension)}</span>
               <span class="ika-egi-gauge-track"><i class="ika-egi-gauge-fill"></i></span>
             </div>
+            <!-- 全画面ボタン（左上の角。全画面の中では「もどる」に変わる） -->
+            <button type="button" class="ika-egi-fullbtn" id="ika-egi-fullbtn" data-full="enter" aria-pressed="false">${t(lang, T.fullBtn)}</button>
+            <p class="ika-egi-fullnote" id="ika-egi-fullnote" role="status" hidden>${t(lang, T.fullNote)}</p>
             <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap).split('|').map((w) => `<span>${w}</span>`).join('')}</div>
             <div class="ika-egi-colorpop" id="ika-egi-colorpop" role="dialog" aria-label="${t(lang, T.egi.colorTitle)}" hidden>
               <p class="ika-egi-colorpop-title">${t(lang, T.egi.colorTitle)}</p>
@@ -256,6 +259,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             <summary>${t(lang, T.gestures.title)}</summary>
             <p>${t(lang, T.gestures.row)}</p>
             <p class="ika-egi-gestures-keys">${t(lang, T.gestures.keys)}</p>
+            <p class="ika-egi-gestures-keys">${t(lang, T.gestures.full)}</p>
           </details>
           <p class="ika-egi-log" id="ika-egi-log" role="status" aria-live="polite" aria-label="${t(lang, T.a11y.log)}"></p>
         </div>
