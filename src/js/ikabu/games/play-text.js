@@ -55,7 +55,7 @@ export const GAME_ZUKAN = [
     point: pair('とても大きな目と、先が平たく広がった長い触腕2本', 'Enormous eyes and two very long tentacles with flat, wide tips') },
 ];
 export const zukanById = (id) => GAME_ZUKAN.find((z) => z.id === id);
-// 図鑑の絵：カード・釣れたとき＝デフォルメ（イカ部のキャラと同じ画風）、詳しい画面＝リアル調
+// 図鑑の絵：図鑑（カード・詳しい画面）＝リアル調、釣れたときの結果カード＝デフォルメ（イカ部のキャラと同じ画風）
 export const zukanArt = (id, real = false) => `/assets/ikabu/zukan/${real ? '' : 'deform/'}${id}.webp`;
 
 // 山口で会えるイカ（マイ図鑑の分母）

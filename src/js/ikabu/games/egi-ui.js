@@ -752,7 +752,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       if (r) got += 1;
       const li = document.createElement('li');
       li.className = `ika-egi-zukan-card${r ? ' is-got' : ''}${z.boss ? ' is-boss' : ''}`;
-      const img = `<img class="ika-egi-zukan-art${r ? '' : ' is-shadow'}" src="${assetHref(zukanArt(z.id))}" alt="" width="56" height="64" loading="lazy" decoding="async" />`;
+      const img = `<img class="ika-egi-zukan-art${r ? '' : ' is-shadow'}" src="${assetHref(zukanArt(z.id, true))}" alt="" width="160" height="80" loading="lazy" decoding="async" />`;   // 図鑑はリアル調（ぱっぱ 9/25）
       const body = r
         ? `<p class="ika-egi-zukan-name">${esc(speciesName(lang, z.id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}</p>
            <p class="ika-egi-zukan-meta">${t(lang, Z.best)} ${r.weight.toLocaleString()} g・${r.mantle} cm<br>${t(lang, Z.count)} ${r.count}${r.first ? `・${t(lang, Z.first)} ${r.first}` : ''}</p>
