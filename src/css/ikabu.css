@@ -1843,7 +1843,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .is-egi-full .ika-egi-sidehud .ika-egi-count-num { font-size: 22px; }
   .is-egi-full .ika-egi-main-row { width: 100%; }
   .is-egi-full .ika-egi-btn { width: 100%; min-height: 84px; opacity: 0.82; transition: opacity 0.12s; font-size: 14px; padding: 6px 8px; word-break: normal; overflow-wrap: normal; text-wrap: balance; line-height: 1.3; }
-  .is-egi-full .ika-egi-dart { width: 100%; }
+  .is-egi-full .ika-egi-dart { width: 100%; order: -1; }   /* ダートは上、大きいボタンは下（ぱっぱ 2026-09-25） */
   .is-egi-full .ika-egi-btn:active, .is-egi-full .ika-egi-btn.is-signal { opacity: 1; }
   .is-egi-full .ika-egi-dart { min-height: 48px; opacity: 0.8; }
   .is-egi-full .ika-egi-dart:active { opacity: 1; }
