@@ -932,6 +932,33 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   placeHud();
   landscape.addEventListener?.('change', placeHud);
+  // 横向きの全画面（ぱっぱ 2026-09-25「横向きにしたらエギング画面が画面全体に」）：
+  // 横向きのスマホでは、舞台とボタンだけを画面全体に出す（html に .is-egi-full。見た目は CSS）。
+  // あそび場（墨つなぎと同じページ）では、エギングが画面に見えている時だけ。縦に戻せば元のページ
+  const fullWanted = () => {
+    if (!landscape.matches) return false;
+    if (solo) return true;
+    const r = el.main.getBoundingClientRect();
+    return r.bottom > innerHeight * 0.3 && r.top < innerHeight * 0.7;
+  };
+  const syncFull = () => {
+    const on = landscape.matches && (document.documentElement.classList.contains('is-egi-full') || fullWanted());
+    document.documentElement.classList.toggle('is-egi-full', on);
+    // 縦に戻したら、ブラウザの全画面（Android など）も解除
+    if (!on && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  };
+  syncFull();
+  landscape.addEventListener?.('change', () => { document.documentElement.classList.remove('is-egi-full'); syncFull(); });
+  let fullScrollT = 0;
+  addEventListener('scroll', () => { if (!landscape.matches) return; clearTimeout(fullScrollT); fullScrollT = setTimeout(syncFull, 200); }, { passive: true });
+  // Android など：全画面の中で指を離したとき、ブラウザの帯（アドレスバー・下のバー）も消す。
+  // 指を置いた瞬間（pointerdown）では全画面にできない決まりなので、離したとき（pointerup / touchend）に頼む。iPhone の Safari は非対応（何もしない）
+  const goRealFull = () => {
+    if (!document.documentElement.classList.contains('is-egi-full') || document.fullscreenElement || !document.fullscreenEnabled) return;
+    document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {});
+  };
+  el.main.addEventListener('pointerup', goRealFull, true);
+  el.main.addEventListener('touchend', goRealFull, true);
   landscape.addEventListener?.('change', () => { if (landscape.matches && s && !['ready', 'over'].includes(s.phase)) setTimeout(fitLandscape, 250); });
   el.btn.addEventListener('pointerdown', () => { if (!s || s.phase === 'ready') fitLandscape(); });
   // ダートボタン（どの端末でも確実に）

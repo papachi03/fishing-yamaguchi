@@ -1819,6 +1819,17 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-egi-card-tip { font-size: 11.5px; line-height: 1.5; padding: 4px 8px; }
   .ika-egi-card { gap: 6px; }
   .ika-egi-card-photo { display: none; }
+  /* 横向きの全画面（JS が html に .is-egi-full を付ける）：舞台とボタンだけを画面全体に。見出し・説明・ページのスクロールは隠す */
+  html.is-egi-full, html.is-egi-full body { overflow: hidden; }
+  .is-egi-full .ika-egi-main {
+    position: fixed; inset: 0; z-index: 200; margin: 0;
+    grid-template-rows: minmax(0, 1fr); gap: 8px 10px;
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: var(--ika-white);
+  }
+  .is-egi-full .ika-egi-stage, .is-egi-full .ika-egi-controls { height: auto; min-height: 0; }
+  .is-egi-full .ika-egi-gestures { display: none; }
+  .is-egi-full .ika-egi-log { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ika-egi-callout.is-pop, .ika-egi-flash, .ika-egi-btn.is-signal, .ika-m3-callout.is-pop, .ika-m3-cell.is-hint, .ika-m3-cell.is-born, .ika-m3-cell.is-shake, .ika-m3-ink.is-full .ika-m3-ink-track { animation: none; }
