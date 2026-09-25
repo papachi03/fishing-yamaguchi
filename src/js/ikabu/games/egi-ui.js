@@ -886,6 +886,19 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const r = el.main.getBoundingClientRect();
     if (Math.abs(r.top - 6) > 4) scrollTo({ top: scrollY + r.top - 6, behavior: reduced ? 'auto' : 'smooth' });
   };
+  // 横向き：カウント・距離の箱を舞台の外（右の列）へ。縦向きに戻したら舞台の右上へ戻す
+  const sideHud = document.getElementById('ika-egi-sidehud');
+  const stageHud = el.stage.querySelector('.ika-egi-hud');
+  const placeHud = () => {
+    if (!sideHud || !stageHud) return;
+    const to = landscape.matches ? sideHud : stageHud;
+    for (const id of ['ika-egi-count', 'ika-egi-reel']) {
+      const box = document.getElementById(id);
+      if (box && box.parentNode !== to) to.append(box);
+    }
+  };
+  placeHud();
+  landscape.addEventListener?.('change', placeHud);
   landscape.addEventListener?.('change', () => { if (landscape.matches && s && !['ready', 'over'].includes(s.phase)) setTimeout(fitLandscape, 250); });
   el.btn.addEventListener('pointerdown', () => { if (!s || s.phase === 'ready') fitLandscape(); });
   // ダートボタン（どの端末でも確実に）

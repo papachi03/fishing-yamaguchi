@@ -1716,8 +1716,12 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
   .ika-egi-stock { padding: 4px 8px; }
   .ika-egi-stock-label { font-size: 10px; min-width: 3em; }
   .ika-egi-casts i, .ika-egi-egis i { width: 7px; height: 14px; }
-  .ika-egi-count { padding: 4px 10px; min-width: 80px; }
-  .ika-egi-count-num { font-size: 24px; }
+  /* 右上の箱は小さく・少し透かして、うしろの竿とイカが見えるように（ダディ指定 2026-09-25） */
+  .ika-egi-count { padding: 3px 8px; min-width: 0; background: rgba(255, 255, 255, 0.72); }
+  .ika-egi-count-label, .ika-egi-count-depth { font-size: 9.5px; }
+  .ika-egi-count-num { font-size: 19px; }
+  .ika-egi-fallmode { margin-top: 2px; padding: 1px 6px; font-size: 9px; }
+  .ika-egi-windnote { margin-top: 2px; font-size: 9.5px; max-width: 10em; }
   .ika-egi-callout { font-size: 14px; padding: 5px 12px; top: 22%; }
   .ika-egi-flash { top: 44%; font-size: 21px; padding: 8px 16px; border-width: 3px; }
   /* 結果カードは舞台の下の帯に（吊ったイカは上に見えたまま） */
@@ -1745,15 +1749,19 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
   .ika-egi { grid-template-columns: 1fr; }
   .ika-egi-main { display: grid; grid-template-columns: minmax(0, 1fr) clamp(150px, 24vw, 220px); gap: 10px 12px; align-items: stretch; scroll-margin-top: 6px; }
   .ika-egi-stage { grid-column: 1; grid-row: 1; aspect-ratio: auto; height: calc(100svh - 14px); border-radius: 12px; box-shadow: 3px 3px 0 var(--ika-sea); }
-  .ika-egi-controls { grid-column: 2; grid-row: 1; margin-top: 0; grid-template-columns: 1fr; align-content: end; gap: 10px; height: calc(100svh - 14px); }
+  .ika-egi-controls { grid-column: 2; grid-row: 1; margin-top: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; height: calc(100svh - 14px); }
+  .ika-egi-sidehud { display: grid; gap: 8px; margin-bottom: auto; align-self: stretch; }
+  .ika-egi-sidehud .ika-egi-count { box-sizing: border-box; width: 100%; }
+  .ika-egi-sidehud .ika-egi-count { justify-items: start; text-align: left; min-width: 0; padding: 8px 12px; background: var(--ika-white); border: 2px solid var(--ika-sea); }
+  .ika-egi-sidehud .ika-egi-count.is-warn { background: var(--ika-orange); }
+  .ika-egi-sidehud .ika-egi-count-num { font-size: 28px; }
+  .ika-egi-sidehud .ika-egi-windnote { max-width: none; }
   .ika-egi-main-row { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 10px; }
   .ika-egi-btn { min-height: 96px; font-size: 15px; padding: 6px 8px; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
   .ika-egi-dart { flex-direction: row; gap: 6px; min-height: 52px; }
-  .ika-egi-gauge { top: 72px; bottom: 10px; right: 6px; }
+  .ika-egi-gauge { top: 10px; bottom: 10px; right: 6px; }
   .ika-egi-gestures, .ika-egi-log { grid-column: 1 / -1; }
   .ika-egi-hud { inset: 6px; }
-  .ika-egi-count { padding: 4px 10px; min-width: 76px; }
-  .ika-egi-count-num { font-size: 24px; }
   .ika-egi-callout { font-size: 14px; padding: 4px 12px; top: 16%; }
   .ika-egi-card, .ika-egi-card--over { max-height: 86%; overflow: auto; font-size: 12.5px; padding: 10px 12px; }
   .ika-egi-card-photo { display: none; }

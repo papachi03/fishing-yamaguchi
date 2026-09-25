@@ -245,6 +245,8 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           </div>
 
           <div class="ika-egi-controls">
+            <!-- 横向きのときは、カウント・水深・距離をここ（ボタンの上の空き）へ移す（舞台を広く見せる。ダディ指定 2026-09-25） -->
+            <div class="ika-egi-sidehud" id="ika-egi-sidehud"></div>
             <div class="ika-egi-main-row">
               <button type="button" class="ika-egi-btn" id="ika-egi-btn" data-phase="ready">${t(lang, T.btn.ready)}</button>
               <button type="button" class="ika-egi-dart" id="ika-egi-dart" disabled title="${t(lang, T.gestures.dartHint)}" aria-label="${t(lang, T.gestures.dart)}：${t(lang, T.gestures.dartHint)}"><span class="ika-egi-dart-arrow" aria-hidden="true">↑</span><span>${t(lang, T.gestures.dart)}</span></button>
