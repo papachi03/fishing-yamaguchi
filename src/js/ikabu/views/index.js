@@ -133,6 +133,7 @@ export function render(lang) {
             <img class="ika-logo" src="${assetHref('/assets/ikabu/logo_1200.png')}" srcset="${assetHref('/assets/ikabu/logo_600.png')} 600w, ${assetHref('/assets/ikabu/logo_1200.png')} 1200w" sizes="(max-width: 760px) 70vw, 460px" alt="${t(lang, '山口イカ部 — YAMAGUCHI IKA CLUB', 'Yamaguchi Ika Club')}" width="1200" height="438" fetchpriority="high" />
           </span>
         </h1>
+        <p class="ika-catch">${t(lang, '“釣り”でつながるコミュニティ', 'A community connected by fishing')}</p>
         <p class="ika-lead">${t(lang, 'イカが好き。<br />それだけで、部員。', 'Love squid?<br />Then you are already a member.')}</p>
         <p class="ika-sub">${t(
           lang,
@@ -212,6 +213,16 @@ export function render(lang) {
           <a class="ika-btn ika-btn--sea" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">${t(lang, 'Instagramをフォロー', 'Follow on Instagram')}</a>
           <a class="ika-btn ika-btn--ink" href="${assetHref('/reports.html')}">${t(lang, '掲示板に書く', 'Write on the board')}</a>
         </div>
+        <dl class="ika-faq">
+          <div class="ika-faq-item">
+            <dt><span class="ika-faq-mark" aria-hidden="true">Q</span>${t(lang, '山口県に住んでいないけど、イカ部に入れますか？', 'I don’t live in Yamaguchi. Can I still join?')}</dt>
+            <dd><span class="ika-faq-mark" aria-hidden="true">A</span>${t(lang, '山口県に来てイカ釣りを楽しんでくださるなら、あなたも立派な部員です！ステッカーをタックルボックスに貼って、部員であることをアピールしてください！', 'If you come to Yamaguchi and enjoy squid fishing here, you are a proud member! Put our sticker on your tackle box and show everyone you are one of us!')}</dd>
+          </div>
+          <div class="ika-faq-item">
+            <dt><span class="ika-faq-mark" aria-hidden="true">Q</span>${t(lang, 'ステッカーはどこでもらえますか？', 'Where can I get a sticker?')}</dt>
+            <dd><span class="ika-faq-mark" aria-hidden="true">A</span>${t(lang, '釣り場で部員に会ったら、声をかけてみてください。県外の方は、InstagramのDMでご相談ください。', 'If you meet a member at the water, just say hi. Outside Yamaguchi? Send us a DM on Instagram.')}</dd>
+          </div>
+        </dl>
       </div>
     </div>
   </section>`;

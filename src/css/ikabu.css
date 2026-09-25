@@ -298,6 +298,20 @@
 }
 .ika-logo { width: min(100%, 520px); height: auto; }
 
+/* キャッチコピー（ロゴの下・リード文の上） */
+.ika-catch {
+  display: inline-block;
+  margin-top: clamp(24px, 3.4vw, 36px);
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--ika-orange);
+  color: var(--ika-ink);
+  font-family: var(--font-maru);
+  font-size: clamp(15px, 1.6vw, 19px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.ika-catch + .ika-lead { margin-top: 12px; }
 .ika-lead {
   margin-top: clamp(30px, 4vw, 44px);
   font-family: var(--font-maru);
@@ -720,6 +734,14 @@
 .ika-join-inner { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(24px, 4vw, 56px); }
 .ika-join-badge { width: clamp(130px, 16vw, 210px); height: auto; transform: rotate(-6deg); filter: drop-shadow(6px 8px 0 rgba(0, 69, 77, 0.35)); }
 .ika-join p:not(.ika-eyebrow) { margin-top: 14px; font-size: 16px; line-height: 2; max-width: 36em; }
+/* 入部の Q&A */
+.ika-faq { display: grid; gap: 12px; margin-top: 26px; max-width: 40em; }
+.ika-faq-item { padding: 14px 18px; background: var(--ika-white); border: 3px solid var(--ika-ink); border-radius: 14px; box-shadow: 4px 4px 0 var(--ika-sea-deep); }
+.ika-faq-item dt, .ika-faq-item dd { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; margin: 0; }
+.ika-faq-item dt { font-family: var(--font-maru); font-weight: 900; font-size: 16px; line-height: 1.6; }
+.ika-faq-item dd { margin-top: 8px; font-size: 15px; line-height: 1.9; }
+.ika-faq-mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ika-sea); color: var(--ika-white); font-family: var(--font-varsity); font-weight: 800; font-size: 15px; line-height: 1; margin-top: 1px; }
+.ika-faq-item dd .ika-faq-mark { background: var(--ika-orange); color: var(--ika-ink); }
 
 /* ==========================================================================
    サブページ：見出しと準備中
@@ -1891,9 +1913,10 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-hero-copy-inner > .ika-pennant { order: 1; align-self: center; }
   .ika-hero-copy-inner > .ika-title { order: 2; }
   .ika-hero-copy-inner > .ika-hero-badges { order: 3; }
-  .ika-hero-copy-inner > .ika-lead { order: 4; }
-  .ika-hero-copy-inner > .ika-sub { order: 5; }
-  .ika-hero-copy-inner > .ika-cta { order: 6; }
+  .ika-hero-copy-inner > .ika-catch { order: 4; align-self: center; }
+  .ika-hero-copy-inner > .ika-lead { order: 5; }
+  .ika-hero-copy-inner > .ika-sub { order: 6; }
+  .ika-hero-copy-inner > .ika-cta { order: 7; }
   .ika-hero-badges { justify-content: center; gap: 10px; margin-top: 14px; }
   .ika-hook-btn { font-size: 12px; padding: 6px 12px; right: 14px; bottom: 14px; }   /* 親指の届く右下。イカと糸は左〜中央 */
   .ika-hero-callout { gap: 6px; }
@@ -1903,6 +1926,11 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-pennant { font-size: 12px; margin-bottom: 16px; }
   .ika-logo-patch { padding: 12px 16px; border-radius: 16px; box-shadow: 0 0 0 3px var(--ika-white), 0 0 0 5px var(--ika-sea), 0 0 0 8px var(--ika-orange), 6px 8px 0 8px var(--ika-sea-deep); }
   .ika-lead { margin-top: 26px; font-size: 26px; }
+  .ika-catch { margin-top: 22px; font-size: 14.5px; }
+  .ika-catch + .ika-lead { margin-top: 10px; }
+  .ika-faq-item { padding: 12px 14px; }
+  .ika-faq-item dt { font-size: 15px; }
+  .ika-faq-item dd { font-size: 14px; }
   .ika-sub { font-size: 14px; line-height: 1.95; }
   .ika-btn { min-height: 48px; padding: 8px 20px; font-size: 14px; }
   .ika-ticker { font-size: 15px; padding: 8px 0; }
