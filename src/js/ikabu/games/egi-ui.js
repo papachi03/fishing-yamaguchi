@@ -360,8 +360,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   });
   syncFeel();
 
-  // 練習モードに切り替えて、今の練習条件でゲームを作り直す
-  function usePractice({ open = true } = {}) {
+  // 練習モードに切り替えて、今の練習条件でゲームを作り直す。
+  // user＝人が自分で選んだ（季節・時間帯などを押した）。そのあとに今日の萩の海のデータが届いても、勝手に切り替えない
+  let userPicked = false;
+  function usePractice({ open = true, user = true } = {}) {
+    if (user) userPicked = true;
     settings.mode = 'practice';
     if (open) { el.practice.hidden = false; el.playPractice.setAttribute('aria-expanded', 'true'); }
     syncSetup();
@@ -454,8 +457,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.liveNotice.textContent = t(lang, TX.live.stop);
       el.liveNotice.hidden = false;
       el.live.dataset.state = 'stop';
-      if (!started()) usePractice();
-    } else if (!started() && !demo) {
+      if (!started()) usePractice({ user: false });
+    } else if (!started() && !demo && !userPicked) {
       useLive();
     }
     syncSetupLock();
@@ -466,7 +469,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.liveNotice.textContent = t(lang, TX.live.failed);
     el.liveNotice.hidden = false;
     if (import.meta.env.DEV) console.warn('[egi] live sea unavailable', err);
-    if (!started()) usePractice({ open: false });
+    if (!started()) usePractice({ open: false, user: false });
     syncSetupLock();
   }
 
