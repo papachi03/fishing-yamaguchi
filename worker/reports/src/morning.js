@@ -16,6 +16,7 @@ import { areas } from '../../../src/js/data/areas.js';
 import { fetchWeather } from '../../../src/js/api/weather.js';
 import { assessSafety } from '../../../src/js/api/safety.js';
 import { composeMorningPost, morningDiscordContent } from '../../../src/js/lib/morning-post.js';
+import { egiColorOfDay } from '../../../src/js/lib/egi-color.js';
 
 export const SNAPSHOT_URL = 'https://yamaguchifishing.com/data/sea-snapshot.json';
 const SNAPSHOT_MAX_AGE_MS = 6 * 3600 * 1000;
@@ -90,8 +91,10 @@ export async function sendMorningDraft(env, { now = new Date(), fetchW = fetchWe
   const snapshot = await getSnapshot(now);
   const rows = await morningRows(fetchW, { snapshot, now });
   console.log('morning: rows', Date.now() - t0, 'ms', snapshot ? `snapshot ${snapshot.fetchedAt}` : 'no snapshot', rows.map((r) => `${r.nameJa}:${r.level}`).join(' '));
-  const text = composeMorningPost({ date: now, rows });
-  const draft = morningDiscordContent(text, rows.every((r) => r.level == null), now);
+  // 今日のエギの色（2026-09-27）：萩の予報ファイルから。予報ファイルが無い日・シーズン外は出さない
+  const egi = egiColorOfDay({ date: now, weather: snapshot?.areas?.hagi ?? null });
+  const text = composeMorningPost({ date: now, rows, egiLine: egi?.line ?? null });
+  const draft = morningDiscordContent(text, rows.every((r) => r.level == null), now, egi);
   // 通知を鳴らすためのメンション。IDは wrangler.toml の [vars]（git管理外）に置く
   const mentionId = /^\d{17,20}$/.test(env.DISCORD_MENTION_USER_ID ?? '') ? env.DISCORD_MENTION_USER_ID : null;
   const content = mentionId ? `<@${mentionId}>\n${draft}` : draft;
