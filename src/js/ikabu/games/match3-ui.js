@@ -8,7 +8,7 @@ import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
 import { readJSON, writeJSON, recordM3, emptyM3, KEY_M3 } from './records.js';
 import { t, assetHref } from '../i18n.js';
-import { shareResult, shareButtonHTML, shareAfterHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
+import { openX, saveImage, shareButtonHTML, shareAfterHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
 
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
@@ -268,8 +268,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (!lastResult) return;
       const r = lastResult;
       const dayLabel = r.day.replace(/-/g, '/').replace(/\/0/g, '/');
-      shareResult({ lang, button: e.target.closest('[data-share]'), after: el.card.querySelector('[data-share-after]'), url: shareUrl(lang, 'sumi'),
-        filename: `ikabu-sumi-${r.score}.png`, text: sumiText(lang, { score: r.score, daily: r.daily, dayLabel }),
+      const button = e.target.closest('[data-share]');
+      if (button.dataset.share === 'x') openX(sumiText(lang, { score: r.score, daily: r.daily, dayLabel }), shareUrl(lang, 'sumi'));
+      else saveImage({ lang, button, after: el.card.querySelector('[data-share-after]'), filename: `ikabu-sumi-${r.score}.png`,
         draw: async () => (await import('./share-card.js')).drawSumiCard({ score: r.score, goal: GOAL, reached: r.reached, maxChain: r.maxChain, flashes: r.flashes, daily: r.daily, dayLabel, newBadges: r.newBadges },
           { lang, assetHref, variant: SHARE_VARIANT }) });
       return;

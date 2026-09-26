@@ -2127,6 +2127,8 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 @media (max-width: 640px) { .ika-howto { grid-template-columns: 1fr; gap: 10px; } }
 
 /* ゲームの結果のシェア（2026-09-27、share.js） */
-.ika-share-btn { background: var(--ika-white); border-color: var(--ika-orange); }
+.ika-share { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.ika-share-x { background: var(--ika-ink); border-color: var(--ika-ink); color: var(--ika-white); }
+.ika-share-save { padding: 2px 6px; border: 0; background: none; color: var(--ika-sea); font-size: 12.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .ika-share-after { margin-top: 10px; font-size: 13px; line-height: 1.7; }
 .ika-share-after a { color: var(--ika-sea); font-weight: 700; border-bottom: 2px solid var(--ika-orange); }

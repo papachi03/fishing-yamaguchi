@@ -23,7 +23,7 @@ import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/
 import { recommendedSizes } from './egi-advice.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
-import { shareResult, shareButtonHTML, shareAfterHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
+import { openX, saveImage, shareButtonHTML, shareAfterHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
 
 const f1 = (v) => v.toFixed(1);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -829,25 +829,28 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const practice = settings.mode !== 'live';
     const common = { mode: practice ? 'season' : 'live', seasonLabel: practice ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
     const opts = { lang, assetHref, variant: SHARE_VARIANT };
-    const after = el.card.querySelector('[data-share-after]');
-    const url = shareUrl(lang, 'egi');
+    let text, filename, draw;
     if (lastShare.kind === 'catch') {
       const { c, first } = lastShare;
       const name = speciesName(lang, c.id);
       const eg = settings.egi;
       const data = { ...common, speciesId: c.id, speciesName: name, mantleCm: c.mantle, weightG: c.weight, firstCatch: first && !practice,
         egi: { size: t(lang, `${eg.size}号`, `#${eg.size}`), colorName: t(lang, TX.egi.colors[eg.color]), colorHex: EGI_COLOR_HEX[eg.color] } };
-      shareResult({ lang, button, after, url, filename: `ikabu-${c.id}-${c.weight}g.png`, text: egiCatchText(lang, { name, weightG: c.weight, practice }),
-        draw: async () => (await import('./share-card.js')).drawEgiCatchCard(data, opts) });
+      text = egiCatchText(lang, { name, weightG: c.weight, practice });
+      filename = `ikabu-${c.id}-${c.weight}g.png`;
+      draw = async () => (await import('./share-card.js')).drawEgiCatchCard(data, opts);
     } else {
       const cs = lastShare.catches;
       const big = cs.length ? cs.reduce((a, b) => (b.weight > a.weight ? b : a)) : null;
       const biggest = big ? { speciesId: big.id, speciesName: speciesName(lang, big.id), weightG: big.weight } : null;
-      shareResult({ lang, button, after, url, filename: `ikabu-trip-${cs.length}.png`,
-        text: egiTripText(lang, { count: cs.length, biggest: biggest && { name: biggest.speciesName, weightG: biggest.weightG } }),
-        draw: async () => (await import('./share-card.js')).drawEgiTripCard({ ...common, count: cs.length, biggest }, opts) });
+      text = egiTripText(lang, { count: cs.length, biggest: biggest && { name: biggest.speciesName, weightG: biggest.weightG } });
+      filename = `ikabu-trip-${cs.length}.png`;
+      draw = async () => (await import('./share-card.js')).drawEgiTripCard({ ...common, count: cs.length, biggest }, opts);
     }
+    if (button.dataset.share === 'x') openX(text, shareUrl(lang, 'egi'));
+    else saveImage({ lang, button, after: el.card.querySelector('[data-share-after]'), filename, draw });
   }
+
 
   /* ---------- 入力 ---------- */
   function doPress() {
