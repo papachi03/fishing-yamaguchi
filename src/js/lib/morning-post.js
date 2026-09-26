@@ -48,7 +48,8 @@ export function composeMorningPost({ date, rows, egiLine = null }) {
       `【${jstDateLabel(date)} ${jstTimeOfDay(date).ja}の堤防判定】`,
       ...lines,
       ...(extra ? [extra] : []),
-      '※予報値の目安です。気象庁の注意報・警報を優先してください',
+      // 2026-09-27 ダディ了承で短く（旧：※予報値の目安です。気象庁の注意報・警報を優先してください）。エギの色の行を毎日入れるため
+      '※予報の目安です。気象庁の注意報・警報を優先',
       SEA_URL,
       HASHTAGS.join(' '),
     ].join('\n');

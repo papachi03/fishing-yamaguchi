@@ -60,12 +60,15 @@ test('どの組み合わせでもエギの行は38字分以内（Xの残りは40
   }
 });
 
-test('いちばん長い日（5地域すべて「中止」）でも、エギの行を入れて280字以内', () => {
-  const rows = ['萩', '長門', '下関', '下松', '防府'].map((nameJa) => ({ nameJa, level: 3, wind: 12.3 }));
-  const e = egiColorOfDay({ date: at7('2026-10-11'), weather: weather('2026-10-11', { code: 3 }) });
-  const text = composeMorningPost({ date: at7('2026-10-11'), rows, egiLine: e.line });
-  assert.ok(text.includes(e.line));
-  assert.ok(xWeightedLength(text) <= X_LIMIT, String(xWeightedLength(text)));
+// いちばん長いのは5地域すべて「穏やか」（3文字）で風が2桁の日。「中止」（2文字）ではない（2026-09-27 見落とし→直した）
+test('いちばん長い日（5地域すべて「穏やか」・風2桁）でも、どの色の組み合わせでもエギの行を入れて280字以内', () => {
+  const rows = ['萩', '長門', '下関', '下松', '防府'].map((nameJa) => ({ nameJa, level: 0, wind: 12.3 }));
+  for (const code of [0, 3, 61]) for (const ymd of ['2026-09-27', '2026-10-11']) for (const night of [0, 3]) {
+    const e = egiColorOfDay({ date: at7(ymd), weather: weather(ymd, { code, night }) });
+    const text = composeMorningPost({ date: at7(ymd), rows, egiLine: e.line });
+    assert.ok(text.includes(e.line), `${e.line} が外れた（${xWeightedLength(composeMorningPost({ date: at7(ymd), rows }))}字＋行）`);
+    assert.ok(xWeightedLength(text) <= X_LIMIT, String(xWeightedLength(text)));
+  }
 });
 
 test('280字を超える行は外し、堤防判定だけの下書きにする。Discordには理由と「入れていません」', () => {
