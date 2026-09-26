@@ -8,7 +8,7 @@ import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
 import { readJSON, writeJSON, recordM3, emptyM3, KEY_M3 } from './records.js';
 import { t, assetHref } from '../i18n.js';
-import { openX, saveImage, shareButtonHTML, shareAfterHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
+import { openShareView, shareButtonHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
 
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
@@ -256,8 +256,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         <button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, TX.btn.restart)}</button>
         ${mode === 'daily' ? `<button type="button" class="ika-btn" data-free>${t(lang, TX.mode.free)}</button>` : ''}
         ${shareButtonHTML(lang)}
-      </div>
-      ${shareAfterHTML()}`;
+      </div>`;
     // シェア用（2026-09-27）：この1戦の結果
     lastResult = { score: g.score, reached, maxChain: g.maxChain, flashes: g.flashes, daily: mode === 'daily', day: utcDay(), newBadges: fresh.map((id) => t(lang, TX.badges[id].name)) };
     el.card.hidden = false;
@@ -268,9 +267,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (!lastResult) return;
       const r = lastResult;
       const dayLabel = r.day.replace(/-/g, '/').replace(/\/0/g, '/');
-      const button = e.target.closest('[data-share]');
-      if (button.dataset.share === 'x') openX(sumiText(lang, { score: r.score, daily: r.daily, dayLabel }), shareUrl(lang, 'sumi'));
-      else saveImage({ lang, button, after: el.card.querySelector('[data-share-after]'), filename: `ikabu-sumi-${r.score}.png`,
+      openShareView({ lang, button: e.target.closest('[data-share]'), text: sumiText(lang, { score: r.score, daily: r.daily, dayLabel }), url: shareUrl(lang, 'sumi'),
         draw: async () => (await import('./share-card.js')).drawSumiCard({ score: r.score, goal: GOAL, reached: r.reached, maxChain: r.maxChain, flashes: r.flashes, daily: r.daily, dayLabel, newBadges: r.newBadges },
           { lang, assetHref, variant: SHARE_VARIANT }) });
       return;

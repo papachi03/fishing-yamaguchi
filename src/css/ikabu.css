@@ -2127,8 +2127,12 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 @media (max-width: 640px) { .ika-howto { grid-template-columns: 1fr; gap: 10px; } }
 
 /* ゲームの結果のシェア（2026-09-27、share.js） */
-.ika-share { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; }
+.ika-share-open { background: var(--ika-white); border-color: var(--ika-orange); }
 .ika-share-x { background: var(--ika-ink); border-color: var(--ika-ink); color: var(--ika-white); }
-.ika-share-save { padding: 2px 6px; border: 0; background: none; color: var(--ika-sea); font-size: 12.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.ika-share-after { margin-top: 10px; font-size: 13px; line-height: 1.7; }
-.ika-share-after a { color: var(--ika-sea); font-weight: 700; border-bottom: 2px solid var(--ika-orange); }
+/* シェア用の画像を画面いっぱいに（長押しで保存できるよう、長押し止めは効かせない） */
+.ikabu .ika-shareview, .ika-shareview { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 16px; background: rgba(11, 42, 47, 0.78); }
+.ika-shareview-box { width: min(92vw, 720px); max-height: 100%; overflow: auto; padding: 16px; border-radius: 16px; background: var(--ika-white, #fff); text-align: center; }
+.ika-shareview-img { display: block; width: 100%; height: auto; border-radius: 10px; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
+.ika-shareview-hint { margin: 12px 0; font-size: 13.5px; line-height: 1.7; color: #0b2a2f; text-align: left; }
+.ika-shareview-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ika-shareview .ika-share-x { background: #16233a; border-color: #16233a; color: #fff; }
