@@ -1,7 +1,8 @@
 // egi-guide：記事「部員おすすめ：新子シーズンのエギ選び」。render(lang) は HTML 文字列を返すだけ（DOM・window に触らない）。
 // タイプの切り替え（マズメ／日中／夜間）は pages/egi-guide.js。アフィリエイトのリンクは AFFILIATE_ON が true になるまで出さない
-import { t, pair, esc, pageHref, assetHref } from '../i18n.js';
+import { t, pair, esc, pageHref } from '../i18n.js';
 import { pageHead, sectionHead, chipsHTML, noteHTML } from './parts.js';
+import { ytHTML } from '../yt-facade.js';
 import { AFFILIATE_ON, GUIDE_VIDEO_ID, SERIES, BASES, TYPES, TYPE_NOTES, EGIS } from '../egi-guide-data.js';
 import { amazonUrl, rakutenUrl, AMAZON_DISCLOSURE } from '../../config/affiliate.js';
 
@@ -49,16 +50,9 @@ const egiCard = (lang, e, i) => `
 
 const videoHTML = (lang) => {
   if (!GUIDE_VIDEO_ID) {
-    return `<div class="ika-guide-video ika-guide-video--soon"><p><span class="ika-guide-video-tag">${t(lang, '解説動画', 'Video')}</span>${t(lang, 'この記事の解説動画は準備中です。', 'The video for this article is coming soon.')}</p></div>`;
+    return `<div class="ika-yt ika-yt--soon"><p><span class="ika-yt-tag">${t(lang, '解説動画', 'Video')}</span>${t(lang, 'この記事の解説動画は準備中です。', 'The video for this article is coming soon.')}</p></div>`;
   }
-  // 押すまで YouTube を読み込まない（youtube-nocookie）。表紙は動画の冒頭のコマを自前で持つ（YouTube のサムネイルは作られるまで灰色の仮の絵になり、押す前に YouTube へ通信もしない）
-  const id = esc(GUIDE_VIDEO_ID);
-  return `<div class="ika-guide-video">
-      <button type="button" class="ika-guide-video-play" data-yt="${id}" aria-label="${t(lang, '解説動画を再生', 'Play the video')}">
-        <img src="${assetHref('/assets/ikabu/egi-guide-poster.jpg')}" alt="" loading="lazy" width="1280" height="720">
-        <span class="ika-guide-video-btn" aria-hidden="true">▶</span>
-      </button>
-    </div>`;
+  return ytHTML(lang, { id: GUIDE_VIDEO_ID, poster: '/assets/ikabu/egi-guide-poster.jpg', label: pair('解説動画を再生', 'Play the video') });
 };
 
 const SIZE_ROWS = [

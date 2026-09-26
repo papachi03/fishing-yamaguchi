@@ -2,6 +2,7 @@
 // ここでは時間帯の絞り込みと、解説動画を押したときの読み込みだけ
 import { boot } from '../boot.js';
 import { render } from '../views/egi-guide.js';
+import { mountYouTube } from '../yt-facade.js';
 
 boot(render);
 
@@ -14,13 +15,5 @@ chips?.addEventListener('click', (ev) => {
   document.querySelectorAll('.ika-guide-group').forEach((g) => { g.hidden = k !== 'all' && g.dataset.type !== k; });
 });
 
-// 押すまで YouTube を読み込まない
-document.querySelector('.ika-guide-video-play')?.addEventListener('click', (ev) => {
-  const btn = ev.currentTarget;
-  const f = document.createElement('iframe');
-  f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(btn.dataset.yt)}?autoplay=1&rel=0`;
-  f.title = btn.getAttribute('aria-label');
-  f.allow = 'autoplay; encrypted-media; picture-in-picture';
-  f.allowFullscreen = true;
-  btn.replaceWith(f);
-});
+// 解説動画：押すまで YouTube を読み込まない
+mountYouTube();

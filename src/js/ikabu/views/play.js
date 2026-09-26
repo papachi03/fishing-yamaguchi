@@ -3,6 +3,7 @@
 // 動く部分は pages/play.js が games/egi-ui.js と games/match3-ui.js を結びつける。
 import { t, pair, esc, assetHref, pageHref } from '../i18n.js';
 import { pageHead, noteHTML } from './parts.js';
+import { ytHTML } from '../yt-facade.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID, GAME_ZUKAN } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
@@ -51,6 +52,20 @@ const hubHTML = (lang) => `
       </a>
     </div>
   </section>`;
+
+// 遊び方の動画（childダディの YouTube、2026-09-26）。あそび場だけに出し、エギング単体のページ（知り合い用）には出さない
+const HOWTO = {
+  egi: { id: 'Kdq8l3a82yc', poster: '/assets/ikabu/egi-video-poster.jpg', len: pair('約4分', 'about 4 min') },
+  sumi: { id: 'HSpwXXRKXFU', poster: '/assets/ikabu/sumi-video-poster.jpg', len: pair('約3分', 'about 3 min') },
+};
+const howtoHTML = (lang, game) => {
+  const v = HOWTO[game];
+  return `
+      <div class="ika-howto">
+        <div class="ika-howto-video">${ytHTML(lang, { id: v.id, poster: v.poster, label: pair('遊び方の動画を再生', 'Play the how-to video') })}</div>
+        <p class="ika-howto-text"><span class="ika-howto-tag">${t(lang, '動画', 'VIDEO')}</span>${t(lang, `遊び方を${v.len.ja}で紹介しています。押すと再生します（YouTube）。`, `A ${v.len.en} how-to video (in Japanese). Tap to play on YouTube.`)}</p>
+      </div>`;
+};
 
 /* ---------- しゃくって抱かせろ！ ---------- */
 
@@ -205,6 +220,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
         <${H} id="egi-title">${t(lang, T.name)}</${H}>
         <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります（海の様子とエギの選び方は、ゲーム画面の下）。', ' Today’s real wind, waves and tide in Hagi set the mood (sea conditions and egi choice are below the game).') : ''}</p>
       </header>
+      ${solo ? '' : howtoHTML(lang, 'egi')}
 
       <div class="ika-egi" id="ika-egi" data-lang="${lang}"${solo ? ' data-solo="1"' : ''}>
         <div class="ika-egi-setup" id="ika-egi-setup">${egiSetupHTML(lang, { month, tod: 'evening', solo })}</div>
@@ -321,6 +337,7 @@ const m3HTML = (lang) => {
         <h2 id="sumi-title">${t(lang, T.name)}</h2>
         <p class="ika-head-note">${t(lang, T.tagline)}</p>
       </header>
+      ${howtoHTML(lang, 'sumi')}
 
       <div class="ika-m3" id="ika-m3" data-lang="${lang}">
         <div class="ika-m3-top">

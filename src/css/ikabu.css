@@ -2065,14 +2065,14 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 
 .ika-guide-top { padding-top: clamp(28px, 4vw, 48px); }
 .ika-guide-pr { margin-bottom: 14px; font-size: 12.5px; color: var(--ika-ink-soft); }
-.ika-guide-video { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; background: var(--ika-sea-deep); }
-.ika-guide-video iframe, .ika-guide-video-play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.ika-guide-video-play { padding: 0; background: #000; cursor: pointer; }
-.ika-guide-video-play img { width: 100%; height: 100%; object-fit: cover; }
+.ika-yt { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; background: var(--ika-sea-deep); }
+.ika-yt iframe, .ika-yt-play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ika-yt-play { padding: 0; background: #000; cursor: pointer; }
+.ika-yt-play img { width: 100%; height: 100%; object-fit: cover; }
 /* 表紙の左半分はタイトル文字なので、再生ボタンは右下（堤防の上）に置く */
-.ika-guide-video-btn { position: absolute; right: 4%; bottom: 6%; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ika-orange); color: var(--ika-ink); font-size: 28px; box-shadow: 4px 4px 0 var(--ika-sea-deep); }
-.ika-guide-video--soon { aspect-ratio: auto; display: grid; place-items: center; min-height: 140px; padding: 24px; color: var(--ika-white); text-align: center; font-family: var(--font-maru); font-weight: 700; }
-.ika-guide-video-tag { display: inline-block; margin-right: 10px; padding: 2px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-size: 12px; }
+.ika-yt-btn { position: absolute; right: 4%; bottom: 6%; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ika-orange); color: var(--ika-ink); font-size: 28px; box-shadow: 4px 4px 0 var(--ika-sea-deep); }
+.ika-yt--soon { aspect-ratio: auto; display: grid; place-items: center; min-height: 140px; padding: 24px; color: var(--ika-white); text-align: center; font-family: var(--font-maru); font-weight: 700; }
+.ika-yt-tag { display: inline-block; margin-right: 10px; padding: 2px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-size: 12px; }
 
 .ika-guide-p { max-width: 46em; font-size: 15.5px; line-height: 2; }
 .ika-guide-h3 { margin-bottom: 10px; font-family: var(--font-maru); font-weight: 900; font-size: 18px; color: var(--ika-sea); }
@@ -2115,3 +2115,13 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-guide-shopbtn { flex: 1 1 auto; padding: 8px 12px; border-radius: 999px; text-align: center; font-size: 13px; font-weight: 700; }
 .ika-guide-shopbtn--amazon { background: var(--ika-orange); color: var(--ika-ink); }
 .ika-guide-shopbtn--rakuten { border: 2px solid var(--ika-sea); color: var(--ika-sea); }
+
+/* あそび場の遊び方の動画（小さな表紙＋説明。再生したら横いっぱいに広げる） */
+.ika-howto { display: grid; grid-template-columns: minmax(0, 360px) 1fr; gap: 18px; align-items: center; margin: 0 0 clamp(20px, 3vw, 32px); }
+.ika-howto:has(.is-playing) { grid-template-columns: 1fr; }
+.ika-howto:has(.is-playing) .ika-howto-text { display: none; }
+.ika-howto .ika-yt { border-width: 2px; border-radius: 12px; }
+.ika-howto .ika-yt-btn { width: 52px; height: 52px; font-size: 20px; }
+.ika-howto-text { font-size: 14px; line-height: 1.8; }
+.ika-howto-tag { display: inline-block; margin-right: 8px; padding: 1px 10px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 12px; }
+@media (max-width: 640px) { .ika-howto { grid-template-columns: 1fr; gap: 10px; } }

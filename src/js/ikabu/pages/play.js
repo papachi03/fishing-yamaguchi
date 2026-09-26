@@ -3,8 +3,10 @@ import { boot } from '../boot.js';
 import { render } from '../views/play.js';
 import { mountEgi } from '../games/egi-ui.js';
 import { mountMatch3 } from '../games/match3-ui.js';
+import { mountYouTube } from '../yt-facade.js';
 
 const { lang } = boot(render);
+mountYouTube();   // 遊び方の動画：押すまで YouTube を読み込まない
 
 // 開発時だけのスイッチ（本番ビルドでは無視）。スクリーンショット用に場面を作って止める
 //   ?gameDemo=egi:aiming|sinking|signal|fight|landed|snag|over
