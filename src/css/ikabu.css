@@ -2125,3 +2125,8 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-howto-text { font-size: 14px; line-height: 1.8; }
 .ika-howto-tag { display: inline-block; margin-right: 8px; padding: 1px 10px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 12px; }
 @media (max-width: 640px) { .ika-howto { grid-template-columns: 1fr; gap: 10px; } }
+
+/* ゲームの結果のシェア（2026-09-27、share.js） */
+.ika-share-btn { background: var(--ika-white); border-color: var(--ika-orange); }
+.ika-share-after { margin-top: 10px; font-size: 13px; line-height: 1.7; }
+.ika-share-after a { color: var(--ika-sea); font-weight: 700; border-bottom: 2px solid var(--ika-orange); }

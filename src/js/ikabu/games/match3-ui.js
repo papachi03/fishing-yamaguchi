@@ -8,6 +8,7 @@ import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
 import { readJSON, writeJSON, recordM3, emptyM3, KEY_M3 } from './records.js';
 import { t, assetHref } from '../i18n.js';
+import { shareResult, shareButtonHTML, shareAfterHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
 
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
@@ -36,6 +37,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let busy = false;
   let cursor = 0;
   let recorded = false;
+  let lastResult = null;   // シェアする1戦の結果（share.js）
   const demoHold = demo === 'chain';
 
   /* ---------- 盤面の描画 ---------- */
@@ -253,11 +255,25 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       <div class="ika-m3-card-actions">
         <button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, TX.btn.restart)}</button>
         ${mode === 'daily' ? `<button type="button" class="ika-btn" data-free>${t(lang, TX.mode.free)}</button>` : ''}
-      </div>`;
+        ${shareButtonHTML(lang)}
+      </div>
+      ${shareAfterHTML()}`;
+    // シェア用（2026-09-27）：この1戦の結果
+    lastResult = { score: g.score, reached, maxChain: g.maxChain, flashes: g.flashes, daily: mode === 'daily', day: utcDay(), newBadges: fresh.map((id) => t(lang, TX.badges[id].name)) };
     el.card.hidden = false;
     el.card.querySelector('[data-again]')?.focus({ preventScroll: true });
   }
   el.card.addEventListener('click', (e) => {
+    if (e.target.closest('[data-share]')) {
+      if (!lastResult) return;
+      const r = lastResult;
+      const dayLabel = r.day.replace(/-/g, '/').replace(/\/0/g, '/');
+      shareResult({ lang, button: e.target.closest('[data-share]'), after: el.card.querySelector('[data-share-after]'), url: shareUrl(lang, 'sumi'),
+        filename: `ikabu-sumi-${r.score}.png`, text: sumiText(lang, { score: r.score, daily: r.daily, dayLabel }),
+        draw: async () => (await import('./share-card.js')).drawSumiCard({ score: r.score, goal: GOAL, reached: r.reached, maxChain: r.maxChain, flashes: r.flashes, daily: r.daily, dayLabel, newBadges: r.newBadges },
+          { lang, assetHref, variant: SHARE_VARIANT }) });
+      return;
+    }
     if (e.target.closest('[data-again]')) newGame();
     else if (e.target.closest('[data-free]')) {
       mode = 'free';

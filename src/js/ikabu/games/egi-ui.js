@@ -23,6 +23,7 @@ import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/
 import { recommendedSizes } from './egi-advice.js';
 import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
+import { shareResult, shareButtonHTML, shareAfterHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
 
 const f1 = (v) => v.toFixed(1);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -64,6 +65,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 条件：mode は 'live'（今日の萩の海）か 'practice'（自分で選ぶ）。時間帯は最初から時計と日の出入りで決める
   const now0 = new Date();
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
+  let lastShare = null;   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
@@ -716,7 +718,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
-    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button><button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button></div>`;
+    // シェア（2026-09-27）：釣れた時だけ。知り合い用のエギング単体ページには出さない
+    const canShare = why === 'landed' && !solo;
+    if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id) };
+    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button><button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button>${canShare ? shareButtonHTML(lang) : ''}</div>${canShare ? shareAfterHTML() : ''}`;
     syncEgiPick();
     el.card.className = 'ika-egi-card';
     el.card.hidden = false;
@@ -742,7 +747,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
-      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button></div>`;
+      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${solo ? '' : shareButtonHTML(lang)}</div>${solo ? '' : shareAfterHTML()}`;
+    lastShare = { kind: 'trip', catches: catches.slice() };
     el.card.className = 'ika-egi-card ika-egi-card--over';
     el.card.hidden = false;
     syncSetupLock();
@@ -813,7 +819,35 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.pickSize.querySelector('.ika-chip')?.focus({ preventScroll: true });
     }
     else if (e.target.closest('[data-restart]')) { newGame(); }
+    else if (e.target.closest('[data-share]')) shareEgi(e.target.closest('[data-share]'));
   });
+
+  /* ---------- シェア（画像は押された時に初めて描く） ---------- */
+  const dateLabel = () => { const d = new Date(); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
+  function shareEgi(button) {
+    if (!lastShare) return;
+    const practice = settings.mode !== 'live';
+    const common = { mode: practice ? 'season' : 'live', seasonLabel: practice ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
+    const opts = { lang, assetHref, variant: SHARE_VARIANT };
+    const after = el.card.querySelector('[data-share-after]');
+    const url = shareUrl(lang, 'egi');
+    if (lastShare.kind === 'catch') {
+      const { c, first } = lastShare;
+      const name = speciesName(lang, c.id);
+      const eg = settings.egi;
+      const data = { ...common, speciesId: c.id, speciesName: name, mantleCm: c.mantle, weightG: c.weight, firstCatch: first && !practice,
+        egi: { size: t(lang, `${eg.size}号`, `#${eg.size}`), colorName: t(lang, TX.egi.colors[eg.color]), colorHex: EGI_COLOR_HEX[eg.color] } };
+      shareResult({ lang, button, after, url, filename: `ikabu-${c.id}-${c.weight}g.png`, text: egiCatchText(lang, { name, weightG: c.weight, practice }),
+        draw: async () => (await import('./share-card.js')).drawEgiCatchCard(data, opts) });
+    } else {
+      const cs = lastShare.catches;
+      const big = cs.length ? cs.reduce((a, b) => (b.weight > a.weight ? b : a)) : null;
+      const biggest = big ? { speciesId: big.id, speciesName: speciesName(lang, big.id), weightG: big.weight } : null;
+      shareResult({ lang, button, after, url, filename: `ikabu-trip-${cs.length}.png`,
+        text: egiTripText(lang, { count: cs.length, biggest: biggest && { name: biggest.speciesName, weightG: biggest.weightG } }),
+        draw: async () => (await import('./share-card.js')).drawEgiTripCard({ ...common, count: cs.length, biggest }, opts) });
+    }
+  }
 
   /* ---------- 入力 ---------- */
   function doPress() {
