@@ -43,6 +43,12 @@ const hubHTML = (lang) => `
         </a>
       </div>
       <p class="ika-play-note">${t(lang, HUB_TEXT.records)}</p>
+      <a class="ika-play-read" href="${pageHref('egi-guide', lang)}">
+        <span class="ika-play-read-tag">${t(lang, '読みもの', 'READ')}</span>
+        <span class="ika-play-read-title">${t(lang, '部員おすすめ：新子シーズンのエギ選び', "Members' pick: egi for young-squid season")}</span>
+        <span class="ika-play-read-desc">${t(lang, '号数と色の考え方、マズメ・日中・夜間の3タイプ別おすすめ', 'Sizes, colors, and picks for dawn, day and night anglers')}</span>
+        <span class="ika-play-read-go" aria-hidden="true">→</span>
+      </a>
     </div>
   </section>`;
 
