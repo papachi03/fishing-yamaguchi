@@ -2068,8 +2068,9 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-guide-video { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; background: var(--ika-sea-deep); }
 .ika-guide-video iframe, .ika-guide-video-play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .ika-guide-video-play { padding: 0; background: #000; cursor: pointer; }
-.ika-guide-video-play img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
-.ika-guide-video-btn { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ika-orange); color: var(--ika-ink); font-size: 28px; box-shadow: 4px 4px 0 var(--ika-sea-deep); }
+.ika-guide-video-play img { width: 100%; height: 100%; object-fit: cover; }
+/* 表紙の左半分はタイトル文字なので、再生ボタンは右下（堤防の上）に置く */
+.ika-guide-video-btn { position: absolute; right: 4%; bottom: 6%; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--ika-orange); color: var(--ika-ink); font-size: 28px; box-shadow: 4px 4px 0 var(--ika-sea-deep); }
 .ika-guide-video--soon { aspect-ratio: auto; display: grid; place-items: center; min-height: 140px; padding: 24px; color: var(--ika-white); text-align: center; font-family: var(--font-maru); font-weight: 700; }
 .ika-guide-video-tag { display: inline-block; margin-right: 10px; padding: 2px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-size: 12px; }
 

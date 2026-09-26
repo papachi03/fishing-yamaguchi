@@ -7,7 +7,7 @@ import { pair } from './i18n.js';
 // アフィリエイトの表示スイッチ。海況データの乗り換え（Open-Meteo の無料枠から撤退）が終わってから true にする（ぱっぱ 9/26）
 export const AFFILIATE_ON = false;
 // 冒頭の解説動画（YouTube の動画ID）。childダディのチャンネルに上がったら入れる。null のあいだは「準備中」の枠
-export const GUIDE_VIDEO_ID = null;
+export const GUIDE_VIDEO_ID = '5BiXvdxYBj8';   // childダディ「【秋エギング】新子シーズンのエギ選び」（2026-09-26）
 
 export const SERIES = {
   egiohk: { name: pair('ヤマシタ エギ王K', 'YAMASHITA Egi-O K'), sizes: pair('2.5号・3.0号は同じ色', 'Same colors in #2.5 and #3.0') },
