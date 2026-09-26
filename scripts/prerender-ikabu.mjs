@@ -37,7 +37,8 @@ export function parseIkabuPath(filename) {
   const p = filename.replace(/\\/g, '/');
   const r = p.match(/\/ikabu\/(en\/)?recipes\/([a-z0-9-]+)\.html$/);
   if (r) return { lang: r[1] ? 'en' : 'ja', page: 'recipe', recipeId: r[2] };
-  const m = p.match(/\/ikabu\/(en\/)?([a-z]+)\.html$/);
+  // ページ名は「-」入りも（egi-guide。2026-09-26、[a-z]+ だけだと本文が書き込まれず空の殻のまま配信された）
+  const m = p.match(/\/ikabu\/(en\/)?([a-z0-9-]+)\.html$/);
   if (!m) return null;
   return { lang: m[1] ? 'en' : 'ja', page: m[2], recipeId: null };
 }

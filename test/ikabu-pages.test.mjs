@@ -23,12 +23,14 @@ test('殻のパスから page / lang / recipeId を読む', () => {
   assert.deepEqual(parseIkabuPath('G:\\x\\ikabu\\en\\map.html'), { lang: 'en', page: 'map', recipeId: null });
   assert.deepEqual(parseIkabuPath('/x/ikabu/recipes/butter.html'), { lang: 'ja', page: 'recipe', recipeId: 'butter' });
   assert.deepEqual(parseIkabuPath('/x/ikabu/en/recipes/miso.html'), { lang: 'en', page: 'recipe', recipeId: 'miso' });
+  assert.deepEqual(parseIkabuPath('/x/ikabu/en/egi-guide.html'), { lang: 'en', page: 'egi-guide', recipeId: null });   // 「-」入りのページ名
   assert.equal(parseIkabuPath('/x/sea.html'), null);
 });
 
-test('殻の一覧：11ページ×2言語（エギング専用ページを含む） ＋ レシピ4品×2言語、hreflang は同じ品を指す', () => {
+test('殻の一覧：12ページ×2言語（エギング専用ページ・記事 egi-guide を含む） ＋ レシピ4品×2言語、hreflang は同じ品を指す', () => {
   const shells = ikabuShells();
-  assert.equal(shells.length, 30);
+  assert.equal(shells.length, 32);
+  assert.ok(shells.some((s) => s.file === 'ikabu/egi-guide.html') && shells.some((s) => s.file === 'ikabu/en/egi-guide.html'));
   assert.ok(shells.some((s) => s.file === 'ikabu/egi.html') && shells.some((s) => s.file === 'ikabu/en/egi.html'));
   const butterEn = shells.find((s) => s.file === 'ikabu/en/recipes/butter.html');
   assert.equal(butterEn.page, 'recipe');
