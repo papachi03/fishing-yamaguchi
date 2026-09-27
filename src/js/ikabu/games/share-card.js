@@ -37,7 +37,7 @@ const T = {
   ja: {
     gameEgi: 'しゃくって抱かせろ！', gameSumi: '墨つなぎ', club: '山口イカ部',
     site: 'yamaguchifishing.com/ikabu',
-    live: '今日の萩の海', season: '季節モード（練習）', seasonWith: (s) => `季節モード（練習）・${s}`,
+    live: '今日の萩の海', season: '季節モード（練習）', seasonWith: (s) => `季節モード（練習）・${s}`, beginner: '初心者練習',
     gameNote: 'ゲームの記録', mantle: (cm) => `胴長 ${cm}cm`, mantleLabel: '胴長',
     egi: (size, color) => `エギ ${size} ${color}`, egiLabel: 'エギ',
     first: '初ゲット！', catchLabel: '釣果',
@@ -50,7 +50,7 @@ const T = {
   en: {
     gameEgi: 'Shakutte Dakasero!', gameSumi: 'Sumi Chain', club: 'Yamaguchi Ika Club',
     site: 'yamaguchifishing.com/ikabu',
-    live: "Today's Hagi sea", season: 'Season mode (practice)', seasonWith: (s) => `Season mode (practice) · ${s}`,
+    live: "Today's Hagi sea", season: 'Season mode (practice)', seasonWith: (s) => `Season mode (practice) · ${s}`, beginner: 'Beginner practice',
     gameNote: 'Game record', mantle: (cm) => `Mantle ${cm} cm`, mantleLabel: 'Mantle',
     egi: (size, color) => `Egi ${size} ${color}`, egiLabel: 'Egi',
     first: 'First catch!', catchLabel: 'Catch',
@@ -211,6 +211,7 @@ function makeCanvas() {
 }
 
 function modeLabel(s, data) {
+  if (data.mode === 'beginner') return s.beginner;   // 🔰初心者練習（2026-09-27）
   if (data.mode === 'season') return data.seasonLabel ? s.seasonWith(data.seasonLabel) : s.season;
   return s.live;
 }
@@ -267,7 +268,7 @@ const A = {
     if (dateLabel) text(ctx, dateLabel, M, CARD_H - 66, { size: 24, weight: 700, family: F.varsity, color: 'rgba(255,255,255,0.9)', letter: 1 });
   },
   modeTag(ctx, s, data, x, y) {
-    if (data.mode === 'season') return pill(ctx, modeLabel(s, data), x, y, { bg: C.orange, fg: C.ink, size: 26 });
+    if (data.mode !== 'live') return pill(ctx, modeLabel(s, data), x, y, { bg: C.orange, fg: C.ink, size: 26 });
     return pill(ctx, modeLabel(s, data), x, y, { bg: C.white, fg: C.sea, size: 26 });
   },
 };
@@ -305,7 +306,7 @@ const B = {
   },
   modeTag(ctx, s, data, xRight, yMid) {
     const label = modeLabel(s, data);
-    if (data.mode === 'season') return pill(ctx, label, xRight, yMid - 24, { bg: C.ink, fg: C.white, size: 24, align: 'right', h: 48 });
+    if (data.mode !== 'live') return pill(ctx, label, xRight, yMid - 24, { bg: C.ink, fg: C.white, size: 24, align: 'right', h: 48 });
     return pill(ctx, label, xRight, yMid - 24, { bg: C.white, fg: C.sea, size: 24, align: 'right', h: 48 });
   },
   // 本券の下端に3本ストライプ（チケットの角丸に合わせて切り抜く）
@@ -336,7 +337,7 @@ const Cv = {
   // 左上のななめリボン（モード）
   ribbon(ctx, s, data) {
     const label = modeLabel(s, data);
-    const season = data.mode === 'season';
+    const season = data.mode !== 'live';
     ctx.save();
     ctx.translate(0, 0); ctx.rotate(-Math.PI / 12);
     ctx.font = font(700, 26, F.maru);

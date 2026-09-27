@@ -233,6 +233,13 @@ export const EGI_TEXT = {
     firstCatch: pair('初めての種！', 'First of this species!'),
     notCounted: pair('季節モードの釣果は図鑑と記録に残りません。実際のシーズンで「今日の萩の海」で釣って、図鑑に記録しよう！', "Season-mode catches don't go in your atlas or records. Catch them in the real season with “Today in Hagi” to log them!"),
     sessions: pair('釣行', 'Sessions'),
+    notCountedBeginner: pair('🔰初心者練習の釣果は図鑑と記録に残りません。慣れたら「季節を選んで遊ぶ」や「今日の萩の海で釣る」に挑戦しよう！', 'Beginner-practice catches don\'t go in your atlas or records. Once you get the hang of it, try a season or today\'s Hagi sea!'),
+  },
+  // 🔰初心者練習（2026-09-27）：最初の1投だけ手順を案内する
+  guide: {
+    cast: pair('① 下の大きいボタンを長押し→はなして、エギを投げよう', '① Hold the big button, then let go to cast'),
+    sink: pair('② エギが少し沈むのを待って、ボタンをタップ＝しゃくり（エギが跳ね上がる）', '② Let the egi sink a little, then tap the button to jerk it up'),
+    fall: pair('③ しゃくった後はボタンを長押ししたまま＝テンションフォール。ゆっくり沈むエギにイカが抱きつくよ', '③ After a jerk, keep holding = tension fall. Squid hug the slowly sinking egi'),
   },
   live: {
     title: pair('今日の萩の海', "Today's sea at Hagi"),
@@ -242,6 +249,8 @@ export const EGI_TEXT = {
     partial: pair('一部のデータが取れなかったので、足りない分はふつうの日の値で補っています。', 'Some data was unavailable; missing values use an average day.'),
     playLive: pair('今日の萩の海で釣る', "Fish today's Hagi sea"),
     playPractice: pair('季節を選んで遊ぶ', 'Pick a season'),
+    playBeginner: pair('🔰 初心者練習', '🔰 Beginner practice'),
+    beginnerHint: pair('はじめての方は「🔰 初心者練習」から。アタリが分かりやすく、釣れやすい設定です。', 'New here? Start with “🔰 Beginner practice”: clear bites and friendly settings.'),
     expectation: pair('期待値', 'Expectation'),
     wind: pair('風', 'Wind'),
     gust: pair('突風', 'Gust'),
@@ -252,6 +261,7 @@ export const EGI_TEXT = {
     fetched: pair('取得', 'Fetched'),
     modeLive: pair('今日の萩', "Today's Hagi"),
     modePractice: pair('練習', 'Practice'),
+    modeBeginner: pair('🔰初心者練習', '🔰Beginner'),
     now: pair('いま', 'Now'),
   },
   zukan: {

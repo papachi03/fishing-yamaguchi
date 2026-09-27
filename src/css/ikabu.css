@@ -2136,3 +2136,10 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-shareview-hint { margin: 12px 0; font-size: 13.5px; line-height: 1.7; color: #0b2a2f; text-align: left; }
 .ika-shareview-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .ika-shareview .ika-share-x { background: #16233a; border-color: #16233a; color: #fff; }
+
+/* 🔰初心者練習（2026-09-27）。はじめての人にはボタンを目立たせ、案内を出す */
+.ika-egi-play-beginner { border-color: #2e9e5b; color: #1d6b3d; }
+.ika-egi-play-beginner.is-active { background: #2e9e5b; border-color: #2e9e5b; color: #fff; }
+.ika-egi-play-beginner.is-first:not(.is-active) { animation: ika-beginner-pulse 1.6s ease-in-out 3; }
+@keyframes ika-beginner-pulse { 50% { box-shadow: 0 0 0 6px rgba(46, 158, 91, 0.25); } }
+.ika-egi-beginner-hint { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: #e9f7ee; color: #1d4d31; font-size: 13px; line-height: 1.7; }

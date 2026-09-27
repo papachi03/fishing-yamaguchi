@@ -447,3 +447,36 @@ test('エギの色：マズメは赤・ピンク、日中はナチュラル系�
     assert.ok(v >= 0.75 && v <= 1.25);
   }
 });
+
+// 🔰初心者練習（2026-09-27、ぱっぱ：知り合いが難しすぎてやめかけた）。初心者らしい自動プレイ：
+// 2秒沈めたらしゃくる／しゃくったら3秒長押し（テンションフォール）／アタリには0.9秒遅れてアワセ／巻きは押しっぱなし（90超えで0.5秒離す）
+function noviceTrip(seed, easy) {
+  const s = createEgi({ seed, month: 10, tod: 'evening', conditions: { expectation: easy ? 10 : 7, wind: 1, gust: 2 }, easy });
+  const step = 0.05;
+  let guard = 0;
+  while (s.phase !== 'over' && guard++ < 30000) {
+    if (s.phase === 'ready') { press(s); run(s, 0.8, step); release(s); continue; }
+    if (s.phase === 'result') { press(s); release(s); continue; }
+    if (s.phase === 'sinking') { run(s, 2.0, step); if (s.phase === 'sinking') { press(s); release(s); } continue; }
+    if (s.phase === 'action') { press(s); for (let t = 0; t < 3 && s.phase === 'action'; t += step) tick(s, step); if (s.pressing) release(s); continue; }
+    if (s.phase === 'signal') { run(s, 0.9, step); if (s.phase === 'signal') { press(s); release(s); } continue; }
+    if (s.phase === 'fight') {
+      if (!s.pressing) press(s);
+      run(s, step, step);
+      if (s.phase === 'fight' && s.tension > 90) { release(s); run(s, 0.5, step); }
+      if (s.phase !== 'fight' && s.pressing) release(s);
+      continue;
+    }
+    run(s, step, step);
+  }
+  return s.catches.length;
+}
+
+test('🔰初心者練習：初心者の動きでも秋は8割以上の釣行で釣れる。同じ動きの季節モードは2割に届かない', () => {
+  const N = 60;
+  const got = (easy) => Array.from({ length: N }, (_, i) => noviceTrip(`n${easy}${i}`, easy)).filter((n) => n > 0).length / N;
+  const easy = got(true);
+  const normal = got(false);
+  assert.ok(easy >= 0.8, `初心者練習 ${easy}`);
+  assert.ok(normal < 0.25, `季節モード ${normal}`);
+});

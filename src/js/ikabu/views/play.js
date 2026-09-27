@@ -143,7 +143,9 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       <div class="ika-egi-live-actions">
         <button type="button" class="ika-btn ika-btn--primary" id="ika-egi-play-live" disabled>${t(lang, T.live.playLive)}</button>
         <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice">${t(lang, T.live.playPractice)}</button>
+        <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner">${t(lang, T.live.playBeginner)}</button>
       </div>
+      <p class="ika-egi-beginner-hint" id="ika-egi-beginner-hint" hidden>${t(lang, T.live.beginnerHint)}</p>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
     </div>
     <div class="ika-egi-pick" id="ika-egi-pick">${egiPickerHTML(lang, { month, tod })}</div>

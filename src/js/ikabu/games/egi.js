@@ -278,13 +278,15 @@ export const PUNCH_GAIN = 0.25;
 
 // 風が強いと糸がふくらんでアタリが取りにくい：アワセの猶予が短くなる（7m/s を超えるとじわじわ、最大 45% 短く）
 export const windFactor = (cond) => 1 - Math.min(0.45, Math.max(0, (cond.gust - 6) * 0.06));
-export function signalWindows(cond, kind = 'run', light = false) {
-  const k = windFactor(cond) * (light ? 0.6 : 1);
+// 🔰初心者練習（2026-09-27、ぱっぱ：知り合いが難しすぎてやめかけた）：アワセの猶予2倍・寄り1.5倍・根掛かりなし・ファイトはやさしく
+export const EASY = { window: 2, bite: 1.5, tension: 0.6, jet: 0.5, slack: 2 };
+export function signalWindows(cond, kind = 'run', light = false, easy = false) {
+  const k = windFactor(cond) * (light ? 0.6 : 1) * (easy ? EASY.window : 1);
   return { good: BITES[kind].good * k, late: BITES[kind].late * k };
 }
 
 // ---------------- 状態 ----------------
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi } = {}) {
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
   return {
@@ -294,7 +296,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     cond,
     spec, // 使っているエギ（号数・タイプ）
     mood: moodOf(month, tod, cond),
-    windows: signalWindows(cond), // いまのアタリのアワセ猶予（アタリが出るたびに種類に合わせて入れ替える）
+    easy, // 🔰初心者練習
+    windows: signalWindows(cond, 'run', false, easy), // いまのアタリのアワセ猶予（アタリが出るたびに種類に合わせて入れ替える）
     bite: null, // いまのアタリ { kind, light }
     punchAt: -99, // 最後のイカパンチの時刻
     liftAt: -99, // 底からエギを持ち上げた時刻（シリヤケイカは巻き上げで食う）
@@ -402,7 +405,8 @@ export function press(s) {
   } else if (s.phase === 'signal') {
     const late = s.t - s.signalAt;
     const light = s.bite?.light;
-    const chance = late <= s.windows.good ? (light ? 0.8 : 0.92) : late <= s.windows.late ? 0.35 : 0;
+    // 初心者練習は、猶予の中なら必ず掛かる
+    const chance = s.easy ? (late <= s.windows.late ? 1 : 0) : late <= s.windows.good ? (light ? 0.8 : 0.92) : late <= s.windows.late ? 0.35 : 0;
     if (s.rand() < chance) {
       s.phase = 'fight';
       s.squid = Math.max(0, s.squid - 1);
@@ -484,7 +488,7 @@ function judgeRhythm(s) {
 // 底にいると根掛かりすることがある（ディープほど掛かりやすい）
 function onBottom(s, dt) {
   s.bottomFor += dt;
-  if (s.bottomFor > 1.5 && s.rand() < 0.12 * TYPE_SNAG[s.spec.type] * dt) {
+  if (!s.easy && s.bottomFor > 1.5 && s.rand() < 0.12 * TYPE_SNAG[s.spec.type] * dt) {   // 初心者練習は根掛かりしない
     s.egi -= 1;
     emit(s, 'snag', { egiLeft: s.egi });
     endCast(s, 'snag');
@@ -579,7 +583,7 @@ export function tick(s, dt) {
           s.hooking = { id: boss.id, weight, mantle, power: boss.power, boss: true };
           const kind = s.tensionFall ? 'run' : 'stop';   // 大物は走るか、重く止まる
           s.bite = { kind, light: false };
-          s.windows = signalWindows(s.cond, kind, false);
+          s.windows = signalWindows(s.cond, kind, false, s.easy);
           s.phase = 'signal';
           s.signalAt = s.t;
           emit(s, 'signal', { kind, light: false, tensionFall: s.tensionFall, boss: true });
@@ -598,7 +602,7 @@ export function tick(s, dt) {
         // 渋い日は長いテンションフォールが効き、やる気のある日は速いフリーフォールでも抱く
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
         const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM)
-          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood });
+          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1);
         if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
           s.punchAt = s.t;
           s.punchPending = true;
@@ -612,7 +616,7 @@ export function tick(s, dt) {
           const kind = pickWeighted(BITE_MIX[s.tensionFall ? 'tension' : 'free'], s.rand).kind;
           const light = s.rand() < (s.mood === 'calm' ? 0.3 : 0.2); // 軽い抱き（猶予が短い）
           s.bite = { kind, light };
-          s.windows = signalWindows(s.cond, kind, light);
+          s.windows = signalWindows(s.cond, kind, light, s.easy);
           s.phase = 'signal';
           s.signalAt = s.t;
           s.signaled = true;
@@ -646,7 +650,7 @@ export function tick(s, dt) {
       if (s.pressing) {
         // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）
         s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * dt);
-        s.tension += (22 + p * 22) * dt;
+        s.tension += (22 + p * 22) * dt * (s.easy ? EASY.tension : 1);
       } else {
         s.tension -= 45 * dt;
         s.dist += 0.6 * p * s.hooking.stamina * dt;
@@ -660,8 +664,8 @@ export function tick(s, dt) {
       const recent = hk.jets.filter((t) => s.t - t < JET_WINDOW);
       const resting = recent.length >= JET_BURST && s.t - recent[recent.length - 1] < JET_REST;
       const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
-      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * dt) {
-        if (s.pressing) s.tension += 22;
+      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy ? EASY.jet : 1) * dt) {
+        if (s.pressing) s.tension += 22 * (s.easy ? EASY.tension : 1);   // 初心者練習は噴射の引きもやさしく
         else s.dist += 1;
         hk.jets.push(s.t);
         hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);
@@ -673,7 +677,7 @@ export function tick(s, dt) {
         emit(s, 'break', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'break');
-      } else if (s.slackFor > SLACK_LIMIT) {
+      } else if (s.slackFor > SLACK_LIMIT * (s.easy ? EASY.slack : 1)) {
         emit(s, 'unhooked', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'unhooked');

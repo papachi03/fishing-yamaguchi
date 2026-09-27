@@ -49,7 +49,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
-    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
+    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
@@ -65,7 +65,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 条件：mode は 'live'（今日の萩の海）か 'practice'（自分で選ぶ）。時間帯は最初から時計と日の出入りで決める
   const now0 = new Date();
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
-  let lastShare = null;   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
+  let lastShare = null;
+  const cue = () => (settings.mode === 'beginner' ? 'easy' : settings.cue);   // 初心者練習はアタリを「やさしい表示」に固定
+  let guide = 0;   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
@@ -202,7 +204,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- ゲームの作り直し ---------- */
   function newGame() {
-    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi });
+    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner' });
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0;
     V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
@@ -218,6 +220,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     syncStock();
     syncSetupLock();
     setButton();
+    if (guide === 1) callout(t(lang, TX.guide.cast), 'good', 6000);
   }
 
   /* ---------- 設定パネル：今日の萩の海 ／ 練習 ---------- */
@@ -225,6 +228,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const f1m = (v) => (v == null ? '—' : Number(v).toFixed(1));
   const condLine = () => {
     const c = settings.cond;
+    if (settings.mode === 'beginner') return `${t(lang, TX.live.modeBeginner)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}`;
     return settings.mode === 'live'
       ? `${t(lang, TX.live.modeLive)}：${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m・${t(lang, TOD[settings.tod])}`
       : `${t(lang, TX.live.modePractice)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m`;
@@ -240,6 +244,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.mode.textContent = condLine();
     el.live.classList.toggle('is-active', settings.mode === 'live');
     el.practice.classList.toggle('is-active', settings.mode === 'practice');
+    el.playBeginner?.classList.toggle('is-active', settings.mode === 'beginner');
     const sm = SEASON_MODES.find((m) => m.months.includes(settings.month));
     el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));
   }
@@ -427,6 +432,29 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     }
     usePractice();
   });
+  function useBeginner({ user = true } = {}) {
+    if (user) userPicked = true;
+    const nowMonth = new Date().getMonth() + 1;
+    const m = SEASON_MODES.find((x) => x.months.includes(nowMonth)) ?? SEASON_MODES[0];
+    settings.mode = 'beginner';
+    settings.month = m.month;
+    settings.tod = m.tod;
+    settings.cond = { ...settings.cond, expectation: 10, ...WIND_PRESET.calm, safety: 'ok' };
+    el.exp.value = '10';
+    el.wind.querySelectorAll('.ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.wind === 'calm')));
+    const star = speciesPool(m.month, m.tod).find((p) => p.key === m.stars);
+    if (star) {
+      const [z0, z1] = star.zone;
+      chooseEgi({ size: star.ideal, type: z1 <= 0.6 ? 'shallow' : z0 >= 0.6 ? 'deep' : 'normal' });
+    }
+    el.practice.hidden = true;
+    el.playPractice.setAttribute('aria-expanded', 'false');
+    guide = 1;
+    syncSetup();
+    buildScene();
+    newGame();
+  }
+  el.playBeginner?.addEventListener('click', () => { if (!started()) useBeginner(); });
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
   el.playPractice.addEventListener('click', () => {
     if (started()) return;
@@ -459,7 +487,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.liveNotice.textContent = t(lang, TX.live.stop);
       el.liveNotice.hidden = false;
       el.live.dataset.state = 'stop';
-      if (!started()) usePractice({ user: false });
+      if (!started() && settings.mode !== 'beginner') usePractice({ user: false });
     } else if (!started() && !demo && !userPicked) {
       useLive();
     }
@@ -471,7 +499,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.liveNotice.textContent = t(lang, TX.live.failed);
     el.liveNotice.hidden = false;
     if (import.meta.env.DEV) console.warn('[egi] live sea unavailable', err);
-    if (!started()) usePractice({ open: false, user: false });
+    if (!started() && settings.mode !== 'beginner') usePractice({ open: false, user: false });
     syncSetupLock();
   }
 
@@ -485,7 +513,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const key = s.phase === 'over' ? 'over' : s.phase === 'result' ? 'result' : s.phase === 'aiming' ? 'aiming' : s.phase === 'signal' ? 'signal' : s.phase === 'fight' ? 'fight' : s.phase === 'ready' ? 'ready' : 'sink';
     if (last.btn === key) return;
     last.btn = key;
-    el.btn.textContent = t(lang, TX.btn[key === 'signal' && settings.cue === 'real' ? 'sink' : key]);
+    el.btn.textContent = t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
@@ -497,7 +525,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     node.textContent = value;
   }
   let calloutTimer = 0;
-  function callout(text, tone = '') {
+  function callout(text, tone = '', ms = 1700) {
     el.callout.textContent = text;
     el.callout.className = `ika-egi-callout${tone ? ` is-${tone}` : ''}`;
     el.callout.hidden = false;
@@ -505,7 +533,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     void el.callout.offsetWidth;
     el.callout.classList.add('is-pop');
     clearTimeout(calloutTimer);
-    calloutTimer = setTimeout(() => { el.callout.hidden = true; }, 1700);
+    calloutTimer = setTimeout(() => { el.callout.hidden = true; }, ms);
     el.log.textContent = text;
   }
 
@@ -521,6 +549,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.egi.mode = 'cast';
           V.cast = { t0: now, from: V.rodAng ?? 100, released: false, rel: null, dist: s.castDist, to: { x: X(s.castDist), y: SCENE.surface } };
           if (reduced) landEgi();   // 動きを減らす設定：飛ばさずに着水
+          if (guide === 1) { guide = 2; setTimeout(() => { if (guide === 2) callout(t(lang, TX.guide.sink), 'good', 6000); }, 1200); }
           syncStock();
           syncSetupLock();
           break;
@@ -531,6 +560,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkDouble = e.double;
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
           else if (e.double) callout(t(lang, TX.cue.double));
+          if (guide === 2) { guide = 3; callout(t(lang, TX.guide.fall), 'good', 7000); }
           setFallMode(null);
           break;
         case 'fall':
@@ -546,6 +576,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         }
         case 'signal': {
           signalsThisCast += 1;
+          guide = 0;   // アタリが来たら案内はおしまい（ここからは「今！」の表示）
           const h = s.hooking;
           V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = V.egi.ang; V.hug.t0 = now;
           setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle));
@@ -558,7 +589,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           // アタリの出方：走る／竿先にコン／止まる／フケる。本格モードでは糸と竿先だけで見せる
           V.bite = { kind: e.kind, light: e.light, t0: now, amp: e.light ? 0.6 : 1 };
           V.lastBite = V.bite;
-          if (settings.cue === 'easy') {
+          if (cue() === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.kinds[e.kind]);
             el.cueLabel.className = `ika-egi-cue${e.light ? ' is-light' : ''}`;
             el.cueLabel.hidden = false;
@@ -615,7 +646,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.punchAt = now;
           spawnBubbles(V.egi.x, V.egi.y, 5, 1);
           feel.fire('punch');
-          if (settings.cue === 'easy') {
+          if (cue() === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.punch);
             el.cueLabel.className = 'ika-egi-cue is-light';
             el.cueLabel.hidden = false;
@@ -628,7 +659,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           callout(t(lang, e.left ? TX.msg.spookedLeft : TX.msg.spooked), 'bad');
           break;
         case 'punch-wait':
-          if (settings.cue === 'easy') callout(t(lang, TX.msg.punchWait), 'good');
+          if (cue() === 'easy') callout(t(lang, TX.msg.punchWait), 'good');
           break;
         case 'snag':
           V.egi.mode = 'stuck';
@@ -742,7 +773,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.card.innerHTML = `
       <p class="ika-egi-card-title">${t(lang, O.title)}</p>
       <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${counted && total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
-      ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, O.notCounted)}</p>` : ''}
+      ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, settings.mode === 'beginner' ? O.notCountedBeginner : O.notCounted)}</p>` : ''}
       ${list}${noEgi}
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
@@ -827,7 +858,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function shareEgi(button) {
     if (!lastShare) return;
     const practice = settings.mode !== 'live';
-    const common = { mode: practice ? 'season' : 'live', seasonLabel: practice ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
+    const common = { mode: settings.mode === 'beginner' ? 'beginner' : practice ? 'season' : 'live', seasonLabel: settings.mode === 'practice' ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
     const opts = { lang, assetHref, variant: SHARE_VARIANT };
     let text, draw;
     if (lastShare.kind === 'catch') {
@@ -1525,7 +1556,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.windnote.hidden = !(s.windows.good < SIGNAL_GOOD - 0.01 && phase !== 'signal');
       el.count.classList.toggle('is-warn', onBottom && s.bottomFor > 1.2);
     }
-    el.btn.classList.toggle('is-signal', phase === 'signal' && settings.cue === 'easy');
+    el.btn.classList.toggle('is-signal', phase === 'signal' && cue() === 'easy');
     el.flash.hidden = true;   // 帯は使わない（本格：糸と竿先で読む／やさしい：小さなラベル）
     if (phase !== 'signal' && !el.cueLabel.hidden) el.cueLabel.hidden = true;
     el.btn.classList.toggle('is-pressing', s.pressing && phase === 'fight');
@@ -1608,6 +1639,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   if (!sc) buildScene();
   newGame();
   syncRecords();
+  // はじめての人（釣行0回）は🔰初心者練習から（ぱっぱ 9/27）。今日の萩の海のデータが届いても切り替えない
+  if ((rec.sessions ?? 0) === 0 && !demo && el.playBeginner) {
+    el.beginnerHint.hidden = false;
+    el.playBeginner.classList.add('is-first');
+    useBeginner();
+  }
   el.btn.disabled = false;
   let liveDone = false;
   if (demo) runDemo(demo);
