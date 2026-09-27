@@ -20,7 +20,7 @@ const rodTip = (h) => ({ x: h.x + Math.cos((h.ang * Math.PI) / 180) * h.len, y: 
 
 // ウキ1本（原点＝水面の位置。上が光る頭、下が糸の付け根）
 function floatShape(color) {
-  const g = svgEl('g', { class: 'ika-tl-float' });
+  const g = svgEl('g', { class: 'ika-tl-float', opacity: '0' });   // 最初は隠す（テーラー以外の釣り方で、舞台の左上の角に映っていた：2026-09-28 ぱっぱ）
   const glow = svgEl('circle', { cx: '0', cy: '-19', r: '13', fill: FLOAT_COLORS[color], opacity: '0.35', class: 'ika-tl-glow' });
   g.append(
     glow,
