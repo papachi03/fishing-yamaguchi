@@ -8,12 +8,13 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, YAEN_DIST, YAEN_CHASE } from './egi.js';
+import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
+import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX } from './egi-scene.js';
@@ -59,7 +60,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
-    ajiBox: q('ika-egi-aji'), ajis: q('ika-egi-ajis'),
+    ajiBox: q('ika-egi-aji'), ajis: q('ika-egi-ajis'), tanaBox: q('ika-egi-tana'), tanas: q('ika-egi-tanas'), tailorBtns: q('ika-egi-tailorbtns'),
     methods: q('ika-egi-methods'), methodAbout: q('ika-egi-method-about'), baitBox: q('ika-egi-bait'), baits: q('ika-egi-baits'),
     baitRow: q('ika-egi-baitrow'), baitFill: q('ika-egi-baitfill'), baitName: q('ika-egi-baitname'),
     levelNum: q('ika-egi-level-num'), levelFill: q('ika-egi-level-fill'), levelNext: q('ika-egi-level-next'),
@@ -88,7 +89,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real',
     method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
     bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami',
-    aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live' };   // ヤエンのアジ（2026-09-28 案B）
+    aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live',   // ヤエンのアジ（2026-09-28 案B）
+    tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one' };   // テーラーのタナ（2026-09-28）
+  // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
+  const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true });   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
@@ -132,7 +136,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let sc = null;   // SVG の要素
   function buildScene() {
     const bottom = s?.bottom || 8;
-    el.scene.innerHTML = egiSceneSVG({ lang, tod: settings.tod, W, bottom, assetHref });
+    el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref });
     const svg = el.scene.querySelector('svg');
     sc = {
       svg,
@@ -145,6 +149,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const n = sc.nodes;
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
+    sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     paintEgi();
     paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
     updateBottom(bottom);
@@ -195,9 +200,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const on = settings.method === 'jado';
     const bait = s?.bait ?? settings.bait;
     const yaen = settings.method === 'yaen';
+    const tailor = settings.method === 'tailor';
     for (const g of [n.egiWater, n.egiAir, n.ghost]) {
       const egiArt = g.querySelector('.ika-art-egi');
-      if (egiArt) egiArt.style.display = yaen ? 'none' : '';
+      if (egiArt) egiArt.style.display = yaen || tailor ? 'none' : '';
+      const rig = g.querySelector('.ika-tl-deco');
+      if (rig) rig.style.display = tailor ? '' : 'none';
       const aji = g.querySelector('.ika-eg-aji');
       if (aji) aji.style.display = yaen ? '' : 'none';
       const d = g.querySelector('.ika-eg-jado');
@@ -231,8 +239,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.fx.append(n.jetStreak, n.jetCore, n.punchRing, ...n.punchArms, ...n.bubbles);
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
-    n.egiWater.append(jadoDeco(), ajiDeco());
-    n.egiAir.append(jadoDeco(), ajiDeco());
+    n.egiWater.append(jadoDeco(), ajiDeco(), tailorDeco());
+    n.egiAir.append(jadoDeco(), ajiDeco(), tailorDeco());
     // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
     n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '34', fill: 'transparent', 'pointer-events': 'all' }));   // スマホで指 44px 前後になる大きさ
     n.ghost.append(egiShape(), ajiDeco());
@@ -269,6 +277,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
     if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
     // ヤエン：抱いたイカの腕の中はエギではなくアジ（2026-09-28 ぱっぱ：エギが一瞬映る）
+    if (kind === 'hug' && (s?.method ?? settings.method) === 'tailor') node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });   // テーラー：腕の中はテーラー（egi 側の絵）
     if (kind === 'hug' && (s?.method ?? settings.method) === 'yaen') {
       node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });
       const aji = ajiDeco(); aji.style.display = ''; aji.removeAttribute('clip-path');
@@ -313,13 +322,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
-    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji });
+    s = createEgi({ month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
     V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
-    const pool = speciesPool(settings.month, settings.tod);
+    const pool = speciesPool(settings.month, todNow());
     V.swim.forEach((w, i) => { w.species = (pool[i] ?? pool[0]).id; w.len = 44 + i * 10; setSquidArt(sc.nodes.swim[i], 'swim', w.species, w.len); });
     const tp = tipRest();
     V.pend.reset(tp);
@@ -369,15 +378,26 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.ajiBox.hidden = !yaen;
       el.ajis.querySelectorAll('[data-aji]').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.aji === settings.aji)); b.disabled = lock; });
     }
-    el.dartBtn.hidden = jado;
+    const tailor = settings.method === 'tailor';
+    if (el.tanaBox) {
+      el.tanaBox.hidden = !tailor;
+      el.tanas.querySelectorAll('[data-tana]').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.tana === settings.tana)); b.disabled = lock; });
+    }
+    if (el.tailorBtns) el.tailorBtns.hidden = !tailor;
+    const gestRow = root.querySelector('#ika-egi-gest-row');
+    if (gestRow) gestRow.textContent = t(lang, tailor ? TX.tailor.gest : TX.gestures.row);
+    // 残りの投げ（エギ5回）／残りのアジ／残りのエサ（テーラーは9個）の数だけ印を並べ直す
+    { const n0 = tailor ? TAILOR_BAITS : CASTS;
+      if (el.casts.children.length !== n0) el.casts.innerHTML = Array.from({ length: n0 }, () => '<i></i>').join(''); }
+    el.dartBtn.hidden = jado || tailor;
     el.baitRow.hidden = !jado;
     if (jado) el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, TX.bait.left);
     ajiShown = null;
     if (yaen) syncAji();
     V.chaseAt = null;
     const castLabel = el.casts?.parentElement?.querySelector('.ika-egi-stock-label');
-    if (castLabel) castLabel.textContent = t(lang, yaen ? TX.yaen.aji : TX.hud.casts);
-    if (el.egis?.parentElement) el.egis.parentElement.hidden = yaen;   // ヤエンはエギを使わない
+    if (castLabel) castLabel.textContent = t(lang, yaen ? TX.yaen.aji : tailor ? TX.tailor.bait : TX.hud.casts);
+    if (el.egis?.parentElement) el.egis.parentElement.hidden = yaen || tailor;   // ヤエン・テーラーはエギを使わない
     syncSide();
     syncBait();
     paintJado();
@@ -438,14 +458,42 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const id = b.dataset.method;
     const st = methodNow(id);
     if (st === 'ok') {
+      const wasNight = todNow() === 'night';
       settings.method = id;
       writePref('ikabu.egi.method', id);
+      if ((todNow() === 'night') !== wasNight || id === 'tailor') buildScene();   // テーラーは夜の舞台
       newGame();
       callout(methodName(id), 'good');
     } else if (st === 'level') callout(`${methodName(id)}：${TX.method.level(lang, METHODS[id].level)}`, 'bad', 2600);
     else if (st === 'season') callout(TX.method.seasonNow(lang, methodName(id), settings.mode === 'live' ? `${TX.method.nextSeason(lang, nextSeasonMonth(id, settings.month))}（${t(lang, TX.method.seasonPick)}）` : t(lang, TX.method.season[id])), '', 3600);
     else if (st === 'soon') callout(`${methodName(id)}：${t(lang, TX.method.soon)}`, '', 2200);
   });
+  el.tanas?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tana]');
+    if (!b || started()) return;
+    settings.tana = b.dataset.tana;
+    writePref('ikabu.egi.tana', settings.tana);
+    newGame();
+  });
+  // テーラー：色のボタンで、そのウキを合わせる
+  function doTailorSet(i) {
+    feel.unlock();
+    if (!s || frozen || s.method !== 'tailor' || s.phase !== 'tailor') return;
+    tailorSet(s, i);
+    onEvents(s.events.splice(0));
+    setButton();
+  }
+  el.tailorBtns?.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-float]');
+    if (!b) return;
+    e.preventDefault();
+    doTailorSet(Number(b.dataset.float));
+  });
+  el.tailorBtns?.addEventListener('keydown', (e) => {
+    const b = e.target.closest('[data-float]');
+    if (b && (e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doTailorSet(Number(b.dataset.float)); }
+  });
+  el.tailorBtns?.addEventListener('click', (e) => e.preventDefault());
   el.ajis?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-aji]');
     if (!b || started()) return;
@@ -809,10 +857,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 邪道エギング：沈んでいる間は「着底を待つ」、底では「ズル引き」（アタリの時も本格表示ならズル引きのまま）
     const jado = s.method === 'jado';
     if (jado && (key === 'sink' || (key === 'signal' && cue() === 'real'))) key = s.phase === 'sinking' ? 'jadoWait' : 'jadoDrag';
+    if (s.method === 'tailor') { if (key === 'ready') key = 'tailor-ready'; else if (key === 'sink') key = 'tailor-watch'; }
     if (s.method === 'yaen' && key === 'sink') key = `yaen-${s.phase === 'yaen' && s.yaen?.reached ? 'set' : ['wait', 'run', 'draw', 'yaen'].includes(s.phase) ? s.phase : 'sink'}`;
     if (last.btn === key) return;
     last.btn = key;
-    el.btn.textContent = key === 'yaen-wait' && s.aji === 'live' ? t(lang, TX.yaen.liveWait) : key.startsWith('yaen-') ? t(lang, TX.yaen.btn[key.slice(5)]) : key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
+    el.btn.textContent = key.startsWith('tailor-') ? t(lang, TX.tailor.btn[key.slice(7)]) : key === 'yaen-wait' && s.aji === 'live' ? t(lang, TX.yaen.liveWait) : key.startsWith('yaen-') ? t(lang, TX.yaen.btn[key.slice(5)]) : key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
@@ -1013,7 +1062,79 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.log.textContent = t(lang, TX.cue.kinds[e.kind]);
           break;
         }
+        case 'tailor-cast':
+          s.floats.forEach((f, k) => setTimeout(() => burst(X(f.dist), SCENE.surface, 5), k * 120));
+          feel.fire('tap');
+          callout(t(lang, TX.tailor.cast), 'good', 3200);
+          if (!V.tailorTaught) { V.tailorTaught = true; setTimeout(() => { if (s.phase === 'tailor') callout(t(lang, TX.tailor.hint), '', 4200); }, 3400); }
+          syncStock();
+          break;
+        case 'tailor-rebait': {
+          const f = s.floats[e.i];
+          setTimeout(() => burst(X(f.dist), SCENE.surface, 5), 300);
+          callout(TX.tailor.rebait(lang, tailorColor(e.i)), '', 1800);
+          syncStock();
+          break;
+        }
+        case 'tailor-resume':
+          resetForNextCast();
+          break;
+        case 'tailor-touch':
+          feel.fire('punch');
+          callout(e.double ? t(lang, TX.tailor.double) : TX.tailor.touch(lang, tailorColor(e.i)), e.double ? 'good' : '', 1800);
+          break;
+        case 'tailor-lean':
+          callout(TX.tailor.lean(lang, tailorColor(e.i)), '', 1800);
+          break;
+        case 'tailor-sink': {
+          feel.fire('run');
+          const lit = s.floats[e.i]?.lit;
+          callout(`${TX.tailor.sink(lang, tailorColor(e.i))}${lit ? ` ${t(lang, e.head ? TX.tailor.sinkHead : TX.tailor.sinkRoot)}` : ''}`, 'good', 2400);
+          break;
+        }
+        case 'tailor-root':
+          if (s.floats[e.i]?.lit) callout(TX.tailor.root(lang, tailorColor(e.i)), 'good', 2000);
+          break;
+        case 'tailor-gone':
+          callout(TX.tailor.gone(lang, tailorColor(e.i)), 'bad', 2200);
+          break;
+        case 'tailor-weed':
+          callout(TX.tailor.weed(lang, tailorColor(e.i)), '', 2400);
+          break;
+        case 'tailor-fugu':
+          callout(TX.tailor.fugu(lang, tailorColor(e.i)), '', 2000);
+          break;
+        case 'tailor-fugu-gone':
+          callout(TX.tailor.fuguGone(lang, tailorColor(e.i)), 'bad', 2000);
+          break;
+        case 'tailor-miss':
+          feel.fire('break');
+          callout(t(lang, TX.tailor.miss[e.why] ?? TX.tailor.miss.luck), 'bad', 2200);
+          break;
+        case 'tailor-nothing':
+          callout(t(lang, TX.tailor.nothing), '', 1400);
+          break;
+        case 'tailor-weedup':
+          break;
         case 'hook':
+          if (e.tailor) {
+            // テーラー：掛けたウキの下（タナ）からやり取り。イカは抱いた姿で、フグは絵を出さない（取り込んでからカードで見せる）
+            const h = s.hooking;
+            V.egi.mode = 'water'; V.sinkOffset = 0; V.egi.x = X(s.dist); V.egi.y = Y(s.depth); V.egi.ang = 0;
+            if (h && !h.gedo) {
+              V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = 0; V.hug.t0 = now;
+              V.revealed = false;
+              V.heavy = clamp((h.weight ?? 250) / 1500, 0.25, 1.6);
+              setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle ?? 26));
+              setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle ?? 26), true);
+              V.hug.height = (44 * clamp(mantleUnits(h.mantle ?? 26) / 56, 0.75, 1.8) + mantleUnits(h.mantle ?? 26)) * 1.15;
+            }
+            hookDepth = Math.max(0.6, s.depth); hookDist = Math.max(s.dist, 1); inked = false;
+            callout(t(lang, h?.gedo ? TX.msg.hook : TX.tailor.hit), 'good', 2400);
+            feel.fire('hook', { heavy: V.heavy });
+            setFallMode(null);
+            break;
+          }
           if (e.yaen) { hookDepth = Math.max(0.6, s.depth); hookDist = Math.max(s.dist, 1); inked = false; callout(t(lang, TX.yaen.hit), 'good', 2400); feel.fire('hook', { heavy: V.heavy }); setFallMode(null); break; }
           el.flash.hidden = true;
           el.cueLabel.hidden = true;
@@ -1134,6 +1255,21 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
 
   // イカが離れて泳ぎ去る（すっぽ抜け・身切れ・バレ）
+  const tailorColor = (i) => t(lang, TX.tailor.colors[s?.floats?.[i]?.color ?? ['green', 'red', 'orange'][i]]);
+  const tbtnLast = [];
+  function syncTailorBtns() {
+    if (!el.tailorBtns || el.tailorBtns.hidden || !s) return;
+    el.tailorBtns.querySelectorAll('[data-float]').forEach((b, i) => {
+      const f = s.floats?.[i];
+      const st = !f ? 'idle' : !f.bait && f.stage === 'idle' ? 'none' : f.stage;
+      const key = `${st}:${s.phase}`;
+      if (tbtnLast[i] === key) return;
+      tbtnLast[i] = key;
+      b.dataset.stage = st;
+      b.disabled = s.phase !== 'tailor' || st === 'none';
+      b.querySelector('[data-state]').textContent = t(lang, TX.tailor.states[st] ?? TX.tailor.states.idle);
+    });
+  }
   function escapeSquid() {
     if (!V.hug.on) return;
     const h = s.hooking ?? V.hug.last ?? { id: 'aori', mantle: 15 };
@@ -1484,6 +1620,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (s?.method === 'tailor' && s.phase === 'tailor' && !e.target.closest?.('.ika-egi-btn, .ika-egi-tailorbtns, a, details, .ika-egi-fullbtn')) {
+      const svg = sc?.svg;
+      const m = svg?.getScreenCTM?.();
+      if (m) {
+        const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+        const i = tailorHit(sc.tailor, s, X, p);
+        if (i >= 0) { e.preventDefault(); doTailorSet(i); }
+      }
+      return;
+    }
     if (!e.target.closest?.('.ika-egi-btn, .ika-egi-dart') && s && s.method !== 'yaen' && (s.phase === 'ready' || s.phase === 'result') && !V.flight && touchesEgi(e)) {
       e.preventDefault();
       openColorPop();
@@ -2063,6 +2209,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.egiAir.setAttribute('transform', egiT); n.egiWater.setAttribute('transform', egiT);
     n.egiAir.setAttribute('opacity', egiVisible && egiAir ? '1' : '0');
     n.egiWater.setAttribute('opacity', egiVisible && !egiAir ? '1' : '0');
+    if (s.method === 'tailor' && phase !== 'fight') {
+      n.egiWater.setAttribute('opacity', '0'); n.egiAir.setAttribute('opacity', '0');
+      if (phase !== 'result' || !V.land) sc.line.setAttribute('d', '');
+    }
+    drawTailor(sc.tailor, s, { W, X, mainTip: tipNow(), now, dt, reduced });
+    syncTailorBtns();
     if (V.ghost) {
       const a = 1 - clamp((now - V.ghost.t0) / 1.5, 0, 1);
       setAttrs(n.ghost, { transform: `translate(${f1(V.ghost.x)} ${f1(V.ghost.y)}) rotate(${f1(V.ghost.ang)}) scale(1.15)`, opacity: (a * 0.6).toFixed(2) });
@@ -2243,12 +2395,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.reelDelta.hidden = !showRan;
       if (showRan) setText(el.reelDelta, 'delta', `+${ran}m`);
     } else el.reelDelta.hidden = true;
-    const inWater = ['sinking', 'action', 'signal', 'wait', 'run', 'draw', 'yaen'].includes(phase) && !V.cast;
+    const inWater = ['sinking', 'action', 'signal', 'wait', 'run', 'draw', 'yaen', 'tailor'].includes(phase) && !V.cast;
     el.count.hidden = !inWater;
     if (inWater) {
       const onBottom = s.depth >= s.bottom;
       const label = phase === 'sinking' ? t(lang, TX.hud.count) : s.method === 'jado' ? t(lang, TX.bait.stopFor) : t(lang, TX.hud.fall);   // 邪道：底で止めている秒数
-      if (s.method === 'yaen' && phase !== 'sinking') {
+      if (s.method === 'tailor') {
+        setText(el.countLabel, 'label', t(lang, TX.tailor.watch));
+        setText(el.countNum, 'count', String(Math.max(0, Math.floor(s.t - (s.watchFrom ?? s.t)))));
+        setText(el.depth, 'depth', TX.tailor.tana(lang, t(lang, TX.tailor.tanas[s.tana])));
+        el.count.classList.toggle('is-bottom', false);
+        el.windnote.hidden = true;
+      } else if (s.method === 'yaen' && phase !== 'sinking') {
         const bit = s.yaen?.at != null && phase !== 'wait';
         setText(el.countLabel, 'label', t(lang, bit ? TX.yaen.hud.since : TX.yaen.hud.wait));
         setText(el.countNum, 'count', String(Math.max(0, Math.floor(s.t - (bit ? s.yaen.at : s.yaen?.waitFrom ?? s.t)))));

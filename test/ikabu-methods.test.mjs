@@ -46,7 +46,9 @@ test('釣りスキル：レベルが足りない／季節ではない／使え�
   assert.equal(methodState('yaen', { level: 4, month: 5 }), 'level');
   assert.equal(methodState('yaen', { level: 5, month: 5 }), 'ok');
   assert.equal(methodState('yaen', { level: 5, month: 9 }), 'season');
-  assert.equal(methodState('tailor', { level: 8, month: 2 }), 'soon');
+  assert.equal(methodState('tailor', { level: 8, month: 2 }), 'ok');   // 2026-09-28 テーラー実装（準備中を外した）
+  assert.equal(methodState('tailor', { level: 8, month: 6 }), 'season');
+  assert.equal(methodState('nothing', { level: 8, month: 2 }), 'soon');
 });
 
 test('次の季節：邪道は9月なら3月、5月ならその月。解放は Lv3・5・8', () => {

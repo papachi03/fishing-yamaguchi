@@ -1566,6 +1566,26 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-stage, .ika-egi-controls, .ika-egi-btn, .ika-egi-dart { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* 邪道エギング（2026-09-27）：ダートは使わないので隠し、ボタンを横いっぱいに */
 .ika-egi-dart[hidden] { display: none; }
+/* テーラー（2026-09-28）：3本のウキの「合わせる」。色の点と今の様子。沈んだら光って押しどき */
+.ika-egi-tailorbtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ika-egi-tailorbtns[hidden] { display: none; }
+.ika-egi-tbtn { display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 14px; border: 3px solid var(--ika-ink); background: var(--ika-white); color: var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 15px; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.ika-egi-tbtn small { font-size: 11px; font-weight: 700; color: var(--ika-ink-soft); }
+.ika-egi-tbtn-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ika-ink); }
+.ika-egi-tbtn[data-color="green"] .ika-egi-tbtn-dot { background: #6dff9a; }
+.ika-egi-tbtn[data-color="red"] .ika-egi-tbtn-dot { background: #ff6a6a; }
+.ika-egi-tbtn[data-color="orange"] .ika-egi-tbtn-dot { background: #ffb347; }
+.ika-egi-tbtn[data-stage="touch"], .ika-egi-tbtn[data-stage="lean"], .ika-egi-tbtn[data-stage="fugu"], .ika-egi-tbtn[data-stage="weed"] { background: #fff4d6; }
+.ika-egi-tbtn[data-stage="sink"] { background: var(--ika-orange); animation: ika-egi-tpulse 0.5s ease-in-out infinite alternate; }
+.ika-egi-tbtn[data-stage="sink"] small { color: var(--ika-ink); }
+.ika-egi-tbtn:disabled { opacity: 0.45; cursor: default; }
+@keyframes ika-egi-tpulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .ika-egi-tbtn[data-stage="sink"] { animation: none; } }
+/* 横向きの全画面：右の細い列に入るので、3つを縦に積んで横長に（色の点・色・様子を1行に） */
+.is-egi-full .ika-egi-tailorbtns { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.is-egi-full .ika-egi-tbtn { grid-template-columns: auto auto 1fr; justify-items: start; align-items: center; gap: 8px; padding: 6px 10px; font-size: 14px; writing-mode: horizontal-tb; }
+.is-egi-full .ika-egi-tbtn small { justify-self: end; white-space: nowrap; }
+.is-egi-full .ika-egi-tbtn b { white-space: nowrap; }
 .ika-egi-stock-row[hidden] { display: none; }
 /* ヤエン：ダートの場所を「糸を上げる／糸を切る／ヤエン投入」の横のボタンに */
 .ika-egi-dart.is-yaen { font-size: 15px; }

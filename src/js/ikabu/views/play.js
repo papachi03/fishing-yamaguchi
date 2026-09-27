@@ -22,6 +22,13 @@ export const methodPickHTML = (lang) => {
       <span class="ika-egi-setup-label">${t(lang, T.method.title)}</span>
       <div class="ika-egi-methods" id="ika-egi-methods" role="group" aria-label="${t(lang, T.method.title)}">${chips}</div>
       <p class="ika-egi-method-about" id="ika-egi-method-about">${t(lang, T.method.about.egi)}</p>
+      <div class="ika-egi-bait" id="ika-egi-tana" hidden>
+        <span class="ika-egi-setup-label">${t(lang, T.tailor.tanaTitle)}</span>
+        <div class="ika-chips ika-chips--small" id="ika-egi-tanas" role="group" aria-label="${t(lang, T.tailor.tanaTitle)}">
+          ${['half', 'one', 'two'].map((k) => `<button type="button" class="ika-chip" data-tana="${k}" aria-pressed="${k === 'one'}">${t(lang, T.tailor.tanas[k])}</button>`).join('')}
+        </div>
+        <p class="ika-egi-cue-note">${t(lang, T.tailor.tanaNote)}</p>
+      </div>
       <div class="ika-egi-bait" id="ika-egi-aji" hidden>
         <span class="ika-egi-setup-label">${t(lang, T.yaen.ajiTitle)}</span>
         <div class="ika-chips ika-chips--small" id="ika-egi-ajis" role="group" aria-label="${t(lang, T.yaen.ajiTitle)}">
@@ -350,6 +357,10 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           <div class="ika-egi-controls">
             <!-- 横向きのときは、カウント・水深・距離をここ（ボタンの上の空き）へ移す（舞台を広く見せる。ダディ指定 2026-09-25） -->
             <div class="ika-egi-sidehud" id="ika-egi-sidehud"></div>
+            <!-- テーラー（2026-09-28）：3本のウキそれぞれの「合わせる」 -->
+            <div class="ika-egi-tailorbtns" id="ika-egi-tailorbtns" hidden>
+              ${['green', 'red', 'orange'].map((c, i) => `<button type="button" class="ika-egi-tbtn" data-float="${i}" data-color="${c}" data-stage="idle"><span class="ika-egi-tbtn-dot" aria-hidden="true"></span><b>${t(lang, T.tailor.colors[c])}</b><small data-state>${t(lang, T.tailor.states.idle)}</small></button>`).join('')}
+            </div>
             <div class="ika-egi-main-row">
               <button type="button" class="ika-egi-btn" id="ika-egi-btn" data-phase="ready">${t(lang, T.btn.ready)}</button>
               <button type="button" class="ika-egi-dart" id="ika-egi-dart" disabled title="${t(lang, T.gestures.dartHint)}" aria-label="${t(lang, T.gestures.dart)}：${t(lang, T.gestures.dartHint)}"><span class="ika-egi-dart-arrow" aria-hidden="true">↑</span><span>${t(lang, T.gestures.dart)}</span></button>
@@ -357,7 +368,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           </div>
           <details class="ika-egi-gestures" open>
             <summary>${t(lang, T.gestures.title)}</summary>
-            <p>${t(lang, T.gestures.row)}</p>
+            <p id="ika-egi-gest-row">${t(lang, T.gestures.row)}</p>
             <p class="ika-egi-gestures-keys">${t(lang, T.gestures.keys)}</p>
             <p class="ika-egi-gestures-keys">${t(lang, T.gestures.full)}</p>
           </details>
