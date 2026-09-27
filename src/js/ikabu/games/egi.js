@@ -90,6 +90,9 @@ export const YAEN_PULL = 1.4;          // 抵抗中に巻いた時、強く引�
 //   1回の釣行はエサ TAILOR_BAITS 個。最初に3本へ付け、エサが無くなったウキには残りから付け直す（投げ直し）
 export const TANAS = ['half', 'one', 'two'];
 export const TANA_M = { half: 0.75, one: 1.5, two: 3 };   // 半ヒロ・1ヒロ・2ヒロ（1ヒロ≒1.5m）
+// 画面とやり取りで使うタナの深さ＝底までの割合（2026-09-28 ぱっぱの感覚：1ヒロは水面と底の真ん中あたり、2ヒロは底の近く）
+export const TANA_FRAC = { half: 0.25, one: 0.45, two: 0.8 };
+export const tanaDepth = (s) => s.bottom * (TANA_FRAC[s.tana] ?? TANA_FRAC.one);
 export const TANA_BITE = { half: 0.5, one: 1, two: 1.3 };  // 深いほど抱きやすい（ボットで1ヒロがいちばん釣れるように合わせた）
 export const TANA_WEED = { half: 0.2, one: 1, two: 2.6 };  // 深いほど海藻に掛かる（ぱっぱ：根掛かり・海藻に掛かったらタナを浅く）
 export const TAILOR_FLOATS = [
@@ -797,7 +800,7 @@ function tailorCast(s) {
   s.setIdx = null;
   s.squid = sampleSquid(s);
   s.bottom = 6 + Math.round(s.rand() * 4);
-  s.depth = TANA_M[s.tana];
+  s.depth = tanaDepth(s);
   s.watchFrom = s.t;
   s.floats = TAILOR_FLOATS.map((f, i) => ({ i, ...f, bait: 0, stage: 'idle', hold: null, until: 0, squid: null, readyAt: s.t }));
   for (const f of s.floats) tailorBait(s, f, false);
@@ -881,7 +884,7 @@ export function tailorSet(s, i) {
     s.setIdx = i;
     s.phase = 'fight';
     s.dist = f.dist;
-    s.depth = TANA_M[s.tana];
+    s.depth = tanaDepth(s);
     s.tension = 30;
     s.slackFor = 0;
     if (!hk.gedo) s.squid = Math.max(0, s.squid - 1);

@@ -344,7 +344,7 @@ export const EGI_TEXT = {
     tanaTitle: pair('タナ（テーラーの深さ）', 'Depth of the rig'),
     tanas: { half: pair('半ヒロ', 'Half fathom'), one: pair('1ヒロ', '1 fathom'), two: pair('2ヒロ', '2 fathoms') },
     tanaNote: pair('1ヒロが基本。深いほど抱きやすいけど、海藻に掛かりやすい（ぱっぱの実釣）', 'One fathom is standard. Deeper gets more grabs, but more weed (Daddy’s own fishing)'),
-    btn: { ready: pair('ウキを3本投げる', 'Cast 3 floats'), watch: pair('ウキを見張る', 'Watch the floats') },
+    btn: { ready: pair('ウキを3本投げる', 'Cast 3 floats'), watch: pair('ウキを見張る', 'Watch the floats'), back: pair('ウキの見張りに戻る', 'Back to the floats') },
     gest: pair('ウキか色のボタンをタップ：合わせる／倒れた・斜め＝まだ／沈んだら合わせどき／取り込み：押している間だけ巻く', 'Tap a float or its colour button: strike / tipped or leaning = not yet / sunk = strike now / landing: hold to reel'),
     set: pair('合わせる', 'Strike'),
     colors: { green: pair('緑', 'Green'), red: pair('赤', 'Red'), orange: pair('オレンジ', 'Orange') },

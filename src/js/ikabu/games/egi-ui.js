@@ -275,15 +275,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     node.innerHTML = '';
     if (FISH.includes(species)) { node.append(fishArt(len, revealed)); return; }
     // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
-    if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
+    //   ※ 2026-09-28 修正：ヤエンの行を足した時に if/else の組がずれて、抱いたイカの上に青い「泳ぐイカ」が重なっていた（ぱっぱ：釣れた時に青い）
+    if (kind !== 'hug') { node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } })); return; }
+    node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
+    const method = s?.method ?? settings.method;
+    // テーラー：腕の中はテーラー（egi 側の絵）
+    if (method === 'tailor') node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });
     // ヤエン：抱いたイカの腕の中はエギではなくアジ（2026-09-28 ぱっぱ：エギが一瞬映る）
-    if (kind === 'hug' && (s?.method ?? settings.method) === 'tailor') node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });   // テーラー：腕の中はテーラー（egi 側の絵）
-    if (kind === 'hug' && (s?.method ?? settings.method) === 'yaen') {
+    if (method === 'yaen') {
       node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });
       const aji = ajiDeco(); aji.style.display = ''; aji.removeAttribute('clip-path');
       node.querySelector('.ika-art-hug')?.insertBefore(aji, node.querySelector('.ika-art-hug').children[1] ?? null);
     }
-    else node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
   }
   function relayout() {
     const w = el.stage.clientWidth;
@@ -588,7 +591,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));
     syncMethod();
   }
-  const started = () => s && !(s.phase === 'ready' && s.casts === CASTS) && s.phase !== 'over';
+  const started = () => s && !(s.phase === 'ready' && s.casts === (s.method === 'tailor' ? TAILOR_BAITS : CASTS)) && s.phase !== 'over';   // テーラーはエサ9個から（9/28：5回と比べていて、投げる前から設定が押せなかった）
   function syncSetupLock() {
     const lock = started();
     root.querySelectorAll('#ika-egi-tod .ika-chip, #ika-egi-wind .ika-chip, #ika-egi-seasons [data-season]').forEach((b) => { b.disabled = lock; });
@@ -857,7 +860,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 邪道エギング：沈んでいる間は「着底を待つ」、底では「ズル引き」（アタリの時も本格表示ならズル引きのまま）
     const jado = s.method === 'jado';
     if (jado && (key === 'sink' || (key === 'signal' && cue() === 'real'))) key = s.phase === 'sinking' ? 'jadoWait' : 'jadoDrag';
-    if (s.method === 'tailor') { if (key === 'ready') key = 'tailor-ready'; else if (key === 'sink') key = 'tailor-watch'; }
+    if (s.method === 'tailor') { if (key === 'ready') key = 'tailor-ready'; else if (key === 'sink') key = 'tailor-watch'; else if (key === 'result') key = 'tailor-back'; }
     if (s.method === 'yaen' && key === 'sink') key = `yaen-${s.phase === 'yaen' && s.yaen?.reached ? 'set' : ['wait', 'run', 'draw', 'yaen'].includes(s.phase) ? s.phase : 'sink'}`;
     if (last.btn === key) return;
     last.btn = key;
@@ -1360,7 +1363,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // シェア（2026-09-27）：釣れた時だけ。知り合い用のエギング単体ページには出さない
     const canShare = why === 'landed' && !solo;
     if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id) };
-    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, TX.btn.result)}</button>${s.method === 'yaen' ? '' : `<button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button>`}${canShare ? shareButtonHTML(lang) : ''}</div>`;
+    el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, s.method === 'tailor' ? TX.tailor.btn.back : TX.btn.result)}</button>${s.method === 'yaen' || s.method === 'tailor' ? '' : `<button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button>`}${canShare ? shareButtonHTML(lang) : ''}</div>`;
     syncEgiPick();
     el.card.className = 'ika-egi-card';
     el.card.hidden = false;

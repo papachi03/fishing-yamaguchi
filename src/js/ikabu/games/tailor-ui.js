@@ -4,7 +4,7 @@
 //   灯りの近くのウキ（緑）だけ、水中のイカがテーラーのどこ（頭側／根元）を抱いたか見える
 import { svgEl, huggingSquid, speciesColors } from '../squid-art.js';
 import { SCENE, depthY } from './egi-scene.js';
-import { TANA_M } from './egi.js';
+import { tanaDepth } from './egi.js';
 
 export const FLOAT_COLORS = { green: '#6dff9a', red: '#ff6a6a', orange: '#ffb347' };
 const f1 = (v) => (Math.round(v * 10) / 10).toString();
@@ -105,10 +105,10 @@ export function drawTailor(T, s, geo) {
   const lit = s.floats.find((f) => f.lit);
   if (lit) {
     const cx = X(lit.dist);
-    const yb = depthY(Math.min(s.bottom, TANA_M.two + 2.5));
+    const yb = depthY(s.bottom * 0.9);
     T.cone.setAttribute('d', `M${f1(cx - 70)},${sy} L${f1(cx + 70)},${sy} L${f1(cx + 110)},${f1(yb)} L${f1(cx - 110)},${f1(yb)} Z`);
   }
-  const tanaY = depthY(TANA_M[s.tana] ?? 1.5);
+  const tanaY = depthY(tanaDepth(s));
   s.floats.forEach((f, i) => {
     const it = T.items[i];
     const fighting = s.phase === 'fight' && s.setIdx === i;

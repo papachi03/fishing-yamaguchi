@@ -467,7 +467,7 @@ test('ヤエン（死にアジ）：しゃくって落としている最中に�
 });
 
 // ---------------- テーラー（2026-09-28） ----------------
-import { tailorSet, TAILOR_BAITS, TAILOR_FLOATS, TANA_M } from '../src/js/ikabu/games/egi.js';
+import { tailorSet, TAILOR_BAITS, TAILOR_FLOATS, TANA_FRAC } from '../src/js/ikabu/games/egi.js';
 const tailorStart = (opts = {}) => {
   const s = createEgi({ seed: 'ta', method: 'tailor', month: 2, tod: 'night', rand: () => 0.99, ...opts });
   press(s); release(s);
@@ -481,7 +481,7 @@ test('テーラー：1タップでウキを3本投げる（エサを3個使う�
   assert.equal(s.floats.length, 3);
   assert.equal(s.casts, TAILOR_BAITS - 3);
   assert.deepEqual(s.floats.map((f) => f.lit), TAILOR_FLOATS.map((f) => f.lit));
-  assert.equal(s.depth, TANA_M.two);
+  assert.equal(s.depth, s.bottom * TANA_FRAC.two);   // 2ヒロ＝底の近く（ぱっぱの感覚）
 });
 
 test('テーラー：触る→斜め→沈む。沈んで根元を抱いていれば掛かり、取り込んだら見張りに戻る', () => {
