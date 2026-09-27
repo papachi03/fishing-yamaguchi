@@ -270,7 +270,8 @@ export const EGI_TEXT = {
     takoRock: pair('岩に入られた…タコだった', 'It dove into the rocks… an octopus'),
     cut: pair('タコ。糸を切った（外道の記録へ）', 'An octopus. Line cut (logged as by-catch)'),
     miss: pair('ヤエンの針が飛んだ…', 'The yaen hook flew off…'),
-    hud: { wait: pair('待って', 'Waiting'), since: pair('抱いてから', 'Since grab') },
+    hud: { wait: pair('待って', 'Waiting'), since: pair('抱いてから', 'Since grab'), squid: pair('イカまで', 'To the squid') },
+    eat: (lang, m) => (lang === 'en' ? `Drag stopped: it's eating the bait` : `ドラグが止まった！ 食べはじめた合図`),
     yaenPos: (lang, a, b) => (lang === 'en' ? `Yaen ${a}/${b}m` : `ヤエン ${a}/${b}m`),
     aji: pair('残りのアジ', 'Bait left'),
     result: {

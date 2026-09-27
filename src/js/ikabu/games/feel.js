@@ -17,6 +17,7 @@ const PATTERN = {
   hook: [70],
   break: [260],
   landed: [30, 70, 30],
+  whoosh: [90],
 };
 const jetPattern = (power = 0.5) => [Math.round(120 + 160 * Math.min(1, power))];
 
@@ -76,6 +77,71 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     src.stop(t0 + dur + 0.02);
   }
 
+  // ヤエン：イカが沖へ走っている間のドラグ「ジーーーッ」（鳴らし続ける。止まった＝食べ始めた合図）
+  //   ノイズを高い帯域に通し、細かく刻んでドラグの爪の音に。drag(true) で鳴らし、drag(false) で止める（何度呼んでもよい）
+  let dragNode = null;
+  function drag(on) {
+    const ctx = st.ctx;
+    if (!on || !st.sound || !ctx) {
+      if (dragNode && ctx) {
+        const t = ctx.currentTime;
+        try {
+          dragNode.g.gain.cancelScheduledValues(t);
+          dragNode.g.gain.setTargetAtTime(0.0001, t, 0.03);
+          dragNode.srcs.forEach((x) => x.stop(t + 0.25));
+        } catch { /* 止まっている */ }
+      }
+      dragNode = null;
+      return;
+    }
+    if (dragNode) return;
+    const t = ctx.currentTime;
+    const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 3400; bp.Q.value = 2.2;
+    const chop = ctx.createGain();
+    chop.gain.value = 0.55;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'square'; lfo.frequency.value = 48;   // 1秒に48回の「ジ」
+    const depth = ctx.createGain();
+    depth.gain.value = 0.45;
+    lfo.connect(depth).connect(chop.gain);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(VOLUME * 0.9, t + 0.04);
+    src.connect(bp).connect(chop).connect(g).connect(ctx.destination);
+    src.start(t); lfo.start(t);
+    dragNode = { g, srcs: [src, lfo] };
+  }
+  // ジェット噴射「シュワッ」：ノイズの帯域を低→高へ滑らせ、ふくらんで消える
+  function whoosh(vol = 1) {
+    const ctx = st.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const dur = 0.55;
+    const buf = ctx.createBuffer(1, Math.round(ctx.sampleRate * dur), ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(260, t);
+    bp.frequency.exponentialRampToValueAtTime(1500, t + dur * 0.8);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(VOLUME * 2.2 * vol, t + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp).connect(g).connect(ctx.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  }
+
   function play(kind, opt = {}) {
     if (!st.sound || !st.ctx) return;
     switch (kind) {
@@ -84,6 +150,7 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
       case 'run': for (let i = 0; i < 4; i++) blip({ type: 'square', f0: 900, dur: 0.018, at: i * 0.045, vol: 0.5 }); break;
       case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); break;
       case 'jet': { const n = 4 + Math.round(6 * Math.min(1, opt.power ?? 0.5)); for (let i = 0; i < n; i++) blip({ type: 'square', f0: 1100, dur: 0.015, at: i * 0.035, vol: 0.45 }); break; }
+      case 'whoosh': whoosh(opt.vol ?? 1); break;
       case 'break': blip({ type: 'sine', f0: 700, f1: 180, dur: 0.18 }); break;
       case 'landed': blip({ type: 'sine', f0: 520, dur: 0.07 }); blip({ type: 'sine', f0: 780, dur: 0.09, at: 0.09 }); break;
       default: break;
@@ -94,7 +161,8 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     get vibrate() { return st.vibrate; },
     get sound() { return st.sound; },
     setVibrate(v) { st.vibrate = Boolean(v); },
-    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); },
+    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); else drag(false); },
+    drag,
     unlock,
     // できごとを1つ伝える（振動と音をまとめて）
     fire(kind, opt) { buzz(kind, opt); play(kind, opt); },

@@ -68,8 +68,9 @@ export const YAEN_LIVE_DEPTH = 0.68;   // 活きアジが泳ぐ深さ（底ま�
 export const YAEN_BITE = 1 / 80;       // 近くにイカがいる時、1秒あたり抱く割合（アジが傷むまでに抱かない投げも多い）
 export const TAKO_RATE = 0.003;        // 1秒あたりタコが抱く割合（イカがいなくても）
 export const YAEN_RUN = [4, 7];        // 抱いて走る長さ（秒）と、走る距離
+export const YAEN_RUN_SPEED = 2.0;     // 抱いて沖へ走る速さ（m/秒）。4〜7秒で8〜14m（2026-09-28 ぱっぱ：どれだけ沖へ持っていかれたか見せたい）
 export const YAEN_FOCUS_TAU = [12, 22]; // 集中の上がり方（秒）：1-exp(-t/τ)。5秒で0.2〜0.35、30秒で0.75〜0.92
-export const YAEN_EAT = [90, 140];     // 抱いてからアジを食べ終えるまで（秒）。寄せ＋ヤエンに30〜40秒かかる
+export const YAEN_EAT = [100, 150];    // 抱いてからアジを食べ終えるまで（秒）。寄せ＋ヤエンに30〜40秒かかる（9/28 沖へ走る距離を伸ばした分 +10秒）
 export const YAEN_REEL = 0.8;          // 寄せる速さ（m/秒）。抵抗中は手を止める
 export const YAEN_DIST = 10;           // 糸の角度が45度くらい＝ヤエンを入れられる距離（m）
 export const YAEN_SLIDE = [0.7, 1.8];  // ヤエンが滑る速さ（m/秒）：竿を寝かせたまま／竿を立てている
@@ -581,6 +582,8 @@ export function yaenSideAction(s) {
 export const yaenFocus = (s) => (s.yaen?.on ? 1 - Math.exp(-(s.t - s.yaen.at) / s.yaen.tau) : 0);
 // アジの鮮度（死にアジ：1＝底に置いたばかり、0＝傷んだ）／アジの元気（活きアジ：1＝元気、0＝弱りきった）
 export const yaenFresh = (s) => (s.yaen?.placedAt != null ? Math.max(0, 1 - (s.t - s.yaen.placedAt) / (s.aji === 'live' ? YAEN_LIVE : YAEN_SPOIL)) : 1);
+// イカがアジを抱いて沖へ走っている最中か（ドラグが出続けている間）
+export const yaenRunning = (s) => s.method === 'yaen' && s.phase === 'run' && Boolean(s.yaen?.on) && !s.yaen.tako && s.t < s.yaen.runUntil;
 export const yaenAji = (s) => (s.yaen?.on ? Math.max(0, 1 - (s.t - s.yaen.at) / s.yaen.eat) : 1);
 
 function yaenPress(s) {
@@ -646,7 +649,7 @@ function yaenBite(s, tako) {
   }
   s.yaen = {
     on: true, tako, at: s.t, tau: between(s, YAEN_FOCUS_TAU), eat: between(s, YAEN_EAT) * (s.easy ? 1.4 : 1),
-    runUntil: s.t + between(s, YAEN_RUN), nextSound: s.t + 3, resistUntil: -1, checked: null, drawFrom: null, yaenPos: 0, pulled: 0,
+    runUntil: s.t + between(s, YAEN_RUN), dist0: s.dist, nextSound: s.t + 3, resistUntil: -1, checked: null, drawFrom: null, yaenPos: 0, pulled: 0,
   };
   s.hooking = hooking;
   s.phase = 'run';
@@ -691,7 +694,9 @@ function yaenTick(s, dt) {
   // 抱いてから：アジを食べ終えたら離れていく
   if (!y.tako && yaenAji(s) <= 0) { yaenLetGo(s, 'eaten'); return; }
   // ドラグの鳴り方（ヒント）：走る → 止まる（食べ始め）→ ときどきジジッ。タコはちょろちょろ出て止まる
-  if (s.phase === 'run' && s.t < y.runUntil) s.dist += (y.tako ? 0.5 : 1.3) * dt;
+  if (s.phase === 'run' && s.t < y.runUntil) s.dist += (y.tako ? 0.5 : YAEN_RUN_SPEED) * dt;
+  // ドラグが鳴りやむ＝イカが止まってアジを食べ始めた合図（2026-09-28 ぱっぱ）
+  if (!y.tako && !y.eatSaid && s.t >= y.runUntil) { y.eatSaid = true; emit(s, 'yaen-eat', { ran: Math.max(0, s.dist - y.dist0), drawing: s.phase !== 'run' }); }
   if (s.t >= y.nextSound) {
     const kind = y.tako ? 'choro' : s.t < y.runUntil ? 'run' : 'jiji';
     y.nextSound = s.t + (y.tako ? between(s, [1.5, 3]) : between(s, [5, 9]));

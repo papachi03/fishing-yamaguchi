@@ -317,8 +317,9 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
                 <span class="ika-egi-windnote" id="ika-egi-windnote" hidden>${t(lang, T.msg.windy)}</span>
               </div>
               <div class="ika-egi-count ika-egi-reel" id="ika-egi-reel" hidden>
-                <span class="ika-egi-count-label">${t(lang, T.hud.dist)}</span>
+                <span class="ika-egi-count-label" id="ika-egi-reel-label">${t(lang, T.hud.dist)}</span>
                 <b class="ika-egi-count-num"><span id="ika-egi-dist">0</span><small>m</small></b>
+                <em class="ika-egi-reel-delta" id="ika-egi-reel-delta" hidden></em>
               </div>
             </div>
             <!-- 投げる力・テンションのゲージは舞台の右端に縦で（指で隠れず、竿とイカを見ながら読める。ダディ指定 2026-09-25） -->

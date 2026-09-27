@@ -1552,6 +1552,16 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-count.is-warn { background: var(--ika-orange); }
 .ika-egi-count.is-warn .ika-egi-count-depth, .ika-egi-count.is-warn .ika-egi-count-label { color: var(--ika-ink); }
 .ika-egi-reel .ika-egi-count-num small { margin-left: 2px; font-size: 0.55em; }
+/* ヤエン（2026-09-28）：イカまでの距離を大きく。走っている間はオレンジで脈打ち、入れられる距離まで寄せたら緑 */
+#ika-egi-reel.is-yaen { background: var(--ika-white); border: 3px solid var(--ika-ink); }
+#ika-egi-reel.is-yaen .ika-egi-count-num { font-size: 44px; }
+#ika-egi-reel.is-yaen .ika-egi-count-label { font-size: 13px; color: var(--ika-ink); }
+#ika-egi-reel.is-run { background: var(--ika-orange); animation: ika-egi-reelpulse 0.45s ease-in-out infinite alternate; }
+#ika-egi-reel.is-near { background: #7fe0b5; }
+.ika-egi-reel-delta { font-style: normal; font-family: var(--font-maru); font-weight: 900; font-size: 16px; color: var(--ika-ink); }
+.ika-egi-reel-delta[hidden] { display: none; }
+@keyframes ika-egi-reelpulse { from { transform: scale(1); } to { transform: scale(1.07); } }
+@media (prefers-reduced-motion: reduce) { #ika-egi-reel.is-run { animation: none; } }
 /* 長押しで iPhone の拡大鏡・メニュー・文字選択が出ないように（ゲームの操作部分だけ） */
 .ika-egi-stage, .ika-egi-controls, .ika-egi-btn, .ika-egi-dart { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* 邪道エギング（2026-09-27）：ダートは使わないので隠し、ボタンを横いっぱいに */

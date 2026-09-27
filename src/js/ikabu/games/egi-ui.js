@@ -8,7 +8,7 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, YAEN_DIST, YAEN_CHASE } from './egi.js';
+import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, YAEN_DIST, YAEN_CHASE } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
@@ -49,7 +49,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     casts: q('ika-egi-casts'), egis: q('ika-egi-egis'),
     count: q('ika-egi-count'), countLabel: q('ika-egi-count-label'), countNum: q('ika-egi-count-num'), depth: q('ika-egi-depth'),
     callout: q('ika-egi-callout'), guideTag: q('ika-egi-guide'), flash: q('ika-egi-flash'), card: q('ika-egi-card'),
-    power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
+    power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), reelLabel: q('ika-egi-reel-label'), reelDelta: q('ika-egi-reel-delta'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
@@ -937,6 +937,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           feel.fire('punch');
           callout(t(lang, TX.yaen.stolenMsg), 'bad', 2600);
           break;
+        case 'yaen-eat':
+          V.eatAt = now;
+          if (!e.drawing) callout(TX.yaen.eat(lang, Math.round(e.ran)), 'good', 3400);
+          break;
         case 'yaen-reach':
           callout(t(lang, TX.yaen.reach), 'good', 3000);
           feel.fire('tap');
@@ -1703,7 +1707,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     lastNow = performance.now();
     raf = requestAnimationFrame(frame);
   }
-  function stop() { running = false; cancelAnimationFrame(raf); }
+  function stop() { running = false; cancelAnimationFrame(raf); feel.drag(false); }
   // 画面の外・非表示タブでは止める。やり取りの途中で画面外に出ても止めない（急に負けないように）
   let inView = true;
   const sync = () => {
@@ -1975,13 +1979,30 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       lineCtrl = mid;
     }
     sc.line.setAttribute('d', d);
-    // ヤエン：竿先から糸を滑り降りる金具（ヤエンの位置＝滑った距離 / 残りの距離）
+    // ヤエン：竿先で道糸に掛け、糸を伝って滑り降りる針金の仕掛け（ヤエンの位置＝滑った距離 / 残りの距離）
+    //   2026-09-28 ぱっぱ（図あり）：上に道糸を通す輪（ガイド）と前の曲げ、そこから下へぶら下がる長い腕、腕の下の端に上向きの掛け針3本。
+    //   輪は糸の向きに合わせて回し、腕は重さで下へぶら下がる（届くとイカの下に針が入る）
     if (!sc.yaenNode) {
       sc.yaenNode = svgEl('g', { class: 'ika-eg-yaen', opacity: '0' });
-      sc.yaenNode.append(
-        svgEl('path', { d: 'M-9,-4 L0,3 L9,-4', fill: 'none', stroke: '#c9d4dc', 'stroke-width': '3', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
-        svgEl('path', { d: 'M0,3 L0,12 M0,12 L-4,8 M0,12 L4,8', fill: 'none', stroke: '#16233a', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+      const body = svgEl('g', {});
+      const arm = 'M0,0 L-9,32';
+      const hooks = [[-9, 32], [-7.6, 27], [-6.2, 22]].map(([x, y]) => `M${x},${y} l1.2,4.6 q1.4,3.2 4.2,0.8 l-0.2,-3.2`).join(' ');
+      body.append(
+        svgEl('path', { d: arm, fill: 'none', stroke: '#16233a', 'stroke-width': '4.4', 'stroke-linecap': 'round' }),
+        svgEl('path', { d: arm, fill: 'none', stroke: '#dfe7ee', 'stroke-width': '2.2', 'stroke-linecap': 'round' }),
+        svgEl('path', { d: hooks, fill: 'none', stroke: '#16233a', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
       );
+      const rings = svgEl('g', {});
+      rings.append(
+        svgEl('circle', { cx: '0', cy: '0', r: '3.2', fill: 'none', stroke: '#16233a', 'stroke-width': '1.8' }),
+        svgEl('circle', { cx: '0', cy: '-8', r: '2.6', fill: 'none', stroke: '#16233a', 'stroke-width': '1.8' }),
+        svgEl('path', { d: 'M0,-8 L0,0 M0,-11 L4,-15', fill: 'none', stroke: '#16233a', 'stroke-width': '2', 'stroke-linecap': 'round' }),   // 輪をつなぐ針金と、前の曲げ
+      );
+      const inner = svgEl('g', {});
+      inner.append(body, rings);
+      sc.yaenInner = inner;
+      sc.yaenRings = rings;
+      sc.yaenNode.append(inner);
       sc.svg.append(sc.yaenNode);
     }
     if (phase === 'yaen' && s.yaen && lineCtrl) {
@@ -1989,7 +2010,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const u = 1 - k;
       const px = u * u * tip.x + 2 * u * k * lineCtrl.x + k * k * lineEnd.x;
       const py = u * u * tip.y + 2 * u * k * lineCtrl.y + k * k * lineEnd.y;
-      sc.yaenNode.setAttribute('transform', `translate(${f1(px)},${f1(py)}) rotate(${f1((Math.atan2(lineEnd.y - tip.y, lineEnd.x - tip.x) * 180) / Math.PI - 90)})`);
+      // たるんだ糸に沿わせる（その場所での糸の向き＝曲線の接線）
+      const dx = u * (lineCtrl.x - tip.x) + k * (lineEnd.x - lineCtrl.x);
+      const dy = u * (lineCtrl.y - tip.y) + k * (lineEnd.y - lineCtrl.y);
+      sc.yaenNode.setAttribute('transform', `translate(${f1(px)},${f1(py)})`);
+      sc.yaenRings.setAttribute('transform', `rotate(${f1((Math.atan2(dy, dx) * 180) / Math.PI - 90)})`);   // 輪は糸の向き（前の曲げは竿の側）
+      // 竿先で糸に掛けた瞬間：ぽんと大きく出てから落ち着く（どこに入れたか分かるように）
+      const pop = V.yaenAt != null ? clamp((now - V.yaenAt) / 0.35, 0, 1) : 1;
+      sc.yaenInner.setAttribute('transform', `scale(${(1.25 + (1 - pop) * 0.6).toFixed(2)})`);
       sc.yaenNode.setAttribute('opacity', '1');
     } else sc.yaenNode.setAttribute('opacity', '0');
     sc.line.setAttribute('stroke-width', (2 + 1.2 * taut).toFixed(1));
@@ -2188,7 +2216,28 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.tension.classList.toggle('is-slack', s.tension <= 5);
       setText(el.dist, 'dist', Math.max(0, s.dist).toFixed(0));
     }
-    el.reel.hidden = phase !== 'fight';   // 残りの距離は舞台の右上に（ゲージの下だと指で隠れて見えない）
+    // ヤエン（2026-09-28 ぱっぱ）：イカが沖へ走っている間はドラグ「ジーーーッ」を鳴らし続け、ときどきジェットの「シュワッ」と泡。
+    //   鳴りやんだら食べ始めた合図。イカまでの距離は大きく出す（走った分は「+◯m」）
+    const yRun = yaenRunning(s);
+    feel.drag(yRun);
+    if (yRun && now >= (V.jetNext ?? 0)) {
+      V.jetNext = now + 0.9 + Math.random() * 0.8;
+      feel.fire('whoosh');
+      spawnBubbles(Math.min(V.egi.x, W - 24), V.egi.y, 4, -1);
+    }
+    const yaenDist = s.method === 'yaen' && Boolean(s.yaen?.on) && ['run', 'draw', 'yaen'].includes(phase);
+    el.reel.hidden = !(phase === 'fight' || yaenDist);   // 残りの距離は舞台の右上に（ゲージの下だと指で隠れて見えない）
+    el.reel.classList.toggle('is-yaen', yaenDist);
+    el.reel.classList.toggle('is-run', yaenDist && yRun);
+    el.reel.classList.toggle('is-near', yaenDist && phase === 'draw' && s.dist <= YAEN_DIST);
+    setText(el.reelLabel, 'reelLabel', t(lang, yaenDist ? TX.yaen.hud.squid : TX.hud.dist));
+    if (yaenDist) {
+      setText(el.dist, 'dist', Math.max(0, s.dist).toFixed(0));
+      const ran = Math.floor(s.dist - (s.yaen.dist0 ?? s.dist));
+      const showRan = ran >= 1 && (yRun || now - (V.eatAt ?? -99) < 4);
+      el.reelDelta.hidden = !showRan;
+      if (showRan) setText(el.reelDelta, 'delta', `+${ran}m`);
+    } else el.reelDelta.hidden = true;
     const inWater = ['sinking', 'action', 'signal', 'wait', 'run', 'draw', 'yaen'].includes(phase) && !V.cast;
     el.count.hidden = !inWater;
     if (inWater) {
@@ -2198,7 +2247,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const bit = s.yaen?.at != null && phase !== 'wait';
         setText(el.countLabel, 'label', t(lang, bit ? TX.yaen.hud.since : TX.yaen.hud.wait));
         setText(el.countNum, 'count', String(Math.max(0, Math.floor(s.t - (bit ? s.yaen.at : s.yaen?.waitFrom ?? s.t)))));
-        setText(el.depth, 'depth', phase === 'yaen' ? TX.yaen.yaenPos(lang, Math.floor(s.yaen.yaenPos), Math.round(s.dist)) : `${t(lang, TX.hud.dist)} ${Math.round(s.dist)}m${s.dist <= YAEN_DIST && phase === 'draw' ? ' ◎' : ''}`);
+        setText(el.depth, 'depth', phase === 'yaen' ? TX.yaen.yaenPos(lang, Math.floor(s.yaen.yaenPos), Math.round(s.dist)) : phase === 'run' || phase === 'draw' ? (s.dist <= YAEN_DIST && phase === 'draw' ? t(lang, '◎ ヤエンを入れられる', '◎ Yaen ready') : '') : `${t(lang, TX.hud.dist)} ${Math.round(s.dist)}m`);   // 抱いてからの距離は右上の大きな数字へ
         el.count.classList.toggle('is-bottom', true);
         el.windnote.hidden = true;
       } else {
