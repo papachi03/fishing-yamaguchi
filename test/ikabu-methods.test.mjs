@@ -44,7 +44,8 @@ test('釣りスキル：レベルが足りない／季節ではない／使え�
   assert.equal(methodState('jado', { level: 3, month: 10, mode: 'practice' }), 'season');
   assert.equal(methodState('jado', { level: 9, month: 5, mode: 'beginner' }), 'beginner');
   assert.equal(methodState('yaen', { level: 4, month: 5 }), 'level');
-  assert.equal(methodState('yaen', { level: 5, month: 5 }), 'soon');       // まだ作っていない
+  assert.equal(methodState('yaen', { level: 5, month: 5 }), 'ok');
+  assert.equal(methodState('yaen', { level: 5, month: 9 }), 'season');
   assert.equal(methodState('tailor', { level: 8, month: 2 }), 'soon');
 });
 
@@ -267,4 +268,143 @@ test('ボット：春の夕方の邪道エギングは、初心者でもボウ�
   assert.ok(kou / Math.max(1, all) >= 0.5, `コウイカの仲間 ${kou}/${all}`);
   assert.ok(trips.every((s) => s.casts === 0 || s.egi === 0));
   assert.equal(CASTS, 5);
+});
+
+/* ---------- ヤエン ---------- */
+import { yaenSideAction, yaenFocus, yaenAji, YAEN_DIST, YAEN_SPOIL } from '../src/js/ikabu/games/egi.js';
+
+// 底で待って、抱かれるまで進める（抱いたら true）
+function toBite(s, tako = false) {
+  cast(s);
+  for (let k = 0; k < 4000 && s.phase === 'sinking'; k++) tick(s, 0.05);
+  assert.equal(s.phase, 'wait');
+  s.squid = 2;
+  const r = s.rand;
+  s.rand = () => (tako ? 0.999 : 0.0);   // イカ：抱く目が必ず出る／タコ：イカは抱かず、タコの目で（下で差し替える）
+  if (tako) { s.squid = 0; s.rand = () => 0.0; }
+  tick(s, 0.05);
+  s.rand = r;
+  return s.phase === 'run';
+}
+
+test('ヤエン：アジを底に置いて待つ。抱かれないとアジが傷んでおしまい。待っている間に押すと回収', () => {
+  const s = createEgi({ seed: 'yw', method: 'yaen', month: 5, rand: () => 0.99 });
+  cast(s);
+  for (let k = 0; k < 4000 && s.phase === 'sinking'; k++) tick(s, 0.05);
+  assert.equal(s.phase, 'wait');
+  run(s, YAEN_SPOIL + 1);
+  assert.equal(s.last, 'spoiled');
+  press(s); release(s);   // 次の一投へ
+  cast(s);
+  for (let k = 0; k < 4000 && s.phase === 'sinking'; k++) tick(s, 0.05);
+  press(s); release(s);
+  assert.equal(s.last, 'recover');
+});
+
+test('ヤエン：抱くとドラグが鳴って走る。集中は時間とともに上がり、アジは減っていく', () => {
+  const s = createEgi({ seed: 'yb', method: 'yaen', month: 5, rand: () => 0.99 });
+  assert.ok(toBite(s));
+  assert.equal(s.yaen.tako, false);
+  assert.ok(s.events.some((e) => e.type === 'drag-sound' && e.kind === 'run'));
+  const d0 = s.dist;
+  run(s, 3);
+  assert.ok(s.dist > d0, '走って糸が出る');
+  const f1 = yaenFocus(s), a1 = yaenAji(s);
+  run(s, 20);
+  assert.ok(yaenFocus(s) > f1 && yaenAji(s) < a1);
+  assert.ok(yaenFocus(s) > 0.6, `23秒で集中 ${yaenFocus(s).toFixed(2)}`);
+});
+
+test('ヤエン：待ちすぎるとアジを食べ終えて離れる', () => {
+  const s = createEgi({ seed: 'ye', method: 'yaen', month: 5, rand: () => 0.99 });
+  toBite(s);
+  run(s, 150);
+  assert.equal(s.last, 'eaten');
+});
+
+test('ヤエン：糸を上げて浮けばイカ。寄せて45度でヤエン投入→根元に入ったら竿を寄せて掛ける', () => {
+  const s = createEgi({ seed: 'yh', method: 'yaen', month: 5, rand: () => 0.99 });
+  toBite(s);
+  assert.equal(yaenSideAction(s), 'lift');
+  dart(s);
+  assert.ok(s.events.some((e) => e.type === 'lift' && e.tako === false));
+  run(s, 30);
+  press(s);   // 寄せ始める
+  assert.equal(s.phase, 'draw');
+  // 抵抗（ジジッ）の間は手を止め、それ以外は巻く
+  for (let k = 0; k < 4000 && s.phase === 'draw' && s.dist > YAEN_DIST; k++) {
+    const want = s.t >= s.yaen.resistUntil;
+    if (want && !s.pressing) press(s); else if (!want && s.pressing) release(s);
+    tick(s, 0.05);
+  }
+  assert.equal(yaenSideAction(s), 'yaen');
+  dart(s);
+  assert.equal(s.phase, 'yaen');
+  let reach = null;
+  for (let k = 0; k < 4000 && !reach; k++) { tick(s, 0.05); reach = s.events.find((e) => e.type === 'yaen-reach'); }
+  assert.ok(reach, '根元に入らない');
+  run(s, 1);
+  assert.equal(s.phase, 'yaen', '届いただけでは掛からない');
+  release(s); press(s);   // 竿を寄せる
+  const hook = s.events.find((e) => e.type === 'hook');
+  assert.ok(hook?.yaen);
+  assert.equal(s.phase, 'fight');
+});
+
+test('ヤエン：寄せている間の抵抗はゆっくり下がる。抵抗中に巻くと強く引いて下がる', () => {
+  const s = createEgi({ seed: 'yp', method: 'yaen', month: 5, rand: () => 0.99 });
+  toBite(s);
+  run(s, 30);
+  press(s); release(s);   // 寄せ始めて、手を止める
+  assert.equal(s.phase, 'draw');
+  s.yaen.resistUntil = s.t + 1;
+  const d0 = s.dist;
+  run(s, 0.8);
+  assert.ok(s.dist > d0 && s.dist - d0 < 0.5, `手を止めている時は少しだけ下がる ${(s.dist - d0).toFixed(2)}`);
+  s.yaen.resistUntil = s.t + 1;
+  const d1 = s.dist;
+  press(s);
+  const ev = run(s, 0.8);
+  assert.ok(s.dist - d1 > 0.8, `巻くと強く下がる ${(s.dist - d1).toFixed(2)}`);
+  assert.ok(ev.some((e) => e.type === 'yaen-pull'));
+});
+
+test('ヤエン：タコは糸を上げても浮かない→糸を切る（外道の記録へ）。粘ると岩に入られる', () => {
+  const s = createEgi({ seed: 'yt', method: 'yaen', month: 5, rand: () => 0.99 });
+  assert.ok(toBite(s, true));
+  assert.equal(s.yaen.tako, true);
+  dart(s);   // 糸を上げる
+  assert.ok(s.events.some((e) => e.type === 'lift' && e.tako));
+  assert.equal(yaenSideAction(s), 'cut');
+  dart(s);
+  assert.equal(s.last, 'cut');
+  assert.equal(s.gedo[0].id, 'tako');
+  const u = createEgi({ seed: 'yt2', method: 'yaen', month: 5, rand: () => 0.99 });
+  toBite(u, true);
+  press(u);
+  run(u, 20);
+  assert.equal(u.last, 'tako-rock');
+});
+
+test('ヤエン：抵抗（ジジッ）の最中も巻き続けると、離されやすい', () => {
+  let kept = 0, stopped = 0;
+  for (let i = 0; i < 40; i++) {
+    for (const careful of [false, true]) {
+      const s = createEgi({ seed: 'yr' + i, method: 'yaen', month: 5 });
+      s.rand = () => 0.0; cast(s); for (let k = 0; k < 4000 && s.phase === 'sinking'; k++) tick(s, 0.05);
+      s.squid = 2; s.rand = () => 0.0; tick(s, 0.05);
+      s.rand = Math.random;
+      if (s.phase !== 'run' || s.yaen.tako) continue;
+      run(s, 28); press(s);
+      let stopUntil = -1;
+      for (let k = 0; k < 1200 && s.phase === 'draw' && s.dist > YAEN_DIST; k++) {
+        const ev = tick(s, 0.05);
+        if (careful && ev.some((e) => e.type === 'drag-sound' && e.kind === 'jiji')) stopUntil = s.t + 1.3;
+        const want = s.t >= stopUntil;
+        if (want && !s.pressing) press(s); else if (!want && s.pressing) release(s);
+      }
+      if (s.phase === 'draw') { if (careful) stopped++; else kept++; }
+    }
+  }
+  assert.ok(stopped > kept, `止めた ${stopped} / 巻きっぱなし ${kept}`);
 });

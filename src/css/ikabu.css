@@ -1556,6 +1556,11 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-stage, .ika-egi-controls, .ika-egi-btn, .ika-egi-dart { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* 邪道エギング（2026-09-27）：ダートは使わないので隠し、ボタンを横いっぱいに */
 .ika-egi-dart[hidden] { display: none; }
+.ika-egi-stock-row[hidden] { display: none; }
+/* ヤエン：ダートの場所を「糸を上げる／糸を切る／ヤエン投入」の横のボタンに */
+.ika-egi-dart.is-yaen { font-size: 15px; }
+.ika-egi-dart.is-yaen[data-act='cut'] { background: #b3402c; }
+.ika-egi-dart.is-yaen[data-act='yaen'] { background: var(--ika-orange); color: var(--ika-ink); }
 .ika-egi-main-row:has(.ika-egi-dart[hidden]) { grid-template-columns: 1fr; }
 
 .ika-egi-callout {

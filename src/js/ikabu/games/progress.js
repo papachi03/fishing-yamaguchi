@@ -36,7 +36,7 @@ export const catchPoints = (c, { fresh = false } = {}) => POINTS.catch + Math.fl
 export const METHODS = {
   egi: { level: 1, months: null, seasons: null, ready: true },
   jado: { level: 3, months: [3, 4, 5, 6], seasons: ['spring', 'earlySummer'], ready: true },
-  yaen: { level: 5, months: [4, 5, 6], seasons: ['spring'], ready: false },
+  yaen: { level: 5, months: [4, 5, 6], seasons: ['spring'], ready: true },
   tailor: { level: 8, months: [12, 1, 2, 3], seasons: ['winter'], ready: false },
 };
 export const METHOD_IDS = Object.keys(METHODS);

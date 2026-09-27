@@ -29,7 +29,7 @@ export const EGI_STOCK = 3; // 根掛かりで失うと減る
 // 釣り方（2026-09-27）：'egi'＝ふつうのエギング／'jado'＝邪道エギング（ぱっぱの実釣。コウイカ狙い）。
 // 邪道エギング：エギとスナップのつなぎ目にオモリ、背中にエサ（ササミ・キビナゴ。効きは同じ）。底をズルズル引いて止め、
 //   ずっしり重みが乗ったら合わせる。夜は匂いで寄る。深夜は「コツコツ」だけで抱かないことがある（すぐ動かすと離れる）
-export const METHOD_IDS_ENGINE = ['egi', 'jado'];
+export const METHOD_IDS_ENGINE = ['egi', 'jado', 'yaen'];
 export const BAITS = ['sasami', 'kibinago'];
 export const JADO_SINK = 1.6;        // オモリの分だけ速く沈む
 export const JADO_DRAG = 1.2;        // ズル引き1回（リール2巻き）で寄る距離（m）
@@ -46,6 +46,27 @@ export const KOTSU_WAIT = 2.0;       // コツコツの後これだけ待てる�
 export const JADO_HUG = 0.22;        // 抱く勢いの大きさ（ボットで、初心者のボウズが2割ほどになるよう合わせた）
 export const JADO_CUTTLE = 1.6;      // 底のエサに寄りやすいコウイカの仲間（コウイカ・シリヤケ・モンゴウ）
 
+// ヤエン（2026-09-27、ぱっぱの実釣と回答。ikabu-research/new-methods-design.md）：
+//   死にアジを底に置いて待つ → ドラグ「ジーッ」＝イカが抱いて走る → 待つ（見えない「イカの集中」と「アジの残り」）→
+//   寄せる（抵抗した時は手を止める）→ 糸を上げて浮けばイカ・浮かなければタコ（糸を切る）→ 45度まで寄ったらヤエン投入 →
+//   ヤエンが根元まで届けば、イカが驚いて下がったところで勝手に刺さる（合わせ不要）。届く前にアジを食べ終えたら離れる
+export const YAEN_SINK = 0.9;          // アジが沈む速さ（m/秒）
+export const YAEN_SPOIL = 45;          // 底で待ってこの秒数たつとアジが傷んで、その1投はおしまい
+export const YAEN_BITE = 1 / 80;       // 近くにイカがいる時、1秒あたり抱く割合（アジが傷むまでに抱かない投げも多い）
+export const TAKO_RATE = 0.003;        // 1秒あたりタコが抱く割合（イカがいなくても）
+export const YAEN_RUN = [4, 7];        // 抱いて走る長さ（秒）と、走る距離
+export const YAEN_FOCUS_TAU = [12, 22]; // 集中の上がり方（秒）：1-exp(-t/τ)。5秒で0.2〜0.35、30秒で0.75〜0.92
+export const YAEN_EAT = [90, 140];     // 抱いてからアジを食べ終えるまで（秒）。寄せ＋ヤエンに30〜40秒かかる
+export const YAEN_REEL = 0.8;          // 寄せる速さ（m/秒）。抵抗中は手を止める
+export const YAEN_DIST = 10;           // 糸の角度が45度くらい＝ヤエンを入れられる距離（m）
+export const YAEN_SLIDE = [0.7, 1.8];  // ヤエンが滑る速さ（m/秒）：竿を寝かせたまま／竿を立てている
+export const YAEN_HOOK_FAIL = 0.05;    // 届いたのに針が飛ぶ（まれ）
+export const TAKO_ROCK = 12;           // タコを寄せ続けると、この秒数で岩に入られる
+// 寄せている間の抵抗（2026-09-27 ぱっぱ）：ジェットはあまりせず、ゆっくり後ろに下がる。
+//   無理に巻くと強く引いて下がるか、アジを離す
+export const YAEN_BACK = 0.3;          // 抵抗中、手を止めている時に下がる速さ（m/秒）
+export const YAEN_PULL = 1.4;          // 抵抗中に巻いた時、強く引いて下がる速さ（m/秒）
+
 // 外道（2026-09-27 ぱっぱ：外道の記録に残す。海藻・ゴミ・カサゴなど）。図鑑とは別に数える。
 //   カサゴ … 底にいる時に「コン」と食う（岩の底ほど）。軽くてすぐ上がる
 //   海藻   … 藻に掛かった時、ときどきそのまま付いてくる
@@ -56,6 +77,7 @@ export const GEDO = {
   boot: { g: [600, 1200] },
   can: { g: [30, 80] },
   namako: { g: [150, 400] },   // 邪道エギングで底を引いていると、ごくまれに（ぱっぱの実釣）
+  tako: { g: [800, 2500] },    // ヤエンで。浮かなければタコ（ぱっぱの実釣）
 };
 export const KASAGO_RATE = { egi: 0.02, jado: 0.05 };   // 底にいる1秒あたり
 export const WEED_GEDO = 0.4;    // 藻に掛かった時、海藻が付いてくる確率
@@ -481,6 +503,8 @@ export function press(s) {
     s.phase = 'aiming';
     s.power = 0;
     s.aimFrom = s.t;
+  } else if (s.method === 'yaen' && ['wait', 'run', 'draw', 'yaen'].includes(s.phase)) {
+    yaenPress(s);
   } else if ((s.phase === 'sinking' || s.phase === 'action') && s.method === 'jado') {
     drag(s);
   } else if (s.phase === 'sinking' || s.phase === 'action') {
@@ -515,6 +539,7 @@ export function press(s) {
 
 // ダート（上へ強くスワイプ）。沈下・フォール中だけ
 export function dart(s) {
+  if (s.method === 'yaen') { yaenSide(s); return; }
   if (s.method === 'jado') return;
   if (s.phase === 'sinking' || s.phase === 'action') jerk(s, 'dart');
 }
@@ -526,6 +551,151 @@ export function rebait(s, bait = s.bait) {
   s.baitLeft = 1;
   emit(s, 'rebait', { bait: s.bait });
   return true;
+}
+
+/* ---------------- ヤエン ---------------- */
+const between = (s, [a, b]) => a + (b - a) * s.rand();
+// 横のボタンに今できること：'lift'（糸を上げる）／'cut'（糸を切る）／'yaen'（ヤエン投入）／null
+export function yaenSideAction(s) {
+  const y = s.yaen;
+  if (s.method !== 'yaen' || !y?.on || !['run', 'draw'].includes(s.phase)) return null;
+  if (y.checked === 'tako') return 'cut';
+  if (s.phase === 'draw' && s.dist <= YAEN_DIST) return 'yaen';
+  return y.checked ? null : 'lift';
+}
+// イカの集中（0〜1）とアジの残り（0〜1）。画面には出さない
+export const yaenFocus = (s) => (s.yaen?.on ? 1 - Math.exp(-(s.t - s.yaen.at) / s.yaen.tau) : 0);
+export const yaenAji = (s) => (s.yaen?.on ? Math.max(0, 1 - (s.t - s.yaen.at) / s.yaen.eat) : 1);
+
+function yaenPress(s) {
+  const y = s.yaen;
+  if (s.phase === 'wait') { emit(s, 'recover'); endCast(s, 'recover'); return; }   // 待っている間に押す＝回収して投げ直す
+  if (s.phase === 'yaen' && y?.reached) { yaenSet(s); return; }                      // 根元に入った後に押す＝竿を寄せて掛ける
+  if (s.phase === 'run') {
+    // 走っている最中・食べ始めに寄せ始める。集中が足りないと、ここで離しやすい
+    s.phase = 'draw';
+    y.drawFrom = s.t;
+    emit(s, 'draw', { sec: Math.round(s.t - y.at) });
+    if (!y.tako && s.rand() < Math.max(0, 0.75 - yaenFocus(s)) * 1.3 * (s.easy ? 0.5 : 1)) yaenLetGo(s, 'early');
+  }
+}
+function yaenSide(s) {
+  const act = yaenSideAction(s);
+  const y = s.yaen;
+  if (act === 'lift') {
+    // 糸を上げて、竿（の先の糸）が浮くか。浮けばイカ、浮かなければタコ
+    y.checked = y.tako ? 'tako' : 'squid';
+    emit(s, 'lift', { tako: y.tako });
+  } else if (act === 'cut') {
+    // タコ：糸を切っておしまい（アジも失う）。外道の記録に残す
+    gedoCatch(s, 'tako');
+    emit(s, 'cut', {});
+    endCast(s, 'cut');
+  } else if (act === 'yaen') {
+    s.phase = 'yaen';
+    y.yaenPos = 0;
+    emit(s, 'yaen-in', { dist: s.dist });
+  }
+}
+function yaenLetGo(s, why) {
+  const y = s.yaen;
+  emit(s, 'yaen-letgo', { why, focus: yaenFocus(s), aji: yaenAji(s), tako: y.tako });
+  y.on = false;
+  s.hooking = null;
+  endCast(s, why === 'eaten' ? 'eaten' : 'released');
+}
+// 抱いた：イカ（アオリ中心・大型が出やすい）かタコか
+function yaenBite(s, tako) {
+  const pool = speciesPool(s.month, s.tod).filter((p) => p.id === 'aori');
+  const sp = pool.length ? pickWeighted(pool, s.rand) : null;
+  let hooking = null;
+  if (!tako && sp) {
+    const [g0, g1] = sp.big && s.rand() < 0.15 ? sp.big : sp.g;
+    const weight = Math.round(g0 + (g1 - g0) * s.rand() ** 1.1);   // エギより重い方へ寄せる（ヤエンのご褒美）
+    hooking = { id: sp.id, weight, mantle: Math.round(sp.k * Math.cbrt(weight)), power: sp.power };
+  } else if (!tako) {
+    hooking = { id: 'aori', weight: 900, mantle: 24, power: 1 };
+  }
+  s.yaen = {
+    on: true, tako, at: s.t, tau: between(s, YAEN_FOCUS_TAU), eat: between(s, YAEN_EAT) * (s.easy ? 1.4 : 1),
+    runUntil: s.t + between(s, YAEN_RUN), nextSound: s.t + 3, resistUntil: -1, checked: null, drawFrom: null, yaenPos: 0, pulled: 0,
+  };
+  s.hooking = hooking;
+  s.phase = 'run';
+  s.signaled = true;
+  s.reacted = true;
+  s.guarantee = false;
+  emit(s, 'yaen-bite', { tako });
+  emit(s, 'drag-sound', { kind: tako ? 'choro' : 'run' });
+}
+function yaenTick(s, dt) {
+  const y = s.yaen;
+  if (s.phase === 'wait') {
+    const waited = s.t - (y?.waitFrom ?? s.t);
+    const moodFactor = 0.6 + 0.08 * s.cond.expectation;
+    const tod = s.tod === 'morning' ? 1.4 : s.tod === 'evening' ? 1.2 : s.tod === 'night' ? 1.0 : 0.7;   // 朝マズメに大型（ぱっぱの実釣）
+    const rate = (s.squid > 0 ? YAEN_BITE * s.squid * moodFactor * tod * (s.easy ? EASY.bite : 1) : 0) + (s.bonus === 'last' || s.bonus === 'rescue' ? 0.08 : 0);
+    const forced = s.guarantee && waited > 14;
+    if (forced || s.rand() < rate * dt) { yaenBite(s, false); return; }
+    if (!s.easy && s.rand() < TAKO_RATE * dt) { yaenBite(s, true); return; }
+    if (waited > YAEN_SPOIL) { emit(s, 'spoiled'); endCast(s, 'spoiled'); }
+    return;
+  }
+  // 抱いてから：アジを食べ終えたら離れていく
+  if (!y.tako && yaenAji(s) <= 0) { yaenLetGo(s, 'eaten'); return; }
+  // ドラグの鳴り方（ヒント）：走る → 止まる（食べ始め）→ ときどきジジッ。タコはちょろちょろ出て止まる
+  if (s.phase === 'run' && s.t < y.runUntil) s.dist += (y.tako ? 0.5 : 1.3) * dt;
+  if (s.t >= y.nextSound) {
+    const kind = y.tako ? 'choro' : s.t < y.runUntil ? 'run' : 'jiji';
+    y.nextSound = s.t + (y.tako ? between(s, [1.5, 3]) : between(s, [5, 9]));
+    if (s.phase !== 'yaen' || kind === 'jiji') emit(s, 'drag-sound', { kind });
+    if (kind === 'jiji' || kind === 'choro') { y.resistUntil = s.t + 1.2; y.pullSaid = false; }
+  }
+  const resisting = s.t < y.resistUntil;
+  if (s.phase === 'draw') {
+    if (s.pressing) {
+      if (y.tako) {
+        // タコは寄らない。寄せ続けると岩に入られる
+        s.dist = Math.max(3, s.dist - 0.25 * dt);
+        y.pulled += dt;
+        if (y.pulled > TAKO_ROCK) { gedoCatch(s, 'tako'); emit(s, 'tako-rock'); endCast(s, 'tako-rock'); return; }
+      } else if (resisting) {
+        // 抵抗している時に巻く：強く引いて下がる。アジを離すこともある（集中が足りないほど）
+        s.dist += YAEN_PULL * dt;
+        if (!y.pullSaid) { y.pullSaid = true; emit(s, 'yaen-pull', {}); }
+        if (s.rand() < (1.2 - yaenFocus(s)) * 1.0 * (s.easy ? 0.4 : 1) * dt) { yaenLetGo(s, 'resist'); return; }
+      } else {
+        s.dist = Math.max(2, s.dist - YAEN_REEL * dt);
+        // 集中が足りないまま巻くと、アジを離す
+        if (s.rand() < Math.max(0, 0.7 - yaenFocus(s)) * 0.5 * (s.easy ? 0.4 : 1) * dt) { yaenLetGo(s, 'early'); return; }
+      }
+    } else if (resisting && !y.tako) s.dist += YAEN_BACK * dt;   // 手を止めている：ゆっくり後ろに下がる
+    return;
+  }
+  if (s.phase === 'yaen') {
+    // ヤエンが糸を滑っていく。竿を立てている（押している）ほど速い
+    if (y.reached) return;   // 根元に入った：あとは竿を寄せて掛ける（yaenPress）
+    y.yaenPos += YAEN_SLIDE[s.pressing ? 1 : 0] * dt;
+    if (y.yaenPos >= s.dist) {
+      if (y.tako) { gedoCatch(s, 'tako'); emit(s, 'tako-rock'); endCast(s, 'tako-rock'); return; }
+      y.yaenPos = s.dist;
+      y.reached = true;
+      y.reachAt = s.t;
+      emit(s, 'yaen-reach', {});
+    }
+  }
+}
+// ヤエンが根元に入った後に竿を寄せる：針がイカの胴に刺さり、驚いて下がったところでフッキング完了（2026-09-27 ぱっぱ）
+function yaenSet(s) {
+  const y = s.yaen;
+  if (s.rand() < YAEN_HOOK_FAIL) { emit(s, 'yaen-miss'); y.on = false; s.hooking = null; endCast(s, 'yaen-miss'); return; }
+  y.on = false;
+  s.phase = 'fight';
+  s.tension = 30;
+  s.slackFor = 0;
+  s.squid = Math.max(0, s.squid - 1);
+  s.hooking.bonus = true;   // ヤエンのやり取りはやさしめ（本番はここまで）
+  emit(s, 'hook', { id: s.hooking.id, yaen: true });
 }
 
 // 外道を取り込む（ファイトの無いもの：海藻・ゴミ）
@@ -647,7 +817,8 @@ export function release(s) {
     s.dist = s.castDist;
     s.depth = 0;
     s.bottom = 5 + Math.round(s.rand() * 5);
-    s.weed = s.method === 'jado' ? null : makeWeed(s);   // 邪道は底を引く釣り（藻場は出さない。底の岩で表す）
+    s.weed = s.method === 'jado' || s.method === 'yaen' ? null : makeWeed(s);   // 邪道・ヤエンは底に置く釣り（藻場は出さない）
+    s.yaen = null;
     s.rock = s.method === 'jado' && s.rand() < ROCK_CHANCE;
     s.lastDrag = s.t;
     s.kotsuPending = false;
@@ -821,7 +992,18 @@ export function tick(s, dt) {
       s.power = x <= 1 ? x : 2 - x;
       break;
     }
+    case 'wait':
+    case 'run':
+    case 'draw':
+    case 'yaen':
+      yaenTick(s, dt);
+      break;
     case 'sinking': {
+      if (s.method === 'yaen') {
+        s.depth = Math.min(s.bottom, s.depth + YAEN_SINK * dt);
+        if (s.depth >= s.bottom) { s.phase = 'wait'; s.yaen = { on: false, waitFrom: s.t }; emit(s, 'bottom', {}); }
+        break;
+      }
       s.depth = Math.min(s.bottom, s.depth + sinkRate(s.spec) * (s.method === 'jado' ? JADO_SINK : 1) * dt);
       if (s.method === 'jado') {
         if (s.depth >= s.bottom) { s.phase = 'action'; s.lastDrag = s.t; emit(s, 'bottom', {}); }
