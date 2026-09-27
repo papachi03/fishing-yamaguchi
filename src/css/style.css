@@ -920,6 +920,14 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   color: var(--paper-ink-dim);
 }
 .sea-page-toggle button.active { background: var(--paper); color: var(--sumi); }
+/* 5エリアのボタンは合わせて約560px。スマホ（390px）ではページごと横にはみ出していた（2026-09-27発見）。
+   枠は画面幅までにして、はみ出す分はこの中だけで横スクロールさせる */
+.sea-page-toggle { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.sea-page-toggle::-webkit-scrollbar { display: none; }
+.sea-page-toggle button { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 600px) {
+  .sea-page-toggle button { padding: 10px 14px; letter-spacing: 0.16em; }
+}
 
 .sea-dash { display: grid; gap: clamp(28px, 4vw, 48px); }
 /* グリッド項目の既定は min-width:auto のため、中の横長テーブル
