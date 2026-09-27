@@ -70,7 +70,8 @@ export const TAKO_RATE = 0.003;        // 1秒あたりタコが抱く割合（�
 export const YAEN_RUN = [4, 7];        // 抱いて走る長さ（秒）と、走る距離
 export const YAEN_RUN_SPEED = 2.0;     // 抱いて沖へ走る速さ（m/秒）。4〜7秒で8〜14m（2026-09-28 ぱっぱ：どれだけ沖へ持っていかれたか見せたい）
 export const YAEN_FOCUS_TAU = [12, 22]; // 集中の上がり方（秒）：1-exp(-t/τ)。5秒で0.2〜0.35、30秒で0.75〜0.92
-export const YAEN_EAT = [100, 150];    // 抱いてからアジを食べ終えるまで（秒）。寄せ＋ヤエンに30〜40秒かかる（9/28 沖へ走る距離を伸ばした分 +10秒）
+export const YAEN_EAT = [150, 210];    // 抱いてからアジを食べ終えるまで（秒）。待つ30秒＋寄せ＋ヤエン（9/28 ぱっぱ：ヤエンが近づく頃には食べられていて難しすぎる→余裕を持たせる）
+export const YAEN_MID = 0.5;           // 抱いて走ってからイカがいる深さ（底までの割合）。ボトムではなく中層（9/28 ぱっぱ）
 export const YAEN_REEL = 0.8;          // 寄せる速さ（m/秒）。抵抗中は手を止める
 export const YAEN_DIST = 33;           // ヤエンを入れられる距離（m）（2026-09-28 ぱっぱ：残り33mくらいからで良い。前は10m）
 export const YAEN_SLIDE = [1.4, 3.2];  // ヤエンが滑る速さ（m/秒）：竿を寝かせたまま／竿を立てている（33mを10〜24秒）
@@ -695,6 +696,8 @@ function yaenTick(s, dt) {
   if (!y.tako && yaenAji(s) <= 0) { yaenLetGo(s, 'eaten'); return; }
   // ドラグの鳴り方（ヒント）：走る → 止まる（食べ始め）→ ときどきジジッ。タコはちょろちょろ出て止まる
   if (s.phase === 'run' && s.t < y.runUntil) s.dist += (y.tako ? 0.5 : YAEN_RUN_SPEED) * dt;
+  // イカはアジを引っ張ってからは中層にいる（タコは底のまま）。数秒かけて浮き上がる
+  if (!y.tako) s.depth += (s.bottom * YAEN_MID - s.depth) * Math.min(1, dt / 3);
   // ドラグが鳴りやむ＝イカが止まってアジを食べ始めた合図（2026-09-28 ぱっぱ）
   if (!y.tako && !y.eatSaid && s.t >= y.runUntil) { y.eatSaid = true; emit(s, 'yaen-eat', { ran: Math.max(0, s.dist - y.dist0), drawing: s.phase !== 'run' }); }
   if (s.t >= y.nextSound) {
