@@ -1907,6 +1907,15 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 }
 .ika-egi-fullbtn:hover { background: var(--ika-white); }
 .is-egi-full:not(.is-egi-full-btn) .ika-egi-fullbtn { display: none; }
+/* 横画面モード（2026-09-27）：縦向きのまま、ゲームだけを時計回りに90度回して画面いっぱいに（iPhone・画面ロック中でも横で遊べる） */
+html.is-egi-rot .ika-egi-main {
+  inset: auto; top: 0; left: 0;
+  width: var(--rot-w, 100vh); height: var(--rot-h, 100vw);
+  transform-origin: top left; transform: translateX(var(--rot-h, 100vw)) rotate(90deg);
+}
+html.is-egi-rot .ika-egi-fullbtn { top: 8px; left: 8px; }
+/* 入った時の説明は、竿先のエギと案内に重ならないよう下のほうへ（6秒で消える） */
+html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420px); }
 .is-egi-full-btn .ika-egi-fullbtn { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); }
 .ika-egi-fullnote {
   position: absolute; z-index: 6; top: 48px; left: 50%; transform: translateX(-50%); width: min(92%, 420px);

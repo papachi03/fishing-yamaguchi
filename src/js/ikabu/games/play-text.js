@@ -125,6 +125,8 @@ export const EGI_TEXT = {
   },
   fullBtn: pair('⛶ 全画面', '⛶ Full screen'),
   fullExit: pair('✕ もどる', '✕ Exit'),
+  // 横画面モード（2026-09-27 ぱっぱ：iPhone は全画面にも横向きにもできない→ゲームだけ90度回す。画面ロック中でも横で遊べる）
+  fullRotNote: pair('スマホの右側が上になるように横にして遊んでね。「✕ もどる」で縦に戻ります', 'Turn your phone so its right side is on top. Tap “✕ Exit” to go back'),
   fullNote: pair('スマホを横に倒すと、全画面で遊べます。iPhone は共有メニューの「ホーム画面に追加」から開くと、アドレスバーなしの全画面に', 'Turn your phone sideways to play full screen. On iPhone, open it from “Add to Home Screen” for a bar-free screen'),
   fall: { tension: pair('テンションフォール', 'Tension fall'), free: pair('フリーフォール', 'Free fall') },
   cue: {

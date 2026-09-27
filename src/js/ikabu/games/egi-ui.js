@@ -1038,7 +1038,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       return;
     }
     if (el.colorPop && !el.colorPop.hidden) { el.colorPop.hidden = true; if (!e.target.closest?.('.ika-egi-btn')) return; }
-    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop')) return;
+    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop, .ika-egi-fullbtn')) return;
     if (ptr) return;
     const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
@@ -1052,7 +1052,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onMove = (e) => {
     if (!ptr || ptr.id !== e.pointerId || ptr.pressed || ptr.darted) return;
-    if (ptr.y - e.clientY >= ptr.px && Math.abs(e.clientX - ptr.x) < 60) {
+    // 横画面モード（90度回している）では、ゲームの「上」は画面の右
+    const up = rotated() ? e.clientX - ptr.x : ptr.y - e.clientY;
+    const side = rotated() ? e.clientY - ptr.y : e.clientX - ptr.x;
+    if (up >= ptr.px && Math.abs(side) < 60) {
       clearTimeout(ptr.timer);
       ptr.darted = true;
       doDart();
@@ -1087,7 +1090,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // pointerdown の preventDefault だけでは iOS の長押しは止まらないので、touchstart も止める（pointer イベントはそのまま届く）
   // 色選びの窓（.ika-egi-colorpop）は除く：touchstart を止めるとスマホでは click が起きず、色のボタンが押せなくなる（ぱっぱ指摘 2026-09-25）
   // 結果・まとめのカード（.ika-egi-card）の中も除く：止めると指でカードの中をスクロールできず、下のボタンに届かない（ぱっぱ指摘 2026-09-25）
-  const noLongPress = (e) => { if (!e.target.closest('a, select, input, .ika-egi-card, details, .ika-egi-colorpop')) e.preventDefault(); };
+  // 全画面ボタン（.ika-egi-fullbtn）も除く：止めると指で押した時に click が起きず、全画面・横画面モードに入れなかった（2026-09-27）
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-fullbtn')) e.preventDefault(); };
   for (const node of [el.btn, el.dartBtn, el.stage]) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -1108,6 +1112,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const sideHud = document.getElementById('ika-egi-sidehud');
   const stageHud = el.stage.querySelector('.ika-egi-hud');
   let btnFull = false;   // 「⛶ 全画面」ボタンで入った全画面（PC・縦向きのスマホでも）
+  // 横画面モード（2026-09-27）：縦向きのまま、ゲーム（.ika-egi-main）だけを時計回りに90度回す。html に .is-egi-rot。
+  // 回した後の幅と高さは画面の高さと幅（CSS の --rot-w / --rot-h。アドレスバーの出入りで変わるので、そのつど合わせる）。
+  // ロックしていない人がスマホを本当に横にしたら、回すのをやめて、ふつうの横向き全画面に（二重に回らないように）
+  let rotMode = false;
+  const rotated = () => document.documentElement.classList.contains('is-egi-rot');
+  const syncRot = () => {
+    const on = rotMode && btnFull && innerHeight > innerWidth;
+    const root = document.documentElement;
+    root.classList.toggle('is-egi-rot', on);
+    if (on) { root.style.setProperty('--rot-w', `${innerHeight}px`); root.style.setProperty('--rot-h', `${innerWidth}px`); }
+  };
+  addEventListener('resize', () => { if (rotMode) syncRot(); });
   const placeHud = () => {
     if (!sideHud || !stageHud) return;
     const to = landscape.matches || btnFull ? sideHud : stageHud;
@@ -1156,8 +1172,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     fullBtn.dataset.full = btnFull ? 'exit' : 'enter';
     fullBtn.setAttribute('aria-pressed', String(btnFull));
   };
-  const showFullNote = () => {
+  const showFullNote = (text = TX.fullNote) => {
     if (!fullNote) return;
+    fullNote.textContent = t(lang, text);
     fullNote.hidden = false;
     clearTimeout(fullNoteT); fullNoteT = setTimeout(() => { fullNote.hidden = true; }, 6000);
   };
@@ -1165,9 +1182,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 縦向きの画面では海が狭く切れて遊びにくい：横に固定できる端末（Android）だけ全画面＋横固定、それ以外（iPhone）は横に倒す案内だけ
     const portrait = innerHeight > innerWidth;
     const canLock = document.fullscreenEnabled && typeof screen.orientation?.lock === 'function';
-    if (portrait && !canLock) { showFullNote(); return; }
     btnFull = true;
+    // 横に固定できない端末（iPhone など）で縦向き：ゲームだけを90度回して画面いっぱいに（画面の向きのロック中でも横で遊べる）
+    rotMode = portrait && !canLock;
     document.documentElement.classList.add('is-egi-full', 'is-egi-full-btn');
+    syncRot();
+    if (rotMode) showFullNote(TX.fullRotNote);
     placeHud(); setFullBtn();
     if (document.fullscreenEnabled) {
       document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })
@@ -1181,6 +1201,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const exitBtnFull = () => {
     btnFull = false;
+    rotMode = false;
+    syncRot();
     document.documentElement.classList.remove('is-egi-full', 'is-egi-full-btn');
     if (fullNote) fullNote.hidden = true;
     try { screen.orientation?.unlock?.(); } catch (e) { /* 固定していなければ何もしない */ }
@@ -1513,11 +1535,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const eb = n.egiAir.getBoundingClientRect();
         const sb = el.stage.getBoundingClientRect();
         if (eb.width) {
-          const tipLeft = Math.round(eb.right - sb.left + 6);
+          // 位置は舞台の中の座標で決める。横画面モード（90度回している）では、画面の座標を舞台の座標に読み替える
+          //   画面の縦（Y）が舞台の横、画面の右端からの距離が舞台の縦。幅と高さも入れ替わる（2026-09-27 案内がずれて手順と重なった）
+          const rot = rotated();
+          const right = rot ? eb.bottom - sb.top : eb.right - sb.left;
+          const midY = rot ? sb.right - (eb.left + eb.width / 2) : eb.top - sb.top + eb.height / 2;
+          const stageW = rot ? sb.height : sb.width;
+          const tipLeft = Math.round(right + 6);
           el.colorTip.style.left = `${tipLeft}px`;
           // スマホの狭い舞台では右端からはみ出すので、残りの幅で折り返す
-          el.colorTip.style.maxWidth = `${Math.max(90, Math.round(sb.width - tipLeft - 8))}px`;
-          el.colorTip.style.top = `${Math.round(eb.top - sb.top + eb.height / 2)}px`;
+          el.colorTip.style.maxWidth = `${Math.max(90, Math.round(stageW - tipLeft - 8))}px`;
+          el.colorTip.style.top = `${Math.round(midY)}px`;
         }
       }
       if (el.colorTip.hidden === showTip) el.colorTip.hidden = !showTip;
