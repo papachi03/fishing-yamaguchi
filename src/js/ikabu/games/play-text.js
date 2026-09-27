@@ -235,11 +235,25 @@ export const EGI_TEXT = {
     sessions: pair('釣行', 'Sessions'),
     notCountedBeginner: pair('🔰初心者練習の釣果は図鑑と記録に残りません。慣れたら「季節を選んで遊ぶ」や「今日の萩の海で釣る」に挑戦しよう！', 'Beginner-practice catches don\'t go in your atlas or records. Once you get the hang of it, try a season or today\'s Hagi sea!'),
   },
+  // 🔰コツ（2026-09-27、ぱっぱ：テンションフォールが分からない人が多かった）
+  tips: {
+    open: pair('🔰 コツを見る（テンションフォールって？）', '🔰 Tips (what is a tension fall?)'),
+    fallTitle: pair('① イカはゆっくり沈むエギに抱きつく', '① Squid hug an egi that sinks slowly'),
+    fallBody: pair('しゃくってエギを跳ね上げたら、<b>ボタンを押したまま</b>にしよう。糸がピンと張ったまま、エギがふわ〜っとゆっくり沈む。これが<b>テンションフォール</b>。指を離すとストンと速く沈む<b>フリーフォール</b>になる。迷ったらテンションフォール！',
+                   'After a jerk, <b>keep holding the button</b>. The line stays tight and the egi glides down slowly: that is a <b>tension fall</b>. Let go and it drops fast: a <b>free fall</b>. When in doubt, hold!'),
+    free: pair('フリーフォール（指を離す）', 'Free fall (let go)'),
+    tension: pair('テンションフォール（押したまま）', 'Tension fall (hold)'),
+    biteTitle: pair('② 「今！」が出たらすぐタップ', '② Tap as soon as you see “Now!”'),
+    biteBody: pair('イカがエギに抱きつくと合図が出る。すぐにタップして針を掛けよう（アワセ）。', 'When a squid hugs the egi you get a signal. Tap right away to set the hook.'),
+    reelTitle: pair('③ 巻く時はゲージを見る', '③ Watch the gauge while reeling'),
+    reelBody: pair('押している間だけ巻ける。テンションのゲージが赤くなったら指を離そう。押しっぱなしだと糸が切れる。', 'You reel while holding. When the tension gauge turns red, let go, or the line will snap.'),
+    nudge: pair('アタリが来ない？「🔰 コツを見る」をどうぞ', 'No bites? See “🔰 Tips”'),
+  },
   // 🔰初心者練習（2026-09-27）：最初の1投だけ手順を案内する
   guide: {
-    cast: pair('① 下の大きいボタンを長押し→はなして、エギを投げよう', '① Hold the big button, then let go to cast'),
-    sink: pair('② エギが少し沈むのを待って、ボタンをタップ＝しゃくり（エギが跳ね上がる）', '② Let the egi sink a little, then tap the button to jerk it up'),
-    fall: pair('③ しゃくった後はボタンを長押ししたまま＝テンションフォール。ゆっくり沈むエギにイカが抱きつくよ', '③ After a jerk, keep holding = tension fall. Squid hug the slowly sinking egi'),
+    cast: pair('① ボタンを長押し→はなして投げる', '① Hold the button, let go to cast'),
+    sink: pair('② 少し沈めたら、タップでしゃくる', '② Let it sink, then tap to jerk'),
+    fall: pair('③ しゃくったら長押ししたまま＝テンションフォール', '③ After a jerk, keep holding = tension fall'),
   },
   live: {
     title: pair('今日の萩の海', "Today's sea at Hagi"),

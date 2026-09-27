@@ -146,6 +146,45 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner">${t(lang, T.live.playBeginner)}</button>
       </div>
       <p class="ika-egi-beginner-hint" id="ika-egi-beginner-hint" hidden>${t(lang, T.live.beginnerHint)}</p>
+      <details class="ika-egi-tips" id="ika-egi-tips">
+        <summary>${t(lang, T.tips.open)}</summary>
+        <h4>${t(lang, T.tips.fallTitle)}</h4>
+        <svg class="ika-egi-tips-fall" viewBox="0 0 320 170" role="img" aria-label="${t(lang, T.tips.free)} / ${t(lang, T.tips.tension)}">
+          <g class="ika-tips-panel">
+            <rect x="4" y="4" width="150" height="162" rx="10" fill="#e8f6f7"/>
+            <line x1="4" y1="40" x2="154" y2="40" stroke="#138c96" stroke-width="2"/>
+            <circle cx="24" cy="14" r="3" fill="#16233a"/>
+            <line x1="24" y1="14" x2="90" y2="44" stroke="#16233a" stroke-width="1.5" stroke-dasharray="3 3">
+              <animate attributeName="x2" dur="3.2s" repeatCount="indefinite" values="90;92;92" keyTimes="0;0.35;1"/>
+              <animate attributeName="y2" dur="3.2s" repeatCount="indefinite" values="44;150;150" keyTimes="0;0.35;1"/>
+            </line>
+            <g><ellipse rx="11" ry="5" fill="#f47321" stroke="#16233a" stroke-width="1.5" transform="rotate(70)"/>
+              <animateMotion dur="3.2s" repeatCount="indefinite" path="M90 44 L92 150 L92 150" keyTimes="0;0.35;1" keyPoints="0;1;1" calcMode="linear"/></g>
+          </g>
+          <g class="ika-tips-panel">
+            <rect x="166" y="4" width="150" height="162" rx="10" fill="#e8f6f7"/>
+            <line x1="166" y1="40" x2="316" y2="40" stroke="#138c96" stroke-width="2"/>
+            <circle cx="186" cy="14" r="3" fill="#16233a"/>
+            <line x1="186" y1="14" x2="296" y2="46" stroke="#16233a" stroke-width="1.5">
+              <animate attributeName="x2" dur="3.2s" repeatCount="indefinite" values="296;262;236" keyTimes="0;0.6;1"/>
+              <animate attributeName="y2" dur="3.2s" repeatCount="indefinite" values="46;100;140" keyTimes="0;0.6;1"/>
+            </line>
+            <g><ellipse rx="11" ry="5" fill="#f47321" stroke="#16233a" stroke-width="1.5" transform="rotate(20)"/>
+              <animateMotion dur="3.2s" repeatCount="indefinite" path="M296 46 Q270 110 236 140"/></g>
+            <g opacity="0"><ellipse cx="0" cy="0" rx="9" ry="16" fill="#f5eedc" stroke="#16233a" stroke-width="1.5"/>
+              <animateMotion dur="3.2s" repeatCount="indefinite" path="M300 150 L250 142"/>
+              <animate attributeName="opacity" dur="3.2s" repeatCount="indefinite" values="0;0;1;1" keyTimes="0;0.5;0.8;1"/></g>
+          </g>
+          <text x="79" y="162" text-anchor="middle" font-size="11" fill="#41585c">${t(lang, "ストン", "Plop")}</text>
+          <text x="241" y="162" text-anchor="middle" font-size="11" fill="#41585c">${t(lang, "ふわ〜っ", "Glide")}</text>
+        </svg>
+        <p class="ika-egi-tips-legend"><span>${t(lang, T.tips.free)}</span><span>${t(lang, T.tips.tension)}</span></p>
+        <p>${t(lang, T.tips.fallBody)}</p>
+        <h4>${t(lang, T.tips.biteTitle)}</h4>
+        <p>${t(lang, T.tips.biteBody)}</p>
+        <h4>${t(lang, T.tips.reelTitle)}</h4>
+        <p>${t(lang, T.tips.reelBody)}</p>
+      </details>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
     </div>
     <div class="ika-egi-pick" id="ika-egi-pick">${egiPickerHTML(lang, { month, tod })}</div>

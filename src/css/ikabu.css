@@ -2143,3 +2143,20 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-egi-play-beginner.is-first:not(.is-active) { animation: ika-beginner-pulse 1.6s ease-in-out 3; }
 @keyframes ika-beginner-pulse { 50% { box-shadow: 0 0 0 6px rgba(46, 158, 91, 0.25); } }
 .ika-egi-beginner-hint { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: #e9f7ee; color: #1d4d31; font-size: 13px; line-height: 1.7; }
+
+/* 🔰コツのカード（テンションフォール）2026-09-27 */
+.ika-egi-tips { margin-top: 10px; border: 2px solid #2e9e5b; border-radius: 12px; background: #fff; }
+.ika-egi-tips > summary { padding: 10px 14px; cursor: pointer; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: #1d6b3d; }
+.ika-egi-tips[open] > summary { border-bottom: 1px dashed #2e9e5b; }
+.ika-egi-tips > :not(summary) { margin: 0 14px; }
+.ika-egi-tips h4 { margin-top: 12px; font-family: var(--font-maru); font-weight: 900; font-size: 15px; color: var(--ika-sea); }
+.ika-egi-tips p { margin-top: 6px; font-size: 13.5px; line-height: 1.8; }
+.ika-egi-tips p:last-child { margin-bottom: 14px; }
+.ika-egi-tips-fall { display: block; width: 100%; max-width: 420px; height: auto; margin-top: 8px; }
+.ika-egi-tips-legend { display: grid; grid-template-columns: 1fr 1fr; max-width: 420px; gap: 8px; text-align: center; font-size: 12px !important; font-weight: 700; color: #41585c; }
+.ika-egi-tips.is-flash { animation: ika-beginner-pulse 1.2s ease-in-out 4; }
+
+/* 長い案内（🔰の手順・コツの勧め）は折り返す */
+.ika-egi-callout { max-width: 92%; white-space: normal; text-align: center; width: max-content; }
+/* 🔰手順の案内は舞台の中ほどに（上の「エギをタップで色が選べる」と重ならないように） */
+.ika-egi-callout.is-guide { top: 40%; background: #e9f7ee; border-color: #1d6b3d; box-shadow: 3px 3px 0 #2e9e5b; }

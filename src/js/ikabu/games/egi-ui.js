@@ -49,7 +49,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
-    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
+    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
@@ -67,7 +67,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
   let lastShare = null;
   const cue = () => (settings.mode === 'beginner' ? 'easy' : settings.cue);   // 初心者練習はアタリを「やさしい表示」に固定
-  let guide = 0;   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
+  let guide = 0;
+  let dryCasts = 0, tipsNudged = false;   // アタリなしが3投続いたら、一度だけ「コツを見る」を勧める   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
@@ -220,7 +221,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     syncStock();
     syncSetupLock();
     setButton();
-    if (guide === 1) callout(t(lang, TX.guide.cast), 'good', 6000);
+    if (guide === 1) callout(t(lang, TX.guide.cast), 'guide', 6000);
   }
 
   /* ---------- 設定パネル：今日の萩の海 ／ 練習 ---------- */
@@ -549,7 +550,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.egi.mode = 'cast';
           V.cast = { t0: now, from: V.rodAng ?? 100, released: false, rel: null, dist: s.castDist, to: { x: X(s.castDist), y: SCENE.surface } };
           if (reduced) landEgi();   // 動きを減らす設定：飛ばさずに着水
-          if (guide === 1) { guide = 2; setTimeout(() => { if (guide === 2) callout(t(lang, TX.guide.sink), 'good', 6000); }, 1200); }
+          if (guide === 1) { guide = 2; setTimeout(() => { if (guide === 2) callout(t(lang, TX.guide.sink), 'guide', 6000); }, 1200); }
           syncStock();
           syncSetupLock();
           break;
@@ -560,7 +561,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkDouble = e.double;
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
           else if (e.double) callout(t(lang, TX.cue.double));
-          if (guide === 2) { guide = 3; callout(t(lang, TX.guide.fall), 'good', 7000); }
+          if (guide === 2) { guide = 3; callout(t(lang, TX.guide.fall), 'guide', 7000); }
           setFallMode(null);
           break;
         case 'fall':
@@ -576,6 +577,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         }
         case 'signal': {
           signalsThisCast += 1;
+          dryCasts = 0;
           guide = 0;   // アタリが来たら案内はおしまい（ここからは「今！」の表示）
           const h = s.hooking;
           V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = V.egi.ang; V.hug.t0 = now;
@@ -668,6 +670,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           syncStock();
           break;
         case 'recover':
+          if (signalsThisCast === 0 && ++dryCasts >= 3 && !tipsNudged && el.tips && !el.tips.open) {
+            tipsNudged = true;
+            setTimeout(() => callout(t(lang, TX.tips.nudge), 'good', 5000), 1800);
+            el.tips.classList.add('is-flash');
+            setTimeout(() => el.tips.classList.remove('is-flash'), 6000);
+          }
           callout(t(lang, signalsThisCast === 0 ? TX.msg.noSign : TX.msg.recover));
           break;
         case 'ready':
