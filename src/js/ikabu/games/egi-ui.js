@@ -2032,7 +2032,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     /* ----- エギの絵（空中と水中で前後を変える） ----- */
     const egiVisible = !V.hug.on || V.egi.mode === 'flight' || V.egi.mode === 'cast';
     const egiAir = V.egi.y < S.surface;
-    const egiT = `translate(${f1(V.egi.x)} ${f1(V.egi.y)}) rotate(${f1(V.egi.ang)}) scale(1.15)`;
+    // ヤエンのアジは左右を返す：横になった時に青い背中が上・銀の腹が下になるように（2026-09-28 ぱっぱ：活きアジの上下が逆）
+    const egiT = `translate(${f1(V.egi.x)} ${f1(V.egi.y)}) rotate(${f1(V.egi.ang)}) scale(${s?.method === 'yaen' ? -1.15 : 1.15} 1.15)`;
     // 最初だけ：投げる前に「← エギをタップで色が選べる」をエギの右に出す（一度でも色を選んだら出さない）
     if (el.colorTip) {
       const showTip = s.method !== 'yaen' && (!colorSeen && phase === 'ready' && V.egi.mode === 'tip' && !V.flight);   // ヤエンはエギを使わないので色選びの案内は出さない
