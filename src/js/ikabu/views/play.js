@@ -335,6 +335,18 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
           <p class="ika-egi-cue-note">${t(lang, T.zukan.note)}</p>
           <ul class="ika-egi-zukan-grid" id="ika-egi-zukan-grid"></ul>
           <dialog class="ika-egi-zukan-detail" id="ika-egi-zukan-detail" aria-labelledby="ika-egi-zukan-detail-name"></dialog>
+          <p class="ika-egi-save-note" id="ika-egi-save-note" hidden></p>
+          <details class="ika-egi-backup" id="ika-egi-backup">
+            <summary>${t(lang, T.backup.summary)}</summary>
+            <p class="ika-egi-cue-note">${t(lang, T.backup.lead)}</p>
+            <textarea class="ika-egi-backup-code" id="ika-egi-backup-code" rows="3" spellcheck="false" autocomplete="off" placeholder="${t(lang, T.backup.placeholder)}"></textarea>
+            <div class="ika-egi-backup-actions">
+              <button type="button" class="ika-btn" data-backup="export">${t(lang, T.backup.export)}</button>
+              <button type="button" class="ika-btn" data-backup="copy">${t(lang, T.backup.copy)}</button>
+              <button type="button" class="ika-btn" data-backup="import">${t(lang, T.backup.import)}</button>
+            </div>
+            <p class="ika-egi-backup-msg" id="ika-egi-backup-msg" role="status" aria-live="polite"></p>
+          </details>
         </section>
         <aside class="ika-egi-side" id="ika-egi-side" aria-label="${t(lang, '記録', 'Records')}">
           <p class="ika-egi-side-head">${t(lang, '今日の釣果', 'This session')}</p>

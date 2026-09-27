@@ -6,7 +6,7 @@ import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
-import { readJSON, writeJSON, recordM3, emptyM3, KEY_M3 } from './records.js';
+import { recordM3, emptyM3, KEY_M3, readRecord, writeRecord } from './records.js';
 import { t, assetHref } from '../i18n.js';
 import { openShareView, shareButtonHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
 
@@ -28,7 +28,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dur = (ms) => (reduced ? 0 : ms);
 
-  let rec = readJSON(KEY_M3) ?? emptyM3();
+  let rec = { ...emptyM3(), ...(readRecord(KEY_M3).value ?? {}) };   // 2026-09-27：控えから戻せる読み書き
   let g = null;
   let mode = 'daily';
   let shown = [];          // 画面に出ている盤面
@@ -242,7 +242,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     recorded = true;
     const { rec: r, fresh } = recordM3(rec, g, { day: mode === 'daily' ? utcDay() : null });
     rec = r;
-    writeJSON(KEY_M3, rec);
+    writeRecord(KEY_M3, rec);
     syncBadges();
     syncHud();
     const R = TX.result;

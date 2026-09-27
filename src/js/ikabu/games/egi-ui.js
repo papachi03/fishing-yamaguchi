@@ -21,7 +21,7 @@ import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightA
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
 import { recommendedSizes } from './egi-advice.js';
-import { readJSON, writeJSON, recordEgi, emptyEgi, KEY_EGI } from './records.js';
+import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
 import { openShareView, shareButtonHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
 
@@ -81,7 +81,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
-  let rec = readJSON(KEY_EGI) ?? emptyEgi();
+  // 記録（2026-09-27：控えから戻せる読み書き。釣れた瞬間に1杯ずつ保存）
+  const loaded = readRecord(KEY_EGI);
+  let rec = { ...emptyEgi(), ...(loaded.value ?? {}) };
+  rec.species = rec.species ?? {};
+  const canSave = storageWorks();
   let s = null;            // ゲームの状態（egi.js）
   let W = SCENE.W0;        // 舞台の幅（表示領域の比率で決まる）
   let now = 0;             // 経過秒
@@ -763,6 +767,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     li.innerHTML = `<span>${esc(speciesName(lang, c.id))}</span><b>${c.weight.toLocaleString()} g</b>`;
     el.catches.appendChild(li);
     if (settings.mode === 'live' && !rec.species[c.id] && !firstSpecies.includes(c.id)) firstSpecies.push(c.id);
+    // 今日の萩の海の釣果は、その場で図鑑と記録に保存する（釣行の途中でページを閉じても消えない）
+    if (settings.mode === 'live') {
+      const got = recordEgiCatch(rec, { id: c.id, weight: c.weight, mantle: c.mantle }, { tripTotal: s.catches.reduce((sum, x) => sum + x.weight, 0) });
+      rec = got.rec;
+      saveRec();
+      syncRecords();
+      keepStorage();
+      if (got.fresh) backupHintOnce();
+    }
   }
   function showResult() {
     const why = s.last;
@@ -799,9 +812,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const catches = s.catches;
     const before = rec.best;
     const counted = settings.mode === 'live';
-    const { rec: r, fresh, total } = recordEgi(rec, catches, { counted });
+    const { rec: r, total } = recordEgiTrip(rec, catches, { counted });   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
+    const fresh = counted ? firstSpecies.slice() : [];
     rec = r;
-    writeJSON(KEY_EGI, rec);
+    saveRec();
     syncRecords();
     const O = TX.over;
     const list = catches.length
@@ -871,6 +885,62 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.zukanGrid?.addEventListener('click', (e) => { const b = e.target.closest('[data-zukan]'); if (b) openZukanDetail(b.dataset.zukan); });
   // 外側（暗いところ）を押しても閉じる
   el.zukanDetail?.addEventListener('click', (e) => { if (e.target === el.zukanDetail) el.zukanDetail.close?.(); });
+  /* ---------- 記録を消さないために（2026-09-27 ぱっぱ：1年かけてそろえる図鑑が突然消えるとやる気がなくなる） ---------- */
+  function saveRec() {
+    if (!canSave) return;
+    if (!writeRecord(KEY_EGI, rec)) showSaveNote(TX.backup.failed);
+  }
+  // Android・PC などでは、ブラウザに「このサイトの記録を消さないで」と頼む（最初に図鑑に入った時に1回）
+  let persistAsked = false;
+  function keepStorage() {
+    if (persistAsked) return;
+    persistAsked = true;
+    navigator.storage?.persisted?.().then((ok) => { if (!ok) navigator.storage.persist?.(); }).catch(() => {});
+  }
+  const HINTED = 'ikabu.egi.backupHinted';
+  function backupHintOnce() {
+    if (readPref(HINTED)) return;
+    writePref(HINTED, true);
+    setTimeout(() => callout(t(lang, TX.backup.hint), 'good', 5200), 2600);
+  }
+  const saveNote = document.getElementById('ika-egi-save-note');
+  function showSaveNote(text) { if (saveNote) { saveNote.textContent = t(lang, text); saveNote.hidden = false; } }
+  // iPhone の Safari（ホーム画面から開いていない時）：しばらく開かないと記録を消すことがある
+  const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!canSave) showSaveNote(TX.backup.noSave);
+  else if (loaded.source === 'backup') showSaveNote(TX.backup.restored);
+  else if (isIOS && !navigator.standalone && !matchMedia('(display-mode: standalone)').matches) showSaveNote(TX.backup.ios);
+  if (loaded.source === 'backup') saveRec();   // 控えから戻した記録を本体に書き戻す
+  // 引き継ぎコード
+  const backupBox = document.getElementById('ika-egi-backup');
+  const backupCode = document.getElementById('ika-egi-backup-code');
+  const backupMsg = document.getElementById('ika-egi-backup-msg');
+  const backupSay = (text) => { if (backupMsg) backupMsg.textContent = t(lang, text); };
+  backupBox?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-backup]');
+    if (!b) return;
+    const act = b.dataset.backup;
+    if (act === 'export') {
+      backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value });
+      backupCode.select();
+      backupSay(TX.backup.exported);
+    } else if (act === 'copy') {
+      if (!backupCode.value) backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value });
+      backupCode.select();
+      (navigator.clipboard?.writeText(backupCode.value) ?? Promise.reject()).then(() => backupSay(TX.backup.copied), () => { document.execCommand?.('copy'); backupSay(TX.backup.copied); });
+    } else if (act === 'import') {
+      const text = backupCode.value.trim();
+      if (!text) { backupSay(TX.backup.empty); return; }
+      let data;
+      try { data = importCode(text); } catch { backupSay(TX.backup.bad); return; }
+      rec = mergeEgi(rec, data.egi);
+      saveRec();
+      if (data.sumi) writeRecord(KEY_M3, mergeM3(readRecord(KEY_M3).value, data.sumi));
+      syncRecords();
+      backupSay(TX.backup.imported);
+      setTimeout(() => location.reload(), 1500);   // 墨つなぎの記録も読み直すため
+    }
+  });
   function syncRecords() {
     syncZukan();
     const set = (k, v) => { const b = el.records.querySelector(`[data-rec="${k}"]`); if (b) b.textContent = String(v); };

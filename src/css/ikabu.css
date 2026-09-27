@@ -1400,6 +1400,13 @@ body[data-page='egi'] .ika-egi-side { order: 3; }
 .ika-egi-zukan { grid-column: 1 / -1; order: 4; display: grid; gap: 8px; padding: 14px 16px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; }
 .ika-egi-zukan .ika-egi-side-head b { font-size: 16px; color: var(--ika-orange-deep); }
 .ika-egi-zukan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+/* 記録を消さないために（2026-09-27）：保存の案内と、引き継ぎコード */
+.ika-egi-save-note { margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; background: #fff6e0; border: 2px solid #e2b000; font-size: 0.85rem; line-height: 1.6; }
+.ika-egi-backup { margin-top: 12px; border: 2px dashed var(--ika-aqua, #00616b); border-radius: 12px; padding: 8px 12px; }
+.ika-egi-backup > summary { cursor: pointer; font-weight: 700; color: var(--ika-aqua, #00616b); }
+.ika-egi-backup-code { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; padding: 8px; font: 0.78rem/1.4 ui-monospace, monospace; word-break: break-all; border: 2px solid #c9d8da; border-radius: 8px; resize: vertical; }
+.ika-egi-backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ika-egi-backup-msg { min-height: 1.4em; margin: 6px 0 0; font-size: 0.85rem; }
 .ika-egi-zukan-card { border: 2px dashed var(--ika-sea-line); border-radius: 12px; background: var(--ika-mist); }
 .ika-egi-zukan-open { display: grid; grid-template-columns: 1fr; align-content: start; gap: 6px; width: 100%; padding: 8px 10px; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
 button.ika-egi-zukan-open { cursor: pointer; border-radius: 10px; }
