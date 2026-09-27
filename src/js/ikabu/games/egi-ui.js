@@ -950,9 +950,32 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     set('zukan', GAME_ZUKAN.filter((z) => rec.species[z.id]).length);
     set('sessions', rec.sessions);
   }
+  // 全画面の見た目の時の「エギを選ぶ」の窓：ページの欄（el.pick）をそのまま窓へ移し、閉じたら元の場所へ戻す
+  const pickPop = document.createElement('div');
+  pickPop.className = 'ika-egi-pickpop';
+  pickPop.hidden = true;
+  pickPop.setAttribute('role', 'dialog');
+  pickPop.innerHTML = `<button type="button" class="ika-btn ika-btn--primary ika-egi-pickpop-close">${t(lang, TX.zukan.close)}</button>`;
+  el.main.append(pickPop);
+  let pickHome = null;
+  function openPickPop() {
+    if (!pickHome) { pickHome = document.createComment('ika-egi-pick'); el.pick.before(pickHome); pickPop.prepend(el.pick); }
+    pickPop.hidden = false;
+  }
+  function closePickPop() {
+    if (pickHome) { pickHome.replaceWith(el.pick); pickHome = null; }
+    pickPop.hidden = true;
+  }
+  pickPop.addEventListener('click', (e) => { if (e.target.closest('.ika-egi-pickpop-close')) closePickPop(); });
+  pickPop.addEventListener('pointerdown', (e) => e.stopPropagation());
+  // 全画面の見た目が解けたら、窓も閉じて欄を元へ戻す
+  new MutationObserver(() => { if (!document.documentElement.classList.contains('is-egi-full')) closePickPop(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   el.card.addEventListener('click', (e) => {
     if (e.target.closest('[data-next]')) { press(s); release(s); onEvents(s.events); }
     else if (e.target.closest('[data-egi]')) {
+      // 全画面の見た目（横向き・横画面モード）では、エギ選びの欄は隠れている→画面の上に窓で出す（2026-09-27 ぱっぱ指摘：押しても反応しない）
+      if (document.documentElement.classList.contains('is-egi-full')) { openPickPop(); return; }
       // エギ選びへ（替えたら「次の一投へ」でそのまま続けられる）
       el.pick.classList.add('is-flash');
       setTimeout(() => el.pick.classList.remove('is-flash'), 1600);

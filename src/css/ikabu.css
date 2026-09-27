@@ -1914,6 +1914,15 @@ html.is-egi-rot .ika-egi-main {
   transform-origin: top left; transform: translateX(var(--rot-h, 100vw)) rotate(90deg);
 }
 html.is-egi-rot .ika-egi-fullbtn { top: 8px; left: 8px; }
+/* 全画面の見た目の時の「エギを選ぶ」の窓（2026-09-27）：ページの欄をそのまま移して、画面の上に出す */
+.ika-egi-pickpop { display: none; }
+.is-egi-full .ika-egi-pickpop:not([hidden]) {
+  display: flex; flex-direction: column; gap: 8px; position: absolute; z-index: 30; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(94%, 640px); max-height: 92%; overflow: auto; overscroll-behavior: contain; padding: 10px;
+  background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.ika-egi-pickpop .ika-egi-pick { margin: 0; }
+.ika-egi-pickpop-close { align-self: flex-end; order: 2; }
 /* 入った時の説明は、竿先のエギと案内に重ならないよう下のほうへ（6秒で消える） */
 html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420px); }
 .is-egi-full-btn .ika-egi-fullbtn { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); }
