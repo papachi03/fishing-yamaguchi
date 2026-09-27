@@ -557,7 +557,9 @@ export const M3_TEXT = {
   tagline: pair('6×6の3マッチ。20手で1,500点。今日の一戦は、世界中で同じ盤面。', 'A 6×6 match-three. Reach 1,500 in 20 moves. The daily board is the same worldwide.'),
   rules: [
     pair('となりのマークを入れ替えて、同じマークを3つ以上そろえる。', 'Swap neighbouring marks to line up three or more of a kind.'),
-    pair('4つ以上で黒いレアイカが生まれる。動かすと、まわり9マスが消える。', 'Four or more spawns a black rare squid. Move it and it clears the 3×3 around it.'),
+    pair('4つ一直線で「ライン」が生まれる。消えると、その横一列（たてラインなら縦一列）が全部消える。', 'Four in a row makes a line squid. When it clears, its whole row (or column) clears too.'),
+    pair('L字・T字にそろえると黒いレアイカ。動かすと、まわり9マスが消える。5つ一直線なら「墨ダマ」：入れ替えた相手と同じマークを全部消す。', 'An L or T shape makes a black rare squid: move it to clear the 3×3 around it. Five in a row makes an ink ball: swap it to clear every mark of that kind.'),
+    pair('スペシャル同士を入れ替えるとコンボ技（ライン＋ライン＝十字、レアイカ＋レアイカ＝だいばくはつ）。', 'Swap two specials together for a combo (line + line = cross, rare + rare = mega blast).'),
     pair('消した数で墨がたまる。満タンで「墨フラッシュ」：選んだマークを全部消す。手数は減らない。', 'Clearing marks fills the ink meter. When full, use Ink Flash to clear every mark of one kind, without spending a move.'),
     pair('連鎖するほど1匹あたりの点が上がる。', 'Cascades multiply the points of every mark they clear.'),
   ],
@@ -571,12 +573,32 @@ export const M3_TEXT = {
     ink: pair('墨', 'Ink'),
   },
   btn: {
+    soundOn: pair('音を出す', 'Sound on'),
+    soundOff: pair('音を消す', 'Sound off'),
     flash: pair('墨フラッシュ', 'Ink Flash'),
     hint: pair('ヒント', 'Hint'),
     restart: pair('もう一度', 'Play again'),
     cancel: pair('やめる', 'Cancel'),
   },
+  // スペシャルパネル・コンボ（2026-09-27）
+  panel: {
+    lineH: pair('よこライン', 'row line'),
+    lineV: pair('たてライン', 'column line'),
+    ball: pair('墨ダマ', 'Ink ball'),
+    lineBorn: pair('ラインイカ たんじょう！', 'A line squid is born!'),
+    ballBorn: pair('墨ダマ たんじょう！', 'An ink ball is born!'),
+  },
+  combo: {
+    cross: pair('十字けし！', 'Cross clear!'),
+    bigcross: pair('ふとい十字！', 'Big cross!'),
+    bigbomb: pair('だいばくはつ！', 'Mega blast!'),
+    ballline: pair('ラインだらけ！', 'Lines everywhere!'),
+    ballrare: pair('ばくはつだらけ！', 'Blasts everywhere!'),
+    ballball: pair('ぜんぶ けし！', 'Clear everything!'),
+  },
   msg: {
+    squirt: pair('ぶしゅー！', 'Squirt!'),
+    goalNow: pair('目標たっせい！', 'Goal reached!'),
     pick: pair('消したいマークを1つ選んで', 'Pick a mark to clear'),
     chain: pair('連鎖！', ' chain!'),
     rare: pair('レアイカ誕生！', 'Rare squid!'),

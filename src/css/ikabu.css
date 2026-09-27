@@ -1757,6 +1757,70 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 @keyframes ika-m3-born { 0% { transform: scale(0.3) rotate(-20deg); } 100% { transform: scale(1) rotate(0); } }
 .ika-m3-cell.is-shake { animation: ika-m3-shake 0.3s; }
 @keyframes ika-m3-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+/* グミのパネル（2026-09-27 ぱっぱ：半透明でぷるん・ぶよんとした弾力。ぷよぷよのような、ほんわかした空気） */
+.ika-m3-cell {
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 48% 30% at 34% 20%, #ffffffd0 0 35%, #ffffff00 100%),
+    radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--edge) 55%, transparent) 0 40%, transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tile) 62%, #ffffff) 0%, color-mix(in srgb, var(--tile) 82%, transparent) 55%, color-mix(in srgb, var(--tile) 92%, var(--edge)) 100%);
+  border: 2px solid color-mix(in srgb, var(--edge) 80%, transparent);
+  box-shadow: inset 0 -6px 10px color-mix(in srgb, var(--edge) 45%, transparent), inset 0 3px 4px #ffffff90, 0 3px 0 #061e2c55, 0 6px 10px #061e2c33;
+  transform-origin: 50% 100%;
+}
+.ika-m3-cell::after { content: ''; position: absolute; left: 14%; top: 8%; width: 30%; height: 14%; border-radius: 999px; background: #ffffffb0; filter: blur(0.5px); transform: rotate(-12deg); pointer-events: none; }
+.ika-m3-cell img { position: relative; z-index: 1; }
+.ika-m3-cell i { z-index: 2; }
+.ika-m3-cell.is-selected { animation: ika-m3-jelly-sel 0.5s ease-out; }
+@keyframes ika-m3-jelly-sel { 0% { transform: scale(1); } 30% { transform: scale(1.16, 0.9); } 55% { transform: scale(0.98, 1.12); } 80% { transform: scale(1.1, 1.04); } 100% { transform: scale(1.08); } }
+.ika-m3-cell.is-clear { animation: ika-m3-pluck 0.3s cubic-bezier(0.3, 1.4, 0.6, 1) forwards; }
+@keyframes ika-m3-pluck { 0% { transform: scale(1); opacity: 1; } 35% { transform: scale(1.25, 0.82); opacity: 1; } 60% { transform: scale(0.9, 1.2); opacity: 0.9; } 100% { transform: scale(0.1); opacity: 0; } }
+/* ライン：色のコマに、白い矢印の帯（横＝横一列を消す、縦＝縦一列） */
+.ika-m3-line { position: absolute; z-index: 1; inset: 45% 5%; opacity: 0.9; border-radius: 999px; background: linear-gradient(90deg, #ffffff00, #ffffffee 20%, #ffffffee 80%, #ffffff00); box-shadow: 0 0 8px #ffffffcc; pointer-events: none; }
+.ika-m3-line::before, .ika-m3-line::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border: 6px solid transparent; transform: translateY(-50%); }
+.ika-m3-line::before { left: -4px; border-right: 8px solid #0b2447; border-left: 0; }
+.ika-m3-line::after { right: -4px; border-left: 8px solid #0b2447; border-right: 0; }
+.ika-m3-cell[data-special='v'] .ika-m3-line { inset: 5% 45%; background: linear-gradient(180deg, #ffffff00, #ffffffee 20%, #ffffffee 80%, #ffffff00); }
+.ika-m3-cell[data-special='v'] .ika-m3-line::before { left: 50%; top: -4px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 8px solid #0b2447; border-top: 0; }
+.ika-m3-cell[data-special='v'] .ika-m3-line::after { left: 50%; top: auto; bottom: -4px; right: auto; transform: translateX(-50%); border: 6px solid transparent; border-top: 8px solid #0b2447; border-bottom: 0; }
+.ika-m3-cell[data-special='h']:not(.is-clear):not(.is-born), .ika-m3-cell[data-special='v']:not(.is-clear):not(.is-born) { animation: ika-m3-breathe 1.6s ease-in-out infinite; }
+@keyframes ika-m3-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04, 0.97); } }
+/* 墨ダマ：虹色に光る丸い墨 */
+.ika-m3-cell[data-special='ball'] { --tile: #1b1f3a; --edge: #ffc747; background: conic-gradient(from 0deg, #ff7eb6, #ffd36e, #7ee0c3, #7fb6ff, #c79bff, #ff7eb6); }
+.ika-m3-cell[data-special='ball']:not(.is-clear):not(.is-born) { animation: ika-m3-ballspin 3s linear infinite; }
+.ika-m3-cell[data-special='ball'] img { width: 86%; height: 86%; }
+.ika-m3-ballglow { position: absolute; inset: 14%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5b6c9a, #0b0f1a 70%); box-shadow: 0 0 0 3px #ffffffcc, 0 0 12px #fff; }
+.ika-m3-cell[data-special='ball'] img + .ika-m3-ballglow { display: none; }
+@keyframes ika-m3-ballspin { 0%, 100% { filter: hue-rotate(0deg); transform: scale(1); } 50% { filter: hue-rotate(90deg); transform: scale(1.05); } }
+/* 演出の層 */
+.ika-m3-fx { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: visible; }
+.ika-m3-splat { position: absolute; animation: ika-m3-splat 0.42s ease-out both; }
+.ika-m3-splat svg { width: 100%; height: 100%; display: block; }
+@keyframes ika-m3-splat { 0% { transform: scale(0.2) rotate(-20deg); opacity: 1; } 35% { transform: scale(0.9) rotate(0); opacity: 1; } 60% { transform: scale(1.05, 0.9); opacity: 0.9; } 100% { transform: scale(1.35); opacity: 0; } }
+.ika-m3-sweep { position: absolute; border-radius: 999px; background: linear-gradient(90deg, transparent, #2a3a66b0 12%, #ffffffe6 50%, #2a3a66b0 88%, transparent); box-shadow: 0 0 12px #ffffffcc; animation: ika-m3-sweep-h 0.45s ease-out both; }
+.ika-m3-sweep.is-v { background: linear-gradient(180deg, transparent, #2a3a66b0 12%, #ffffffe6 50%, #2a3a66b0 88%, transparent); animation-name: ika-m3-sweep-v; }
+@keyframes ika-m3-sweep-h { 0% { transform: scaleX(0); opacity: 1; } 55% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1) scaleY(0.2); opacity: 0; } }
+@keyframes ika-m3-sweep-v { 0% { transform: scaleY(0); opacity: 1; } 55% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1) scaleX(0.2); opacity: 0; } }
+.ika-m3-ring { position: absolute; border-radius: 50%; background: radial-gradient(circle, #ffffffaa 0 20%, #2a3a6677 40%, #2a3a6633 58%, transparent 70%); box-shadow: 0 0 0 6px #ffe27a99, 0 0 0 12px #ff9ec755; animation: ika-m3-ring 0.5s ease-out both; }
+@keyframes ika-m3-ring { 0% { transform: scale(0.1); opacity: 1; } 60% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.2); opacity: 0; } }
+.ika-m3-ray { position: absolute; height: 6px; border-radius: 3px; transform-origin: 0 50%; background: linear-gradient(90deg, #fff, #ffd36e, #ff7eb6); box-shadow: 0 0 8px #fff; animation: ika-m3-ray 0.45s ease-out both; }
+@keyframes ika-m3-ray { 0% { clip-path: inset(0 100% 0 0); opacity: 1; } 60% { clip-path: inset(0 0 0 0); opacity: 1; } 100% { clip-path: inset(0 0 0 0); opacity: 0; } }
+.ika-m3-board.is-quake { animation: ika-m3-quake 0.35s ease-out; }
+@keyframes ika-m3-quake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-3px, 2px); } 45% { transform: translate(3px, -2px); } 70% { transform: translate(-2px, 1px); } }
+.ika-m3-mascot { position: absolute; left: 50%; bottom: -8%; width: 46%; display: grid; justify-items: center; transform: translateX(-50%); animation: ika-m3-peek 1.3s cubic-bezier(0.2, 1.3, 0.4, 1) both; z-index: 3; }
+.ika-m3-mascot img { width: 100%; height: auto; filter: drop-shadow(0 4px 0 #061e2c66); }
+.ika-m3-mascot b { position: absolute; top: -8%; right: -30%; padding: 4px 12px; border-radius: 14px; background: #fff; border: 3px solid var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 22px; white-space: nowrap; }
+@keyframes ika-m3-peek { 0% { transform: translate(-50%, 70%); } 35% { transform: translate(-50%, -8%) scale(1.05, 0.95); } 50% { transform: translate(-50%, 0) scale(0.97, 1.04); } 80% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, 70%); opacity: 0; } }
+.ika-m3-tint { position: absolute; inset: 0; border-radius: 16px; background: radial-gradient(circle at 50% 80%, #2a3a66aa, #2a3a6644 70%); animation: ika-m3-tint 0.9s ease-out both; }
+@keyframes ika-m3-tint { 0% { opacity: 0; transform: scale(0.6); } 30% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0; transform: scale(1); } }
+.ika-m3-mascot.is-side { left: auto; right: -4%; bottom: 2%; width: 34%; transform: none; animation: ika-m3-hop 2.2s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.ika-m3-mascot.is-side b { top: -18%; right: 40%; font-size: 18px; }
+@keyframes ika-m3-hop { 0% { transform: translateX(120%) rotate(12deg); } 20% { transform: translateX(0) rotate(-4deg) scale(1.05, 0.95); } 30% { transform: translateY(-10%) scale(0.96, 1.05); } 40%, 80% { transform: translateY(0); opacity: 1; } 100% { transform: translateX(120%); opacity: 0; } }
+.ika-m3-card-mascot { justify-self: center; width: 72px; height: auto; animation: ika-m3-born 0.5s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.ika-m3-callout.is-combo { background: linear-gradient(90deg, #ff7eb6, #ffd36e, #7ee0c3); color: var(--ika-ink); font-size: 34px; }
+.ika-m3-callout.is-huge { font-size: 44px; background: #ff7eb6; }
+.ika-m3-sound { min-width: 44px; padding: 6px 10px !important; font-size: 18px !important; }
+@media (prefers-reduced-motion: reduce) { .ika-m3-cell[data-special], .ika-m3-cell.is-selected { animation: none; } }
 .ika-m3-board.is-targeting .ika-m3-cell { cursor: crosshair; outline: 2px dashed var(--ika-orange); outline-offset: -5px; }
 .ika-m3-board.is-shuffle .ika-m3-cell { opacity: 0.25; transition: opacity 0.3s; }
 .ika-m3-callout {
@@ -1780,7 +1844,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-callout.is-pop { animation: ika-m3-pop 0.4s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
 .ika-m3-card {
   position: absolute; z-index: 3; inset: 6%;
-  display: grid; gap: 10px; align-content: center;
+  display: grid; gap: 10px; align-content: safe center;
   padding: 18px 20px;
   background: var(--ika-white); color: var(--ika-ink);
   border: 3px solid var(--ika-sea); border-radius: 16px;
@@ -1797,7 +1861,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-card-badges b { padding: 2px 10px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-size: 13px; }
 .ika-m3-card-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .ika-m3-card-actions .ika-btn { min-height: 44px; padding: 6px 18px; font-size: 14px; }
-.ika-m3-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; }
+.ika-m3-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; }
 .ika-m3-ink { display: flex; align-items: center; gap: 8px; }
 .ika-m3-ink-label { font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); }
 .ika-m3-ink-track { flex: 1; position: relative; height: 18px; border: 3px solid var(--ika-ink); border-radius: 999px; background: var(--ika-white); overflow: hidden; }
@@ -1855,12 +1919,12 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-egi-main-row { gap: 12px; }
   .ika-egi-dart { min-width: 68px; min-height: 62px; }
   .ika-m3-board { gap: 5px; padding: 6px; box-shadow: 4px 4px 0 var(--ika-ink); }
-  .ika-m3-cell { border-radius: 8px; }
+  .ika-m3-cell { border-radius: 12px; }
   .ika-m3-callout { font-size: 24px; padding: 6px 16px; }
   .ika-m3-callout.is-big { font-size: 30px; }
   .ika-m3-card { inset: 4%; padding: 14px 16px; }
   .ika-m3-card-score b { font-size: 36px; }
-  .ika-m3-tools { grid-template-columns: 1fr 1fr; }
+  .ika-m3-tools { grid-template-columns: 1fr 1fr auto; }
   .ika-m3-ink { grid-column: 1 / -1; }
 }
 /* 横向きのスマホ（高さが低い）：舞台を画面の高さいっぱいに、操作ボタンとゲージは右の列に縦に並べる */

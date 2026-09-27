@@ -2,7 +2,9 @@
 //   1. タップ・ドラッグ・キーボードを swap / inkFlash に変える
 //   2. 返ってきた steps（消えた段階の記録）を1段ずつ見せる（消える→落ちる→連鎖の吹き出し）
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
-import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL } from './match3.js';
+import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine } from './match3.js';
+import { createSfx } from './sumi-sfx.js';
+import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
@@ -27,6 +29,18 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   const cells = [...el.board.querySelectorAll('.ika-m3-cell')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dur = (ms) => (reduced ? 0 : ms);
+  // 効果音（最初からオン。2026-09-27 ぱっぱ）と、その切り替え
+  const sfx = createSfx({ on: readPref('ikabu.sumi.sound') ?? true });
+  const soundBtn = q('ika-m3-sound');
+  const syncSound = () => { if (!soundBtn) return; soundBtn.setAttribute('aria-pressed', String(sfx.on)); soundBtn.textContent = sfx.on ? '🔊' : '🔇'; soundBtn.title = t(lang, sfx.on ? TX.btn.soundOff : TX.btn.soundOn); };
+  soundBtn?.addEventListener('click', () => { sfx.setOn(!sfx.on); writePref('ikabu.sumi.sound', sfx.on); syncSound(); if (sfx.on) sfx.pop(3); });
+  syncSound();
+  root.addEventListener('pointerdown', () => sfx.unlock(), { once: true, capture: true });
+  // 演出の層（墨のしぶき・筆の線・爆発の輪・光の筋・マスコット）。盤面の上に重ねる
+  const fxLayer = document.createElement('div');
+  fxLayer.className = 'ika-m3-fx';
+  fxLayer.setAttribute('aria-hidden', 'true');
+  el.wrap.append(fxLayer);
 
   let rec = { ...emptyM3(), ...(readRecord(KEY_M3).value ?? {}) };   // 2026-09-27：控えから戻せる読み書き
   let g = null;
@@ -38,14 +52,18 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let cursor = 0;
   let recorded = false;
   let lastResult = null;   // シェアする1戦の結果（share.js）
+  let goalSaid = false;    // 目標達成のファンファーレ（1戦に1回）
   const demoHold = demo === 'chain';
 
   /* ---------- 盤面の描画 ---------- */
-  const kindName = (k) => (k === RARE ? t(lang, RARE_NAME) : t(lang, MARKS[k].name));
+  const kindName = (k) => (k === RARE ? t(lang, RARE_NAME) : k === BALL ? t(lang, TX.panel.ball) : isLine(k) ? `${t(lang, MARKS[colorOf(k)].name)}（${t(lang, k >= LINE_V ? TX.panel.lineV : TX.panel.lineH)}）` : t(lang, MARKS[k].name));
   function paint(i, kind) {
     const c = cells[i];
-    c.dataset.kind = String(kind);
-    c.innerHTML = `${tileImg(kind, { href: assetHref, size: 56 })}<i aria-hidden="true">${tileSymbol(kind)}</i>`;
+    const color = colorOf(kind);
+    c.dataset.kind = String(color ?? kind);
+    c.dataset.special = kind === RARE ? 'rare' : kind === BALL ? 'ball' : isLine(kind) ? (kind >= LINE_V ? 'v' : 'h') : '';
+    if (kind === BALL) c.innerHTML = `<img src="${assetHref('/assets/ikabu/tiles/ball_128.webp')}" width="56" height="56" alt="" decoding="async" draggable="false" onerror="this.remove()" /><b class="ika-m3-ballglow" aria-hidden="true"></b><i aria-hidden="true">◎</i>`;
+    else c.innerHTML = `${tileImg(color ?? kind, { href: assetHref, size: 56 })}${isLine(kind) ? `<b class="ika-m3-line" aria-hidden="true"></b>` : ''}<i aria-hidden="true">${tileSymbol(color ?? kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
     c.disabled = false;
   }
@@ -83,6 +101,61 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (!demoHold) calloutTimer = setTimeout(() => { el.callout.hidden = true; }, 1100);
   }
 
+  /* ---------- 演出（2026-09-27）：墨で塗って弾ける・筆・爆発・光の筋・マスコット ---------- */
+  const cellBox = (i) => {
+    const w = el.wrap.getBoundingClientRect(); const r = cells[i].getBoundingClientRect();
+    return { x: r.left - w.left, y: r.top - w.top, w: r.width, h: r.height, cx: r.left - w.left + r.width / 2, cy: r.top - w.top + r.height / 2 };
+  };
+  const fxEl = (cls, style, html = '') => {
+    const e = document.createElement('span');
+    e.className = cls;
+    Object.assign(e.style, style);
+    e.innerHTML = html;
+    fxLayer.append(e);
+    setTimeout(() => e.remove(), 1400);
+    return e;
+  };
+  // 墨のしぶき（ぽたっ→ぷるんと広がって弾ける＋小さな粒）
+  const SPLAT = '<svg viewBox="-50 -50 100 100"><path d="M0,-30 C12,-32 18,-20 26,-18 C36,-15 35,-2 30,5 C38,14 28,28 16,26 C9,36 -7,35 -12,26 C-26,30 -35,18 -28,7 C-38,-2 -31,-18 -19,-18 C-16,-28 -7,-30 0,-30 Z" fill="#2a3a66" opacity="0.72"/><ellipse cx="-9" cy="-12" rx="8" ry="4.5" fill="#ffffff" opacity="0.55"/><circle cx="-36" cy="-30" r="5" fill="#ffffff" opacity="0.9"/><circle cx="38" cy="-28" r="4" fill="#ffffff" opacity="0.9"/><circle cx="34" cy="36" r="5" fill="#ffffff" opacity="0.85"/><circle cx="-32" cy="34" r="3.5" fill="#ffffff" opacity="0.85"/><circle cx="2" cy="-44" r="3" fill="#ffe27a"/><circle cx="-44" cy="4" r="3" fill="#ff9ec7"/><circle cx="44" cy="6" r="3" fill="#8ee6d2"/></svg>';
+  function splat(i, delay = 0) {
+    if (reduced) return;
+    const b = cellBox(i);
+    fxEl('ika-m3-splat', { left: `${b.x - b.w * 0.05}px`, top: `${b.y - b.h * 0.05}px`, width: `${b.w * 1.1}px`, height: `${b.h * 1.1}px`, animationDelay: `${delay}ms` }, SPLAT);
+  }
+  function sweep(f) {
+    if (reduced) return;
+    const w = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect(); const b = cellBox(f.at);
+    const style = f.dir === 'h'
+      ? { left: `${w.left - wr.left + 6}px`, width: `${w.width - 12}px`, top: `${b.cy - b.h * 0.22}px`, height: `${b.h * 0.44}px`, transformOrigin: `${b.cx - (w.left - wr.left)}px 50%` }
+      : { top: `${w.top - wr.top + 6}px`, height: `${w.height - 12}px`, left: `${b.cx - b.w * 0.22}px`, width: `${b.w * 0.44}px`, transformOrigin: `50% ${b.cy - (w.top - wr.top)}px` };
+    fxEl(`ika-m3-sweep is-${f.dir}`, style);
+  }
+  function ring(f) {
+    if (reduced) return;
+    const b = cellBox(f.at); const R = b.w * (f.r === 2 ? 5.4 : 3.4);
+    fxEl('ika-m3-ring', { left: `${b.cx - R / 2}px`, top: `${b.cy - R / 2}px`, width: `${R}px`, height: `${R}px` });
+    el.board.classList.remove('is-quake'); void el.board.offsetWidth; el.board.classList.add('is-quake');
+  }
+  function rays(f) {
+    if (reduced) return;
+    const a = cellBox(f.at);
+    (f.cells ?? []).forEach((j, k) => {
+      const b = cellBox(j);
+      const len = Math.hypot(b.cx - a.cx, b.cy - a.cy);
+      const ang = (Math.atan2(b.cy - a.cy, b.cx - a.cx) * 180) / Math.PI;
+      fxEl('ika-m3-ray', { left: `${a.cx}px`, top: `${a.cy - 3}px`, width: `${len}px`, transform: `rotate(${ang}deg)`, animationDelay: `${k * 25}ms` });
+    });
+  }
+  // 墨フラッシュ：マスコットがひょこっと顔を出して「ぶしゅー！」→ 盤面が墨色に
+  async function mascotInk() {
+    if (reduced) return;
+    const m = fxEl('ika-m3-mascot', {}, `<img src="${assetHref('/assets/ikabu/mascot/squirt.webp')}" alt="" /><b>${t(lang, TX.msg.squirt)}</b>`);
+    m.addEventListener('animationend', () => m.remove());
+    await sleep(480);
+    fxEl('ika-m3-tint', {});
+    await sleep(260);
+  }
+
   /* ---------- HUD ---------- */
   function syncHud() {
     el.score.textContent = g.score.toLocaleString();
@@ -92,7 +165,14 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.goalFill.parentElement.parentElement.classList.toggle('is-reached', g.score >= GOAL);
     el.inkFill.style.width = `${Math.min(100, (g.charge / INK_NEED) * 100).toFixed(0)}%`;
     const full = g.charge >= INK_NEED && !g.over;
+    if (full && !el.ink.classList.contains('is-full')) sfx.full();
     el.ink.classList.toggle('is-full', full);
+    const reachedNow = g.score >= GOAL;
+    if (reachedNow && !goalSaid) {
+      goalSaid = true;
+      sfx.goal();
+      if (!reduced) fxEl('ika-m3-mascot is-side', {}, `<img src="${assetHref('/assets/ikabu/mascot/yatta.webp')}" alt="" /><b>${t(lang, TX.msg.goalNow)}</b>`);
+    }
     el.flash.disabled = !full || busy;
     el.flash.textContent = targeting ? t(lang, TX.btn.cancel) : t(lang, TX.btn.flash);
     el.hint.disabled = busy || g.over;
@@ -110,6 +190,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const seed = mode === 'daily' ? utcDay() : `free-${Date.now()}`;
     g = createGame({ seed });
     recorded = false;
+    goalSaid = false;
     busy = false; targeting = false;
     el.board.classList.remove('is-targeting');
     setSelected(null);
@@ -156,13 +237,28 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     for (let k = 0; k < steps.length; k++) {
       const st = steps[k];
       const chain = st.kind === 'match' ? st.chain : 0;
-      if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
-      else if (st.kind === 'flash') callout(t(lang, TX.msg.flash), 'flash');
-      else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 3 ? 'big' : 'chain');
+      const combo = (st.fx ?? []).find((f) => f.type === 'combo');
+      if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, TX.msg.flash), 'flash'); }
+      else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
+      else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
+      else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
-      // 消える
-      for (const i of st.cleared) cells[i].classList.add('is-clear');
-      await sleep(dur(260));
+      // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
+      for (const f of st.fx ?? []) {
+        if (f.type === 'line') { sweep(f); sfx.line(); }
+        else if (f.type === 'bomb') { ring(f); sfx.bomb(); }
+        else if (f.type === 'ball') { rays(f); sfx.ball(); }
+      }
+      // 消える：墨で塗られて、ぷるんと弾ける。墨フラッシュは順番に「ぽ・ぽ・ぽ」
+      const seq = st.kind === 'flash';
+      if (!seq) sfx.pop(Math.max(1, st.chain ?? 1));
+      st.cleared.forEach((i, k) => {
+        const delay = seq ? k * 45 : 0;
+        splat(i, delay);
+        if (seq) setTimeout(() => sfx.popSeq(k), delay);
+        if (delay) setTimeout(() => cells[i].classList.add('is-clear'), delay); else cells[i].classList.add('is-clear');
+      });
+      await sleep(dur(seq ? 300 + st.cleared.length * 45 : 300));
       for (const i of st.cleared) cells[i].classList.remove('is-clear');
       // 落ちる距離：消したあとの列を下に詰めた結果が st.board。生き残りは元の行との差、新しいマークは上から
       const after = [...shown];
@@ -177,12 +273,33 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       }
       renderBoard(st.board);
       for (const c of st.created) cells[c.at].classList.add('is-born');
-      if (st.created.length) callout(t(lang, TX.msg.rare), 'rare');
+      if (st.created.length) {
+        const k = st.created[0].kind;
+        callout(t(lang, k === RARE ? TX.msg.rare : k === BALL ? TX.panel.ballBorn : TX.panel.lineBorn), 'rare');
+        sfx.born();
+      }
       const anims = [];
       if (!reduced) {
         for (let i = 0; i < N; i++) {
           if (!drops[i]) continue;
-          anims.push(cells[i].animate([{ transform: `translateY(${-drops[i] * 100}%)` }, { transform: 'translateY(0)' }], { duration: 120 + drops[i] * 60, easing: 'cubic-bezier(0.3, 0.8, 0.4, 1.05)' }).finished);
+          // 落ちて、着地でつぶれて「ぶるん」と揺れて戻る（グミのように。2026-09-27 ぱっぱ）
+          const fall = 150 + drops[i] * 70;
+          const total = fall + 320;
+          const k = fall / total;
+          anims.push(cells[i].animate([
+            { transform: `translateY(${-drops[i] * 108}%) scale(0.96, 1.06)`, offset: 0 },
+            { transform: 'translateY(0) scale(1.14, 0.84)', offset: k },
+            { transform: 'translateY(-4%) scale(0.92, 1.08)', offset: k + (1 - k) * 0.35 },
+            { transform: 'translateY(0) scale(1.05, 0.96)', offset: k + (1 - k) * 0.65 },
+            { transform: 'translateY(0) scale(1, 1)', offset: 1 },
+          ], { duration: total, easing: 'ease-in', composite: 'replace' }).finished);
+          // 真下の動かなかったコマに、着地の揺れが伝わる
+          const below = i + SIZE;
+          if (below < N && !drops[below] && rowOf(i) === rowOf(below) - 1) {
+            cells[below].animate([
+              { transform: 'scale(1,1)' }, { transform: 'scale(1.08, 0.9)', offset: 0.35 }, { transform: 'scale(0.97, 1.03)', offset: 0.7 }, { transform: 'scale(1,1)' },
+            ], { duration: 300, delay: fall, easing: 'ease-out' });
+          }
         }
       }
       g.score; // 段ごとに点を足して見せる
@@ -208,6 +325,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const r = swap(g, a, b);
     if (!r.ok) {
       await animSwap(a, b, true);
+      sfx.nope();
       await shake(a, b);
       setMsg(t(lang, TX.msg.nomatch));
       busy = false;
@@ -248,6 +366,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const R = TX.result;
     const reached = g.score >= GOAL;
     el.card.innerHTML = `
+      <img class="ika-m3-card-mascot" src="${assetHref(`/assets/ikabu/mascot/${reached ? 'yatta' : 'sad'}.webp`)}" alt="" width="96" height="100" />
       <p class="ika-m3-card-title">${t(lang, R.title)}</p>
       <p class="ika-m3-card-score"><b>${g.score.toLocaleString()}</b><span class="ika-tag ${reached ? 'ika-tag--orange' : ''}">${reached ? t(lang, R.reached) : `${t(lang, R.missed)} ${(GOAL - g.score).toLocaleString()}`}</span></p>
       <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.maxChain)}</dt><dd>${g.maxChain}</dd></div><div><dt>${t(lang, R.flashes)}</dt><dd>${g.flashes}</dd></div><div><dt>${t(lang, TX.hud.best)}</dt><dd>${rec.best.toLocaleString()}</dd></div></dl>
@@ -379,10 +498,11 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 起動：コマの絵を先に読んでから盤面を出す（ポップインしないように。2秒で諦めて出す） ---------- */
   async function preloadTiles() {
-    const jobs = [0, 1, 2, 3, 4, RARE].map((k) => new Promise((res) => {
+    const srcs = [...[0, 1, 2, 3, 4, RARE].map((k) => tileSrc(k, 128)), '/assets/ikabu/tiles/ball_128.webp', '/assets/ikabu/mascot/squirt.webp'];
+    const jobs = srcs.map((src) => new Promise((res) => {
       const im = new Image();
       im.onload = im.onerror = () => res();
-      im.src = assetHref(tileSrc(k, 128));
+      im.src = assetHref(src);
     }));
     await Promise.race([Promise.all(jobs), sleep(2000)]);
   }
@@ -393,5 +513,5 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (demo) runDemo(demo);
   });
 
-  return { get game() { return g; }, newGame, trySwap, useFlash };
+  return { get game() { return g; }, newGame, trySwap, useFlash, ...(import.meta.env.DEV ? { repaint: () => renderBoard(g.board) } : {}) };   // repaint：開発時だけ（盤面を書き換えて撮る）
 }

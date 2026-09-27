@@ -461,6 +461,7 @@ const m3HTML = (lang) => {
             </div>
             <button type="button" class="ika-btn ika-btn--ink ika-m3-flash" id="ika-m3-flash" disabled>${t(lang, T.btn.flash)}</button>
             <button type="button" class="ika-btn ika-m3-hint" id="ika-m3-hint">${t(lang, T.btn.hint)}</button>
+            <button type="button" class="ika-btn ika-m3-sound" id="ika-m3-sound" aria-pressed="true" aria-label="${t(lang, T.btn.soundOff)}">🔊</button>
           </div>
           <p class="ika-m3-msg" id="ika-m3-msg" role="status" aria-live="polite"></p>
         </div>

@@ -4,7 +4,19 @@ import { seeded } from './rng.js';
 
 export const SIZE = 6;
 export const KINDS = 5; // いかり・太陽・波・星・貝
-export const RARE = 9; // 黒いレアイカ（4つ以上そろえると生まれる）
+export const RARE = 9; // 黒いレアイカ（L字・T字にそろえると生まれる。動かすとまわり3×3が消える）
+// スペシャルパネル（2026-09-27 ぱっぱ：一直線に消すパネル・スペシャル同士のコンボ）
+//   よこライン＝10+色（4つ横一列で生まれる。消えると横一列を消す）、たてライン＝20+色（4つ縦一列）。色はふつうのイカと同じにそろう
+//   墨ダマ＝BALL（5つ一直線で生まれる。入れ替えた相手と同じ色を全部消す）
+export const LINE_H = 10;
+export const LINE_V = 20;
+export const BALL = 30;
+export const lineH = (color) => LINE_H + color;
+export const lineV = (color) => LINE_V + color;
+// そろえる時の色（ふつう0〜4・ラインはその色・レアイカと墨ダマは色なし＝null）
+export const colorOf = (v) => (Number.isInteger(v) && v >= 0 && v < KINDS ? v : Number.isInteger(v) && v >= LINE_H && v < LINE_V + KINDS && v % 10 < KINDS ? v % 10 : null);
+export const isLine = (v) => Number.isInteger(v) && v >= LINE_H && v < LINE_V + KINDS;
+export const isSpecial = (v) => v === RARE || v === BALL || isLine(v);
 export const MOVES = 20;
 export const INK_NEED = 36; // 墨フラッシュに必要な、消した数
 export const POINT = 10; // 1匹あたりの基本点（連鎖の段目を掛ける）
@@ -13,7 +25,7 @@ export const GOAL = 1500;
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
 const colOf = (i) => i % SIZE;
-const isNormal = (v) => Number.isInteger(v) && v >= 0 && v < KINDS;
+const isNormal = (v) => colorOf(v) !== null;   // そろえられる（ふつうのイカとライン）
 export const adjacent = (a, b) =>
   a !== b && a >= 0 && b >= 0 && a < N && b < N &&
   ((rowOf(a) === rowOf(b) && Math.abs(a - b) === 1) || (colOf(a) === colOf(b) && Math.abs(a - b) === SIZE));
@@ -25,7 +37,7 @@ export function findMatches(b) {
     let run = [start];
     for (let k = 1; k <= count; k++) {
       const i = start + step * k;
-      const same = k < count && isNormal(b[i]) && b[i] === b[run[0]];
+      const same = k < count && isNormal(b[i]) && colorOf(b[i]) === colorOf(b[run[0]]);
       if (same) {
         run.push(i);
       } else {
@@ -39,10 +51,18 @@ export function findMatches(b) {
   return groups;
 }
 
-// 入れ替えてみて、そろうか（またはレアイカを動かすか）を調べる。盤面は変えない
+// そろいを向きつきで返す：[{ cells, dir: 'h'|'v', color }]
+export function findRuns(b) {
+  const runs = [];
+  for (const grp of findMatches(b)) runs.push({ cells: grp, dir: grp.length > 1 && grp[1] - grp[0] === 1 ? 'h' : 'v', color: colorOf(b[grp[0]]) });
+  return runs;
+}
+
+// 入れ替えてみて、そろうか（またはレアイカ・墨ダマを動かすか、スペシャル同士か）を調べる。盤面は変えない
 function swapWorks(b, a, c) {
   if (!adjacent(a, c)) return false;
-  if (b[a] === RARE || b[c] === RARE) return true;
+  if (b[a] === RARE || b[c] === RARE || b[a] === BALL || b[c] === BALL) return true;
+  if (isSpecial(b[a]) && isSpecial(b[c])) return true;
   const t = [...b];
   [t[a], t[c]] = [t[c], t[a]];
   return findMatches(t).length > 0;
@@ -93,10 +113,12 @@ export function createGame({ seed = String(Date.now()) } = {}) {
   return { board: freshBoard(rand), rand, moves: MOVES, score: 0, charge: 0, flashes: 0, maxChain: 0, cleared: 0, over: false };
 }
 
-const blastCells = (center) => {
+const rowCells = (i) => Array.from({ length: SIZE }, (_, c) => rowOf(i) * SIZE + c);
+const colCells = (i) => Array.from({ length: SIZE }, (_, r) => r * SIZE + colOf(i));
+const blastCells = (center, R = 1) => {
   const out = [];
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
+  for (let dr = -R; dr <= R; dr++)
+    for (let dc = -R; dc <= R; dc++) {
       const r = rowOf(center) + dr;
       const c = colOf(center) + dc;
       if (r >= 0 && r < SIZE && c >= 0 && c < SIZE) out.push(r * SIZE + c);
@@ -118,8 +140,35 @@ function dropAndFill(g) {
   }
 }
 
+// 盤面でいちばん多い色（墨ダマが巻き込まれた時・レアイカと入れ替えた時に使う）
+function commonColor(b) {
+  const n = new Array(KINDS).fill(0);
+  for (const v of b) { const c = colorOf(v); if (c !== null) n[c] += 1; }
+  return n.indexOf(Math.max(...n));
+}
+const colorCells = (b, color) => b.map((v, i) => (colorOf(v) === color ? i : -1)).filter((i) => i >= 0);
+// 消す範囲にスペシャルパネルが入っていたら、それも発動させて範囲を広げる（連鎖）。fx＝演出の記録（ライン・爆発・墨ダマ）
+function expand(b, cells, fx, fired = new Set()) {
+  const set = new Set(cells);
+  const queue = [...set];
+  while (queue.length) {
+    const i = queue.shift();
+    const v = b[i];
+    if (!isSpecial(v) || fired.has(i)) continue;
+    fired.add(i);
+    let add = [];
+    if (isLine(v) && v < LINE_V) { add = rowCells(i); fx.push({ type: 'line', dir: 'h', at: i }); }
+    else if (isLine(v)) { add = colCells(i); fx.push({ type: 'line', dir: 'v', at: i }); }
+    else if (v === RARE) { add = blastCells(i); fx.push({ type: 'bomb', at: i, r: 1 }); }
+    else if (v === BALL) { const color = commonColor(b); add = colorCells(b, color); fx.push({ type: 'ball', at: i, color, cells: add }); }
+    for (const j of add) if (!set.has(j)) { set.add(j); queue.push(j); }
+  }
+  return [...set];
+}
+
 // 1段分を消して記録する
-function clearStep(g, kind, cells, chain, created = []) {
+function clearStep(g, kind, cells0, chain, created = [], fx = []) {
+  const cells = expand(g.board, cells0, fx);
   const set = new Set(cells);
   for (const c of created) set.delete(c.at);
   const cleared = [...set].sort((a, b) => a - b);
@@ -131,26 +180,19 @@ function clearStep(g, kind, cells, chain, created = []) {
   // 墨フラッシュで消した分は墨に戻さない（連続で撃てないように）
   if (kind !== 'flash') g.charge = Math.min(INK_NEED, g.charge + cleared.length);
   dropAndFill(g);
-  return { kind, cleared, created, points, chain, board: [...g.board] };
+  return { kind, cleared, created, points, chain, fx, board: [...g.board] };
 }
 
 // そろいが無くなるまで連鎖させる。first は最初の段（爆発・墨フラッシュ）で、無ければそろいから始める
 function cascade(g, first, prefer = []) {
   const steps = [];
-  if (first) steps.push(clearStep(g, first.kind, first.cells, 1));
+  if (first) steps.push(clearStep(g, first.kind, first.cells, 1, [], first.fx ?? []));
   for (;;) {
-    const groups = findMatches(g.board);
-    if (!groups.length) break;
+    const runs = findRuns(g.board);
+    if (!runs.length) break;
     const chain = steps.length + 1;
-    const cells = groups.flat();
-    // 4つ以上のまとまりからは、レアイカを1匹生む（入れ替えたマスが含まれていればそこに）
-    const created = [];
-    for (const grp of groups) {
-      if (grp.length < 4) continue;
-      const at = grp.find((i) => prefer.includes(i)) ?? grp[Math.floor(grp.length / 2)];
-      if (!created.some((c) => c.at === at)) created.push({ at, kind: RARE });
-    }
-    steps.push(clearStep(g, 'match', cells, chain, created));
+    const cells = runs.flatMap((r) => r.cells);
+    steps.push(clearStep(g, 'match', cells, chain, createdFor(runs, prefer)));
     prefer = [];
   }
   g.maxChain = Math.max(g.maxChain, steps.length);
@@ -162,13 +204,91 @@ function cascade(g, first, prefer = []) {
   return { ok: true, steps, maxChain: steps.length, shuffled };
 }
 
+// そろいから生まれるパネル。入れ替えたマス（prefer）が含まれていればそこに、無ければまとまりの真ん中に
+//   同じ色の横と縦のそろいが交わる（L字・T字）→ レアイカ／5つ以上一直線 → 墨ダマ／4つ一直線 → ライン（横なら横一列を消す）
+export function createdFor(runs, prefer = []) {
+  const created = [];
+  const used = new Set();
+  const put = (cells, kind) => {
+    const at = cells.find((i) => prefer.includes(i)) ?? cells[Math.floor(cells.length / 2)];
+    if (created.some((c) => c.at === at)) return;
+    created.push({ at, kind });
+  };
+  runs.forEach((h, x) => {
+    if (h.dir !== 'h') return;
+    runs.forEach((v, y) => {
+      if (v.dir !== 'v' || v.color !== h.color || used.has(x) || used.has(y)) return;
+      const cross = h.cells.find((i) => v.cells.includes(i));
+      if (cross == null) return;
+      used.add(x); used.add(y);
+      created.push({ at: cross, kind: RARE });
+    });
+  });
+  runs.forEach((r, x) => {
+    if (used.has(x)) return;
+    if (r.cells.length >= 5) put(r.cells, BALL);
+    else if (r.cells.length === 4) put(r.cells, r.dir === 'h' ? lineH(r.color) : lineV(r.color));
+  });
+  return created;
+}
+
+// 入れ替えた2マスがスペシャルの時の、最初の段（コンボ技）。b はもう入れ替えた後の盤面、a→b へ動かした
+function specialFirst(board, a, b) {
+  const A = board[a], B = board[b];
+  const fx = [];
+  const both = isSpecial(A) && isSpecial(B);
+  if (A === BALL && B === BALL) { fx.push({ type: 'combo', name: 'ballball', at: b }); return { kind: 'combo', cells: board.map((_, i) => i), fx }; }
+  if (A === BALL || B === BALL) {
+    const ball = A === BALL ? a : b;
+    const other = A === BALL ? b : a;
+    const ov = board[other];
+    if (ov === RARE) {
+      const color = commonColor(board);
+      fx.push({ type: 'combo', name: 'ballrare', at: other }, { type: 'ball', at: ball, color, cells: colorCells(board, color) });
+      return { kind: 'combo', cells: [ball, ...colorCells(board, color), ...blastCells(other)], fx };
+    }
+    const color = colorOf(ov);
+    const targets = colorCells(board, color);
+    if (isLine(ov)) {
+      // 墨ダマ＋ライン：その色がぜんぶラインに変わって一斉に発動
+      for (const i of targets) board[i] = ov < LINE_V ? lineH(color) : lineV(color);
+      fx.push({ type: 'combo', name: 'ballline', at: other });
+    }
+    fx.push({ type: 'ball', at: ball, color, cells: targets });
+    return { kind: both ? 'combo' : 'ball', cells: [ball, ...targets], fx };
+  }
+  if (both) {
+    // ライン＋ライン＝十字／ライン＋レアイカ＝太い十字（3行・3列）／レアイカ＋レアイカ＝5×5
+    const lines = [A, B].filter(isLine).length;
+    const at = b;
+    if (lines === 2) { fx.push({ type: 'combo', name: 'cross', at }, { type: 'line', dir: 'h', at }, { type: 'line', dir: 'v', at }); return { kind: 'combo', cells: [a, ...rowCells(at), ...colCells(at)], fx, fired: [a, b] }; }
+    if (lines === 1) {
+      const cells = [a];
+      for (let d = -1; d <= 1; d++) {
+        const r = rowOf(at) + d, c = colOf(at) + d;
+        if (r >= 0 && r < SIZE) cells.push(...rowCells(r * SIZE));
+        if (c >= 0 && c < SIZE) cells.push(...colCells(c));
+      }
+      fx.push({ type: 'combo', name: 'bigcross', at });
+      return { kind: 'combo', cells, fx, fired: [a, b] };
+    }
+    fx.push({ type: 'combo', name: 'bigbomb', at }, { type: 'bomb', at, r: 2 });
+    return { kind: 'combo', cells: [a, ...blastCells(at, 2)], fx, fired: [a, b] };
+  }
+  const rares = [a, b].filter((i) => board[i] === RARE);
+  if (rares.length) return { kind: 'blast', cells: rares.flatMap((i) => blastCells(i)), fx: [] };
+  return null;
+}
+
 export function swap(g, a, b) {
   if (g.over || !adjacent(a, b) || !swapWorks(g.board, a, b)) return { ok: false, steps: [] };
   [g.board[a], g.board[b]] = [g.board[b], g.board[a]];
-  let first = null;
-  const rares = [a, b].filter((i) => g.board[i] === RARE);
-  if (rares.length) first = { kind: 'blast', cells: [...new Set(rares.flatMap(blastCells))] };
-  const res = cascade(g, first, [a, b]);
+  const first = specialFirst(g.board, a, b);
+  if (first?.fired) {
+    // コンボに使った2つは、その場で発動済み（範囲の中でもう一度起動しない）
+    for (const i of first.fired) g.board[i] = colorOf(g.board[i]) ?? 0;
+  }
+  const res = cascade(g, first ? { kind: first.kind, cells: [...new Set(first.cells)], fx: first.fx } : null, [a, b]);
   g.moves -= 1;
   if (g.moves <= 0) g.over = true;
   return res;
@@ -178,7 +298,8 @@ export function swap(g, a, b) {
 export function inkFlash(g, idx) {
   if (g.over || g.charge < INK_NEED || idx < 0 || idx >= N) return { ok: false, steps: [] };
   const kind = g.board[idx];
-  const cells = kind === RARE ? blastCells(idx) : g.board.map((v, i) => (v === kind ? i : -1)).filter((i) => i >= 0);
+  const color = colorOf(kind);
+  const cells = color === null ? [idx] : colorCells(g.board, color);   // スペシャル（レアイカ・墨ダマ）を選んだら、その場で発動
   g.charge = 0;
   g.flashes += 1;
   return cascade(g, { kind: 'flash', cells });

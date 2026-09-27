@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createGame, findMatches, swap, findHint, hasMove, inkFlash, SIZE, RARE, MOVES, INK_NEED, POINT,
+  BALL, lineH, lineV, createdFor, colorOf,
 } from '../src/js/ikabu/games/match3.js';
 
 // 盤面を文字で書いて作る（0〜4 = 通常のマーク、R = 黒いレアイカ）。
@@ -76,13 +77,13 @@ test('そろう入れ替えで消え、点が入り、手数が1減り、盤面�
   assert.ok(g.charge > 0, '消した数だけ墨がたまる');
 });
 
-test('4つ以上そろえると黒いレアイカが1匹生まれる', () => {
+test('4つ一直線にそろえると「ライン」が生まれる（横に並べたら、横一列を消すライン）', () => {
   const g = createGame({ seed: 'four' });
   g.board = board(['003041', '230412', '341203', '412324', '124130', '241301']);
   // 0行2列の 3 と 1行2列の 0 を入れ替えると 0行目が 0,0,0,0 になる
   const r = swap(g, 2, 8);
   assert.equal(r.ok, true);
-  assert.ok(r.steps[0].created.some((c) => c.kind === RARE), 'レアイカが生まれた記録');
+  assert.ok(r.steps[0].created.some((c) => c.kind === lineH(0)), 'よこラインが生まれた記録');
 });
 
 test('レアイカは入れ替えるだけで使え、移った先のまわり9マスが消える', () => {
@@ -147,4 +148,85 @@ test('連鎖するほど1匹あたりの点が上がる（段目 × 基本点）
     assert.equal(r.maxChain, r.steps.length);
   }
   assert.ok(seen > 0, '連鎖の起きる盤面が見つからなかった');
+});
+
+/* ---------- スペシャルパネル（2026-09-27） ---------- */
+const runOf = (cells, dir, color) => ({ cells, dir, color });
+
+test('生まれるパネル：L字・T字＝レアイカ／5つ一直線＝墨ダマ／4つ縦一列＝たてライン', () => {
+  // L字：横 0,1,2 と縦 2,8,14（同じ色）→ 交わる2にレアイカ
+  assert.deepEqual(createdFor([runOf([0, 1, 2], 'h', 1), runOf([2, 8, 14], 'v', 1)]), [{ at: 2, kind: RARE }]);
+  assert.deepEqual(createdFor([runOf([6, 7, 8, 9, 10], 'h', 2)], [9]), [{ at: 9, kind: BALL }]);
+  assert.deepEqual(createdFor([runOf([3, 9, 15, 21], 'v', 4)], [15]), [{ at: 15, kind: lineV(4) }]);
+  assert.deepEqual(createdFor([runOf([0, 1, 2], 'h', 1)]), []);
+});
+
+test('ラインはふつうのイカと同じ色としてそろう。消えると一列ぜんぶ消える', () => {
+  assert.equal(colorOf(lineH(3)), 3);
+  assert.equal(colorOf(lineV(0)), 0);
+  assert.equal(colorOf(RARE), null);
+  const g = createGame({ seed: 'line' });
+  const b = board(['012340', '123401', '234012', '340123', '401234', '012340']);
+  // 1列目を 4(0行)・2(1行)・よこライン色2(2行) にして、0行1列と0行2列(2)を入れ替えると、縦に 2,2,ライン2 がそろう
+  b[1] = 4; b[7] = 2; b[13] = lineH(2);
+  g.board = b;
+  const r = swap(g, 1, 2);
+  assert.equal(r.ok, true);
+  const first = new Set(r.steps[0].cleared);
+  assert.ok(first.has(13), 'ラインもそろいに入る');
+  for (const i of [12, 13, 14, 15, 16, 17]) assert.ok(first.has(i), `${i} が消える（2行目ぜんぶ）`);
+  assert.ok(r.steps[0].fx.some((f) => f.type === 'line' && f.dir === 'h'));
+});
+
+test('スペシャル同士を入れ替えるとコンボ技：ライン＋ライン＝十字、レアイカ＋レアイカ＝5×5', () => {
+  const g = createGame({ seed: 'combo' });
+  const b = board(['012340', '123401', '234012', '340123', '401234', '012340']);
+  b[14] = lineH(1); b[15] = lineV(3);
+  g.board = [...b];
+  const r = swap(g, 14, 15);
+  assert.equal(r.ok, true);
+  const first = new Set(r.steps[0].cleared);
+  for (let c = 0; c < SIZE; c++) assert.ok(first.has(12 + c), '2行目ぜんぶ');
+  for (let r0 = 0; r0 < SIZE; r0++) assert.ok(first.has(r0 * SIZE + 3), '3列目ぜんぶ');
+  assert.ok(r.steps[0].fx.some((f) => f.type === 'combo' && f.name === 'cross'));
+  const h = createGame({ seed: 'combo2' });
+  const c2 = [...b]; c2[14] = RARE; c2[15] = RARE;
+  h.board = c2;
+  const r2 = swap(h, 14, 15);
+  const f2 = new Set(r2.steps[0].cleared);
+  for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
+    const rr = 2 + dr, cc = 3 + dc;
+    if (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE) assert.ok(f2.has(rr * SIZE + cc), `${rr},${cc}`);
+  }
+});
+
+test('墨ダマは入れ替えた相手と同じ色を全部消す。墨ダマ＋ラインは、その色がぜんぶラインになって発動', () => {
+  const g = createGame({ seed: 'ball' });
+  const b = board(['012340', '123401', '234012', '340123', '401234', '012340']);
+  b[14] = BALL;
+  g.board = [...b];
+  const color = b[15];
+  const targets = b.map((v, i) => (colorOf(v) === color ? i : -1)).filter((i) => i >= 0);
+  const r = swap(g, 14, 15);
+  assert.equal(r.ok, true);
+  const first = new Set(r.steps[0].cleared);
+  for (const i of targets) assert.ok(first.has(i));
+  const h = createGame({ seed: 'ball2' });
+  const c2 = [...b]; c2[15] = lineH(c2[15]);
+  h.board = c2;
+  const r2 = swap(h, 14, 15);
+  assert.ok(r2.steps[0].fx.some((f) => f.name === 'ballline'));
+  assert.ok(r2.steps[0].fx.filter((f) => f.type === 'line').length >= 3, 'その色のラインがいくつも発動');
+});
+
+test('消える範囲に別のスペシャルがあると、それも発動する（連鎖）', () => {
+  const g = createGame({ seed: 'chainfx' });
+  const b = board(['012340', '1R3401', '234012', '340123', '401234', '012340']);
+  b[8] = lineV(3);   // レアイカ（7）の爆発の範囲に、たてライン
+  g.board = [...b];
+  const r = swap(g, 7, 13);   // レアイカを下へ動かして爆発（範囲に 8 のたてラインが入る）
+  const first = new Set(r.steps[0].cleared);
+  assert.ok(r.steps[0].fx.some((f) => f.type === 'bomb'));
+  assert.ok(first.has(8), '爆発の範囲にたてラインが入る');
+  for (let r0 = 0; r0 < SIZE; r0++) assert.ok(first.has(r0 * SIZE + 2), '2列目ぜんぶ（巻き込まれたたてライン）');
 });
