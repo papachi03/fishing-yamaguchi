@@ -1985,19 +1985,22 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   輪は糸の向きに合わせて回し、腕は重さで下へぶら下がる（届くとイカの下に針が入る）
     if (!sc.yaenNode) {
       sc.yaenNode = svgEl('g', { class: 'ika-eg-yaen', opacity: '0' });
+      // 写真のとおり細い1本の針金（2026-09-28 ぱっぱ：太すぎる。写真に忠実に）：
+      //   糸を通す小さな輪2つ ＋ 先端の短い曲げ（輪の側）／長い腕 ＋ 腕の下の端に、横へ出た短い掛け針3本
+      const WIRE = { fill: 'none', stroke: '#16233a', 'stroke-width': '1.7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
       const body = svgEl('g', {});
-      const arm = 'M0,0 L-9,32';
-      const hooks = [[-9, 32], [-7.6, 27], [-6.2, 22]].map(([x, y]) => `M${x},${y} l1.2,4.6 q1.4,3.2 4.2,0.8 l-0.2,-3.2`).join(' ');
+      const arm = 'M0,0 L-5,46';
+      const hooks = [[-3.4, 32], [-4.2, 39], [-5, 46]].map(([x, y]) => `M${x},${y} l4.2,2.2 q2.4,1.4 3,-1.2 l-0.6,-1.6`).join(' ');
       body.append(
-        svgEl('path', { d: arm, fill: 'none', stroke: '#16233a', 'stroke-width': '4.4', 'stroke-linecap': 'round' }),
-        svgEl('path', { d: arm, fill: 'none', stroke: '#dfe7ee', 'stroke-width': '2.2', 'stroke-linecap': 'round' }),
-        svgEl('path', { d: hooks, fill: 'none', stroke: '#16233a', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+        svgEl('path', { d: arm, ...WIRE }),
+        svgEl('path', { d: arm, fill: 'none', stroke: '#c9d4dc', 'stroke-width': '0.6', 'stroke-linecap': 'round' }),
+        svgEl('path', { d: hooks, ...WIRE }),
       );
       const rings = svgEl('g', {});
       rings.append(
-        svgEl('circle', { cx: '0', cy: '0', r: '3.2', fill: 'none', stroke: '#16233a', 'stroke-width': '1.8' }),
-        svgEl('circle', { cx: '0', cy: '-8', r: '2.6', fill: 'none', stroke: '#16233a', 'stroke-width': '1.8' }),
-        svgEl('path', { d: 'M0,-8 L0,0 M0,-11 L4,-15', fill: 'none', stroke: '#16233a', 'stroke-width': '2', 'stroke-linecap': 'round' }),   // 輪をつなぐ針金と、前の曲げ
+        svgEl('circle', { cx: '0', cy: '0', r: '2.1', ...WIRE }),
+        svgEl('circle', { cx: '0', cy: '-7', r: '2.1', ...WIRE }),
+        svgEl('path', { d: 'M0,-7 L0,0 M0,-9 L0,-15 L-7,-15 L-7,-12.5', ...WIRE }),   // 輪をつなぐ針金と、先端の短い曲げ
       );
       const inner = svgEl('g', {});
       inner.append(body, rings);
@@ -2018,7 +2021,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       sc.yaenRings.setAttribute('transform', `rotate(${f1((Math.atan2(dy, dx) * 180) / Math.PI - 90)})`);   // 輪は糸の向き（前の曲げは竿の側）
       // 竿先で糸に掛けた瞬間：ぽんと大きく出てから落ち着く（どこに入れたか分かるように）
       const pop = V.yaenAt != null ? clamp((now - V.yaenAt) / 0.35, 0, 1) : 1;
-      sc.yaenInner.setAttribute('transform', `scale(${(1.25 + (1 - pop) * 0.6).toFixed(2)})`);
+      sc.yaenInner.setAttribute('transform', `scale(${(1.1 + (1 - pop) * 0.6).toFixed(2)})`);
       sc.yaenNode.setAttribute('opacity', '1');
     } else sc.yaenNode.setAttribute('opacity', '0');
     sc.line.setAttribute('stroke-width', (2 + 1.2 * taut).toFixed(1));
