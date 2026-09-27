@@ -126,7 +126,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 動く部品（1回だけ作り、舞台を作り直したときは付け直す）
     if (!sc.nodes) sc.nodes = makeNodes();
     const n = sc.nodes;
-    sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.egiWater, n.hugWater, n.jet, n.fx);
+    sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
     paintEgi();
     updateBottom(bottom);
@@ -140,6 +140,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       escape: mk('ika-eg-escape'),
       ink: svgEl('g', { class: 'ika-eg-ink', opacity: '0' }),
       ghost: mk('ika-eg-ghost'),
+      punchSquid: mk('ika-eg-punchsquid'),   // イカパンチで突っ込んでくるイカの影（2026-09-27 ぱっぱ：パンチの動きが見えないと伝わらない）
       egiWater: mk('ika-eg-egi'), egiAir: mk('ika-eg-egi'),
       hugWater: mk('ika-eg-hug'), hugAir: mk('ika-eg-hug'),
       jet: svgEl('ellipse', { class: 'ika-eg-jet', fill: '#dff6f8', opacity: '0' }),
@@ -152,7 +153,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.jetCore = svgEl('path', { fill: 'none', stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0' });
     n.bubbles = Array.from({ length: 18 }, () => svgEl('circle', { r: '2', fill: 'none', stroke: 'rgba(230,250,252,0.85)', 'stroke-width': '1.2', opacity: '0' }));
     n.punchRing = svgEl('ellipse', { fill: 'none', stroke: 'rgba(230,250,252,0.9)', 'stroke-width': '2', opacity: '0' });
-    n.punchArms = [0, 1, 2].map(() => svgEl('path', { fill: 'none', stroke: 'rgba(12,30,40,0.75)', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0' }));
+    n.punchArms = [0, 1, 2].map(() => svgEl('path', { fill: 'none', stroke: 'rgba(10,28,36,0.92)', 'stroke-width': '8', 'stroke-linecap': 'round', opacity: '0' }));
     n.fx.append(n.jetStreak, n.jetCore, n.punchRing, ...n.punchArms, ...n.bubbles);
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
@@ -1292,8 +1293,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         // イカパンチ：足で叩かれてエギが横へ弾かれ、向きがぶれる（0.35秒）
         const pk = V.punchAt != null ? (now - V.punchAt) / 0.35 : 9;
         if (pk < 1 && !reduced) {
-          V.egi.x += 8 * Math.sin(Math.PI * pk) * (pk < 0.5 ? 1 : -0.5);
-          V.egi.ang += 20 * Math.sin(2 * Math.PI * pk) * (1 - pk);
+          V.egi.x -= 22 * Math.sin(Math.PI * pk) * (pk < 0.5 ? 1 : -0.4);   // 沖側から叩かれるので手前へ弾かれる
+          V.egi.ang += 38 * Math.sin(2 * Math.PI * pk) * (1 - pk);
         }
       }
       taut = jerkFresh ? 1 : phase === 'sinking' ? 0.45 : s.tensionFall ? 0.95 : 0.3;
@@ -1462,13 +1463,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       n.jetCore.setAttribute('opacity', (0.8 * a).toFixed(2));
     } else { n.jetStreak.setAttribute('opacity', '0'); n.jetCore.setAttribute('opacity', '0'); }
     // イカパンチ：エギのまわりに水の輪が広がり、沖側からイカの足の影が一瞬のびて叩く
+    // イカパンチの影：沖側から突っ込み（0〜0.25）、叩いて（〜0.45）、離れていく（〜1）。0.75秒
+    const pq = V.punchAt != null ? (now - V.punchAt) / 0.75 : 9;
+    if (pq < 1 && !reduced) {
+      if (!n.punchSquid.firstChild) n.punchSquid.append(swimmingSquid({ species: 'default', len: 64, colors: SHADOW }));
+      const lunge = pq < 0.25 ? pq / 0.25 : pq < 0.45 ? 1 : 1 - (pq - 0.45) / 0.55;
+      const ease = 1 - (1 - lunge) * (1 - lunge);
+      const px = V.egi.x + 150 - 96 * ease, py = V.egi.y + 8;
+      const op = Math.min(1, pq * 8) * (pq < 0.8 ? 0.95 : 0.95 * (1 - pq) / 0.2);
+      setAttrs(n.punchSquid, { transform: `translate(${f1(px)} ${f1(py)}) rotate(${f1(angleOf(1, 0))})`, opacity: op.toFixed(2) });
+    } else n.punchSquid.setAttribute('opacity', '0');
     const pp = V.punchAt != null ? (now - V.punchAt) / 0.45 : 9;
     if (pp < 1 && !reduced) {
       setAttrs(n.punchRing, { cx: f1(V.egi.x), cy: f1(V.egi.y + 10), rx: f1(8 + 26 * pp), ry: f1(4 + 10 * pp), opacity: (0.9 * (1 - pp)).toFixed(2) });
       const reach = Math.sin(Math.PI * Math.min(1, pp * 1.6));
       n.punchArms.forEach((arm, i) => {
-        const sx = V.egi.x + 34 + i * 5, sy = V.egi.y + 4 + (i - 1) * 7;
-        const ex = V.egi.x + 34 - 30 * reach, ey = V.egi.y + 10 + (i - 1) * 4;
+        const sx = V.egi.x + 58 + i * 4, sy = V.egi.y + 6 + (i - 1) * 8;   // 影の頭（突っ込んだ位置）から
+        const ex = V.egi.x + 56 - 50 * reach, ey = V.egi.y + 8 + (i - 1) * 5;
         arm.setAttribute('d', `M${f1(sx)},${f1(sy)} Q${f1((sx + ex) / 2)},${f1(sy - 8 + i * 4)} ${f1(ex)},${f1(ey)}`);
         arm.setAttribute('opacity', (0.8 * reach).toFixed(2));
       });
@@ -1682,6 +1693,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     get state() { return s; },
     press: doPress, release: doRelease,
     settings, newGame,
+    // 開発時だけ：トレーラー撮影から「出来事→見た目」を呼ぶ口（ikabu-research/trailer）。本番ビルドには入らない
+    ...(import.meta.env.DEV ? { fire: (evs) => onEvents(evs) } : {}),
   };
 }
 
