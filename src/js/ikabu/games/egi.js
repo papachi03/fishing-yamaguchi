@@ -306,6 +306,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     signaled: false, // この投げでアタリがあったか
     punchPending: false, // パンチの後、まだ「待った／すぐしゃくった」が決まっていない
     squid: 0,
+    weed: null, // この投げの藻場 { kind, from, to, height }（m）
+    weedSeen: false,
     phase: 'ready',
     t: 0,
     casts: CASTS,
@@ -447,6 +449,8 @@ export function release(s) {
     s.dist = s.castDist;
     s.depth = 0;
     s.bottom = 5 + Math.round(s.rand() * 5);
+    s.weed = makeWeed(s);
+    s.weedSeen = false;
     s.bottomFor = 0;
     s.interest = 0.15;
     s.jerks = [];
@@ -461,8 +465,14 @@ export function release(s) {
     s.signaled = false;
     if (s.rotated) { s.interest += ROTATE_GAIN; s.rotated = false; emit(s, 'rotation', {}); }
     s.squid = sampleSquid(s);
+    // 藻場がある投げは、近くにいるイカが多い（産卵・隠れ家に集まる）。イカがいない投げでも寄ってくることがあるが、
+    // その確率は日の良し悪し（期待値）に比例させて、悪い日は救わない
+    if (s.weed) {
+      if (s.squid > 0) { if (s.rand() < 0.6) s.squid += 1; }
+      else if (s.rand() < 0.5 * (s.cond.expectation / 10) ** 2) s.squid = 1;   // 期待値2で2%、7で25%、10で50%
+    }
     s.phase = 'sinking';
-    emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec });
+    emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec, weed: s.weed });
   }
 }
 
@@ -488,7 +498,9 @@ function judgeRhythm(s) {
 // 底にいると根掛かりすることがある（ディープほど掛かりやすい）
 function onBottom(s, dt) {
   s.bottomFor += dt;
-  if (!s.easy && s.bottomFor > 1.5 && s.rand() < 0.12 * TYPE_SNAG[s.spec.type] * dt) {   // 初心者練習は根掛かりしない
+  // 岩場の藻場のまわりの底は根が多い（1.5倍）
+  const rocky = overWeed(s) && WEEDS[s.weed.kind].rocky ? 1.5 : 1;
+  if (!s.easy && s.bottomFor > 1.5 && s.rand() < 0.12 * TYPE_SNAG[s.spec.type] * rocky * dt) {   // 初心者練習は根掛かりしない
     s.egi -= 1;
     emit(s, 'snag', { egiLeft: s.egi });
     endCast(s, 'snag');
@@ -503,6 +515,49 @@ function onBottom(s, dt) {
 //   手前の駆け上がり（残り8m以内）で抱きやすい
 export const LIFT_WINDOW = 1.5;
 export const SLOPE_DIST = 8;
+
+// 藻場（2026-09-27、ぱっぱ：アマモなどの藻にイカは産卵する。近くで誘うと抱きやすいが、藻に掛かるのでシビア）
+// 1投ごとに WEED_CHANCE の確率で、投げた距離の 55〜95% のあたり（着水点のまわり）に幅5〜8mの藻場ができる。
+// height＝海底からの藻の高さ（m）。エギがその高さより下に入ると藻に掛かることがある（エギは減らない。その1投はおしまい）。
+// rocky＝岩場の藻（まわりの底で根掛かりもしやすい）。boost＝エギが藻場の上にある時の抱く勢い（春・初夏／それ以外）
+export const WEED_CHANCE = 0.6;
+export const WEEDS = {
+  amamo: { height: 1.2, rocky: false, boost: [3.0, 2.2] },       // アマモ：砂地。春の産卵場所の代表
+  hondawara: { height: 2.0, rocky: true, boost: [2.4, 2.2] },    // ホンダワラ類：岩場。背が高く一番シビア
+  umitoranoo: { height: 0.8, rocky: true, boost: [2.4, 2.0] },   // ウミトラノオ・ウミゾウメン：岩場。低く扱いやすい
+};
+export const WEED_SNAG = 0.45;   // 藻の高さより下にいる時、1秒あたり藻に掛かる確率（タイプで増減）
+export const overWeed = (s) => Boolean(s.weed) && s.dist >= s.weed.from && s.dist <= s.weed.to;
+// イカは藻場の「まわり」に集まる：前後 WEED_NEAR m まで抱きやすい（真上は藻に掛かる危険もある）
+export const WEED_NEAR = 3;
+export const nearWeed = (s) => Boolean(s.weed) && s.dist >= s.weed.from - WEED_NEAR && s.dist <= s.weed.to + WEED_NEAR;
+export const weedBoost = (s) => {
+  if (!nearWeed(s)) return 1;
+  const w = WEEDS[s.weed.kind];
+  const sp = seasonOf(s.month);
+  return sp === 'spring' || sp === 'earlySummer' ? w.boost[0] : w.boost[1];
+};
+function makeWeed(s) {
+  if (s.rand() >= WEED_CHANCE || s.castDist < 10) return null;
+  const kinds = Object.keys(WEEDS);
+  const kind = kinds[Math.floor(s.rand() * kinds.length)];
+  const width = 5 + s.rand() * 3;
+  const from = Math.max(3, s.castDist * (0.55 + s.rand() * 0.4) - width / 2);   // 着水点のまわり（手前すぎるとエギが寄る前に1投が終わる）
+  return { kind, from: Math.round(from * 10) / 10, to: Math.round((from + width) * 10) / 10, height: WEEDS[kind].height };
+}
+// 藻場の上に入った合図（1投に1回）と、藻に掛かる判定。掛かったら true
+function checkWeed(s, dt) {
+  if (!s.weed) return false;
+  const over = overWeed(s);
+  if (over && !s.weedSeen) { s.weedSeen = true; emit(s, 'weedOver', { kind: s.weed.kind }); }
+  if (!over || s.easy || s.depth < s.bottom - s.weed.height) return false;
+  if (s.rand() < WEED_SNAG * TYPE_SNAG[s.spec.type] * dt) {
+    emit(s, 'weed', { kind: s.weed.kind });
+    endCast(s, 'weed');
+    return true;
+  }
+  return false;
+}
 export function contactWeights(s) {
   const frac = s.bottom > 0 ? Math.min(1, s.depth / s.bottom) : 0;
   const lifting = s.t - s.liftAt < LIFT_WINDOW;
@@ -539,6 +594,7 @@ export function tick(s, dt) {
     }
     case 'sinking': {
       s.depth = Math.min(s.bottom, s.depth + sinkRate(s.spec) * dt);
+      if (checkWeed(s, dt)) break;
       if (s.depth >= s.bottom) onBottom(s, dt);
       break;
     }
@@ -553,7 +609,8 @@ export function tick(s, dt) {
       if (s.depth < s.bottom) {
         s.depth = Math.min(s.bottom, s.depth + fall * dt);
         if (s.tensionFall) s.dist = Math.max(0, s.dist - 0.35 * dt);
-      } else if (onBottom(s, dt)) break;
+        if (checkWeed(s, dt)) break;
+      } else if (checkWeed(s, dt) || onBottom(s, dt)) break;
       if (!s.judged && since >= 2) judgeRhythm(s);
       if (since > 9) s.interest = Math.max(0, s.interest - 0.1 * dt);
       // 棚が合わない所に居続けると、寄っていたイカが離れていく
@@ -602,7 +659,7 @@ export function tick(s, dt) {
         // 渋い日は長いテンションフォールが効き、やる気のある日は速いフリーフォールでも抱く
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
         const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM)
-          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1);
+          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1) * weedBoost(s);
         if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
           s.punchAt = s.t;
           s.punchPending = true;

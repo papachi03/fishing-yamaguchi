@@ -63,6 +63,40 @@ export function rocksSVG(bottom, W, seedish = 0) {
   }).join('');
 }
 
+// 藻場の絵（2026-09-27）。weed＝{ kind, from, to, height }、X＝距離(m)→横の位置。揺れは CSS（.ika-eg-weed-blade）
+const WEED_COLORS = { amamo: ['#6cc06a', '#46a052'], hondawara: ['#7a6a2a', '#5a4d1c'], umitoranoo: ['#6d9a3c', '#4f7a2a'] };
+export function weedSVG(weed, bottom, X) {
+  if (!weed) return '';
+  const yb = depthY(bottom);
+  const h = depthY(bottom) - depthY(bottom - weed.height);   // 藻の高さ（px）
+  const x0 = Math.min(X(weed.from), X(weed.to));
+  const x1 = Math.max(X(weed.from), X(weed.to));
+  const [c, dark] = WEED_COLORS[weed.kind] ?? WEED_COLORS.amamo;
+  const n = Math.max(4, Math.round((x1 - x0) / (weed.kind === 'amamo' ? 8 : 12)));   // アマモは密に
+  const blades = [];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + ((x1 - x0) * (i + 0.5)) / n;
+    const hh = h * (0.75 + 0.25 * Math.abs(Math.sin(i * 2.3)));
+    const sw = (i % 2 ? 1 : -1) * 6;
+    let d;
+    if (weed.kind === 'amamo') {
+      d = `<path d="M${f1(x)},${f1(yb)} Q${f1(x + sw)},${f1(yb - hh * 0.5)} ${f1(x - sw * 0.6)},${f1(yb - hh)}" fill="none" stroke="${i % 3 ? c : dark}" stroke-width="4.5" stroke-linecap="round"/>`;
+    } else if (weed.kind === 'hondawara') {
+      const br = [0.35, 0.55, 0.75].map((k) => `<path d="M${f1(x)},${f1(yb - hh * k)} l${f1(sw * 1.3)},${f1(-hh * 0.12)}" stroke="${c}" stroke-width="2" stroke-linecap="round"/><circle cx="${f1(x + sw * 1.3)}" cy="${f1(yb - hh * k - hh * 0.12)}" r="2.2" fill="${dark}"/>`).join('');
+      d = `<path d="M${f1(x)},${f1(yb)} L${f1(x + sw * 0.4)},${f1(yb - hh)}" stroke="${dark}" stroke-width="2.6" stroke-linecap="round"/>${br}`;
+    } else {
+      const fr = [0.3, 0.5, 0.7, 0.88].map((k) => `<path d="M${f1(x)},${f1(yb - hh * k)} l-5,-4 M${f1(x)},${f1(yb - hh * k)} l5,-4" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`).join('');
+      d = `<path d="M${f1(x)},${f1(yb)} L${f1(x)},${f1(yb - hh)}" stroke="${dark}" stroke-width="2.2" stroke-linecap="round"/>${fr}`;
+    }
+    blades.push(`<g class="ika-eg-weed-blade" style="animation-delay:${(-(i % 5) * 0.6).toFixed(1)}s">${d}</g>`);
+  }
+  const rocks = WEEDS_ROCKY[weed.kind]
+    ? `<path d="M${f1(x0 - 10)},${f1(yb + 4)} Q${f1(x0 + (x1 - x0) * 0.3)},${f1(yb - 12)} ${f1((x0 + x1) / 2)},${f1(yb - 8)} Q${f1(x1 - (x1 - x0) * 0.2)},${f1(yb - 14)} ${f1(x1 + 10)},${f1(yb + 4)} Z" fill="#1d3d4a" stroke="#0b2a33" stroke-width="2.5"/>`
+    : '';
+  return `<g class="ika-eg-weed" data-kind="${weed.kind}">${rocks}${blades.join('')}</g>`;
+}
+const WEEDS_ROCKY = { hondawara: true, umitoranoo: true };
+
 // 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）
 export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom = 8, assetHref = (p) => p } = {}) {
   const P = PALETTE[tod] ?? PALETTE.evening;

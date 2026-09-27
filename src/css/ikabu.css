@@ -2164,3 +2164,8 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-egi-guide { position: absolute; z-index: 2; left: 50%; top: 40%; transform: translateX(-50%); width: max-content; max-width: 90%; margin: 0; padding: 6px 14px; border: 3px solid #1d6b3d; border-radius: 14px; background: #e9f7ee; color: #0b2a2f; box-shadow: 3px 3px 0 #2e9e5b; font-family: var(--font-maru); font-weight: 900; font-size: 16px; line-height: 1.35; text-align: center; pointer-events: none; }
 .ika-egi-guide[hidden] { display: none; }
 @media (max-width: 760px) { .ika-egi-guide { font-size: 13.5px; padding: 5px 10px; } }
+
+/* 藻場（2026-09-27）：藻がゆらゆら揺れる */
+.ika-eg-weed-blade { transform-box: fill-box; transform-origin: 50% 100%; animation: ika-weed-sway 3s ease-in-out infinite alternate; }
+@keyframes ika-weed-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .ika-eg-weed-blade { animation: none; } }

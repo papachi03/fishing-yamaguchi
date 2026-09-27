@@ -14,7 +14,7 @@ import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
-import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, depthY, distX } from './egi-scene.js';
+import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX } from './egi-scene.js';
 import { svgEl, egiShape, huggingSquid, swimmingSquid, ART, speciesColors } from '../squid-art.js';
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
@@ -167,7 +167,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // 海底：投げるたびに深さが変わる
   function updateBottom(bottom) {
-    sc.bottomG.innerHTML = `<path class="ika-eg-seabed" d="${seabedD(bottom, W, s?.casts ?? 0)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W, s?.casts ?? 0)}`;
+    sc.bottomG.innerHTML = `<path class="ika-eg-seabed" d="${seabedD(bottom, W, s?.casts ?? 0)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W, s?.casts ?? 0)}${s?.phase !== 'ready' ? weedSVG(s?.weed, bottom, X) : ''}`;
   }
   // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す。
   // 驚き重視（ぱっぱ 2026-09-25）：正体が分かるまでは全種同じ形（大きさだけ違う）、分かったらその種の形・色・目印
@@ -673,6 +673,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'punch-wait':
           if (cue() === 'easy') callout(t(lang, TX.msg.punchWait), 'good');
           break;
+        case 'weedOver':
+          callout(t(lang, TX.msg.weedOver[e.kind]), 'good', 3500);
+          break;
+        case 'weed':
+          V.egi.mode = 'stuck';
+          V.snagAt = now;
+          callout(t(lang, TX.msg.weed), 'bad');
+          break;
         case 'snag':
           V.egi.mode = 'stuck';
           V.snagAt = now;
@@ -765,7 +773,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         ${z ? `<p class="ika-egi-card-tip"><b>${t(lang, TX.zukan.point)}</b> ${t(lang, z.point)}</p>` : ''}
         ${solo ? '' : `<p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`}`;
     } else {
-      const note = { snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
+      const note = { weed: T.weedNote, snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
     // シェア（2026-09-27）：釣れた時だけ。知り合い用のエギング単体ページには出さない

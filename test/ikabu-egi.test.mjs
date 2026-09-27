@@ -480,3 +480,44 @@ test('🔰初心者練習：初心者の動きでも秋は8割以上の釣行で
   assert.ok(easy >= 0.8, `初心者練習 ${easy}`);
   assert.ok(normal < 0.25, `季節モード ${normal}`);
 });
+
+// 藻場（2026-09-27）
+import { WEEDS, WEED_CHANCE, weedBoost, nearWeed } from '../src/js/ikabu/games/egi.js';
+
+const castOnce = (seed, { easy = false, month = 10 } = {}) => {
+  const s = createEgi({ seed, month, tod: 'evening', conditions: { expectation: 7 }, easy });
+  press(s); run(s, 0.8); release(s);
+  return s;
+};
+
+test('藻場：だいたい6割の投げに出て、3種類とも出る。場所は着水点のまわり', () => {
+  const casts = Array.from({ length: 400 }, (_, i) => castOnce('w' + i));
+  const withWeed = casts.filter((s) => s.weed);
+  const share = withWeed.length / casts.length;
+  assert.ok(Math.abs(share - WEED_CHANCE) < 0.12, `藻場の出る割合 ${share}`);
+  for (const k of Object.keys(WEEDS)) assert.ok(withWeed.some((s) => s.weed.kind === k), `${k} が出ない`);
+  for (const s of withWeed) assert.ok(s.weed.from >= 3 && s.weed.from <= s.castDist && s.weed.to <= s.castDist + 8, `${s.weed.from}-${s.weed.to} / ${s.castDist}`);
+});
+
+test('藻場のまわりは抱きやすい（春のアマモが一番）。離れていると効かない', () => {
+  const s = castOnce('boost', { month: 5 });
+  s.weed = { kind: 'amamo', from: 10, to: 16, height: 1.2 };
+  s.dist = 12; assert.equal(weedBoost(s), 3.0);
+  s.dist = 18; assert.ok(nearWeed(s)); assert.equal(weedBoost(s), 3.0);
+  s.dist = 25; assert.equal(weedBoost(s), 1);
+  s.month = 10; s.dist = 12; assert.equal(weedBoost(s), 2.2);
+});
+
+test('藻に掛かるとその1投はおしまい、エギは減らない。🔰初心者練習は藻に掛からない', () => {
+  const s = castOnce('tangle');
+  s.weed = { kind: 'hondawara', from: 0, to: 99, height: 2.0 };
+  const egiBefore = s.egi;
+  let tangled = false;
+  for (let i = 0; i < 2000 && s.phase === 'sinking'; i++) { tick(s, 0.05); if (s.events.some((e) => e.type === 'weed')) tangled = true; }
+  assert.ok(tangled, '藻に掛からなかった');
+  assert.equal(s.last, 'weed');
+  assert.equal(s.egi, egiBefore);
+  const e = castOnce('tangle', { easy: true });
+  e.weed = { kind: 'hondawara', from: 0, to: 99, height: 2.0 };
+  for (let i = 0; i < 400 && e.phase === 'sinking'; i++) { tick(e, 0.05); assert.ok(!e.events.some((x) => x.type === 'weed')); }
+});

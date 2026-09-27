@@ -191,6 +191,12 @@ export const EGI_TEXT = {
     landed: pair('ゲット！', 'Landed!'),
     ink: pair('ぷしゅっ', 'Squirt!'),
     snag: pair('根掛かり！エギを1本ロスト', 'Snagged! Lost an egi'),
+    weed: pair('藻が絡んだ…（エギは回収）', 'Tangled in weed… (egi recovered)'),
+    weedOver: {
+      amamo: pair('アマモの藻場！ イカが集まる。藻に掛けないように', 'Eelgrass bed! Squid gather here. Keep above the weed'),
+      hondawara: pair('ホンダワラの藻場！ 背が高いので高めに通そう', 'Sargassum bed! It grows tall, so stay high'),
+      umitoranoo: pair('ウミトラノオの藻場！ 低めの藻。底まで落とさなければ大丈夫', 'Low weed bed! Fine as long as you stay off the bottom'),
+    },
     recover: pair('回収。次はもう少し沖で', 'Retrieved. Try a longer cast'),
     noSign: pair('この投げは気配なし… 投げる場所や時間を変えるのも手', 'No sign of squid on that cast… try another spot or time'),
     squidLeft: (lang, n) => (lang === 'en' ? `The squid moved off… (maybe ${n} more around)` : `イカが離れていった…（あと${n}匹いるかも）`),
@@ -209,6 +215,7 @@ export const EGI_TEXT = {
   result: {
     landed: pair('釣れた！', 'Caught!'),
     snag: pair('根掛かり', 'Snagged'),
+    weed: pair('藻に掛かった', 'Tangled in weed'),
     break: pair('身切れ', 'Tore out'),
     unhooked: pair('バレ', 'Slipped off'),
     recover: pair('回収', 'Retrieved'),
@@ -216,6 +223,7 @@ export const EGI_TEXT = {
     weight: pair('重さ', 'Weight'),
     atlas: pair('図鑑で見る →', 'See it in the atlas →'),
     snagNote: pair('根掛かりは底にいる時だけ。着底したら早めにしゃくろう。', 'Snags only happen on the bottom. Jerk soon after touchdown.'),
+    weedNote: pair('藻場はイカが抱きやすいけど、藻の中に落とすと絡む。藻の上をテンションフォールでゆっくり通そう（エギは回収できた）。', 'Weed beds draw squid, but dropping into the weed tangles you. Glide over it with a tension fall (you got the egi back).'),
     breakNote: pair('テンションの上限で身切れ。赤い帯に入る前にゆるめよう。', 'Max tension tears the hook out. Ease off before the red band.'),
     unhookedNote: pair('ゆるめっぱなしはバレる。ゼロに落ちる前に巻こう。', 'Constant slack lets it off. Reel before the gauge hits zero.'),
     recoverNote: pair('手前まで来た。飛距離が出ると、フォールの回数が増える。', 'Back at the pier. A longer cast means more falls.'),
@@ -248,6 +256,9 @@ export const EGI_TEXT = {
     reelTitle: pair('③ 巻く時はゲージを見る', '③ Watch the gauge while reeling'),
     reelBody: pair('押している間だけ巻ける。テンションのゲージが赤くなったら指を離そう。押しっぱなしだと糸が切れる。', 'You reel while holding. When the tension gauge turns red, let go, or the line will snap.'),
     nudge: pair('アタリが来ない？「🔰 コツを見る」をどうぞ', 'No bites? See “🔰 Tips”'),
+    weedTitle: pair('④ 藻場の上はチャンス', '④ Weed beds are a chance'),
+    weedBody: pair('海底に藻場が出たら、その上を通そう。イカは藻に卵を産み、身を隠すので抱きやすい。ただし藻より下に落とすと絡む。<b>アマモ</b>（約1.2m・砂地）、<b>ホンダワラ</b>（約2m・背が高い）、<b>ウミトラノオ</b>（約0.8m・低い）。背の高い藻ほど、エギを高めに通そう。',
+                   'When a weed bed shows on the seabed, pass over it: squid lay eggs and hide there, so they hug more. Drop into the weed and you tangle. <b>Eelgrass</b> (~1.2 m, sand), <b>Sargassum</b> (~2 m, tall), <b>Low weed</b> (~0.8 m). The taller the weed, the higher you keep the egi.'),
   },
   // 🔰初心者練習（2026-09-27）：最初の1投だけ手順を案内する
   guide: {
