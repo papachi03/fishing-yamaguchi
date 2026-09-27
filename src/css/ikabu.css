@@ -1914,6 +1914,11 @@ html.is-egi-rot .ika-egi-main {
   transform-origin: top left; transform: translateX(var(--rot-h, 100vw)) rotate(90deg);
 }
 html.is-egi-rot .ika-egi-fullbtn { top: 8px; left: 8px; }
+/* 横画面モードでは、ページは縦のまま（vw＝縦向きの狭い幅）。画面の幅を基準にした大きさは、回した後の横幅（--rot-w）で計り直す
+   （2026-09-27 ぱっぱ指摘：ボタンで横にした時だけリールのゲージが細くなった） */
+html.is-egi-rot .ika-egi-controls { width: clamp(128px, calc(var(--rot-w, 100vh) * 0.19), 170px); }
+html.is-egi-rot .ika-egi-gauge { width: min(calc(var(--rot-w, 100vh) * 0.44), 380px); }
+html.is-egi-rot .ika-egi-card, html.is-egi-rot .ika-egi-card--over { right: calc(clamp(128px, calc(var(--rot-w, 100vh) * 0.19), 170px) + 24px); }
 /* 全画面の見た目の時の「エギを選ぶ」の窓（2026-09-27）：ページの欄をそのまま移して、画面の上に出す */
 .ika-egi-pickpop { display: none; }
 .is-egi-full .ika-egi-pickpop:not([hidden]) {
