@@ -622,11 +622,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.flash.hidden = true;
           el.cueLabel.hidden = true;
           V.bite = null;
+          // しゃくったら乗ってた（2026-09-27）：離れていくはずだったイカを、エギに抱いた姿に戻す
+          if (e.lucky) { V.escape = null; V.hug.on = true; V.hug.alpha = 1; V.hug.x = V.egi.x; V.hug.y = V.egi.y; V.hug.ang = V.egi.ang; V.hug.t0 = now; }
           setFallMode(null);
           hookDepth = Math.max(0.6, s.depth);
           hookDist = Math.max(s.dist, 1);
           inked = false;
-          callout(t(lang, s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
+          callout(t(lang, e.lucky ? TX.msg.lucky : s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
           feel.fire('hook', { heavy: V.heavy });
           break;
         case 'miss':

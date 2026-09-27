@@ -586,3 +586,44 @@ test('ラストチャンス：もう釣れている釣行では、アタリの�
   for (let k = 0; k < CASTS; k++) { const ev = idleCast(e); if (ev.some((x) => x.type === 'bonus')) seen = true; }
   assert.equal(seen, false);
 });
+
+// しゃくったら乗ってた（2026-09-27、YAMASHITA 川上さんのエギングレッスンより）
+import { LUCKY_WINDOW, LUCKY_CHANCE } from '../src/js/ikabu/games/egi.js';
+
+// アタリを出して、何もせず離されるまで待つ
+function letGoOnce(seed) {
+  const s = createEgi({ seed, month: 10, tod: 'evening', conditions: { expectation: 9 } });
+  press(s); run(s, 0.8); release(s);
+  run(s, 2);
+  s.squid = 2; s.interest = 1;
+  for (let k = 0; k < 40 && s.phase !== 'signal'; k++) { press(s); for (let t = 0; t < 3 && s.phase === 'action'; t += 0.05) tick(s, 0.05); if (s.pressing) release(s); }
+  if (s.phase !== 'signal') return null;
+  let ev = [];
+  for (let t = 0; t < 5 && s.phase === 'signal'; t += 0.05) { tick(s, 0.05); ev.push(...s.events); }
+  return ev.some((e) => e.type === 'let-go') ? s : null;
+}
+
+test('しゃくったら乗ってた：離された直後のしゃくりで、ときどき乗る。時間が過ぎたら乗らない', () => {
+  let tried = 0, lucky = 0, lateLucky = 0;
+  for (let i = 0; i < 200 && tried < 60; i++) {
+    const s = letGoOnce('lucky' + i);
+    if (!s) continue;
+    tried += 1;
+    // 直後（0.5秒後）にしゃくる
+    run(s, 0.5); press(s);
+    if (s.events.some((e) => e.type === 'hook' && e.lucky)) { lucky += 1; assert.equal(s.phase, 'fight'); assert.ok(s.hooking); }
+    release(s);
+  }
+  for (let i = 0; i < 200; i++) {
+    const s = letGoOnce('late' + i);
+    if (!s) continue;
+    s.squid = 0;   // 待つ間に次のアタリが出て、それを見送った直後になるのを防ぐ
+    run(s, LUCKY_WINDOW + 0.3); press(s);
+    if (s.events.some((e) => e.type === 'hook' && e.lucky)) lateLucky += 1;
+    release(s);
+  }
+  assert.ok(tried >= 30, `試せた数 ${tried}`);
+  const share = lucky / tried;
+  assert.ok(Math.abs(share - LUCKY_CHANCE) < 0.2, `乗った割合 ${share}`);
+  assert.equal(lateLucky, 0);
+});

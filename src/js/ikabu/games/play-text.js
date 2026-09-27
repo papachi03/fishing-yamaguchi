@@ -187,6 +187,7 @@ export const EGI_TEXT = {
     bottom: pair('着底！根掛かりに注意', 'On the bottom. Watch for snags'),
     signal: pair('ラインが走った！', 'The line jumped!'),
     hook: pair('乗った！', 'Hooked!'),
+    lucky: pair('しゃくったら乗ってた！', 'It was on when you jerked!'),
     heavy: pair('重い…！', 'Heavy…!'),
     bossHook: pair('な、なんだこの重さは…！？', 'What… what is this weight…!?'),
     bossReveal: (lang, name) => (lang === 'en' ? `BOSS! ${name}!!` : `ボス級！${name}だ！！`),
@@ -265,6 +266,10 @@ export const EGI_TEXT = {
     reelTitle: pair('③ 巻く時はゲージを見る', '③ Watch the gauge while reeling'),
     reelBody: pair('押している間だけ巻ける。テンションのゲージが赤くなったら指を離そう。押しっぱなしだと糸が切れる。', 'You reel while holding. When the tension gauge turns red, let go, or the line will snap.'),
     nudge: pair('アタリが来ない？「🔰 コツを見る」をどうぞ', 'No bites? See “🔰 Tips”'),
+    // ⑤（2026-09-27、YAMASHITA 川上さんのエギングレッスン「アタリ完全解説」より）
+    tempoTitle: pair('⑤ 「いつもと違う」に合わせる', '⑤ Strike at “something’s different”'),
+    tempoBody: pair('アタリが無い時の<b>いつものテンポ</b>を覚えておこう。しゃくってから着底までのカウント、糸がすーっと沈んでいく速さ。<b>着底より早く糸が止まった</b>、<b>急に速く出ていった</b>、<b>張っていた糸がふっと緩んだ</b>……「あれ？」と思ったらアワセてみよう。外れても、次のしゃくりで乗っていることもある。',
+                    'Learn the <b>usual rhythm</b> when nothing bites: the count from jerk to bottom and how fast the line sinks. If the <b>line stops before the bottom</b>, <b>suddenly speeds up</b>, or <b>goes slack</b>, set the hook. Even if you miss, it may be on at your next jerk.'),
     weedTitle: pair('④ 藻場の上はチャンス', '④ Weed beds are a chance'),
     weedBody: pair('海底に藻場が出たら、その上を通そう。イカは藻に卵を産み、身を隠すので抱きやすい。ただし藻より下に落とすと絡む。<b>アマモ</b>（約1.2m・砂地）、<b>ホンダワラ</b>（約2m・背が高い）、<b>ウミトラノオ</b>（約0.8m・低い）。背の高い藻ほど、エギを高めに通そう。',
                    'When a weed bed shows on the seabed, pass over it: squid lay eggs and hide there, so they hug more. Drop into the weed and you tangle. <b>Eelgrass</b> (~1.2 m, sand), <b>Sargassum</b> (~2 m, tall), <b>Low weed</b> (~0.8 m). The taller the weed, the higher you keep the egi.'),

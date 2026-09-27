@@ -20,6 +20,10 @@ export const CASTS = 5; // 1回の釣行で投げられる回数
 export const LAST_BOOST = 1.8;
 export const LAST_GUARANTEE = 2.5;
 export const RESCUE_AFTER = 2;
+// しゃくったら乗ってた（2026-09-27、YAMASHITA 川上さんのエギングレッスンより：アタリが取れなくても、次のしゃくりで乗っていることがある）
+//   アタリを見送って離された（let-go）あと LUCKY_WINDOW 秒以内にしゃくると、LUCKY_CHANCE の確率でそのイカが乗る
+export const LUCKY_WINDOW = 1.5;
+export const LUCKY_CHANCE = 0.3;
 export const EGI_STOCK = 3; // 根掛かりで失うと減る
 export const SIGNAL_GOOD = 0.7; // 「ラインが走る」アタリで、ちゃんと掛かるまでの猶予（秒）
 export const SIGNAL_LATE = 1.2; // これを過ぎたらイカが離す
@@ -398,6 +402,20 @@ function jerk(s, kind = 'lift') {
   } else {
     s.punchPending = false;
   }
+  // しゃくったら乗ってた：アタリを見送って離された直後のしゃくりで、ときどきそのイカが乗る
+  const lg = s.letGo;
+  s.letGo = null;
+  if (lg && s.t - lg.at <= LUCKY_WINDOW && s.rand() < LUCKY_CHANCE) {
+    s.hooking = lg.hooking;
+    s.phase = 'fight';
+    s.tension = 30;
+    s.slackFor = 0;
+    s.dist = Math.max(s.dist, 3);
+    s.lastJerk = s.t;
+    s.bite = null;
+    emit(s, 'hook', { id: s.hooking.id, late: s.t - lg.at, lucky: true });
+    return;
+  }
   s.lastJerk = s.t;
   s.judged = false;
   s.tensionFall = false;
@@ -480,6 +498,7 @@ export function release(s) {
     s.liftAt = -99;
     s.signaled = false;
     s.reacted = false;
+    s.letGo = null;
     s.bonus = null;
     s.guarantee = false;
     s.guaranteeFall = 0;
@@ -742,6 +761,7 @@ export function tick(s, dt) {
     }
     case 'signal': {
       if (s.t - s.signalAt > s.windows.late) {
+        s.letGo = { at: s.t, hooking: s.hooking };   // しゃくったら乗ってた、のために少しだけ覚えておく
         s.hooking = null;
         s.bite = null;
         s.squid = Math.max(0, s.squid - 1);
