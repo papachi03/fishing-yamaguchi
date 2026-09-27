@@ -305,6 +305,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               <p class="ika-egi-colorpop-why" id="ika-egi-colorpop-why"></p>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
+            <p class="ika-egi-guide" id="ika-egi-guide" hidden aria-live="polite"></p>
             <div class="ika-egi-cue" id="ika-egi-cue-label" hidden aria-hidden="true"></div>
             <div class="ika-egi-flash" id="ika-egi-flash" hidden aria-hidden="true">${t(lang, T.msg.signal)}</div>
             <div class="ika-egi-card" id="ika-egi-card" hidden></div>

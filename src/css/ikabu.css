@@ -2160,3 +2160,7 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
 .ika-egi-callout { max-width: 92%; white-space: normal; text-align: center; width: max-content; }
 /* 🔰手順の案内は舞台の中ほどに（上の「エギをタップで色が選べる」と重ならないように） */
 .ika-egi-callout.is-guide { top: 40%; background: #e9f7ee; border-color: #1d6b3d; box-shadow: 3px 3px 0 #2e9e5b; }
+/* 🔰手順の案内（専用の札。次の手順まで出したまま） */
+.ika-egi-guide { position: absolute; z-index: 2; left: 50%; top: 40%; transform: translateX(-50%); width: max-content; max-width: 90%; margin: 0; padding: 6px 14px; border: 3px solid #1d6b3d; border-radius: 14px; background: #e9f7ee; color: #0b2a2f; box-shadow: 3px 3px 0 #2e9e5b; font-family: var(--font-maru); font-weight: 900; font-size: 16px; line-height: 1.35; text-align: center; pointer-events: none; }
+.ika-egi-guide[hidden] { display: none; }
+@media (max-width: 760px) { .ika-egi-guide { font-size: 13.5px; padding: 5px 10px; } }
