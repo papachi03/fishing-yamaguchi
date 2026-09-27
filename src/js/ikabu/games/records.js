@@ -1,6 +1,7 @@
 // あそび場の記録（このブラウザだけに残る）。localStorage は読めない・書けない環境があるので必ず try/catch で包む。
 // バッジの判定は純粋関数（node --test で試せる）。
 import { GOAL } from './match3.js';
+import { POINTS, catchPoints } from './progress.js';
 
 export const KEY_EGI = 'ikabu.egi.v1';
 export const KEY_M3 = 'ikabu.sumi.v1';
@@ -116,7 +117,8 @@ export function recordM3(rec, g, { day = null, today = new Date().toISOString().
 
 /* ---------- しゃくって抱かせろ！ ---------- */
 
-export const emptyEgi = () => ({ best: 0, sessions: 0, species: {}, bestOne: null });
+// points＝部員レベルの釣りポイント、gedo＝外道の記録（2026-09-27。progress.js）
+export const emptyEgi = () => ({ best: 0, sessions: 0, species: {}, bestOne: null, points: 0, gedo: {} });
 
 const dayOf = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
@@ -124,7 +126,7 @@ const dayOf = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).pad
 // tripTotal＝この釣行でここまでに釣った合計（自己ベストもその場で更新）。初めての種なら fresh=true
 export function recordEgiCatch(rec, c, { counted = true, date = new Date(), tripTotal = c.weight } = {}) {
   const r = rec ?? emptyEgi();
-  if (!counted) return { rec: r, fresh: false };
+  if (!counted) return { rec: r, fresh: false, points: 0 };
   const fresh = !r.species[c.id];
   if (fresh) r.species[c.id] = { count: 0, weight: 0, mantle: 0, first: dayOf(date) };
   const sp = r.species[c.id];
@@ -133,17 +135,33 @@ export function recordEgiCatch(rec, c, { counted = true, date = new Date(), trip
   sp.mantle = Math.max(sp.mantle, c.mantle);
   if (!r.bestOne || c.weight > r.bestOne.weight) r.bestOne = { id: c.id, weight: c.weight, mantle: c.mantle };
   r.best = Math.max(r.best, tripTotal);
-  return { rec: r, fresh };
+  const points = catchPoints(c, { fresh });
+  r.points = (r.points ?? 0) + points;
+  return { rec: r, fresh, points };
+}
+
+// 外道（カサゴ・海藻・長靴など）を1つ記録に足す。図鑑とは別。初めてなら fresh=true
+export function recordGedo(rec, g, { counted = true, date = new Date() } = {}) {
+  const r = rec ?? emptyEgi();
+  if (!counted) return { rec: r, fresh: false, points: 0 };
+  r.gedo = r.gedo ?? {};
+  const fresh = !r.gedo[g.id];
+  if (fresh) r.gedo[g.id] = { count: 0, weight: 0, first: dayOf(date) };
+  r.gedo[g.id].count += 1;
+  r.gedo[g.id].weight = Math.max(r.gedo[g.id].weight, g.weight ?? 0);
+  r.points = (r.points ?? 0) + POINTS.gedo;
+  return { rec: r, fresh, points: POINTS.gedo };
 }
 
 // 釣行を終えた（釣果は1杯ずつ記録済み）：釣行の数と自己ベストだけ
 export function recordEgiTrip(rec, catches, { counted = true } = {}) {
   const r = rec ?? emptyEgi();
   const total = catches.reduce((sum, c) => sum + c.weight, 0);
-  if (!counted) return { rec: r, total, counted: false };
+  if (!counted) return { rec: r, total, counted: false, points: 0 };
   r.sessions += 1;
   r.best = Math.max(r.best, total);
-  return { rec: r, total, counted: true };
+  r.points = (r.points ?? 0) + POINTS.trip;   // 最後まで釣った（ボウズでも）
+  return { rec: r, total, counted: true, points: POINTS.trip };
 }
 
 // 1釣行の結果（catches = [{ id, weight, mantle }]）を記録に足す。初めて釣った種の id を返す。
@@ -202,7 +220,13 @@ const earlier = (a, b) => (!a ? b : !b ? a : a < b ? a : b);
 export function mergeEgi(a, b) {
   const x = a ?? emptyEgi();
   if (!b) return x;
-  const r = { best: Math.max(x.best ?? 0, b.best ?? 0), sessions: Math.max(x.sessions ?? 0, b.sessions ?? 0), species: {}, bestOne: x.bestOne ?? null };
+  const r = { best: Math.max(x.best ?? 0, b.best ?? 0), sessions: Math.max(x.sessions ?? 0, b.sessions ?? 0), species: {}, bestOne: x.bestOne ?? null,
+    points: Math.max(x.points ?? 0, b.points ?? 0), gedo: {} };
+  for (const id of new Set([...Object.keys(x.gedo ?? {}), ...Object.keys(b.gedo ?? {})])) {
+    const p = x.gedo?.[id];
+    const q = b.gedo?.[id];
+    r.gedo[id] = { count: Math.max(p?.count ?? 0, q?.count ?? 0), weight: Math.max(p?.weight ?? 0, q?.weight ?? 0), first: earlier(p?.first, q?.first) };
+  }
   for (const id of new Set([...Object.keys(x.species ?? {}), ...Object.keys(b.species ?? {})])) {
     const p = x.species?.[id];
     const q = b.species?.[id];

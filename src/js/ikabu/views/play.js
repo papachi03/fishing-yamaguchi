@@ -9,6 +9,27 @@ import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
 import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, EGI_COLORS, EGI_COLOR_HEX, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES } from '../games/egi.js';
 import { recommendedSizes, distRank, snagRank } from '../games/egi-advice.js';
+import { METHODS, METHOD_IDS } from '../games/progress.js';
+import { BAITS } from '../games/egi.js';
+
+// 釣り方の選択（2026-09-27）：状態（解放・季節）は画面側（egi-ui.js）が書き込む
+export const methodPickHTML = (lang) => {
+  const T = EGI_TEXT;
+  const chips = METHOD_IDS.map((id) => `<button type="button" class="ika-egi-method-chip" data-method="${id}" aria-pressed="${id === 'egi'}"${id === 'egi' ? '' : ' disabled'}><b>${t(lang, T.method.names[id])}</b><small class="ika-egi-method-state" data-state>${id === 'egi' ? '' : T.method.level(lang, METHODS[id].level)}</small></button>`).join('');
+  const baits = BAITS.map((b) => `<button type="button" class="ika-chip" data-bait="${b}" aria-pressed="${b === 'sasami'}">${t(lang, T.bait.names[b])}</button>`).join('');
+  return `
+    <div class="ika-egi-method" id="ika-egi-method">
+      <span class="ika-egi-setup-label">${t(lang, T.method.title)}</span>
+      <div class="ika-egi-methods" id="ika-egi-methods" role="group" aria-label="${t(lang, T.method.title)}">${chips}</div>
+      <p class="ika-egi-method-about" id="ika-egi-method-about">${t(lang, T.method.about.egi)}</p>
+      <div class="ika-egi-bait" id="ika-egi-bait" hidden>
+        <span class="ika-egi-setup-label">${t(lang, T.bait.title)}</span>
+        <div class="ika-chips ika-chips--small" id="ika-egi-baits" role="group" aria-label="${t(lang, T.bait.title)}">${baits}</div>
+        <p class="ika-egi-cue-note">${t(lang, T.bait.note)}</p>
+      </div>
+      <p class="ika-egi-cue-note">${t(lang, T.method.note)}</p>
+    </div>`;
+};
 import { SIZE, MOVES, GOAL, RARE } from '../games/match3.js';
 
 export const HEAD = {
@@ -191,6 +212,7 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       </details>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
     </div>
+    ${methodPickHTML(lang)}
     <div class="ika-egi-pick" id="ika-egi-pick">${egiPickerHTML(lang, { month, tod })}</div>
     <div class="ika-egi-cue-setting">
       <span class="ika-egi-setup-label">${t(lang, T.cue.title)}</span>
@@ -277,6 +299,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               <div class="ika-egi-stock">
                 <span class="ika-egi-stock-row"><span class="ika-egi-stock-label">${t(lang, T.hud.casts)}</span><span class="ika-egi-casts" id="ika-egi-casts">${castIcons}</span></span>
                 <span class="ika-egi-stock-row"><span class="ika-egi-stock-label">${t(lang, T.hud.egi)}</span><span class="ika-egi-egis" id="ika-egi-egis">${egiIcons}</span><span class="ika-egi-stock-spec" id="ika-egi-spec">${T.egi.current(lang, DEFAULT_EGI.size, t(lang, T.egi.types[DEFAULT_EGI.type]))}</span></span>
+                <span class="ika-egi-stock-row" id="ika-egi-baitrow" hidden><span class="ika-egi-stock-label">${t(lang, T.bait.left)}</span><span class="ika-egi-baitbar" aria-hidden="true"><i id="ika-egi-baitfill"></i></span><span class="ika-egi-stock-spec" id="ika-egi-baitname"></span></span>
               </div>
               <div class="ika-egi-count" id="ika-egi-count" hidden>
                 <span class="ika-egi-count-label" id="ika-egi-count-label">${t(lang, T.hud.count)}</span>
@@ -350,9 +373,20 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             <p class="ika-egi-backup-msg" id="ika-egi-backup-msg" role="status" aria-live="polite"></p>
           </details>
         </section>
+        <section class="ika-egi-gedo" id="ika-egi-gedo" aria-labelledby="ika-egi-gedo-title">
+          <p class="ika-egi-side-head" id="ika-egi-gedo-title">${t(lang, T.gedo.title)} <b id="ika-egi-gedo-count">0</b> / ${Object.keys(T.gedo.names).length}</p>
+          <p class="ika-egi-cue-note">${t(lang, T.gedo.note)}</p>
+          <ul class="ika-egi-gedo-grid" id="ika-egi-gedo-grid"></ul>
+        </section>
         <aside class="ika-egi-side" id="ika-egi-side" aria-label="${t(lang, '記録', 'Records')}">
           <p class="ika-egi-side-head">${t(lang, '今日の釣果', 'This session')}</p>
           <ol class="ika-egi-catches" id="ika-egi-catches"><li class="ika-egi-catch-empty">${t(lang, 'まだ釣れていない', 'Nothing yet')}</li></ol>
+          <div class="ika-egi-level" id="ika-egi-level">
+            <p class="ika-egi-side-head">${t(lang, T.level.title)} <b class="ika-egi-level-num" id="ika-egi-level-num">Lv1</b></p>
+            <span class="ika-egi-level-bar" aria-hidden="true"><i id="ika-egi-level-fill"></i></span>
+            <p class="ika-egi-level-next" id="ika-egi-level-next"></p>
+            <p class="ika-egi-cue-note">${t(lang, T.level.note)}</p>
+          </div>
           <p class="ika-egi-side-head">${t(lang, '記録', 'Records')}</p>
           <dl class="ika-egi-records" id="ika-egi-records">
             <div><dt>${t(lang, T.over.best)}</dt><dd><b data-rec="best">0</b> g</dd></div>

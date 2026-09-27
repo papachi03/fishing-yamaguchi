@@ -22,7 +22,7 @@ export const monthLabel = (lang, m) => (lang === 'en' ? MONTHS_EN[m - 1] : `${m}
 // 図鑑の種名（短い呼び名）。モンゴウイカ（カミナリイカ）→ モンゴウイカ
 export const speciesById = (id) => species.find((s) => s.id === id) ?? null;
 // ゲームだけに出る種（図鑑ページに無いもの）の名前
-const GAME_NAMES = { akaika: pair('アカイカ', 'Neon flying squid'), daiou: pair('ダイオウイカ', 'Giant squid') };
+const GAME_NAMES = { akaika: pair('アカイカ', 'Neon flying squid'), daiou: pair('ダイオウイカ', 'Giant squid'), kasago: pair('カサゴ', 'Scorpionfish') };
 export const speciesName = (lang, id) => {
   if (GAME_NAMES[id]) return t(lang, GAME_NAMES[id]);
   const s = speciesById(id);
@@ -135,8 +135,8 @@ export const EGI_TEXT = {
     easy: pair('やさしい', 'Easy'),
     note: pair('本格：糸と竿先だけで読む。やさしい：アタリの種類を文字で知らせる', 'Real: read the line and rod tip only. Easy: the kind of bite is labelled'),
     punch: pair('イカパンチ！', 'Squid punch!'),
-    kinds: { run: pair('ラインが走った！', 'The line ran!'), tap: pair('竿先にコン！', 'A knock in the tip!'), stop: pair('ラインが止まった！', 'The line stopped!'), slack: pair('ラインがフケた！', 'The line went slack!') },
-    names: { run: pair('走る', 'run'), tap: pair('コン', 'knock'), stop: pair('止まる', 'stop'), slack: pair('フケる', 'slack') },
+    kinds: { run: pair('ラインが走った！', 'The line ran!'), tap: pair('竿先にコン！', 'A knock in the tip!'), stop: pair('ラインが止まった！', 'The line stopped!'), slack: pair('ラインがフケた！', 'The line went slack!'), heavy: pair('ずっしり重い！', 'It feels heavy!') },
+    names: { run: pair('走る', 'run'), tap: pair('コン', 'knock'), stop: pair('止まる', 'stop'), slack: pair('フケる', 'slack'), heavy: pair('ずっしり', 'heavy') },
     lesson: (lang, name) => (lang === 'en' ? `That was a “${name}” bite` : `今のは"${name}"アタリでした`),
     double: pair('2段！', 'Double!'),
     dart: pair('ダート！', 'Dart!'),
@@ -147,7 +147,7 @@ export const EGI_TEXT = {
     sound: pair('小さな音', 'Soft sounds'),
     on: pair('オン', 'On'),
     off: pair('オフ', 'Off'),
-    note: pair('手に伝わるアタリ（パンチ・コン・走る）とジェットで震えます。振動はAndroidなどの対応端末だけ（iPhoneは非対応）。音は控えめで、最初はオフです', 'Vibrates on bites you would feel (punch, knock, run) and on jets. Vibration works on Android and similar phones only (not iPhone). Sounds are quiet and off by default'),
+    note: pair('手に伝わるアタリ（パンチ・コン・走る）とジェットで震えます。振動はAndroidなどの対応端末だけ（iPhoneは非対応）。音は控えめで、最初はオンです（ここでオフにできます）', 'Vibrates on bites you would feel (punch, knock, run) and on jets. Vibration works on Android and similar phones only (not iPhone). Sounds are quiet and on by default (turn them off here)'),
   },
   hint: {
     tooMany: pair('しゃくりすぎ…', 'Too many jerks…'),
@@ -157,6 +157,104 @@ export const EGI_TEXT = {
     calmMany: pair('渋い日は誘いすぎ注意。1〜2回で長めのテンションフォール', 'Do not overwork it today. One or two jerks, then a long tension fall'),
     goodRhythm: pair('いいリズム！', 'Nice rhythm!'),
     oneMore: pair('もう一しゃくり', 'One more jerk'),
+  },
+  // 釣り方・部員レベル・外道（2026-09-27）
+  method: {
+    title: pair('釣り方', 'Method'),
+    names: {
+      egi: pair('エギング', 'Eging'),
+      jado: pair('邪道エギング', 'Bait eging'),
+      yaen: pair('ヤエン', 'Yaen'),
+      tailor: pair('テーラー', 'Tailor'),
+    },
+    level: (lang, n) => (lang === 'en' ? `Lv${n}` : `Lv${n}で解放`),
+    season: {
+      jado: pair('3〜6月', 'Mar–Jun'),
+      yaen: pair('4〜6月', 'Apr–Jun'),
+      tailor: pair('12〜3月', 'Dec–Mar'),
+    },
+    nextSeason: (lang, m) => (lang === 'en' ? `from ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]}` : `${m}月から`),
+    seasonPick: pair('季節モードの春・初夏で', 'in spring / early summer season mode'),
+    soon: pair('準備中', 'Coming soon'),
+    beginner: pair('初心者練習はエギングだけ', 'Beginner practice is eging only'),
+    note: pair('部員レベルが上がると新しい釣り方が解放され、その季節が来たら使えます', 'New methods unlock as your club level rises, and can be used when their season comes'),
+    about: {
+      egi: pair('しゃくって、フォールで抱かせる', 'Jerk, then let it fall for the hug'),
+      jado: pair('エサを背負ったエギで底をズルズル。止めて、ずっしり来たら合わせる。コウイカが主役', 'An egi carrying bait, dragged along the bottom. Stop, and strike when it feels heavy. Cuttlefish are the stars'),
+      yaen: pair('アジを抱かせて待ち、寄せて、ヤエンを送り込む', 'Let a squid take a horse mackerel, wait, draw it in and send the yaen'),
+      tailor: pair('夜の堤防で電気ウキを見張る。冬のヤリイカ', 'Watch the glowing floats on a winter night for spear squid'),
+    },
+    unlocked: (lang, name) => (lang === 'en' ? `New method unlocked: ${name}!` : `新しい釣り方「${name}」が解放された！`),
+    unlockLine: {
+      jado: pair('スーパーのササミでも釣れる。夜は匂いで寄ってくるよ', 'Even supermarket chicken works. At night they come to the smell'),
+      yaen: pair('スーパーのアジで春イカが釣れるって知ってた？', 'Did you know supermarket horse mackerel can catch spring squid?'),
+      tailor: pair('冬の夜、ウキがすーっと沈んだら…', 'On a winter night, when the float slides under…'),
+    },
+    seasonNow: (lang, name, when) => (lang === 'en' ? `${name}: unlocked. Season ${when}` : `${name}は解放済み。季節は${when}`),
+  },
+  bait: {
+    title: pair('エサ', 'Bait'),
+    names: { sasami: pair('ササミ', 'Chicken breast'), kibinago: pair('キビナゴ', 'Silver-stripe herring') },
+    note: pair('どちらでも釣れやすさは同じ。店にある方で', 'Both work the same. Use whichever the shop has'),
+    left: pair('エサ', 'Bait'),
+    rebait: pair('エサを付け直す', 'Re-bait'),
+    rebaited: pair('エサを付け直した', 'Fresh bait on'),
+    stopFor: pair('止めて', 'Paused'),
+    low: pair('エサがくたびれてきた。付け直すと効きが戻る', 'The bait is worn out. Put on fresh bait'),
+  },
+  jado: {
+    waitBottom: pair('着底を待つ', 'Wait for bottom'),
+    drag: pair('ズル引き', 'Drag'),
+    bottom: pair('着底！ 止めて待ってから、ズル引き', 'Bottom! Pause, then drag'),
+    goodDrag: pair('いい間', 'Nice pause'),
+    tooFast: pair('引きっぱなしは逆効果。止めて待とう', 'Constant dragging puts them off. Stop and wait'),
+    kotsu: pair('コツコツ…まだ抱いてない。動かさずに待とう', 'Tap, tap… not holding yet. Keep still'),
+    kotsuWait: pair('いい我慢。抱く気になった', 'Good patience. It wants to hold now'),
+    kotsuSpooked: pair('コツコツの直後に動かした…警戒された', 'You moved right after the taps… it got wary'),
+    kotsuLeft: pair('コツコツの直後に動かした…離れていった', 'You moved right after the taps… it left'),
+    rock: pair('底に岩が多い。根掛かりに注意', 'Rocky bottom. Watch for snags'),
+  },
+  level: {
+    title: pair('部員レベル', 'Club level'),
+    next: (lang, n) => (lang === 'en' ? `${n} pt to next level` : `次のレベルまで ${n}pt`),
+    max: pair('最高レベル', 'Max level'),
+    up: (lang, n) => (lang === 'en' ? `Level up! Lv${n}` : `レベルアップ！ Lv${n}`),
+    gained: (lang, n) => (lang === 'en' ? `+${n} pt` : `＋${n}pt`),
+    note: pair('「今日の萩の海」で釣るとたまります（釣った数・重さ・図鑑の初登録・外道・最後まで釣った釣行）', 'Earned fishing “Today in Hagi” (catches, weight, new atlas entries, by-catch, finished sessions)'),
+  },
+  gedo: {
+    title: pair('外道の記録', 'By-catch log'),
+    note: pair('イカじゃないけど、釣れちゃった物', 'Not squid, but it came up anyway'),
+    unknown: pair('？？？', '???'),
+    count: pair('回数', 'Times'),
+    got: pair('外道！', 'By-catch!'),
+    added: pair('外道の記録に追加', 'Added to the by-catch log'),
+    names: {
+      kasago: pair('カサゴ', 'Scorpionfish'),
+      seaweed: pair('海藻', 'Seaweed'),
+      boot: pair('長靴', 'Old boot'),
+      can: pair('空き缶', 'Empty can'),
+      tako: pair('タコ', 'Octopus'),
+      fugu: pair('フグ', 'Pufferfish'),
+      namako: pair('ナマコ', 'Sea cucumber'),
+    },
+    icon: { kasago: '🐟', seaweed: '🌿', boot: '👢', can: '🥫', tako: '🐙', fugu: '🐡', namako: '🥒' },
+    hint: {
+      kasago: pair('底でじっとしていると…', 'Sit still on the bottom and…'),
+      seaweed: pair('藻に掛かったら、ときどき', 'Sometimes when you snag weed'),
+      boot: pair('根掛かり…？ いや、何か軽い', 'A snag…? No, something lighter'),
+      can: pair('根掛かり…？ いや、何か軽い', 'A snag…? No, something lighter'),
+      tako: pair('ヤエンで（準備中）', 'On yaen (coming soon)'),
+      fugu: pair('テーラーで（準備中）', 'On tailor (coming soon)'),
+      namako: pair('砂の底をズルズル引いていると、ごくまれに', 'Very rarely, dragging over sand'),
+    },
+    line: {
+      kasago: pair('底を引いてたらこうなる。煮付けがうまい', 'Drag the bottom and this happens. Great simmered'),
+      seaweed: pair('イカは藻が好き。つまり、藻も釣れる', 'Squid love weed. So you catch weed too'),
+      boot: pair('片方だけ。持ち主はどこへ…', 'Just the one. Where did the owner go…'),
+      can: pair('海はきれいに。持って帰ろう', 'Keep the sea clean. Take it home'),
+      namako: pair('重い…根掛かり？ と思ったら、ぬるっと上がってきた', 'Heavy… a snag? Then it slid up, slimy'),
+    },
   },
   btn: {
     ready: pair('長押しで投げる', 'Hold to cast'),
@@ -229,6 +327,9 @@ export const EGI_TEXT = {
     break: pair('身切れ', 'Tore out'),
     unhooked: pair('バレ', 'Slipped off'),
     recover: pair('回収', 'Retrieved'),
+    gedo: pair('外道！', 'By-catch!'),
+    junk: pair('根掛かり…じゃなかった', 'Not a snag after all'),
+    junkNote: pair('根掛かりかと思ったら、ゴミが引っかかっていた（エギは無事）。', 'It felt like a snag, but it was rubbish (egi recovered).'),
     mantle: pair('胴長', 'Mantle'),
     weight: pair('重さ', 'Weight'),
     atlas: pair('図鑑で見る →', 'See it in the atlas →'),

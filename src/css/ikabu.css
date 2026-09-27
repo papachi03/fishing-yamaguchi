@@ -1437,6 +1437,45 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-range { width: 150px; accent-color: var(--ika-orange); }
 .ika-egi-range-out { font-family: var(--font-varsity); font-weight: 800; font-size: 16px; color: var(--ika-sea); min-width: 3em; }
 .ika-egi-mode { font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-sea); }
+/* 釣り方・部員レベル・外道の記録（2026-09-27） */
+.ika-egi-method { display: grid; gap: 6px; }
+.ika-egi-methods { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.ika-egi-method-chip { display: grid; gap: 2px; padding: 8px 10px; text-align: left; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 12px; color: var(--ika-ink); cursor: pointer; font: inherit; }
+.ika-egi-method-chip b { font-family: var(--font-maru); font-weight: 900; font-size: 13.5px; }
+.ika-egi-method-state { font-size: 11px; color: var(--ika-ink-soft); min-height: 1.2em; }
+.ika-egi-method-chip[aria-pressed='true'] { background: var(--ika-sea); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-orange); }
+.ika-egi-method-chip[aria-pressed='true'] .ika-egi-method-state { color: #d7ecef; }
+.ika-egi-method-chip[data-st='level'], .ika-egi-method-chip[data-st='soon'] { border-style: dashed; background: var(--ika-mist); color: var(--ika-ink-soft); }
+.ika-egi-method-chip[data-st='level'] b::before { content: '🔒 '; }
+.ika-egi-method-chip[data-st='season'] { border-style: dashed; }
+.ika-egi-method-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.ika-egi-method-about { font-size: 12.5px; line-height: 1.6; color: var(--ika-sea); font-weight: 700; }
+.ika-egi-bait { display: grid; gap: 4px; padding: 8px 10px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; }
+.ika-egi-baitbar { position: relative; width: 56px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.35); overflow: hidden; }
+.ika-egi-baitbar i { position: absolute; inset: 0 auto 0 0; width: 100%; background: #f6dcd3; transition: width 0.3s; }
+.ika-egi-baitbar.is-low i { background: #e2b000; }
+.ika-egi-level { display: grid; gap: 4px; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 2px dashed var(--ika-sea-line); }
+.ika-egi-level-num { font-family: var(--font-varsity); font-weight: 800; font-size: 20px; color: var(--ika-orange-deep); }
+.ika-egi-level-bar { position: relative; display: block; height: 10px; border-radius: 5px; background: var(--ika-mist); border: 2px solid var(--ika-sea); overflow: hidden; }
+.ika-egi-level-bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ika-orange); transition: width 0.6s; }
+.ika-egi-level-next { font-size: 12px; font-weight: 700; color: var(--ika-sea); }
+.ika-egi-over-level { font-weight: 700; color: var(--ika-sea); }
+.ika-egi-gedo { grid-column: 1 / -1; order: 5; display: grid; gap: 8px; padding: 14px 16px; background: var(--ika-white); border: 3px solid var(--ika-sea-line); border-radius: 14px; }
+.ika-egi-gedo .ika-egi-side-head b { font-size: 16px; color: var(--ika-orange-deep); }
+.ika-egi-gedo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ika-egi-gedo-card { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; background: var(--ika-mist); }
+.ika-egi-gedo-card.is-got { border-style: solid; border-color: var(--ika-sea); background: var(--ika-white); }
+.ika-egi-gedo-icon { flex: none; width: 40px; text-align: center; font-size: 28px; line-height: 1; }
+.ika-egi-gedo-icon.is-shadow { font-family: var(--font-maru); font-weight: 900; font-size: 22px; color: var(--ika-sea-line); }
+.ika-egi-gedo-icon.is-big { width: 72px; font-size: 52px; }
+.ika-egi-catches li.is-gedo { color: var(--ika-ink-soft); }
+.ika-egi-gedo-img { display: block; width: 56px; height: 56px; object-fit: contain; }
+.ika-egi-gedo-icon { width: 56px; }
+.ika-egi-gedo-icon.is-big { width: 84px; }
+.ika-egi-gedo-icon.is-big .ika-egi-gedo-img { width: 84px; height: 84px; }
+/* まだ釣っていない外道は影だけ（図鑑と同じ） */
+.ika-egi-gedo-img.is-shadow { filter: brightness(0); opacity: 0.28; }
+.ika-egi-gedo-img.is-mini { display: inline-block; width: 22px; height: 22px; margin-right: 4px; vertical-align: -5px; }
 /* エギ選び */
 .ika-egi-pick { display: grid; gap: 10px; padding: 12px 14px; border: 2px solid var(--ika-sea); border-radius: 12px; background: var(--ika-mist); transition: box-shadow 0.3s; }
 .ika-egi-pick.is-flash { box-shadow: 0 0 0 4px var(--ika-orange); }
@@ -1515,6 +1554,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-reel .ika-egi-count-num small { margin-left: 2px; font-size: 0.55em; }
 /* 長押しで iPhone の拡大鏡・メニュー・文字選択が出ないように（ゲームの操作部分だけ） */
 .ika-egi-stage, .ika-egi-controls, .ika-egi-btn, .ika-egi-dart { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* 邪道エギング（2026-09-27）：ダートは使わないので隠し、ボタンを横いっぱいに */
+.ika-egi-dart[hidden] { display: none; }
+.ika-egi-main-row:has(.ika-egi-dart[hidden]) { grid-template-columns: 1fr; }
 
 .ika-egi-callout {
   position: absolute; z-index: 2; left: 50%; top: 13%;

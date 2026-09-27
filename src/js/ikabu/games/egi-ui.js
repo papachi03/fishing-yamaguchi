@@ -8,6 +8,8 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
+import { rebait, BAITS } from './egi.js';
+import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
@@ -21,6 +23,7 @@ import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightA
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
 import { recommendedSizes } from './egi-advice.js';
+import { recordGedo } from './records.js';
 import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
 import { openShareView, shareButtonHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
@@ -56,6 +59,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
+    methods: q('ika-egi-methods'), methodAbout: q('ika-egi-method-about'), baitBox: q('ika-egi-bait'), baits: q('ika-egi-baits'),
+    baitRow: q('ika-egi-baitrow'), baitFill: q('ika-egi-baitfill'), baitName: q('ika-egi-baitname'),
+    levelNum: q('ika-egi-level-num'), levelFill: q('ika-egi-level-fill'), levelNext: q('ika-egi-level-next'),
+    gedoGrid: q('ika-egi-gedo-grid'), gedoCount: q('ika-egi-gedo-count'),
   };
   const powerFill = el.power.querySelector('.ika-egi-gauge-fill');
   const tensionFill = el.tension.querySelector('.ika-egi-gauge-fill');
@@ -77,14 +84,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.guideTag.hidden = !key;
     if (key) el.guideTag.textContent = t(lang, TX.guide[key]);
   }   // アタリなしが3投続いたら、一度だけ「コツを見る」を勧める   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
-  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real' };
-  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? false });
+  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real',
+    method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
+    bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami' };
+  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true });   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
   // 記録（2026-09-27：控えから戻せる読み書き。釣れた瞬間に1杯ずつ保存）
   const loaded = readRecord(KEY_EGI);
   let rec = { ...emptyEgi(), ...(loaded.value ?? {}) };
   rec.species = rec.species ?? {};
+  rec.gedo = rec.gedo ?? {};
+  rec.points = rec.points ?? 0;
   const canSave = storageWorks();
   let s = null;            // ゲームの状態（egi.js）
   let W = SCENE.W0;        // 舞台の幅（表示領域の比率で決まる）
@@ -137,6 +148,36 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.camShown = null;
     if (s) draw(0);   // 作り直した直後に1回描く（ループが止まっていても竿と糸が出るように）
   }
+  // 邪道エギング（2026-09-27）：エギとスナップのつなぎ目にオモリ、背中にエサ（ぱっぱの写真どおり）
+  function jadoDeco() {
+    const g = svgEl('g', { class: 'ika-eg-jado', style: 'display:none' });
+    const sinker = svgEl('ellipse', { cx: '0', cy: '-6', rx: '3.6', ry: '4.2', fill: '#3b4148', stroke: '#16233a', 'stroke-width': '1.6' });
+    const kibinago = svgEl('g', { class: 'ika-eg-bait-kibinago' });
+    kibinago.append(
+      svgEl('path', { d: 'M5,3 Q10,12 8,24 Q7,28 5,27 Q6,15 3,4 Z', fill: '#d9e2e8', stroke: '#16233a', 'stroke-width': '1.3', 'stroke-linejoin': 'round' }),
+      svgEl('path', { d: 'M6,6 Q9,14 7,24', fill: 'none', stroke: '#5b86b0', 'stroke-width': '1.4', 'stroke-linecap': 'round' }),
+    );
+    const sasami = svgEl('g', { class: 'ika-eg-bait-sasami' });
+    sasami.append(
+      svgEl('path', { d: 'M4,5 Q10,13 7,25 L4,25 Q6,15 2,6 Z', fill: '#f6dcd3', stroke: '#16233a', 'stroke-width': '1.3', 'stroke-linejoin': 'round' }),
+      svgEl('path', { d: 'M2,10 L9,11 M3,18 L9,19', stroke: '#9aa6ad', 'stroke-width': '1', 'stroke-linecap': 'round' }),
+    );
+    g.append(sinker, kibinago, sasami);
+    return g;
+  }
+  function paintJado() {
+    const n = sc?.nodes;
+    if (!n) return;
+    const on = settings.method === 'jado';
+    const bait = s?.bait ?? settings.bait;
+    for (const g of [n.egiWater, n.egiAir]) {
+      const d = g.querySelector('.ika-eg-jado');
+      if (!d) continue;
+      d.style.display = on ? '' : 'none';
+      d.querySelector('.ika-eg-bait-kibinago').style.display = bait === 'kibinago' ? '' : 'none';
+      d.querySelector('.ika-eg-bait-sasami').style.display = bait === 'sasami' ? '' : 'none';
+    }
+  }
   function makeNodes() {
     const mk = (cls) => svgEl('g', { class: cls, opacity: '0' });
     const n = {
@@ -161,6 +202,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.fx.append(n.jetStreak, n.jetCore, n.punchRing, ...n.punchArms, ...n.bubbles);
     n.egiWater.append(egiShape());
     n.egiAir.append(egiShape());
+    n.egiWater.append(jadoDeco());
+    n.egiAir.append(jadoDeco());
     // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
     n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '34', fill: 'transparent', 'pointer-events': 'all' }));   // スマホで指 44px 前後になる大きさ
     n.ghost.append(egiShape());
@@ -177,8 +220,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す。
   // 驚き重視（ぱっぱ 2026-09-25）：正体が分かるまでは全種同じ形（大きさだけ違う）、分かったらその種の形・色・目印
   const SHADOW = { ...ART, ivory: '#1f3a46', fin: '#1f3a46', arm: '#1f3a46', navy: '#0a1c24', hi: '#1f3a46' };
+  function fishArt(len, revealed) {
+    const L = clamp(len * 1.6, 40, 90);
+    const body = revealed ? '#c8452f' : '#1f3a46', fin = revealed ? '#e07a4f' : '#1f3a46', line = revealed ? '#5a1a10' : '#0a1c24';
+    const g = svgEl('g', { class: 'ika-art-fish' });
+    g.append(
+      svgEl('path', { d: `M0,${L * 0.95} L${-L * 0.2},${L * 1.18} L${L * 0.2},${L * 1.18} Z`, fill: fin, stroke: line, 'stroke-width': '2', 'stroke-linejoin': 'round' }),
+      svgEl('path', { d: `M${L * 0.2},${L * 0.2} L${L * 0.34},${L * 0.28} L${L * 0.3},${L * 0.42} L${L * 0.36},${L * 0.5} L${L * 0.3},${L * 0.64} L${L * 0.33},${L * 0.72} L${L * 0.16},${L * 0.8} Z`, fill: fin, stroke: line, 'stroke-width': '1.6', 'stroke-linejoin': 'round' }),
+      svgEl('ellipse', { cx: '0', cy: String(L * 0.5), rx: String(L * 0.24), ry: String(L * 0.5), fill: body, stroke: line, 'stroke-width': '2.4' }),
+      svgEl('circle', { cx: String(-L * 0.08), cy: String(L * 0.14), r: String(L * 0.06), fill: revealed ? '#ffe9a8' : '#2d4b58', stroke: line, 'stroke-width': '1.4' }),
+    );
+    if (revealed) for (const [x, y] of [[0.06, 0.36], [-0.1, 0.52], [0.08, 0.64], [-0.04, 0.78]]) g.append(svgEl('circle', { cx: String(L * x), cy: String(L * y), r: String(L * 0.045), fill: '#7a2416', opacity: '0.7' }));
+    return g;
+  }
+  const FISH = ['kasago'];
   function setSquidArt(node, kind, species, len, revealed = false) {
     node.innerHTML = '';
+    if (FISH.includes(species)) { node.append(fishArt(len, revealed)); return; }
     // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
     if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
     else node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
@@ -219,7 +277,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   /* ---------- ゲームの作り直し ---------- */
   let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
-    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner' });
+    if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
+    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait });
+    V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
     V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
@@ -235,14 +295,130 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     updateBottom(8);
     syncStock();
     syncSetupLock();
+    syncMethod();
     setButton();
     showGuide();
+  }
+
+  /* ---------- 釣り方・部員レベル（2026-09-27） ---------- */
+  let kotsuTaught = false;
+  const levelNow = () => levelOf(rec.points).level;
+  const methodNow = (id) => methodState(id, { level: levelNow(), month: settings.month, mode: settings.mode });
+  const methodName = (id) => t(lang, TX.method.names[id]);
+  function methodStateText(id, st) {
+    if (st === 'ok') return id === 'egi' ? '' : t(lang, TX.method.season[id]);
+    if (st === 'level') return TX.method.level(lang, METHODS[id].level);
+    if (st === 'soon') return t(lang, TX.method.soon);
+    if (st === 'beginner') return TX.method.level(lang, METHODS[id].level);
+    // 季節ではない：リアルタイムなら「3月から」、季節モードなら「春・初夏で」
+    return settings.mode === 'live' ? TX.method.nextSeason(lang, nextSeasonMonth(id, settings.month)) : t(lang, TX.method.season[id]);
+  }
+  function syncMethod() {
+    if (!el.methods) return;
+    const lock = started();
+    el.methods.querySelectorAll('[data-method]').forEach((b) => {
+      const id = b.dataset.method;
+      const st = methodNow(id);
+      b.setAttribute('aria-pressed', String(id === settings.method));
+      b.dataset.st = st;
+      b.disabled = lock || st === 'beginner';
+      const small = b.querySelector('[data-state]');
+      if (small) small.textContent = methodStateText(id, st);
+    });
+    el.methodAbout.textContent = t(lang, TX.method.about[settings.method] ?? TX.method.about.egi);
+    const jado = settings.method === 'jado';
+    el.baitBox.hidden = !jado;
+    el.baits?.querySelectorAll('[data-bait]').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.bait === settings.bait)); b.disabled = lock && !(s && (s.phase === 'result')); });
+    el.dartBtn.hidden = jado;
+    el.baitRow.hidden = !jado;
+    syncBait();
+    paintJado();
+  }
+  function syncBait() {
+    if (!s || s.method !== 'jado') return;
+    el.baitFill.style.width = `${Math.round((s.baitLeft ?? 1) * 100)}%`;
+    el.baitFill.parentElement.classList.toggle('is-low', (s.baitLeft ?? 1) < 0.5);
+    el.baitName.textContent = t(lang, TX.bait.names[s.bait]);
+  }
+  el.methods?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-method]');
+    if (!b || started()) return;
+    const id = b.dataset.method;
+    const st = methodNow(id);
+    if (st === 'ok') {
+      settings.method = id;
+      writePref('ikabu.egi.method', id);
+      newGame();
+      callout(methodName(id), 'good');
+    } else if (st === 'level') callout(`${methodName(id)}：${TX.method.level(lang, METHODS[id].level)}`, 'bad', 2600);
+    else if (st === 'season') callout(TX.method.seasonNow(lang, methodName(id), settings.mode === 'live' ? `${TX.method.nextSeason(lang, nextSeasonMonth(id, settings.month))}（${t(lang, TX.method.seasonPick)}）` : t(lang, TX.method.season[id])), '', 3600);
+    else if (st === 'soon') callout(`${methodName(id)}：${t(lang, TX.method.soon)}`, '', 2200);
+  });
+  el.baits?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-bait]');
+    if (!b) return;
+    settings.bait = b.dataset.bait;
+    writePref('ikabu.egi.bait', settings.bait);
+    if (s && (s.phase === 'ready' || s.phase === 'result')) rebait(s, settings.bait);
+    else if (s && !started()) s.bait = settings.bait;
+    syncMethod();
+  });
+  // レベルが上がったか（before＝ポイントを足す前のレベル）。上がったら一言と、解放された釣り方のカード
+  function levelCheck(before) {
+    const after = levelNow();
+    syncLevel();
+    if (after <= before) return;
+    setTimeout(() => callout(TX.level.up(lang, after), 'last', 2600), 1200);
+    unlockedBetween(before, after).forEach((id, i) => {
+      setTimeout(() => callout(`${TX.method.unlocked(lang, methodName(id))} ${t(lang, TX.method.unlockLine[id])}`, 'good', 5200), 4000 + i * 5400);
+    });
+    syncMethod();
+  }
+  function syncLevel() {
+    if (!el.levelNum) return;
+    const L = levelOf(rec.points);
+    el.levelNum.textContent = `Lv${L.level}`;
+    el.levelFill.style.width = `${Math.round(L.frac * 100)}%`;
+    el.levelNext.textContent = L.to == null ? t(lang, TX.level.max) : TX.level.next(lang, L.need);
+  }
+  // 外道の記録（図鑑の下）
+  const GEDO_IDS = Object.keys(TX.gedo.names);
+  // 外道の絵（2026-09-27、ChatGPT で釣り人のイカと同じ画風。ikabu-research/zukan-art/gedo_prompts.md）
+  const gedoImg = (id, cls = '') => `<img class="ika-egi-gedo-img${cls}" src="${assetHref(`/assets/ikabu/gedo/${id}.webp`)}" alt="" width="64" height="64" decoding="async" />`;
+  function syncGedo() {
+    if (!el.gedoGrid) return;
+    const G = TX.gedo;
+    el.gedoGrid.innerHTML = GEDO_IDS.map((id) => {
+      const r = rec.gedo[id];
+      return r
+        ? `<li class="ika-egi-gedo-card is-got"><span class="ika-egi-gedo-icon" aria-hidden="true">${gedoImg(id)}</span><div><p class="ika-egi-zukan-name">${t(lang, G.names[id])}</p><p class="ika-egi-zukan-meta">${t(lang, G.count)} ${r.count}${r.first ? `・${t(lang, TX.zukan.first)} ${r.first}` : ''}</p></div></li>`
+        : `<li class="ika-egi-gedo-card"><span class="ika-egi-gedo-icon" aria-hidden="true">${gedoImg(id, ' is-shadow')}</span><div><p class="ika-egi-zukan-name">${t(lang, G.unknown)}</p><p class="ika-egi-zukan-meta">${t(lang, G.hint[id])}</p></div></li>`;
+    }).join('');
+    if (el.gedoCount) el.gedoCount.textContent = String(GEDO_IDS.filter((id) => rec.gedo[id]).length);
+  }
+  // 外道が上がった：今日の釣果に書き、「今日の萩の海」なら記録とポイントへ
+  function addGedo(g) {
+    if (el.catches.querySelector('.ika-egi-catch-empty')) el.catches.innerHTML = '';
+    const li = document.createElement('li');
+    li.className = 'is-gedo';
+    li.innerHTML = `<span>${gedoImg(g.id, ' is-mini')}${esc(t(lang, TX.gedo.names[g.id]))}</span><b>${t(lang, TX.gedo.got)}</b>`;
+    el.catches.appendChild(li);
+    if (settings.mode !== 'live') return;
+    const before = levelNow();
+    rec = recordGedo(rec, g).rec;
+    saveRec();
+    syncRecords();
+    levelCheck(before);
   }
 
   /* ---------- 設定パネル：今日の萩の海 ／ 練習 ---------- */
   const stars = (n) => '★'.repeat(Math.round(n)) + '☆'.repeat(10 - Math.round(n));
   const f1m = (v) => (v == null ? '—' : Number(v).toFixed(1));
   const condLine = () => {
+    const m = s?.method && s.method !== 'egi' ? `${methodName(s.method)}・` : '';
+    return m + condLine0();
+  };
+  const condLine0 = () => {
     const c = settings.cond;
     if (settings.mode === 'beginner') return `${t(lang, TX.live.modeBeginner)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}`;
     return settings.mode === 'live'
@@ -263,6 +439,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.playBeginner?.classList.toggle('is-active', settings.mode === 'beginner');
     const sm = SEASON_MODES.find((m) => m.months.includes(settings.month));
     el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));
+    syncMethod();
   }
   const started = () => s && !(s.phase === 'ready' && s.casts === CASTS) && s.phase !== 'over';
   function syncSetupLock() {
@@ -273,6 +450,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.playLive.disabled = lock || !settings.live || settings.live.conditions.safety === 'stop';
     el.playPractice.disabled = lock;
     el.locked.hidden = !lock;
+    syncMethod();
   }
   /* ---------- エギ選び：投げる前（構え・結果表示）ならいつでも替えられる ---------- */
   const typeName = (type) => t(lang, TX.egi.types[type]);
@@ -528,14 +706,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   const last = { btn: '', count: '', label: '', depth: '', dist: '' };
   function setButton() {
-    const key = s.phase === 'over' ? 'over' : s.phase === 'result' ? 'result' : s.phase === 'aiming' ? 'aiming' : s.phase === 'signal' ? 'signal' : s.phase === 'fight' ? 'fight' : s.phase === 'ready' ? 'ready' : 'sink';
+    let key = s.phase === 'over' ? 'over' : s.phase === 'result' ? 'result' : s.phase === 'aiming' ? 'aiming' : s.phase === 'signal' ? 'signal' : s.phase === 'fight' ? 'fight' : s.phase === 'ready' ? 'ready' : 'sink';
+    // 邪道エギング：沈んでいる間は「着底を待つ」、底では「ズル引き」（アタリの時も本格表示ならズル引きのまま）
+    const jado = s.method === 'jado';
+    if (jado && (key === 'sink' || (key === 'signal' && cue() === 'real'))) key = s.phase === 'sinking' ? 'jadoWait' : 'jadoDrag';
     if (last.btn === key) return;
     last.btn = key;
-    el.btn.textContent = t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
+    el.btn.textContent = key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
-    el.dartBtn.disabled = key !== 'sink';   // ダートは沈下・フォール中だけ
+    el.dartBtn.disabled = key !== 'sink';   // ダートは沈下・フォール中だけ（邪道エギングでは隠す）
   }
   function setText(node, keyName, value) {
     if (last[keyName] === value) return;
@@ -584,6 +765,36 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'fall':
           setFallMode(e.mode);
           break;
+        // 邪道エギング（2026-09-27）
+        case 'drag':
+          V.jerkAt = now; V.jerkKind = 'drag'; V.jerkDouble = false;
+          V.fastDrags = e.good ? 0 : (V.fastDrags ?? 0) + 1;
+          if (V.fastDrags === 3) callout(t(lang, TX.jado.tooFast), 'bad');
+          else if (e.good && cue() === 'easy') callout(t(lang, TX.jado.goodDrag), 'good', 900);
+          break;
+        case 'bottom':
+          callout(t(lang, s.rock ? TX.jado.rock : TX.jado.bottom), s.rock ? 'bad' : '', 2600);
+          break;
+        case 'kotsu':
+          V.punchAt = now;   // エギがコツコツ小突かれる（イカパンチと同じ揺れを小さく使う）
+          feel.fire('tap');
+          syncBait();
+          if (cue() === 'easy' || !kotsuTaught) { kotsuTaught = true; callout(t(lang, TX.jado.kotsu), '', 2600); }
+          el.log.textContent = t(lang, TX.jado.kotsu);
+          break;
+        case 'kotsu-wait':
+          if (cue() === 'easy') callout(t(lang, TX.jado.kotsuWait), 'good');
+          break;
+        case 'gedo':
+          // ファイトの無い外道（海藻・長靴・空き缶）
+          addGedo(e);
+          setTimeout(() => callout(`${TX.gedo.icon[e.id] ?? ''} ${t(lang, TX.gedo.names[e.id])}…`, '', 2400), e.id === 'seaweed' ? 900 : 0);
+          break;
+        case 'rebait':
+          syncBait();
+          paintJado();
+          callout(t(lang, TX.bait.rebaited), 'good');
+          break;
         case 'rhythm': {
           // 手ほどきは毎回は言わない（ダート・しゃくりすぎ・渋い日の助言は毎回、ふつうの評価は2回に1回）
           const key = rhythmHintKey(e);
@@ -615,6 +826,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           }
           // 手に伝わるアタリ（コン・走る）だけ震わせる。止まる・フケるは目で気づくアタリなので震わせない
           if (e.kind === 'tap' || e.kind === 'run') feel.fire(e.kind);
+          else if (e.kind === 'heavy') feel.fire('run');
+          syncBait();
           el.log.textContent = t(lang, TX.cue.kinds[e.kind]);
           break;
         }
@@ -657,8 +870,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'landed': {
           V.land = { t0: now, from: { x: V.hug.x, y: V.hug.y } };
           burst(V.hug.x, SCENE.surface, 8);
-          callout(t(lang, TX.msg.landed), 'good');
           feel.fire('landed');
+          if (e.gedo) { callout(t(lang, TX.gedo.got), ''); addGedo(e); break; }
+          callout(t(lang, TX.msg.landed), 'good');
           addCatch(e);
           break;
         }
@@ -677,7 +891,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.log.textContent = t(lang, TX.cue.punch);
           break;
         case 'spooked':
-          callout(t(lang, e.left ? TX.msg.spookedLeft : TX.msg.spooked), 'bad');
+          callout(t(lang, e.kotsu ? (e.left ? TX.jado.kotsuLeft : TX.jado.kotsuSpooked) : e.left ? TX.msg.spookedLeft : TX.msg.spooked), 'bad');
           break;
         case 'punch-wait':
           if (cue() === 'easy') callout(t(lang, TX.msg.punchWait), 'good');
@@ -771,12 +985,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (settings.mode === 'live' && !rec.species[c.id] && !firstSpecies.includes(c.id)) firstSpecies.push(c.id);
     // 今日の萩の海の釣果は、その場で図鑑と記録に保存する（釣行の途中でページを閉じても消えない）
     if (settings.mode === 'live') {
+      const before = levelNow();
       const got = recordEgiCatch(rec, { id: c.id, weight: c.weight, mantle: c.mantle }, { tripTotal: s.catches.reduce((sum, x) => sum + x.weight, 0) });
       rec = got.rec;
       saveRec();
       syncRecords();
       keepStorage();
       if (got.fresh) backupHintOnce();
+      levelCheck(before);
     }
   }
   function showResult() {
@@ -798,10 +1014,20 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         </div>
         ${z ? `<p class="ika-egi-card-tip"><b>${t(lang, TX.zukan.point)}</b> ${t(lang, z.point)}</p>` : ''}
         ${solo ? '' : `<p class="ika-egi-card-link"><a href="${pageHref('atlas', lang)}#sp-${esc(c.id)}">${t(lang, T.atlas)}</a></p>`}`;
+    } else if (why === 'gedo' || why === 'junk') {
+      // 外道（カサゴ）・ゴミ（長靴・空き缶）
+      const g = s.gedo[s.gedo.length - 1];
+      const G = TX.gedo;
+      html = `<p class="ika-egi-card-title">${t(lang, why === 'junk' ? T.junk : T.gedo)}</p>
+        <div class="ika-egi-card-catch"><span class="ika-egi-gedo-icon is-big" aria-hidden="true">${g ? gedoImg(g.id) : ''}</span><div><p class="ika-egi-card-name">${esc(t(lang, G.names[g?.id] ?? G.unknown))}</p>${g?.weight ? `<dl class="ika-egi-card-rows"><div><dt>${t(lang, T.weight)}</dt><dd>${g.weight.toLocaleString()} g</dd></div></dl>` : ''}</div></div>
+        <p class="ika-egi-card-note">${why === 'junk' ? t(lang, T.junkNote) : ''}${G.line[g?.id] ? t(lang, G.line[g.id]) : ''}${settings.mode === 'live' ? `（${t(lang, G.added)}）` : ''}</p>`;
     } else {
       const note = { weed: T.weedNote, snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
+    // 邪道エギング：エサがくたびれていたら付け直しを勧める
+    const baitLow = s.method === 'jado' && s.baitLeft < 0.5;
+    if (baitLow) html += `<p class="ika-egi-card-note ika-egi-card-bait">${t(lang, TX.bait.low)} <button type="button" class="ika-chip" data-rebait>${t(lang, TX.bait.rebait)}</button></p>`;
     // シェア（2026-09-27）：釣れた時だけ。知り合い用のエギング単体ページには出さない
     const canShare = why === 'landed' && !solo;
     if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id) };
@@ -814,6 +1040,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const catches = s.catches;
     const before = rec.best;
     const counted = settings.mode === 'live';
+    const lvBefore = levelNow();
     const { rec: r, total } = recordEgiTrip(rec, catches, { counted });   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
     const fresh = counted ? firstSpecies.slice() : [];
     rec = r;
@@ -831,9 +1058,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       ${list}${noEgi}
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
+      ${s.gedo.length ? `<p class="ika-egi-card-note">${t(lang, TX.gedo.title)}: ${s.gedo.map((g) => `${TX.gedo.icon[g.id] ?? ''}${esc(t(lang, TX.gedo.names[g.id]))}`).join('、')}</p>` : ''}
+      ${counted ? `<p class="ika-egi-card-note ika-egi-over-level">${t(lang, TX.level.title)} Lv${levelOf(rec.points).level}${levelOf(rec.points).to == null ? '' : `・${TX.level.next(lang, levelOf(rec.points).need)}`}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
       <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${solo ? '' : shareButtonHTML(lang)}</div>`;
     lastShare = { kind: 'trip', catches: catches.slice() };
+    if (counted) levelCheck(lvBefore);
     el.card.className = 'ika-egi-card ika-egi-card--over';
     el.card.hidden = false;
     syncSetupLock();
@@ -945,6 +1175,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   });
   function syncRecords() {
     syncZukan();
+    syncGedo();
+    syncLevel();
     const set = (k, v) => { const b = el.records.querySelector(`[data-rec="${k}"]`); if (b) b.textContent = String(v); };
     set('best', rec.best.toLocaleString());
     set('zukan', GAME_ZUKAN.filter((z) => rec.species[z.id]).length);
@@ -983,6 +1215,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       el.pickSize.querySelector('.ika-chip')?.focus({ preventScroll: true });
     }
     else if (e.target.closest('[data-restart]')) { newGame(); }
+    else if (e.target.closest('[data-rebait]')) { rebait(s); onEvents(s.events.splice(0)); e.target.closest('[data-rebait]').disabled = true; }
     else if (e.target.closest('[data-share]')) shareEgi(e.target.closest('[data-share]'));
   });
 
@@ -1042,7 +1275,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   //   150ms より早く離したらその場でタップ。マウス・キーボードはすぐ押下（ダートは ↑ キー）
   let ptr = null;   // { id, x, y, timer, pressed, darted }
   const SWIPE = { touch: { ms: 150, px: 24 }, mouse: { ms: 140, px: 16 }, pen: { ms: 150, px: 20 } };
-  const canSwipe = () => s && (s.phase === 'sinking' || s.phase === 'action');
+  const canSwipe = () => s && s.method !== 'jado' && (s.phase === 'sinking' || s.phase === 'action');
   // エギを押したか：当たりの円だけだと、スマホではエギの絵が小さく（縦24px ほど）少し外すと「投げる」になった。
   // 投げる前は、エギの絵のまわり EGI_TAP_R px と「← エギをタップで色が選べる」の案内の上も、エギを押したことにする（ぱっぱ指摘 2026-09-27）
   const EGI_TAP_R = 48;
@@ -1339,7 +1572,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (phase === 'sinking') rodAng = 30;
     else if (phase === 'action' || phase === 'signal') {
       const j = now - V.jerkAt;
-      const top = V.jerkKind === 'dart' ? 80 : V.jerkDouble ? 66 : 72;
+      const top = V.jerkKind === 'drag' ? 48 : V.jerkKind === 'dart' ? 80 : V.jerkDouble ? 66 : 72;   // ズル引きは竿を小さく立てるだけ
       rodAng = j < 0.5 ? lerp(top, 34, easeOut(j / 0.5)) : 34;
       pull = j < 0.2 ? 0.6 : 0;
       if (s.tensionFall) { rodAng = 40; pull = 0.25; }   // テンションフォール：竿を少し立てて糸を張る
@@ -1411,7 +1644,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       taut = 0.9;
       if (k >= 1) { V.flight = null; V.egi.mode = 'tip'; V.pend.reset(tipNow()); }
     } else if (V.egi.mode === 'water' || V.egi.mode === 'stuck') {
-      V.sinkOffset = Math.max(0, V.sinkOffset - 0.4 * dt);
+      V.sinkOffset = Math.max(0, V.sinkOffset - (s.method === 'jado' ? 1.6 : 0.4) * dt);   // 邪道はオモリで速く沈むので、見た目もすぐ追いつかせる
       const tx = X(s.dist);
       const ty = Y(clamp(s.depth - V.sinkOffset, 0.15, s.bottom)) - (V.egi.mode === 'stuck' ? 0 : 6);
       const jerkFresh = now - V.jerkAt < 0.28;
@@ -1428,7 +1661,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
         // しゃくった直後は頭を上げて釣り人側へ飛ぶ。テンションフォールは頭を釣り人側へ向けて滑るように、フリーフォールは頭を下げてまっすぐ
-        const target = jerkFresh ? (V.jerkKind === 'dart' ? -60 : -35) : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
+        const onBed = s.method === 'jado' && s.depth >= s.bottom;   // 邪道：底に寝かせて引く
+        const target = jerkFresh ? (V.jerkKind === 'drag' ? -100 : V.jerkKind === 'dart' ? -60 : -35) : onBed ? -105 : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
         // イカパンチ：足で叩かれてエギが横へ弾かれ、向きがぶれる（0.35秒）
         const pk = V.punchAt != null ? (now - V.punchAt) / 0.35 : 9;
@@ -1503,7 +1737,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           else callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
           if (big) feel.fire('hook', { heavy: V.heavy });
         }
-        if (!inked && depth <= 1.0) {
+        if (!inked && !h.gedo && depth <= 1.0) {
           inked = true;
           V.ink = { t0: now, x: V.hug.x - 10, y: S.surface + 10 };
           callout(t(lang, TX.msg.ink));
@@ -1732,7 +1966,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.count.hidden = !inWater;
     if (inWater) {
       const onBottom = s.depth >= s.bottom;
-      const label = phase === 'sinking' ? t(lang, TX.hud.count) : t(lang, TX.hud.fall);
+      const label = phase === 'sinking' ? t(lang, TX.hud.count) : s.method === 'jado' ? t(lang, TX.bait.stopFor) : t(lang, TX.hud.fall);   // 邪道：底で止めている秒数
       setText(el.countLabel, 'label', label);
       setText(el.countNum, 'count', String(Math.max(0, Math.floor(phase === 'sinking' ? s.t - castAt : since))));
       setText(el.depth, 'depth', onBottom ? `${t(lang, TX.hud.bottom)}！` : `${t(lang, TX.hud.depth)} ${t(lang, '約', '~')}${s.bottom}m`);
