@@ -146,6 +146,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
     sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
     paintEgi();
+    paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
     updateBottom(bottom);
     V.camShown = null;
     if (s) draw(0);   // 作り直した直後に1回描く（ループが止まっていても竿と糸が出るように）

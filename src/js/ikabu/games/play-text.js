@@ -242,7 +242,7 @@ export const EGI_TEXT = {
     draw: (lang, n) => (lang === 'en' ? `Drawing in after ${n}s` : `${n}秒待って寄せ始めた`),
     liftSquid: pair('糸を上げたら竿がスッと浮いた＝イカだ！', 'The rod lifted when you raised the line: a squid!'),
     liftTako: pair('糸を上げても浮かない…タコだ。糸を切ろう', "It won't lift… an octopus. Cut the line"),
-    near: pair('糸が45度くらい。ヤエンを入れられる！', 'The line is at about 45°. Send the yaen!'),
+    near: pair('ヤエンを入れられる距離まで寄せた！', 'Close enough. Send the yaen!'),
     yaenIn: pair('ヤエン投入！ 竿を立てると滑っていく', 'Yaen away! Raise the rod to slide it down'),
     reach: pair('ヤエンが根元に入った！ 竿を寄せて掛けよう', 'The yaen is at its base! Draw the rod to set it'),
     hit: pair('針が胴に刺さった！ 驚いて下がって…掛かった！', 'The hook caught the body! It backed off… hooked!'),
