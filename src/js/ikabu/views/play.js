@@ -22,6 +22,14 @@ export const methodPickHTML = (lang) => {
       <span class="ika-egi-setup-label">${t(lang, T.method.title)}</span>
       <div class="ika-egi-methods" id="ika-egi-methods" role="group" aria-label="${t(lang, T.method.title)}">${chips}</div>
       <p class="ika-egi-method-about" id="ika-egi-method-about">${t(lang, T.method.about.egi)}</p>
+      <div class="ika-egi-bait" id="ika-egi-aji" hidden>
+        <span class="ika-egi-setup-label">${t(lang, T.yaen.ajiTitle)}</span>
+        <div class="ika-chips ika-chips--small" id="ika-egi-ajis" role="group" aria-label="${t(lang, T.yaen.ajiTitle)}">
+          <button type="button" class="ika-chip" data-aji="live" aria-pressed="true">${t(lang, T.yaen.ajiLive)}</button>
+          <button type="button" class="ika-chip" data-aji="dead" aria-pressed="false">${t(lang, T.yaen.ajiDead)}</button>
+        </div>
+        <p class="ika-egi-cue-note">${t(lang, T.yaen.ajiNote)}</p>
+      </div>
       <div class="ika-egi-bait" id="ika-egi-bait" hidden>
         <span class="ika-egi-setup-label">${t(lang, T.bait.title)}</span>
         <div class="ika-chips ika-chips--small" id="ika-egi-baits" role="group" aria-label="${t(lang, T.bait.title)}">${baits}</div>

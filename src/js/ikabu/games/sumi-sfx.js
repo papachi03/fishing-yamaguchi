@@ -39,7 +39,7 @@ export function createSfx({ on = true } = {}) {
     o.stop(t0 + dur + 0.02);
   }
   const note = (i) => SCALE[Math.max(0, Math.min(SCALE.length - 1, i))];
-  return {
+  const api = {
     get on() { return st.on; },
     setOn(v) { st.on = Boolean(v); if (st.on) ac(); },
     unlock() { ac(); },
@@ -66,4 +66,12 @@ export function createSfx({ on = true } = {}) {
     // 目標達成のファンファーレ
     goal() { [[0, 0], [2, 0.1], [4, 0.2], [7, 0.32]].forEach(([k, at]) => tone(note(k + 1), { at, dur: at > 0.3 ? 0.5 : 0.14, vol: 0.8 })); },
   };
+  // 開発時だけ：鳴らした音の名前と時刻を window.__sumiSfx に残す（トレーラーの撮影で、同じ音を後から重ねるため。本番には入らない）
+  if (import.meta.env?.DEV && typeof window !== 'undefined') {
+    for (const k of ['pop', 'popSeq', 'line', 'bomb', 'ball', 'combo', 'full', 'flash', 'born', 'nope', 'goal']) {
+      const f = api[k];
+      api[k] = (...a) => { (window.__sumiSfx ??= []).push({ n: k, a, t: performance.now() }); return f(...a); };
+    }
+  }
+  return api;
 }

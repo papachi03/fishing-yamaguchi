@@ -217,7 +217,7 @@ export const EGI_TEXT = {
   // ヤエン（2026-09-27）
   yaen: {
     btn: {
-      wait: pair('回収して投げ直す', 'Reel in and recast'),
+      wait: pair('しゃくって誘う', 'Twitch the bait'),
       run: pair('寄せ始める（長押し）', 'Start drawing it in (hold)'),
       draw: pair('押している間 寄せる', 'Hold to draw in'),
       yaen: pair('押して竿を立てる', 'Hold to raise the rod'),
@@ -237,6 +237,7 @@ export const EGI_TEXT = {
       jiji: pair('抵抗！ 手を止めて', 'Resisting! Stop reeling'),
       choro: pair('ちょろちょろ出て止まる…', 'Short runs and stops…'),
     },
+    jerkHint: pair('反応がない…少ししゃくって、アジを動かしてみよう', 'Nothing yet… give the bait a little twitch'),
     waitHint: pair('ぱっぱ流：抱いたら30秒じっくり待つ', "Daddy's rule: once it grabs, wait a good 30 seconds"),
     draw: (lang, n) => (lang === 'en' ? `Drawing in after ${n}s` : `${n}秒待って寄せ始めた`),
     liftSquid: pair('糸を上げたら竿がスッと浮いた＝イカだ！', 'The rod lifted when you raised the line: a squid!'),
@@ -247,6 +248,19 @@ export const EGI_TEXT = {
     hit: pair('針が胴に刺さった！ 驚いて下がって…掛かった！', 'The hook caught the body! It backed off… hooked!'),
     pull: pair('強く引いて下がった！ 抵抗中は手を止めて', 'It pulled back hard! Stop reeling while it resists'),
     ajiGauge: pair('アジの残り', 'Bait left'),
+    fresh: pair('アジの鮮度', 'Bait freshness'),
+    vigor: pair('アジの元気', 'Bait vigour'),
+    ajiTitle: pair('アジ', 'Bait fish'),
+    ajiLive: pair('活きアジ', 'Live horse mackerel'),
+    ajiDead: pair('スーパーのアジ（ぱっぱ流）', 'Supermarket fish (Daddy style)'),
+    ajiNote: pair('活きアジは泳いでイカを寄せる。スーパーのアジは底に置いて、しゃくって誘う（ぱっぱの実釣）', 'Live bait swims and draws squid in. Supermarket fish sits on the bottom; twitch it to lure (Daddy’s own way)'),
+    liveWait: pair('少し引いて誘う', 'Tug to lure'),
+    liveBottom: pair('アジが泳ぎはじめた。イカが寄ってくるのを待とう', 'The bait is swimming. Wait for a squid to come'),
+    liveHint: pair('反応がない…少し引いて、アジを泳がせてみよう', 'Nothing yet… tug a little to get the bait swimming'),
+    chase: pair('イカが追いかけてきた！', 'A squid is chasing it!'),
+    stolenMsg: pair('落ちる途中で抱かれた…アジだけ取られた', 'Grabbed mid-fall… it stole the bait'),
+    tired: pair('アジが弱った', 'The bait tired out'),
+    tiredMsg: pair('アジが弱った。元気なアジに付け替えよう', 'The bait has tired. Put on a lively one'),
     letgo: {
       early: pair('離された…まだ食べ始めたばかりだった', 'It let go… it had only just started eating'),
       resist: pair('抵抗中に巻いて、離された…', 'You reeled while it resisted, and it let go…'),
@@ -266,6 +280,8 @@ export const EGI_TEXT = {
       cut: pair('タコだった', 'An octopus'),
       'tako-rock': pair('岩に入られた', 'Into the rocks'),
       'yaen-miss': pair('針が飛んだ', 'Hook flew off'),
+      tired: pair('アジが弱った', 'The bait tired out'),
+      stolen: pair('アジだけ取られた', 'It stole the bait'),
     },
     note: {
       spoiled: pair('抱かれないまま時間がたった。朝マズメや潮止まりの前後に、イカはよく抱く。', 'No grab before it went off. Squid grab more at dawn and around the turn of the tide.'),
@@ -274,6 +290,8 @@ export const EGI_TEXT = {
       cut: pair('ちょろちょろ出て止まるのは、ほぼタコ。糸を上げて浮かなければ切る。', 'Short runs and stops usually mean an octopus. If it will not lift, cut.'),
       'tako-rock': pair('ちょろちょろ出て止まるのは、ほぼタコ。糸を上げて確かめよう。', 'Short runs and stops usually mean an octopus. Lift the line to check.'),
       'yaen-miss': pair('たまにある。次のアジで。', 'It happens. Next bait.'),
+      stolen: pair('落としている最中に抱かれた。アジにはエギのようなカンナ（針）が無いので、掛からずにアジだけ取られる。しゃくったら、底に着くまで待とう。', 'It grabbed while the bait was falling. A fish has no jig spikes, so it just took the bait. After a twitch, wait until it settles.'),
+      tired: pair('抱かれないまま、アジが弱りきった。元気なうちは、泳ぐだけでイカを寄せる。少し引いて泳がせるのも手。', 'No grab before the bait tired out. A lively fish draws squid just by swimming; a small tug helps.'),
     },
   },
   level: {

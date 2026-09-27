@@ -8,7 +8,7 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { rebait, BAITS, yaenSideAction, yaenAji, YAEN_DIST } from './egi.js';
+import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, YAEN_DIST, YAEN_CHASE } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
@@ -59,6 +59,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
     feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
+    ajiBox: q('ika-egi-aji'), ajis: q('ika-egi-ajis'),
     methods: q('ika-egi-methods'), methodAbout: q('ika-egi-method-about'), baitBox: q('ika-egi-bait'), baits: q('ika-egi-baits'),
     baitRow: q('ika-egi-baitrow'), baitFill: q('ika-egi-baitfill'), baitName: q('ika-egi-baitname'),
     levelNum: q('ika-egi-level-num'), levelFill: q('ika-egi-level-fill'), levelNext: q('ika-egi-level-next'),
@@ -86,7 +87,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }   // アタリなしが3投続いたら、一度だけ「コツを見る」を勧める   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real',
     method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
-    bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami' };
+    bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami',
+    aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live' };   // ヤエンのアジ（2026-09-28 案B）
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true });   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
@@ -174,7 +176,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     clip.append(svgEl('rect', { class: 'ika-eg-aji-clip', x: '-12', y: '-4', width: '24', height: '50' }));
     g.append(clip);
     g.setAttribute('clip-path', `url(#${id})`);
-    g.append(
+    // 仕掛けはアジの尻尾に針（2026-09-28 ぱっぱ：糸は尻尾の側に付ける）→ 絵を上下逆さにして、尻尾を上（糸の結び目）、頭を下に
+    const art = svgEl('g', { transform: 'translate(0,40) scale(1,-1)' });
+    g.append(art);
+    art.append(
       svgEl('path', { d: 'M0,34 L-6,42 L6,42 Z', fill: '#b9c6cf', stroke: '#16233a', 'stroke-width': '1.6', 'stroke-linejoin': 'round' }),
       svgEl('path', { d: 'M0,-2 Q8,8 6,20 Q4,30 0,35 Q-4,30 -6,20 Q-8,8 0,-2 Z', fill: '#d9e2e8', stroke: '#16233a', 'stroke-width': '2.2', 'stroke-linejoin': 'round' }),
       svgEl('path', { d: 'M-2,6 Q-4,18 -1,30', fill: 'none', stroke: '#5b86b0', 'stroke-width': '2', 'stroke-linecap': 'round' }),
@@ -189,7 +194,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const on = settings.method === 'jado';
     const bait = s?.bait ?? settings.bait;
     const yaen = settings.method === 'yaen';
-    for (const g of [n.egiWater, n.egiAir]) {
+    for (const g of [n.egiWater, n.egiAir, n.ghost]) {
       const egiArt = g.querySelector('.ika-art-egi');
       if (egiArt) egiArt.style.display = yaen ? 'none' : '';
       const aji = g.querySelector('.ika-eg-aji');
@@ -229,7 +234,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.egiAir.append(jadoDeco(), ajiDeco());
     // 竿先に下がったエギのタップ判定（小さいエギでも押しやすいよう大きめの透明な円）
     n.egiAir.append(svgEl('circle', { class: 'ika-eg-egi-hit', cx: '0', cy: '14', r: '34', fill: 'transparent', 'pointer-events': 'all' }));   // スマホで指 44px 前後になる大きさ
-    n.ghost.append(egiShape());
+    n.ghost.append(egiShape(), ajiDeco());
     n.inkBody = svgEl('ellipse', { fill: '#050c1a' });
     n.inkRim = svgEl('ellipse', { fill: 'none', stroke: 'rgba(205,240,238,0.6)', 'stroke-width': '3' });
     n.inkArms = [0, 1, 2].map(() => svgEl('ellipse', { fill: '#050c1a' }));
@@ -262,6 +267,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (FISH.includes(species)) { node.append(fishArt(len, revealed)); return; }
     // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
     if (kind === 'hug') node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
+    // ヤエン：抱いたイカの腕の中はエギではなくアジ（2026-09-28 ぱっぱ：エギが一瞬映る）
+    if (kind === 'hug' && (s?.method ?? settings.method) === 'yaen') {
+      node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });
+      const aji = ajiDeco(); aji.style.display = ''; aji.removeAttribute('clip-path');
+      node.querySelector('.ika-art-hug')?.insertBefore(aji, node.querySelector('.ika-art-hug').children[1] ?? null);
+    }
     else node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } }));
   }
   function relayout() {
@@ -301,7 +312,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
-    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait });
+    s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
@@ -353,11 +364,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.baitBox.hidden = !jado;
     el.baits?.querySelectorAll('[data-bait]').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.bait === settings.bait)); b.disabled = lock && !(s && (s.phase === 'result')); });
     const yaen = settings.method === 'yaen';
+    if (el.ajiBox) {
+      el.ajiBox.hidden = !yaen;
+      el.ajis.querySelectorAll('[data-aji]').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.aji === settings.aji)); b.disabled = lock; });
+    }
     el.dartBtn.hidden = jado;
     el.baitRow.hidden = !jado;
     if (jado) el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, TX.bait.left);
     ajiShown = null;
     if (yaen) syncAji();
+    V.chaseAt = null;
     const castLabel = el.casts?.parentElement?.querySelector('.ika-egi-stock-label');
     if (castLabel) castLabel.textContent = t(lang, yaen ? TX.yaen.aji : TX.hud.casts);
     if (el.egis?.parentElement) el.egis.parentElement.hidden = yaen;   // ヤエンはエギを使わない
@@ -391,18 +407,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const bit = s.yaen?.on && ['run', 'draw', 'yaen'].includes(s.phase);
     const seen = bit && !s.yaen.tako && s.dist <= YAEN_SEEN;
     const left = bit ? yaenAji(s) : 1;
-    if (seen !== ajiShown) {
-      ajiShown = seen;
-      el.baitRow.hidden = !seen;
-      if (seen) { el.baitName.textContent = ''; el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, TX.yaen.ajiGauge); }
+    // 待っている間は「アジの鮮度」（時間とともに傷む。2026-09-28 ぱっぱ）、抱かれてイカが見えたら「アジの残り」
+    const waiting = s.phase === 'wait';
+    const mode = seen ? 'left' : waiting ? 'fresh' : null;
+    if (mode !== ajiShown) {
+      ajiShown = mode;
+      el.baitRow.hidden = !mode;
+      if (mode) { el.baitName.textContent = ''; el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, mode === 'left' ? TX.yaen.ajiGauge : s.aji === 'live' ? TX.yaen.vigor : TX.yaen.fresh); }
     }
-    if (seen) {
-      el.baitFill.style.width = `${Math.round(left * 100)}%`;
-      el.baitFill.parentElement.classList.toggle('is-low', left < 0.35);
+    if (mode) {
+      const v = mode === 'left' ? left : yaenFresh(s);
+      el.baitFill.style.width = `${Math.round(v * 100)}%`;
+      el.baitFill.parentElement.classList.toggle('is-low', v < 0.35);
     }
     // 絵：食べられた分だけ頭の側を消す（エギの絵の座標で頭 y≈-2、尾 y≈42）
-    const top = -4 + (1 - left) * 38;
-    sc?.nodes && [sc.nodes.egiWater, sc.nodes.egiAir].forEach((g) => g.querySelector('.ika-eg-aji-clip')?.setAttribute('y', top.toFixed(1)));
+    // 頭は下（尻尾が上で糸につながる）ので、食べられた分だけ下から消す。尻尾と針のあたりは最後まで残る
+    const h = 12 + 38 * left;
+    sc?.nodes && [sc.nodes.egiWater, sc.nodes.egiAir].forEach((g) => g.querySelector('.ika-eg-aji-clip')?.setAttribute('height', h.toFixed(1)));
   }
   function syncBait() {
     if (!s || s.method !== 'jado') return;
@@ -423,6 +444,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     } else if (st === 'level') callout(`${methodName(id)}：${TX.method.level(lang, METHODS[id].level)}`, 'bad', 2600);
     else if (st === 'season') callout(TX.method.seasonNow(lang, methodName(id), settings.mode === 'live' ? `${TX.method.nextSeason(lang, nextSeasonMonth(id, settings.month))}（${t(lang, TX.method.seasonPick)}）` : t(lang, TX.method.season[id])), '', 3600);
     else if (st === 'soon') callout(`${methodName(id)}：${t(lang, TX.method.soon)}`, '', 2200);
+  });
+  el.ajis?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-aji]');
+    if (!b || started()) return;
+    settings.aji = b.dataset.aji;
+    writePref('ikabu.egi.aji', settings.aji);
+    newGame();
   });
   el.baits?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-bait]');
@@ -783,7 +811,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (s.method === 'yaen' && key === 'sink') key = `yaen-${s.phase === 'yaen' && s.yaen?.reached ? 'set' : ['wait', 'run', 'draw', 'yaen'].includes(s.phase) ? s.phase : 'sink'}`;
     if (last.btn === key) return;
     last.btn = key;
-    el.btn.textContent = key.startsWith('yaen-') ? t(lang, TX.yaen.btn[key.slice(5)]) : key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
+    el.btn.textContent = key === 'yaen-wait' && s.aji === 'live' ? t(lang, TX.yaen.liveWait) : key.startsWith('yaen-') ? t(lang, TX.yaen.btn[key.slice(5)]) : key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
@@ -844,6 +872,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           else if (e.good && cue() === 'easy') callout(t(lang, TX.jado.goodDrag), 'good', 900);
           break;
         case 'bottom':
+          if (s.method === 'yaen') { callout(t(lang, e.live ? TX.yaen.liveBottom : TX.yaen.bottom), '', 2600); break; }
           callout(t(lang, s.rock ? TX.jado.rock : TX.jado.bottom), s.rock ? 'bad' : '', 2600);
           break;
         case 'kotsu':
@@ -888,6 +917,25 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'lift':
           callout(t(lang, e.tako ? TX.yaen.liftTako : TX.yaen.liftSquid), e.tako ? 'bad' : 'good', 3000);
+          break;
+        case 'yaen-jerk':
+          V.jerkAt = now; V.jerkKind = 'lift'; V.jerkDouble = false;
+          break;
+        case 'yaen-hint':
+          callout(t(lang, e.live ? TX.yaen.liveHint : TX.yaen.jerkHint), 'good', 3600);
+          break;
+        case 'yaen-chase':
+          V.chaseAt = now;
+          feel.fire('tap');
+          callout(t(lang, TX.yaen.chase), 'good', 2200);
+          break;
+        case 'tired':
+          callout(t(lang, TX.yaen.tiredMsg));
+          break;
+        case 'yaen-stolen':
+          V.punchAt = now;
+          feel.fire('punch');
+          callout(t(lang, TX.yaen.stolenMsg), 'bad', 2600);
           break;
         case 'yaen-reach':
           callout(t(lang, TX.yaen.reach), 'good', 3000);
@@ -1431,7 +1479,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (!e.target.closest?.('.ika-egi-btn, .ika-egi-dart') && s && (s.phase === 'ready' || s.phase === 'result') && !V.flight && touchesEgi(e)) {
+    if (!e.target.closest?.('.ika-egi-btn, .ika-egi-dart') && s && s.method !== 'yaen' && (s.phase === 'ready' || s.phase === 'result') && !V.flight && touchesEgi(e)) {
       e.preventDefault();
       openColorPop();
       return;
@@ -1807,8 +1855,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
         // しゃくった直後は頭を上げて釣り人側へ飛ぶ。テンションフォールは頭を釣り人側へ向けて滑るように、フリーフォールは頭を下げてまっすぐ
-        const onBed = (s.method === 'jado' || s.method === 'yaen') && s.depth >= s.bottom;   // 邪道・ヤエン：底に寝かせる
-        const target = jerkFresh ? (V.jerkKind === 'drag' ? -100 : V.jerkKind === 'dart' ? -60 : -35) : onBed ? -105 : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
+        const onBed = (s.method === 'jado' || (s.method === 'yaen' && s.aji !== 'live')) && s.depth >= s.bottom;   // 邪道・死にアジ：底に寝かせる
+        const swimming = s.method === 'yaen' && s.aji === 'live' && phase === 'wait';   // 活きアジ：沖へ向いて泳ぐ
+        const chasing = V.chaseAt != null && now - V.chaseAt < YAEN_CHASE;
+        const target = swimming ? -90 + (reduced ? 0 : Math.sin(now * (chasing ? 22 : 9)) * (chasing ? 22 : 12)) : jerkFresh ? (V.jerkKind === 'drag' ? -100 : V.jerkKind === 'dart' ? -60 : -35) : onBed ? -105 : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
         // イカパンチ：足で叩かれてエギが横へ弾かれ、向きがぶれる（0.35秒）
         const pk = V.punchAt != null ? (now - V.punchAt) / 0.35 : 9;
@@ -1957,7 +2007,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const egiT = `translate(${f1(V.egi.x)} ${f1(V.egi.y)}) rotate(${f1(V.egi.ang)}) scale(1.15)`;
     // 最初だけ：投げる前に「← エギをタップで色が選べる」をエギの右に出す（一度でも色を選んだら出さない）
     if (el.colorTip) {
-      const showTip = !colorSeen && phase === 'ready' && V.egi.mode === 'tip' && !V.flight;
+      const showTip = s.method !== 'yaen' && (!colorSeen && phase === 'ready' && V.egi.mode === 'tip' && !V.flight);   // ヤエンはエギを使わないので色選びの案内は出さない
       if (showTip) {
         const eb = n.egiAir.getBoundingClientRect();
         const sb = el.stage.getBoundingClientRect();
@@ -2049,7 +2099,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.swim.forEach((w, i) => {
       const node = n.swim[i];
       let ta = 0, tx = W + 120, ty = Y(5);
-      if (underwater && s.interest > 0.2 && i < s.squid) {
+      if (underwater && s.method === 'yaen' && phase === 'wait' && s.aji === 'live' && i < Math.max(s.squid, V.chaseAt != null && now - V.chaseAt < YAEN_CHASE ? 1 : 0)) {
+        const chaseK = V.chaseAt != null ? clamp((now - V.chaseAt) / YAEN_CHASE, 0, 1) : 0;
+        // 活きアジは画面の右寄りを泳ぐので、イカは左下（深いほう）から近づく（右から来ると画面の外にはみ出した）
+        const chasing = chaseK > 0 && i === 0;
+        const off = chasing ? lerp(170, 14, Math.min(1, chaseK * 1.15)) : 150 + i * 70;
+        tx = V.egi.x - off * (chasing ? 0.75 : 0.9) + (reduced ? 0 : Math.sin(now * 0.9 + i * 2) * 14);
+        ty = clamp(V.egi.y + off * (chasing ? 0.45 : 0.3) + (chasing ? 0 : [20, -30][i]) + (reduced ? 0 : Math.cos(now * 0.8 + i) * 10), S.surface + 40, Y(s.bottom) - 20);
+        ta = chaseK > 0 && i === 0 ? 0.85 : 0.35;
+      } else if (underwater && s.interest > 0.2 && i < s.squid) {
         const near = falling ? 1 : 0;
         const off = lerp(150 + i * 70, 62 + i * 46, near);
         tx = V.egi.x + off + (reduced ? 0 : Math.sin(now * 1.3 + i * 2) * 10);
@@ -2057,8 +2115,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         ta = clamp(0.25 + 0.6 * s.interest, 0, 0.8) * (falling ? 1 : 0.55);
       }
       w.alpha += (ta - w.alpha) * (1 - Math.exp(-dt * 2.2));
-      w.x += (tx - w.x) * (1 - Math.exp(-dt * 1.8));
-      w.y += (ty - w.y) * (1 - Math.exp(-dt * 1.8));
+      const follow = V.chaseAt != null && now - V.chaseAt < YAEN_CHASE ? 5 : 1.8;   // 追いかける時は速く
+      w.x += (tx - w.x) * (1 - Math.exp(-dt * follow));
+      w.y += (ty - w.y) * (1 - Math.exp(-dt * follow));
       const dx = w.x - V.egi.x, dy = w.y - V.egi.y, L = Math.hypot(dx, dy) || 1;
       w.ang += wrap(angleOf(dx / L, dy / L) - w.ang) * k3;
       setAttrs(node, { transform: `translate(${f1(w.x)} ${f1(w.y)}) rotate(${f1(w.ang)})`, opacity: w.alpha.toFixed(2) });

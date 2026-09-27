@@ -51,7 +51,20 @@ export const JADO_CUTTLE = 1.6;      // 底のエサに寄りやすいコウイ�
 //   寄せる（抵抗した時は手を止める）→ 糸を上げて浮けばイカ・浮かなければタコ（糸を切る）→ 45度まで寄ったらヤエン投入 →
 //   ヤエンが根元まで届けば、イカが驚いて下がったところで勝手に刺さる（合わせ不要）。届く前にアジを食べ終えたら離れる
 export const YAEN_SINK = 0.9;          // アジが沈む速さ（m/秒）
-export const YAEN_SPOIL = 45;          // 底で待ってこの秒数たつとアジが傷んで、その1投はおしまい
+export const YAEN_SPOIL = 60;          // 底に置いてからこの秒数でアジが傷んで、その1投はおしまい（しゃくっても鮮度は戻らない。画面に鮮度のゲージ）
+// 死にアジのヤエン（2026-09-28 ぱっぱ）：底に落として、少し浮かせる（しゃくり）ことで、ボトムに潜む親イカを誘う釣り。
+//   沈んでいる途中はしゃくれない（エギングにならないように）。着底後にしゃくると、アジが少し浮いて手前に寄り、しばらく抱きやすくなる
+export const YAEN_JERK_LIFT = 2.0;     // しゃくり（大きく1回）でアジが浮く高さ（m）
+export const YAEN_JERK_PULL = 1.5;     // しゃくりで手前に寄る距離（m）。しゃくったら待った秒数は0から数え直す（2026-09-28 ぱっぱ）
+export const YAEN_LURE = [6, 1.8];     // しゃくってから LURE[0] 秒は、抱く勢いが LURE[1] 倍
+export const YAEN_HINT = 12;           // この秒数しゃくらずに待って反応が無ければ「しゃくってみよう」の案内
+// 活きアジ（2026-09-28 ぱっぱ：案B＝活きアジが基本、死にアジは「ぱっぱ流」で選べる）：
+//   アジが中層を泳ぎ回り、だんだん弱る（アジの元気）。寄ってきたイカが追いかけて（YAEN_CHASE 秒）抱く。弱ったアジは見向きされにくい
+export const AJI = ['live', 'dead'];
+export const YAEN_LIVE = 90;           // 活きアジが弱りきるまで（秒）
+export const YAEN_LIVE_BITE = 1.4;     // 活きアジは泳ぐだけでイカを寄せる（抱く勢い）
+export const YAEN_CHASE = 2.4;         // イカが追いかけてから抱くまで（秒）
+export const YAEN_LIVE_DEPTH = 0.68;   // 活きアジが泳ぐ深さ（底までの割合）
 export const YAEN_BITE = 1 / 80;       // 近くにイカがいる時、1秒あたり抱く割合（アジが傷むまでに抱かない投げも多い）
 export const TAKO_RATE = 0.003;        // 1秒あたりタコが抱く割合（イカがいなくても）
 export const YAEN_RUN = [4, 7];        // 抱いて走る長さ（秒）と、走る距離
@@ -358,10 +371,11 @@ export function signalWindows(cond, kind = 'run', light = false, easy = false) {
 }
 
 // ---------------- 状態 ----------------
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami' } = {}) {
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live' } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
   return {
+    aji: AJI.includes(aji) ? aji : 'live',   // ヤエンのアジ：活きアジ／死にアジ（ぱっぱ流）
     method: METHOD_IDS_ENGINE.includes(method) ? method : 'egi',
     bait: BAITS.includes(bait) ? bait : 'sasami',
     baitLeft: 1,       // エサの残り（1＝付けたて）
@@ -503,7 +517,7 @@ export function press(s) {
     s.phase = 'aiming';
     s.power = 0;
     s.aimFrom = s.t;
-  } else if (s.method === 'yaen' && ['wait', 'run', 'draw', 'yaen'].includes(s.phase)) {
+  } else if (s.method === 'yaen' && ['sinking', 'wait', 'run', 'draw', 'yaen'].includes(s.phase)) {
     yaenPress(s);
   } else if ((s.phase === 'sinking' || s.phase === 'action') && s.method === 'jado') {
     drag(s);
@@ -565,11 +579,25 @@ export function yaenSideAction(s) {
 }
 // イカの集中（0〜1）とアジの残り（0〜1）。画面には出さない
 export const yaenFocus = (s) => (s.yaen?.on ? 1 - Math.exp(-(s.t - s.yaen.at) / s.yaen.tau) : 0);
+// アジの鮮度（死にアジ：1＝底に置いたばかり、0＝傷んだ）／アジの元気（活きアジ：1＝元気、0＝弱りきった）
+export const yaenFresh = (s) => (s.yaen?.placedAt != null ? Math.max(0, 1 - (s.t - s.yaen.placedAt) / (s.aji === 'live' ? YAEN_LIVE : YAEN_SPOIL)) : 1);
 export const yaenAji = (s) => (s.yaen?.on ? Math.max(0, 1 - (s.t - s.yaen.at) / s.yaen.eat) : 1);
 
 function yaenPress(s) {
   const y = s.yaen;
-  if (s.phase === 'wait') { emit(s, 'recover'); endCast(s, 'recover'); return; }   // 待っている間に押す＝回収して投げ直す
+  if (s.phase === 'sinking') return;   // 沈んでいる途中はしゃくれない（死にアジは底で誘う）
+  if (s.phase === 'wait') {
+    // 着底後のしゃくり：アジを少し浮かせて手前に寄せる（ボトムの親イカを誘う）。手前まで来たら回収
+    if (s.aji !== 'live') s.depth = Math.max(s.bottom - YAEN_JERK_LIFT, s.depth - YAEN_JERK_LIFT);
+    s.dist = Math.max(0, s.dist - YAEN_JERK_PULL);
+    y.liftAt = s.t;
+    y.waitFrom = s.t;   // 待った秒数は0から数え直す
+    y.jerks = (y.jerks ?? 0) + 1;
+    s.lastJerk = s.t;
+    emit(s, 'yaen-jerk', {});
+    if (s.dist <= 2) { emit(s, 'recover'); endCast(s, 'recover'); }
+    return;
+  }
   if (s.phase === 'yaen' && y?.reached) { yaenSet(s); return; }                      // 根元に入った後に押す＝竿を寄せて掛ける
   if (s.phase === 'run') {
     // 走っている最中・食べ始めに寄せ始める。集中が足りないと、ここで離しやすい
@@ -632,13 +660,32 @@ function yaenTick(s, dt) {
   const y = s.yaen;
   if (s.phase === 'wait') {
     const waited = s.t - (y?.waitFrom ?? s.t);
+    const live = s.aji === 'live';
+    const vigor = yaenFresh(s);
+    if (live) {
+      // 泳ぎ回る：元気なほど大きく。追いかけられている間は逃げて速く
+      const panic = y.chaseAt != null ? 2.2 : 1;
+      s.depth = Math.min(s.bottom - 0.6, Math.max(1.5, y.swimDepth + Math.sin(s.t * 0.7) * 1.0 * (0.3 + 0.7 * vigor)));
+      s.dist = Math.max(3, s.dist + Math.cos(s.t * 0.45) * 0.35 * vigor * panic * dt + (y.chaseAt != null ? 0.5 * dt : 0));
+      if (y.chaseAt != null && s.t - y.chaseAt >= YAEN_CHASE) { y.chaseAt = null; yaenBite(s, false); return; }
+      if (y.chaseAt != null) return;
+    } else if (s.depth < s.bottom) s.depth = Math.min(s.bottom, s.depth + YAEN_SINK * 0.7 * dt);
+    const lure = s.t - (y.liftAt ?? -99) < YAEN_LURE[0] ? (live ? 1.4 : YAEN_LURE[1]) : 1;
+    if (!y.hinted && !y.jerks && waited > YAEN_HINT) { y.hinted = true; emit(s, 'yaen-hint', { live }); }
     const moodFactor = 0.6 + 0.08 * s.cond.expectation;
     const tod = s.tod === 'morning' ? 1.4 : s.tod === 'evening' ? 1.2 : s.tod === 'night' ? 1.0 : 0.7;   // 朝マズメに大型（ぱっぱの実釣）
-    const rate = (s.squid > 0 ? YAEN_BITE * s.squid * moodFactor * tod * (s.easy ? EASY.bite : 1) : 0) + (s.bonus === 'last' || s.bonus === 'rescue' ? 0.08 : 0);
+    const rate = ((s.squid > 0 ? YAEN_BITE * s.squid * moodFactor * tod * (s.easy ? EASY.bite : 1) : 0) + (s.bonus === 'last' || s.bonus === 'rescue' ? 0.08 : 0)) * lure;
     const forced = s.guarantee && waited > 14;
-    if (forced || s.rand() < rate * dt) { yaenBite(s, false); return; }
-    if (!s.easy && s.rand() < TAKO_RATE * dt) { yaenBite(s, true); return; }
-    if (waited > YAEN_SPOIL) { emit(s, 'spoiled'); endCast(s, 'spoiled'); }
+    const liveK = live ? YAEN_LIVE_BITE * (0.4 + 0.6 * vigor) : 1;   // 活きアジは寄せる。弱ると見向きされにくい
+    if (forced || s.rand() < rate * liveK * dt) {
+      // 活きアジ：まずイカが追いかけてくる（見せ場）。死にアジ：底でそのまま抱く
+      if (live) { y.chaseAt = s.t; emit(s, 'yaen-chase', {}); return; }
+      // 死にアジをしゃくって落としている最中に抱かれた：アジにはエギのカンナが無いので、アジだけ取られておしまい（2026-09-28 ぱっぱ）
+      if (s.depth < s.bottom - 0.05) { s.reacted = true; s.signaled = true; emit(s, 'yaen-stolen', {}); endCast(s, 'stolen'); return; }
+      yaenBite(s, false); return;
+    }
+    if (!s.easy && s.rand() < TAKO_RATE * (live ? 0.3 : 1) * dt) { yaenBite(s, true); return; }   // タコは底の死にアジを抱きやすい
+    if (vigor <= 0) { emit(s, live ? 'tired' : 'spoiled'); endCast(s, live ? 'tired' : 'spoiled'); }
     return;
   }
   // 抱いてから：アジを食べ終えたら離れていく
@@ -1000,8 +1047,9 @@ export function tick(s, dt) {
       break;
     case 'sinking': {
       if (s.method === 'yaen') {
-        s.depth = Math.min(s.bottom, s.depth + YAEN_SINK * dt);
-        if (s.depth >= s.bottom) { s.phase = 'wait'; s.yaen = { on: false, waitFrom: s.t }; emit(s, 'bottom', {}); }
+        const floor = s.aji === 'live' ? s.bottom * YAEN_LIVE_DEPTH : s.bottom;
+        s.depth = Math.min(floor, s.depth + YAEN_SINK * dt);
+        if (s.depth >= floor) { s.phase = 'wait'; s.yaen = { on: false, waitFrom: s.t, placedAt: s.t, swimDepth: floor }; emit(s, 'bottom', { live: s.aji === 'live' }); }
         break;
       }
       s.depth = Math.min(s.bottom, s.depth + sinkRate(s.spec) * (s.method === 'jado' ? JADO_SINK : 1) * dt);
