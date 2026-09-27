@@ -463,3 +463,83 @@ test('ヤエン（死にアジ）：しゃくって落としている最中に�
   assert.equal(s.last, 'stolen');
   assert.ok(s.events.some((e) => e.type === 'yaen-stolen'));
 });
+
+// ---------------- テーラー（2026-09-28） ----------------
+import { tailorSet, TAILOR_BAITS, TAILOR_FLOATS, TANA_M } from '../src/js/ikabu/games/egi.js';
+const tailorStart = (opts = {}) => {
+  const s = createEgi({ seed: 'ta', method: 'tailor', month: 2, tod: 'night', rand: () => 0.99, ...opts });
+  press(s); release(s);
+  return s;
+};
+const stageOf = (s, i) => s.floats[i].stage;
+
+test('テーラー：1タップでウキを3本投げる（エサを3個使う）。タナの深さに沈める', () => {
+  const s = tailorStart({ tana: 'two' });
+  assert.equal(s.phase, 'tailor');
+  assert.equal(s.floats.length, 3);
+  assert.equal(s.casts, TAILOR_BAITS - 3);
+  assert.deepEqual(s.floats.map((f) => f.lit), TAILOR_FLOATS.map((f) => f.lit));
+  assert.equal(s.depth, TANA_M.two);
+});
+
+test('テーラー：触る→斜め→沈む。沈んで根元を抱いていれば掛かり、取り込んだら見張りに戻る', () => {
+  const s = tailorStart();
+  s.floats[0].stage = 'idle'; s.floats[0].at = -9;
+  for (const f of s.floats.slice(1)) { f.bait = 0; f.readyAt = 1e9; }   // ほかの2本は止めておく
+  const r = s.rand; const q = [0.99, 0.99, 0, 0.99]; s.rand = () => q.shift() ?? 0.99; tick(s, 0.05); s.rand = r;   // 海藻×・フグ×・抱く○・ダブル×
+  assert.equal(stageOf(s, 0), 'touch');
+  s.floats[0].hold = 'root';
+  for (let k = 0; k < 200 && stageOf(s, 0) !== 'sink'; k++) tick(s, 0.05);
+  assert.equal(stageOf(s, 0), 'sink');
+  s.rand = () => 0.5; tailorSet(s, 0); s.rand = r;
+  assert.equal(s.phase, 'fight');
+  for (let k = 0; k < 2000 && s.phase === 'fight'; k++) { press(s); tick(s, 0.05); release(s); tick(s, 0.05); }
+  assert.equal(s.phase, 'result');
+  assert.equal(s.catches.length, 1);
+  press(s); release(s);
+  assert.equal(s.phase, 'tailor', '結果を閉じたら見張りに戻る');
+});
+
+test('テーラー：頭側を抱いたまま合わせるとすっぽ抜け。触っただけで合わせても乗らない', () => {
+  const s = tailorStart();
+  const f = s.floats[1];
+  f.stage = 'sink'; f.hold = 'head'; f.squid = { id: 'yari', weight: 200, mantle: 28, power: 0.55 }; f.until = s.t + 5;
+  const r = s.rand; s.rand = () => 0.5; tailorSet(s, 1); s.rand = r;
+  assert.equal(s.phase, 'tailor');
+  assert.ok(s.events.some((e) => e.type === 'tailor-miss' && e.why === 'head'));
+  assert.equal(f.bait, 0, 'エサは取られる');
+  const g = s.floats[2];
+  g.stage = 'touch'; g.squid = { id: 'yari', weight: 200, mantle: 28, power: 0.55 };
+  tailorSet(s, 2);
+  assert.ok(s.events.some((e) => e.type === 'tailor-miss' && e.why === 'early'));
+});
+
+test('テーラー：海藻は合わせると外道の記録。エサが無くなったウキは付け直して投げ直す。エサが尽きたらおしまい', () => {
+  const s = tailorStart();
+  s.floats[2].stage = 'weed';
+  tailorSet(s, 2);
+  assert.ok(s.gedo.some((g) => g.id === 'seaweed'));
+  const before = s.casts;
+  run(s, 3);
+  assert.equal(s.floats[2].bait, 1, '付け直した');
+  assert.equal(s.casts, before - 1);
+  s.casts = 0;
+  for (const f of s.floats) { f.bait = 0; f.stage = 'idle'; }
+  tick(s, 0.05);
+  assert.equal(s.phase, 'over');
+});
+
+test('テーラー：浅いタナは海藻が少なく、深いタナは多い（平均で）', () => {
+  const weeds = (tana) => {
+    let n = 0;
+    for (let k = 0; k < 40; k++) {
+      const s = createEgi({ seed: 'w' + tana + k, method: 'tailor', month: 2, tod: 'night', tana });
+      press(s); release(s);
+      s.squid = 0;
+      run(s, 60);
+      n += s.events.length >= 0 ? s.floats.filter((f) => f.stage === 'weed').length : 0;
+    }
+    return n;
+  };
+  assert.ok(weeds('half') < weeds('two'));
+});

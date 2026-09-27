@@ -29,7 +29,7 @@ export const EGI_STOCK = 3; // 根掛かりで失うと減る
 // 釣り方（2026-09-27）：'egi'＝ふつうのエギング／'jado'＝邪道エギング（ぱっぱの実釣。コウイカ狙い）。
 // 邪道エギング：エギとスナップのつなぎ目にオモリ、背中にエサ（ササミ・キビナゴ。効きは同じ）。底をズルズル引いて止め、
 //   ずっしり重みが乗ったら合わせる。夜は匂いで寄る。深夜は「コツコツ」だけで抱かないことがある（すぐ動かすと離れる）
-export const METHOD_IDS_ENGINE = ['egi', 'jado', 'yaen'];
+export const METHOD_IDS_ENGINE = ['egi', 'jado', 'yaen', 'tailor'];
 export const BAITS = ['sasami', 'kibinago'];
 export const JADO_SINK = 1.6;        // オモリの分だけ速く沈む
 export const JADO_DRAG = 1.2;        // ズル引き1回（リール2巻き）で寄る距離（m）
@@ -82,11 +82,39 @@ export const TAKO_ROCK = 12;           // タコを寄せ続けると、この�
 export const YAEN_BACK = 0.3;          // 抵抗中、手を止めている時に下がる速さ（m/秒）
 export const YAEN_PULL = 1.4;          // 抵抗中に巻いた時、強く引いて下がる速さ（m/秒）
 
+// テーラー（2026-09-28 ぱっぱOK。設計 ikabu-research\new-methods-design.md の4）：
+//   冬の夜の堤防に電気ウキを3本（緑＝灯りの近く・赤・オレンジ）。ウキの動きでアタリの段階を読む：
+//   倒れる（触った）→ 斜め（抱いた）→ がっつり沈む（合わせどき）。
+//   テーラーの針は根元（下）にだけある。頭側（上）を抱いたまま合わせるとすっぽ抜ける。灯りの近くのウキだけ、水中のイカが見える。
+//   ニセのアタリ：海藻（ゆっくり傾いて戻らない）・フグ（細かくピクピク→エサを取られる）。群れが来ると2本同時に抱く（ダブル）
+//   1回の釣行はエサ TAILOR_BAITS 個。最初に3本へ付け、エサが無くなったウキには残りから付け直す（投げ直し）
+export const TANAS = ['half', 'one', 'two'];
+export const TANA_M = { half: 0.75, one: 1.5, two: 3 };   // 半ヒロ・1ヒロ・2ヒロ（1ヒロ≒1.5m）
+export const TANA_BITE = { half: 0.5, one: 1, two: 1.3 };  // 深いほど抱きやすい（ボットで1ヒロがいちばん釣れるように合わせた）
+export const TANA_WEED = { half: 0.2, one: 1, two: 2.6 };  // 深いほど海藻に掛かる（ぱっぱ：根掛かり・海藻に掛かったらタナを浅く）
+export const TAILOR_FLOATS = [
+  { color: 'green', dist: 9, lit: true },   // 灯りの近く（イカが見える）
+  { color: 'red', dist: 16, lit: false },
+  { color: 'orange', dist: 24, lit: false },
+];
+export const TAILOR_BAITS = 9;           // 1回の釣行のエサ（ササミ）の数
+export const TAILOR_BITE = 1 / 40;       // イカが周りにいる時、ウキ1本・1秒あたりイカが寄ってくる割合
+export const TAILOR_STAGE = { touch: [1.5, 3], lean: [2, 4], sink: [5, 9] };   // 触る・抱く・沈んでいる長さ（秒）
+export const TAILOR_HEAD = 0.55;         // 抱いた時、頭側（上）を抱いている割合
+export const TAILOR_ROOT = 0.3;          // 沈んでいる間、1秒あたり頭側から根元（針）へ抱き直す割合
+export const TAILOR_HOOK = { lean: 0.2, root: 0.92, head: 0.08, fugu: 0.4 };   // 合わせて掛かる確率
+export const TAILOR_WEED = 0.004;        // ウキ1本・1秒あたり海藻に掛かる（1ヒロ）
+export const TAILOR_FUGU = 0.006;        // ウキ1本・1秒あたりフグが来る
+export const TAILOR_FUGU_TIME = [3, 5];  // フグがつついてエサを取るまで（秒）
+export const TAILOR_DOUBLE = 0.25;       // 1本が抱かれた時、群れでもう1本も抱かれる
+export const TAILOR_REBAIT = 2.5;        // エサが無くなってから付け直して投げ直すまで（秒）
+
 // 外道（2026-09-27 ぱっぱ：外道の記録に残す。海藻・ゴミ・カサゴなど）。図鑑とは別に数える。
 //   カサゴ … 底にいる時に「コン」と食う（岩の底ほど）。軽くてすぐ上がる
 //   海藻   … 藻に掛かった時、ときどきそのまま付いてくる
 //   長靴・空き缶 … 根掛かりのうち、ときどきゴミだった（エギは戻る）
 export const GEDO = {
+  fugu: { g: [80, 300], power: 0.3 },   // テーラーでエサを取っていく（ウキが細かくピクピク）
   kasago: { g: [80, 350], power: 0.35 },
   seaweed: { g: [50, 400] },
   boot: { g: [600, 1200] },
@@ -373,12 +401,15 @@ export function signalWindows(cond, kind = 'run', light = false, easy = false) {
 }
 
 // ---------------- 状態 ----------------
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live' } = {}) {
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one' } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
+  const m = METHOD_IDS_ENGINE.includes(method) ? method : 'egi';
   return {
+    tana: TANAS.includes(tana) ? tana : 'one',   // テーラーのタナ
+    floats: [],        // テーラーのウキ3本
     aji: AJI.includes(aji) ? aji : 'live',   // ヤエンのアジ：活きアジ／死にアジ（ぱっぱ流）
-    method: METHOD_IDS_ENGINE.includes(method) ? method : 'egi',
+    method: m,
     bait: BAITS.includes(bait) ? bait : 'sasami',
     baitLeft: 1,       // エサの残り（1＝付けたて）
     rock: false,       // この投げの底が岩まじりか
@@ -412,7 +443,7 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     weedSeen: false,
     phase: 'ready',
     t: 0,
-    casts: CASTS,
+    casts: m === 'tailor' ? TAILOR_BAITS : CASTS,   // テーラーはエサの数
     egi: EGI_STOCK,
     pressing: false,
     pressAt: 0,
@@ -454,6 +485,7 @@ const emit = (s, type, data = {}) => s.events.push({ type, t: s.t, ...data });
 
 // その回の投げを終えて、次の構えへ（もう投げられなければ終了）
 function endCast(s, why) {
+  if (s.method === 'tailor') { tailorEndFight(s, why); return; }
   s.last = why;
   s.dryCasts = s.signaled ? 0 : (s.dryCasts ?? 0) + 1;
   s.quiet = s.reacted ? 0 : (s.quiet ?? 0) + 1;
@@ -515,6 +547,8 @@ export function press(s) {
   if (s.pressing) return;
   s.pressing = true;
   s.pressAt = s.t;
+  if (s.method === 'tailor' && s.phase === 'ready') { tailorCast(s); return; }
+  if (s.method === 'tailor' && s.phase === 'result') { s.phase = 'tailor'; s.last = null; emit(s, 'tailor-resume'); return; }
   if (s.phase === 'ready') {
     s.phase = 'aiming';
     s.power = 0;
@@ -751,6 +785,134 @@ function yaenSet(s) {
   s.squid = Math.max(0, s.squid - 1);
   s.hooking.bonus = true;   // ヤエンのやり取りはやさしめ（本番はここまで）
   emit(s, 'hook', { id: s.hooking.id, yaen: true });
+}
+
+/* ---------------- テーラー ---------------- */
+// 3本のウキを投げる（1タップ）。エサを3個使う
+function tailorCast(s) {
+  s.phase = 'tailor';
+  s.signaled = false;
+  s.reacted = false;
+  s.hooking = null;
+  s.setIdx = null;
+  s.squid = sampleSquid(s);
+  s.bottom = 6 + Math.round(s.rand() * 4);
+  s.depth = TANA_M[s.tana];
+  s.watchFrom = s.t;
+  s.floats = TAILOR_FLOATS.map((f, i) => ({ i, ...f, bait: 0, stage: 'idle', hold: null, until: 0, squid: null, readyAt: s.t }));
+  for (const f of s.floats) tailorBait(s, f, false);
+  emit(s, 'tailor-cast', { tana: s.tana });
+}
+function tailorBait(s, f, recast = true) {
+  if (s.casts <= 0) return false;
+  s.casts -= 1;
+  f.bait = 1; f.stage = 'idle'; f.hold = null; f.squid = null; f.at = s.t;
+  if (recast) emit(s, 'tailor-rebait', { i: f.i });
+  return true;
+}
+// エサが無くなった（食べられた・フグに取られた・合わせて外れた・取り込んだ）
+function tailorLose(s, f) {
+  f.bait = 0; f.stage = 'idle'; f.hold = null; f.squid = null; f.readyAt = s.t + TAILOR_REBAIT;
+}
+const tailorAlive = (s) => s.casts > 0 || s.floats.some((f) => f.bait > 0 && f.stage !== 'weed');
+// イカが寄ってきて触る（ここからアタリの段階が進む）
+function tailorBite(s, f, delay = 0) {
+  const pool = speciesPool(s.month, s.tod).filter((p) => p.id === 'yari' || p.id === 'aori');
+  const sp = pool.length ? pickWeighted(pool, s.rand) : { id: 'yari', g: [150, 400], k: 4.8, power: 0.55 };
+  const [g0, g1] = sp.g;
+  const weight = Math.round(g0 + (g1 - g0) * s.rand() ** 1.6);
+  f.squid = { id: sp.id, weight, mantle: Math.round(sp.k * Math.cbrt(weight)), power: sp.power };
+  f.stage = 'touch';
+  f.hold = s.rand() < TAILOR_HEAD ? 'head' : 'root';
+  f.until = s.t + delay + between(s, TAILOR_STAGE.touch);
+  s.signaled = true;
+  s.reacted = true;
+  emit(s, 'tailor-touch', { i: f.i, double: delay > 0 });
+}
+function tailorTick(s, dt) {
+  const tod = s.tod === 'night' ? 1.2 : s.tod === 'evening' ? 1 : 0.4;
+  const rate = TAILOR_BITE * (0.4 + 0.8 * s.squid) * TANA_BITE[s.tana] * tod;
+  for (const f of s.floats) {
+    if (!f.bait) {
+      if (f.stage === 'idle' && s.t >= f.readyAt) tailorBait(s, f);
+      continue;
+    }
+    switch (f.stage) {
+      case 'idle':
+        if (s.t - f.at < 1) break;   // 投げてすぐは来ない
+        if (s.rand() < TAILOR_WEED * TANA_WEED[s.tana] * dt) { f.stage = 'weed'; f.at = s.t; emit(s, 'tailor-weed', { i: f.i }); }
+        else if (s.rand() < TAILOR_FUGU * dt) { f.stage = 'fugu'; f.until = s.t + between(s, TAILOR_FUGU_TIME); emit(s, 'tailor-fugu', { i: f.i }); }
+        else if (s.rand() < rate * dt) {
+          tailorBite(s, f);
+          // 群れ：もう1本も（少し遅れて）
+          if (s.rand() < TAILOR_DOUBLE) {
+            const g = s.floats.find((x) => x !== f && x.bait && x.stage === 'idle');
+            if (g) tailorBite(s, g, 0.3 + s.rand() * 0.9);
+          }
+        }
+        break;
+      case 'touch':
+        if (s.t >= f.until) { f.stage = 'lean'; f.until = s.t + between(s, TAILOR_STAGE.lean); emit(s, 'tailor-lean', { i: f.i }); }
+        break;
+      case 'lean':
+        if (s.t >= f.until) { f.stage = 'sink'; f.until = s.t + between(s, TAILOR_STAGE.sink); emit(s, 'tailor-sink', { i: f.i, head: f.hold === 'head' }); }
+        break;
+      case 'sink':
+        if (f.hold === 'head' && s.rand() < TAILOR_ROOT * dt) { f.hold = 'root'; emit(s, 'tailor-root', { i: f.i }); }
+        if (s.t >= f.until) { emit(s, 'tailor-gone', { i: f.i }); tailorLose(s, f); }   // 合わせないうちに、エサを食べて離れた
+        break;
+      case 'fugu':
+        if (s.t >= f.until) { emit(s, 'tailor-fugu-gone', { i: f.i }); tailorLose(s, f); }
+        break;
+      default:
+        break;
+    }
+  }
+  if (!tailorAlive(s)) { s.last = 'nobait'; s.phase = 'over'; emit(s, 'over', { total: totalWeight(s) }); }
+}
+// ウキ i で合わせる（ウキか色のボタンをタップ）
+export function tailorSet(s, i) {
+  if (s.method !== 'tailor' || s.phase !== 'tailor') return;
+  const f = s.floats[i];
+  if (!f) return;
+  const miss = (why) => { emit(s, 'tailor-miss', { i, why, stage: f.stage }); s.squid = Math.max(0, s.squid - (why === 'fugu' ? 0 : 1)); tailorLose(s, f); };
+  const hook = (hk) => {
+    s.hooking = hk;
+    s.setIdx = i;
+    s.phase = 'fight';
+    s.dist = f.dist;
+    s.depth = TANA_M[s.tana];
+    s.tension = 30;
+    s.slackFor = 0;
+    if (!hk.gedo) s.squid = Math.max(0, s.squid - 1);
+    emit(s, 'hook', { id: hk.id, tailor: true, i });
+  };
+  const chance = (k) => (s.easy ? Math.min(1, k * 1.5) : k);
+  switch (f.stage) {
+    case 'idle': emit(s, 'tailor-nothing', { i }); break;
+    case 'touch': miss('early'); break;   // 触っただけ：乗らない
+    case 'lean': if (s.rand() < chance(TAILOR_HOOK.lean)) hook(f.squid); else miss('early'); break;
+    case 'sink':
+      if (s.rand() < chance(TAILOR_HOOK[f.hold])) hook(f.squid);
+      else miss(f.hold === 'head' ? 'head' : 'luck');   // 頭側を抱いていた＝すっぽ抜け
+      break;
+    case 'weed': gedoCatch(s, 'seaweed'); emit(s, 'tailor-weedup', { i }); tailorLose(s, f); break;
+    case 'fugu': {
+      if (s.rand() < TAILOR_HOOK.fugu) { const [g0, g1] = GEDO.fugu.g; hook({ id: 'fugu', gedo: true, weight: Math.round(g0 + (g1 - g0) * s.rand()), power: GEDO.fugu.power }); }
+      else miss('fugu');
+      break;
+    }
+    default: break;
+  }
+}
+// やり取りが終わった：結果を見せて、閉じたら見張りに戻る（エサが残っていなければおしまい）
+function tailorEndFight(s, why) {
+  s.last = why;
+  const f = s.floats[s.setIdx];
+  if (f) tailorLose(s, f);
+  s.setIdx = null;
+  s.phase = tailorAlive(s) ? 'result' : 'over';
+  if (s.phase === 'over') emit(s, 'over', { total: totalWeight(s) });
 }
 
 // 外道を取り込む（ファイトの無いもの：海藻・ゴミ）
@@ -1052,6 +1214,9 @@ export function tick(s, dt) {
     case 'draw':
     case 'yaen':
       yaenTick(s, dt);
+      break;
+    case 'tailor':
+      tailorTick(s, dt);
       break;
     case 'sinking': {
       if (s.method === 'yaen') {
