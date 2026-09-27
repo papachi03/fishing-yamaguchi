@@ -34,7 +34,7 @@ function catchLogs() {
 // Discordに送った本文だけを取り出す
 const sentTo = (f, env) => f.calls.filter((c) => c.url === env.DISCORD_WEBHOOK_URL).map((c) => JSON.parse(c.init.body));
 
-test('新しい投稿をDiscordに知らせる（本文・削除リンクつき。メンションは展開させない）', async () => {
+test('新しい投稿をDiscordに知らせる（本文・削除リンクつき。オーナーだけを@で鳴らし、本文のメンションは展開させない）', async () => {
   const env = makeEnv();
   const f = stubFetch(okFetch());
   try {
@@ -45,6 +45,9 @@ test('新しい投稿をDiscordに知らせる（本文・削除リンクつき�
     assert.match(body.content, /つりお/);
     assert.match(body.content, /越ヶ浜漁港/);
     assert.ok(body.content.includes(`${BASE}/admin/delete?token=`), '削除リンクが入る');
+    // 2026-09-27 ダディ指示「新しい投稿でもスマホを鳴らしたい」
+    assert.ok(body.content.startsWith(`<@${env.NOTIFY_MENTION_USER_ID}>`), 'オーナーを@で呼ぶ');
+    assert.deepEqual(body.allowed_mentions.users, [env.NOTIFY_MENTION_USER_ID]);
     assert.deepEqual(body.allowed_mentions.parse, []);
     const token = body.content.match(/token=(.+)/)[1];
     assert.equal(await readDeleteToken(env, token), post.id);
