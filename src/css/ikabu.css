@@ -1521,6 +1521,15 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 }
 .ika-egi-callout.is-good { background: var(--ika-orange); }
 .ika-egi-callout.is-bad { background: var(--ika-ink); color: var(--ika-white); box-shadow: 3px 3px 0 var(--ika-white); }
+/* ラストチャンス（2026-09-27）：吹き出しは金色で大きく、海のまわりが金色にゆっくり光る */
+.ika-egi-callout.is-last { background: #ffd23f; color: var(--ika-ink); font-size: 1.35em; box-shadow: 3px 3px 0 var(--ika-orange); }
+.ika-egi-stage.is-lastchance::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 2;
+  box-shadow: inset 0 0 0 4px rgba(255, 210, 63, 0.9), inset 0 0 60px 10px rgba(255, 210, 63, 0.45);
+  animation: ika-egi-lastglow 1.6s ease-in-out infinite alternate;
+}
+@keyframes ika-egi-lastglow { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ika-egi-stage.is-lastchance::after { animation: none; } }
 .ika-egi-callout[hidden], .ika-egi-flash[hidden], .ika-egi-card[hidden], .ika-egi-gauge[hidden], .ika-egi-count[hidden], .ika-egi-setup-locked[hidden], .ika-m3-callout[hidden], .ika-m3-card[hidden] { display: none; }
 @keyframes ika-egi-pop {
   0% { transform: translateX(-50%) scale(0.5); opacity: 0; }

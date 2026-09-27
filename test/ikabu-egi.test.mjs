@@ -265,16 +265,17 @@ function botTrip(seed, month, tod, conditions) {
   return s.catches.length;
 }
 
-test('良い日（秋の夕まずめ・期待値8）は釣れやすく、悪い日（冬の日中・期待値2）はボウズが多い', () => {
+test('良い日（秋の夕まずめ・期待値8）は釣れやすく、悪い日（冬の日中・期待値2）は救済とラストチャンスの分だけ', () => {
   const N = 40;
   const good = Array.from({ length: N }, (_, i) => botTrip('g' + i, 10, 'evening', { expectation: 8 }));
   const bad = Array.from({ length: N }, (_, i) => botTrip('b' + i, 1, 'day', { expectation: 2 }));
   const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const bouzu = (a) => a.filter((n) => n === 0).length / a.length;
-  // 良い日でも毎投は釣れない（5投で平均1.5〜3.8杯）。悪い日は半分以上ボウズ
-  assert.ok(avg(good) >= 1.5 && avg(good) <= 3.8, `良い日の平均 ${avg(good)}`);
-  assert.ok(bouzu(bad) >= 0.5, `悪い日のボウズ率 ${bouzu(bad)}`);
-  assert.ok(avg(good) > avg(bad) * 2);
+  // 良い日でも毎投は釣れない（5投で平均1.5〜4.2杯。最後の1投はラストチャンスで少し上がる）。
+  // 悪い日は、上手な人なら救済とラストチャンス（2026-09-27）で取れる分（2杯まで）だけ。良い日はその2倍近く
+  assert.ok(avg(good) >= 1.5 && avg(good) <= 4.2, `良い日の平均 ${avg(good)}`);
+  assert.ok(avg(bad) <= 2, `悪い日の平均 ${avg(bad)}（ボウズ率 ${bouzu(bad)}）`);
+  assert.ok(avg(good) > avg(bad) * 1.8, `良い日 ${avg(good)} / 悪い日 ${avg(bad)}`);
 });
 
 // ---- 再現度（2026-09-24 ぱっぱ選択：エギの号数と沈下・フォールの種類／アタリの出方／しゃくりの種類） ----
@@ -472,13 +473,14 @@ function noviceTrip(seed, easy) {
   return s.catches.length;
 }
 
-test('🔰初心者練習：初心者の動きでも秋は8割以上の釣行で釣れる。同じ動きの季節モードは2割に届かない', () => {
+test('🔰初心者練習：初心者の動きでも秋は8割以上の釣行で釣れる。同じ動きの季節モードはそれより釣れない', () => {
   const N = 60;
   const got = (easy) => Array.from({ length: N }, (_, i) => noviceTrip(`n${easy}${i}`, easy)).filter((n) => n > 0).length / N;
   const easy = got(true);
   const normal = got(false);
   assert.ok(easy >= 0.8, `初心者練習 ${easy}`);
-  assert.ok(normal < 0.25, `季節モード ${normal}`);
+  // 季節モードもラストチャンス・救済（2026-09-27）で釣れることは増えたが、初心者練習よりは難しい
+  assert.ok(normal < easy - 0.15, `季節モード ${normal} / 初心者練習 ${easy}`);
 });
 
 // 藻場（2026-09-27）
@@ -520,4 +522,67 @@ test('藻に掛かるとその1投はおしまい、エギは減らない。🔰
   const e = castOnce('tangle', { easy: true });
   e.weed = { kind: 'hondawara', from: 0, to: 99, height: 2.0 };
   for (let i = 0; i < 400 && e.phase === 'sinking'; i++) { tick(e, 0.05); assert.ok(!e.events.some((x) => x.type === 'weed')); }
+});
+
+
+// ラストチャンスと救済（2026-09-27、ぱっぱ：本物どおりだと釣れない日はほぼ釣れない＝離脱される）
+import { RESCUE_AFTER, LAST_GUARANTEE } from '../src/js/ikabu/games/egi.js';
+
+// 投げて、何もせず回収まで待つ（しゃくらない＝アタリは出ない）
+function idleCast(s) {
+  press(s); run(s, 0.8); release(s);
+  const ev = [...s.events];
+  for (let k = 0; k < 4000 && s.phase !== 'result' && s.phase !== 'over'; k++) { tick(s, 0.05); ev.push(...s.events); if (s.phase === 'sinking' && s.depth >= s.bottom) { s.dist = 0; s.phase = 'action'; } }
+  if (s.phase === 'result') { press(s); release(s); }
+  return ev;
+}
+
+test('救済：2投つづけて反応が無いと、次の投げは必ずイカが近くにいてヒントが出る', () => {
+  const s = createEgi({ seed: 'rescue', month: 1, tod: 'day', conditions: { expectation: 1 } });
+  const bonuses = [];
+  for (let k = 0; k < RESCUE_AFTER + 1; k++) {
+    const ev = idleCast(s);
+    bonuses.push(ev.find((e) => e.type === 'bonus') ?? null);
+  }
+  assert.equal(bonuses[0], null);
+  assert.equal(bonuses[RESCUE_AFTER - 1], null);
+  assert.equal(bonuses[RESCUE_AFTER]?.kind, 'rescue');
+  assert.ok(['color', 'zone'].includes(bonuses[RESCUE_AFTER].hint));
+});
+
+test('ラストチャンス：最後の1投はボーナス。まだボウズなら、しゃくってフォールさせれば必ずアタリが出る（はっきりした形）', () => {
+  for (let i = 0; i < 20; i++) {
+    const s = createEgi({ seed: 'last' + i, month: 1, tod: 'day', conditions: { expectation: 1 } });
+    for (let k = 0; k < CASTS - 1; k++) idleCast(s);
+    press(s); run(s, 0.8); release(s);
+    const bonus = s.events.find((e) => e.type === 'bonus');
+    assert.equal(bonus?.kind, 'last');
+    assert.equal(bonus.guarantee, true);
+    assert.ok(s.squid >= 1);
+    // 沈めて、しゃくって、長押しのテンションフォールをくり返す
+    run(s, 2);
+    let signal = null;
+    for (let k = 0; k < 10 && !signal && s.phase !== 'over' && s.phase !== 'result'; k++) {
+      press(s);
+      for (let t = 0; t < LAST_GUARANTEE + 1 && !signal; t += 0.05) { tick(s, 0.05); signal = s.events.find((e) => e.type === 'signal'); }
+      if (s.pressing) release(s);
+    }
+    assert.ok(signal, `アタリが出ない（${i}）`);
+    assert.equal(signal.kind, 'run');
+    assert.equal(signal.light, false);
+  }
+});
+
+test('ラストチャンス：もう釣れている釣行では、アタリの保証はしない。🔰初心者練習にはボーナスは無い', () => {
+  const s = createEgi({ seed: 'last-got', month: 10, tod: 'evening', conditions: { expectation: 7 } });
+  for (let k = 0; k < CASTS - 1; k++) idleCast(s);
+  s.catches.push({ id: 'aori', weight: 500 });
+  press(s); run(s, 0.8); release(s);
+  const bonus = s.events.find((e) => e.type === 'bonus');
+  assert.equal(bonus?.kind, 'last');
+  assert.equal(bonus.guarantee, false);
+  const e = createEgi({ seed: 'last-easy', month: 10, tod: 'evening', conditions: { expectation: 7 }, easy: true });
+  let seen = false;
+  for (let k = 0; k < CASTS; k++) { const ev = idleCast(e); if (ev.some((x) => x.type === 'bonus')) seen = true; }
+  assert.equal(seen, false);
 });

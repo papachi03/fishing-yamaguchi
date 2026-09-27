@@ -104,6 +104,13 @@ export const EGI_TEXT = {
     },
     rotation: pair('色を替えて気を引いた！（カラーローテーション）', 'New colour caught their eye! (colour rotation)'),
     rotateHint: pair('同じ色で反応がない…色を替えてみよう', 'No interest on this colour… try another'),
+    // ラストチャンスと救済（2026-09-27、ぱっぱ：釣れない日でも最後の1投は必ずチャンス／反応がない時は救済）
+    lastChance: pair('🦑 ラストチャンス！', '🦑 Last chance!'),
+    lastChanceSure: pair('イカが見ている…しゃくって、フォールで待て！', 'A squid is watching… jerk, then let it fall!'),
+    lastChanceMore: pair('最後の1投。イカが寄ってきている！', 'Final cast. Squid are closing in!'),
+    rescue: pair('イカの気配…！', 'A squid is nearby…!'),
+    rescueColor: pair('イカの気配…！ 反応がなければエギの色を替えてみよう', 'A squid is nearby…! No luck? Try another colour'),
+    rescueZone: pair('イカの気配…！ 棚（深さ）を変えて探ってみよう', 'A squid is nearby…! Try a different depth'),
     reviewColor: (lang, list) => (lang === 'en' ? `Colours that suited today: ${list}` : `今日の条件に合う色：${list}`),
   },
   gestures: {

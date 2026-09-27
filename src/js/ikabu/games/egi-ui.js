@@ -213,9 +213,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
 
   /* ---------- ゲームの作り直し ---------- */
+  let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
     s = createEgi({ month: settings.month, tod: settings.tod, conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner' });
-    castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0;
+    castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
+    el.stage.classList.remove('is-lastchance');
     V.egi.mode = 'tip'; V.flight = null; V.cast = null; V.sinkOffset = 0; V.hug.on = false; V.hug.alpha = 0; V.escape = null; V.ink = null; V.land = null; V.lineBroken = false; V.ghost = null;
     V.swim.forEach((w, i) => { w.alpha = 0; w.x = W + 100 + i * 80; w.y = Y(4); });
     const pool = speciesPool(settings.month, settings.tod);
@@ -705,6 +707,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'rotation':
           callout(t(lang, TX.egi.rotation), 'good');
           break;
+        case 'bonus':
+          // ラストチャンス：大きく出して、海を金色に光らせる。詳しい一言は着水の時に（着水の知らせの代わり）
+          bonusNote = e.kind === 'last' ? (e.guarantee ? TX.egi.lastChanceSure : TX.egi.lastChanceMore)
+            : e.hint === 'color' ? TX.egi.rescueColor : TX.egi.rescueZone;
+          if (e.kind === 'last') { el.stage.classList.add('is-lastchance'); callout(t(lang, TX.egi.lastChance), 'last', 1600); }
+          break;
         case 'over':
           break;
         default:
@@ -727,6 +735,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.escape = { x: V.hug.x, y: V.hug.y, ang: -90, t0: now };
   }
   function resetForNextCast() {
+    el.stage.classList.remove('is-lastchance');
+    bonusNote = null;
     if (sc?.nodes?.hugWater) sc.nodes.hugWater.style.filter = '';
     V.revealed = false;
     el.card.hidden = true;
@@ -1165,7 +1175,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.splashAt = now;
     V.flyDir = null;
     burst(C.to.x, SCENE.surface, 7);
-    callout(t(lang, TX.msg.cast));
+    if (bonusNote) { callout(t(lang, bonusNote), 'good', 4200); bonusNote = null; }
+    else callout(t(lang, TX.msg.cast));
   }
   function burst(x, y, n = 8) {
     V.splash = Array.from({ length: n }, (_, i) => ({ x, y, vx: lerp(-90, 90, i / (n - 1)) + (Math.random() - 0.5) * 30, vy: 150 + Math.random() * 120, t0: now }));

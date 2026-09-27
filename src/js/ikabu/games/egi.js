@@ -11,6 +11,15 @@
 import { seeded, pickWeighted } from './rng.js';
 
 export const CASTS = 5; // 1回の釣行で投げられる回数
+// ラストチャンスと救済（2026-09-27、ぱっぱ：本物どおりだと釣れない日はほぼ釣れない＝離脱される）
+//   ラストチャンス：最後の1投は必ずイカが近くにいて、抱く勢いが LAST_BOOST 倍。まだ1杯も釣れていなければ、
+//     しゃくってフォールさせている間（合計 LAST_GUARANTEE 秒）に必ずアタリが1回出る（アワセ・ファイトは腕しだい）
+//   救済：RESCUE_AFTER 投つづけて何の反応（アタリ・イカパンチ）もなければ、次の投げは必ずイカが1匹近くにいる＋ヒント。
+//     1回の釣行で1回まで（悪い日と良い日の差を残す。上手な人が悪い日に毎回2杯取れてしまった）
+//   🔰初心者練習はもともと釣れやすいので、どちらも入れない
+export const LAST_BOOST = 1.8;
+export const LAST_GUARANTEE = 2.5;
+export const RESCUE_AFTER = 2;
 export const EGI_STOCK = 3; // 根掛かりで失うと減る
 export const SIGNAL_GOOD = 0.7; // 「ラインが走る」アタリで、ちゃんと掛かるまでの猶予（秒）
 export const SIGNAL_LATE = 1.2; // これを過ぎたらイカが離す
@@ -304,6 +313,12 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     dryCasts: 0, // 同じ色でアタリの無かった投げの数（カラーローテーション用）
     rotated: false, // 色を替えた次の1投（気を引ける）
     signaled: false, // この投げでアタリがあったか
+    reacted: false, // この投げで何かの反応（アタリ・イカパンチ）があったか
+    quiet: 0, // 反応の無い投げが何投つづいているか（救済用）
+    bonus: null, // この投げのボーナス 'last'（ラストチャンス）／'rescue'（救済）
+    guarantee: false, // ラストチャンスで、アタリが1回出ることを保証している
+    guaranteeFall: 0, // 保証つきの投げで、フォールさせた合計秒
+    rescued: false, // この釣行で救済を使ったか（1回まで）
     punchPending: false, // パンチの後、まだ「待った／すぐしゃくった」が決まっていない
     squid: 0,
     weed: null, // この投げの藻場 { kind, from, to, height }（m）
@@ -354,6 +369,7 @@ const emit = (s, type, data = {}) => s.events.push({ type, t: s.t, ...data });
 function endCast(s, why) {
   s.last = why;
   s.dryCasts = s.signaled ? 0 : (s.dryCasts ?? 0) + 1;
+  s.quiet = s.reacted ? 0 : (s.quiet ?? 0) + 1;
   s.tensionFall = false;
   s.phase = s.casts > 0 && s.egi > 0 ? 'result' : 'over';
   if (s.phase === 'over') emit(s, 'over', { total: totalWeight(s) });
@@ -463,6 +479,10 @@ export function release(s) {
     s.punchPending = false;
     s.liftAt = -99;
     s.signaled = false;
+    s.reacted = false;
+    s.bonus = null;
+    s.guarantee = false;
+    s.guaranteeFall = 0;
     if (s.rotated) { s.interest += ROTATE_GAIN; s.rotated = false; emit(s, 'rotation', {}); }
     s.squid = sampleSquid(s);
     // 藻場がある投げは、近くにいるイカが多い（産卵・隠れ家に集まる）。イカがいない投げでも寄ってくることがあるが、
@@ -471,8 +491,25 @@ export function release(s) {
       if (s.squid > 0) { if (s.rand() < 0.6) s.squid += 1; }
       else if (s.rand() < 0.5 * (s.cond.expectation / 10) ** 2) s.squid = 1;   // 期待値2で2%、7で25%、10で50%
     }
+    // ラストチャンス／救済（初心者練習には入れない）
+    if (!s.easy) {
+      if (s.casts === 0) {
+        s.bonus = 'last';
+        s.squid = Math.max(s.squid, 1);
+        s.guarantee = s.catches.length === 0;
+      } else if (s.quiet >= RESCUE_AFTER && !s.rescued) {
+        s.bonus = 'rescue';
+        s.rescued = true;
+        s.squid = Math.max(s.squid, 1);
+      }
+    }
     s.phase = 'sinking';
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec, weed: s.weed });
+    if (s.bonus) {
+      // 救済のヒント：同じ色で反応が無い投げが続いていれば色、そうでなければ棚（深さ）
+      const hint = s.bonus === 'rescue' ? ((s.dryCasts ?? 0) >= 2 ? 'color' : 'zone') : null;
+      emit(s, 'bonus', { kind: s.bonus, guarantee: s.guarantee, hint });
+    }
   }
 }
 
@@ -643,6 +680,9 @@ export function tick(s, dt) {
           s.windows = signalWindows(s.cond, kind, false, s.easy);
           s.phase = 'signal';
           s.signalAt = s.t;
+          s.signaled = true;
+          s.reacted = true;
+          s.guarantee = false;
           emit(s, 'signal', { kind, light: false, tensionFall: s.tensionFall, boss: true });
           break;
         }
@@ -650,7 +690,7 @@ export function tick(s, dt) {
       // フォール中（しゃくって1秒後から）にだけ抱く。近くにイカがいて、そのイカの好きな棚にエギがあるほど、
       // 気になっているほど抱きやすい。シリヤケイカだけは、底から持ち上げた直後（0.3秒後から）も食う
       const lifting = s.t - s.liftAt < LIFT_WINDOW;
-      if ((since >= 1 || (lifting && since >= 0.3)) && s.depth < s.bottom && s.squid > 0) {
+      if ((since >= 1 || (lifting && since >= 0.3)) && s.depth < s.bottom && (s.squid > 0 || s.guarantee)) {
         const weights = contactWeights(s);
         // しゃくって1秒たつまでは、巻き上げで食うイカ（シリヤケ）だけが候補
         const cands = weights.filter((p) => p.w > 0 && (since >= 1 || p.lift));
@@ -659,25 +699,38 @@ export function tick(s, dt) {
         // 渋い日は長いテンションフォールが効き、やる気のある日は速いフリーフォールでも抱く
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
         const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM)
-          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1) * weedBoost(s);
-        if (!s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
+          * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1) * weedBoost(s)
+          * (s.bonus === 'last' ? LAST_BOOST : 1);
+        // ラストチャンスの保証：しゃくってフォールさせた時間が合計 LAST_GUARANTEE 秒に達したら、必ず抱く
+        if (s.guarantee && since >= 1) s.guaranteeFall += dt;
+        const forced = s.guarantee && s.guaranteeFall >= LAST_GUARANTEE;
+        // 棚が合っていなくて候補がいない時も、保証の時は出やすさだけで選ぶ
+        const pool = forced && !cands.length ? speciesPool(s.month, s.tod).filter((p) => p.w > 0) : cands;
+        if (!forced && !s.punchPending && s.t - s.punchAt > 3 && s.rand() < PUNCH_SHARE * rate * dt) {
           s.punchAt = s.t;
           s.punchPending = true;
+          s.reacted = true;
           emit(s, 'punch', { tensionFall: s.tensionFall });
-        } else if (cands.length && s.rand() < rate * dt) {
-          const sp = pickWeighted(cands, s.rand);
+        } else if (forced ? pool.length > 0 : cands.length && s.rand() < rate * dt) {
+          // 保証中に出たアタリは、保証の時間を待たずに出たものでも「保証のアタリ」として扱う（先にふつうのアタリが出て、
+          // 見逃しやすい形・ふつうのファイトで保証を使い切ってしまうのを防ぐ。9/27 良い日ほどボウズが多い逆転が出た）
+          const sure = forced || s.guarantee;
+          const sp = pickWeighted(pool, s.rand);
           // 重さは範囲の軽い方に寄せる。まれに大型（春の親アオリの3kg級など）
           const [g0, g1] = sp.big && s.rand() < 0.06 ? sp.big : sp.g;
           const weight = Math.round(g0 + (g1 - g0) * s.rand() ** 1.6);
-          s.hooking = { id: sp.id, weight, mantle: Math.round(sp.k * Math.cbrt(weight)), power: sp.power };
-          const kind = pickWeighted(BITE_MIX[s.tensionFall ? 'tension' : 'free'], s.rand).kind;
-          const light = s.rand() < (s.mood === 'calm' ? 0.3 : 0.2); // 軽い抱き（猶予が短い）
+          s.hooking = { id: sp.id, weight, mantle: Math.round(sp.k * Math.cbrt(weight)), power: sp.power, ...(sure ? { bonus: true } : {}) };
+          // ラストチャンスの保証のアタリは「ラインが走る」はっきりした形で、アワセの猶予は🔰初心者練習なみに長め
+          const kind = sure ? 'run' : pickWeighted(BITE_MIX[s.tensionFall ? 'tension' : 'free'], s.rand).kind;
+          const light = !sure && s.rand() < (s.mood === 'calm' ? 0.3 : 0.2); // 軽い抱き（猶予が短い）
           s.bite = { kind, light };
-          s.windows = signalWindows(s.cond, kind, light, s.easy);
+          s.windows = signalWindows(s.cond, kind, light, s.easy || sure);
           s.phase = 'signal';
           s.signalAt = s.t;
           s.signaled = true;
-          emit(s, 'signal', { kind, light, tensionFall: s.tensionFall });
+          s.reacted = true;
+          s.guarantee = false;
+          emit(s, 'signal', { kind, light, tensionFall: s.tensionFall, ...(sure ? { bonus: true } : {}) });
           break;
         }
       }
@@ -707,7 +760,7 @@ export function tick(s, dt) {
       if (s.pressing) {
         // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）
         s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * dt);
-        s.tension += (22 + p * 22) * dt * (s.easy ? EASY.tension : 1);
+        s.tension += (22 + p * 22) * dt * (s.easy || s.hooking?.bonus ? EASY.tension : 1);
       } else {
         s.tension -= 45 * dt;
         s.dist += 0.6 * p * s.hooking.stamina * dt;
@@ -721,8 +774,8 @@ export function tick(s, dt) {
       const recent = hk.jets.filter((t) => s.t - t < JET_WINDOW);
       const resting = recent.length >= JET_BURST && s.t - recent[recent.length - 1] < JET_REST;
       const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
-      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy ? EASY.jet : 1) * dt) {
-        if (s.pressing) s.tension += 22 * (s.easy ? EASY.tension : 1);   // 初心者練習は噴射の引きもやさしく
+      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * dt) {
+        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1);   // 初心者練習は噴射の引きもやさしく
         else s.dist += 1;
         hk.jets.push(s.t);
         hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);
@@ -734,7 +787,7 @@ export function tick(s, dt) {
         emit(s, 'break', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'break');
-      } else if (s.slackFor > SLACK_LIMIT * (s.easy ? EASY.slack : 1)) {
+      } else if (s.slackFor > SLACK_LIMIT * (s.easy || s.hooking?.bonus ? EASY.slack : 1)) {
         emit(s, 'unhooked', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'unhooked');
