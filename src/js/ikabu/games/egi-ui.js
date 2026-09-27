@@ -948,9 +948,21 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let ptr = null;   // { id, x, y, timer, pressed, darted }
   const SWIPE = { touch: { ms: 150, px: 24 }, mouse: { ms: 140, px: 16 }, pen: { ms: 150, px: 20 } };
   const canSwipe = () => s && (s.phase === 'sinking' || s.phase === 'action');
+  // エギを押したか：当たりの円だけだと、スマホではエギの絵が小さく（縦24px ほど）少し外すと「投げる」になった。
+  // 投げる前は、エギの絵のまわり EGI_TAP_R px と「← エギをタップで色が選べる」の案内の上も、エギを押したことにする（ぱっぱ指摘 2026-09-27）
+  const EGI_TAP_R = 48;
+  const inRect = (el0, x, y) => { if (!el0 || el0.hidden) return false; const b = el0.getBoundingClientRect(); return b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom; };
+  const touchesEgi = (e) => {
+    if (e.target.closest?.('.ika-eg-egi-hit, #ika-egi-colortip')) return true;
+    if (inRect(el.colorTip, e.clientX, e.clientY)) return true;
+    const node = sc?.nodes?.egiAir?.getAttribute('opacity') === '1' ? sc.nodes.egiAir : sc?.nodes?.egiWater;
+    const b = node?.getBoundingClientRect();
+    if (!b || !b.width) return false;
+    return Math.hypot(e.clientX - (b.left + b.width / 2), e.clientY - (b.top + b.height / 2)) <= EGI_TAP_R;
+  };
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (e.target.closest?.('.ika-eg-egi-hit') && s && (s.phase === 'ready' || s.phase === 'result') && !V.flight) {
+    if (!e.target.closest?.('.ika-egi-btn, .ika-egi-dart') && s && (s.phase === 'ready' || s.phase === 'result') && !V.flight && touchesEgi(e)) {
       e.preventDefault();
       openColorPop();
       return;
