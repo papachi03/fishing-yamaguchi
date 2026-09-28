@@ -67,6 +67,7 @@ export const SPECIES_COLORS = {
   sodeika: { ivory: '#d8332d', fin: '#e4493e', arm: '#f18a7a', hi: HI },
   akaika: { ivory: '#c2314f', fin: '#d4546c', arm: '#ea92a2', mark: '#35102c', hi: HI },
   daiou: { ivory: '#cf623f', fin: '#d97c5a', arm: '#e9a283', hi: HI },
+  hiika: { ivory: '#f1e3d2', fin: '#eef1ea', arm: '#efd6c0', mark: '#8e4a24', hi: HI },   // 透けた胴に赤茶の点（2026-09-29 見本）
 };
 export const speciesColors = (species) => ({ ...ART, ...(SPECIES_COLORS[species] ?? {}) });
 
