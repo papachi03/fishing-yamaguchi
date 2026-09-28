@@ -14,6 +14,7 @@ import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, S
 import { rhythmHintKey } from './egi-advice.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
+import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
 import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
@@ -60,7 +61,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
-    feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'),
+    feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'), feelShake: q('ika-egi-feel-shake'),
     ajiBox: q('ika-egi-aji'), ajis: q('ika-egi-ajis'), tanaBox: q('ika-egi-tana'), tanas: q('ika-egi-tanas'), tailorBtns: q('ika-egi-tailorbtns'),
     methods: q('ika-egi-methods'), methodAbout: q('ika-egi-method-about'), baitBox: q('ika-egi-bait'), baits: q('ika-egi-baits'),
     baitRow: q('ika-egi-baitrow'), baitFill: q('ika-egi-baitfill'), baitName: q('ika-egi-baitname'),
@@ -696,9 +697,26 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // 手ざわり（振動・小さな音）。振動できない端末（iPhone など）には振動の切り替えを出さない
   if (el.feelVib) el.feelVib.hidden = !canVibrate();
+  // 振ってしゃくる（試験中）。スマホ（動きの読み取りができて、タッチの端末）だけに出す。最初はオフ
+  let shakeOn = false, stopShake = null;
+  if (el.feelShake) el.feelShake.hidden = !(shakeSupported() && matchMedia('(pointer: coarse)').matches);
+  function onShake() {
+    // しゃくり（沈下・フォール）とアワセ（合図）の時だけ。巻いている時（ファイト）に振っても何もしない
+    if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) return;
+    doPress();
+    doRelease();
+  }
+  async function setShake(on, ask) {
+    if (on && ask && (await requestShakePermission()) !== 'granted') { callout(t(lang, TX.feel.shakeDenied), '', 3600); on = false; }
+    shakeOn = on;
+    stopShake?.();
+    stopShake = on ? watchShake(onShake) : null;
+    writePref('ikabu.egi.shake', on);
+    syncFeel();
+  }
   function syncFeel() {
     el.feel?.querySelectorAll('.ika-chip[data-feel]').forEach((b) => {
-      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : feel.sound;
+      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : feel.sound;
       b.setAttribute('aria-pressed', String((b.dataset.on === '1') === on));
     });
   }
@@ -706,11 +724,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const b = e.target.closest('.ika-chip[data-feel]');
     if (!b) return;
     const on = b.dataset.on === '1';
+    if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn) callout(t(lang, TX.feel.shakeOn), 'good'); }); return; }
     if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
     else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
     syncFeel();
   });
   syncFeel();
+  // 前にオンにしていた人：Android はそのまま見張りを始める。iPhone は許可をボタンでしか頼めないので、もう一度オンを押してもらう
+  if (readPref('ikabu.egi.shake') === true && !el.feelShake?.hidden && typeof window.DeviceMotionEvent?.requestPermission !== 'function') setShake(true, false);
 
   // 練習モードに切り替えて、今の練習条件でゲームを作り直す。
   // user＝人が自分で選んだ（季節・時間帯などを押した）。そのあとに今日の萩の海のデータが届いても、勝手に切り替えない

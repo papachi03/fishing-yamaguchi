@@ -253,6 +253,12 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-chip" data-feel="sound" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
         <button type="button" class="ika-chip" data-feel="sound" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
       </div>
+      <div class="ika-chips ika-chips--small" id="ika-egi-feel-shake" role="group" aria-label="${t(lang, T.feel.shake)}" hidden>
+        <span class="ika-egi-feel-name">${t(lang, T.feel.shake)}</span>
+        <button type="button" class="ika-chip" data-feel="shake" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
+        <button type="button" class="ika-chip" data-feel="shake" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
+        <span class="ika-egi-cue-note">${t(lang, T.feel.shakeNote)}</span>
+      </div>
       <span class="ika-egi-cue-note">${t(lang, T.feel.note)}</span>
     </div>
     <div class="ika-egi-practice" id="ika-egi-practice" hidden>

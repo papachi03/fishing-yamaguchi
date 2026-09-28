@@ -152,6 +152,10 @@ export const EGI_TEXT = {
     sound: pair('小さな音', 'Soft sounds'),
     on: pair('オン', 'On'),
     off: pair('オフ', 'Off'),
+    shake: pair('振ってしゃくる（試験中）', 'Shake to jerk (beta)'),
+    shakeNote: pair('スマホを竿のようにクイッと振ると、しゃくりになります（速く2回で2段、3回以上でスラックジャーク）。アタリの合図の時に振るとアワセ。iPhoneは最初に動きの読み取りの許可を聞かれます。', 'Flick your phone like a rod to jerk (two quick flicks for a double, three or more for a slack jerk). Flick on a bite signal to strike. iPhone asks for motion access the first time.'),
+    shakeOn: pair('振ってしゃくれます', 'Shake to jerk: on'),
+    shakeDenied: pair('動きの読み取りが許可されませんでした。iPhoneの設定から許可できます', 'Motion access was not allowed. You can allow it in your phone settings'),
     note: pair('手に伝わるアタリ（パンチ・コン・走る）とジェットで震えます。振動はAndroidなどの対応端末だけ（iPhoneは非対応）。音は控えめで、最初はオンです（ここでオフにできます）', 'Vibrates on bites you would feel (punch, knock, run) and on jets. Vibration works on Android and similar phones only (not iPhone). Sounds are quiet and on by default (turn them off here)'),
   },
   hint: {
