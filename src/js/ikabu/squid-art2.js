@@ -316,8 +316,11 @@ function armSet(sh, pose, C) {
   const cut = sh.kind === 'cuttle';
   const st = Boolean(sh.armStripe);
   const tent = cut ? { color: '#f4efe6', w0: 1.8, w1: 0.8 } : { w0: 2.1, w1: 0.9 };
-  const k = cut ? 0.72 : 1;   // 足の長さの倍率
-  const P = (x, y) => [x * (cut ? 1.1 : 1), y];
+  // コウイカの仲間：足は短く太く、横に広がる（ぱっぱ 2026-09-29「足が太くて短い」）。触腕は長いまま
+  const k = cut ? 0.55 : 1;   // 足の長さの倍率
+  const aw = cut ? 1.55 : 1;   // 足の太さの倍率
+  const P = (x, y) => [x * (cut ? 1.3 : 1), y];
+  const arm = (o) => taperedArm({ ...o, w0: o.w0 * aw, w1: o.w1 * aw }, C);
   const scaleArm = (p0, p1, p2, kk = k) => ({ p0: P(...p0), p1: [P(...p1)[0], p0[1] + (p1[1] - p0[1]) * kk], p2: [P(...p2)[0], p0[1] + (p2[1] - p0[1]) * kk] });
   const kt = k * (sh.tentK ?? 1);   // 触腕の長さ
   if (pose === 'hug') {
@@ -325,14 +328,14 @@ function armSet(sh, pose, C) {
       back: [
         taperedArm({ ...scaleArm([-9, 31], [-18, 12], [-6, -1]), ...tent, club: true, front: false, stripe: st }, C),
         taperedArm({ ...scaleArm([9, 31], [18, 12], [6, -1]), ...tent, club: true, front: false, stripe: st }, C),
-        taperedArm({ ...scaleArm([-5, 32], [-14, 18], [-4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
-        taperedArm({ ...scaleArm([5, 32], [14, 18], [4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+        arm({ ...scaleArm([-5, 32], [-14, 18], [-4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
+        arm({ ...scaleArm([5, 32], [14, 18], [4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
       ],
       front: [
-        taperedArm({ ...scaleArm([-8, 30], [-11, 22], [-4, 13]), w0: 3.3, w1: 1.2, stripe: st }, C),
-        taperedArm({ ...scaleArm([8, 30], [11, 22], [4, 13]), w0: 3.3, w1: 1.2, stripe: st }, C),
-        taperedArm({ ...scaleArm([-3, 30], [-5, 25], [-1, 19]), w0: 2.4, w1: 0.9, stripe: st }, C),
-        taperedArm({ ...scaleArm([3, 30], [5, 25], [1.5, 20]), w0: 2.4, w1: 0.9, stripe: st }, C),
+        arm({ ...scaleArm([-8, 30], [-11, 22], [-4, 13]), w0: 3.3, w1: 1.2, stripe: st }),
+        arm({ ...scaleArm([8, 30], [11, 22], [4, 13]), w0: 3.3, w1: 1.2, stripe: st }),
+        arm({ ...scaleArm([-3, 30], [-5, 25], [-1, 19]), w0: 2.4, w1: 0.9, stripe: st }),
+        arm({ ...scaleArm([3, 30], [5, 25], [1.5, 20]), w0: 2.4, w1: 0.9, stripe: st }),
       ],
     };
   }
@@ -340,16 +343,16 @@ function armSet(sh, pose, C) {
     back: [
       taperedArm({ ...scaleArm([-4, 31], [-14, 12], [-12, -12], kt), ...tent, club: true, front: false, stripe: st }, C),
       taperedArm({ ...scaleArm([4, 31], [14, 12], [12, -12], kt), ...tent, club: true, front: false, stripe: st }, C),
-      taperedArm({ ...scaleArm([-9, 30], [-17, 16], [-13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
-      taperedArm({ ...scaleArm([9, 30], [17, 16], [13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
-      taperedArm({ ...scaleArm([-3, 29], [-8, 12], [-6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
-      taperedArm({ ...scaleArm([3, 29], [8, 12], [6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+      arm({ ...scaleArm([-9, 30], [-17, 16], [-13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
+      arm({ ...scaleArm([9, 30], [17, 16], [13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
+      arm({ ...scaleArm([-3, 29], [-8, 12], [-6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
+      arm({ ...scaleArm([3, 29], [8, 12], [6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }),
     ],
     front: [
-      taperedArm({ ...scaleArm([-7, 29], [-11, 18], [-9, 6]), w0: 3.3, w1: 1.2, stripe: st }, C),
-      taperedArm({ ...scaleArm([7, 29], [11, 18], [9, 6]), w0: 3.3, w1: 1.2, stripe: st }, C),
-      taperedArm({ ...scaleArm([-1.5, 30], [-3, 18], [-2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }, C),
-      taperedArm({ ...scaleArm([1.5, 30], [3, 18], [2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }, C),
+      arm({ ...scaleArm([-7, 29], [-11, 18], [-9, 6]), w0: 3.3, w1: 1.2, stripe: st }),
+      arm({ ...scaleArm([7, 29], [11, 18], [9, 6]), w0: 3.3, w1: 1.2, stripe: st }),
+      arm({ ...scaleArm([-1.5, 30], [-3, 18], [-2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }),
+      arm({ ...scaleArm([1.5, 30], [3, 18], [2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }),
     ],
   };
 }
