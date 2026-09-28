@@ -3,6 +3,8 @@
 // 写真の出典は sources ページにそのまま出る。ライセンスと撮影者は書き換えないこと。
 
 export const pair = (ja, en) => ({ ja, en });
+// Google マップの検索リンク（公式の URL 形式。スマホでは Google マップのアプリが開き、そこからナビを始められる）
+const gmap = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
 // 自分たちの写真（YFJ の釣果記録・Vlog から）。種名は YFJ の釣果記録（src/js/data/catches.js）と一致するものだけ使う
 const OWN = {
@@ -313,7 +315,11 @@ export const spots = [
       '食文化の立ち寄り先。営業日・入荷は当日確認。釣り場の案内ではありません。',
       'A food-culture stop, not a fishing-access pin. Confirm opening days and availability.'
     ),
-    links: [['公式観光ガイド / Tourism guide', 'https://yamaguchi-tourism.jp/blog/detail_434.html']],
+    links: [
+      ['公式観光ガイド / Tourism guide', 'https://yamaguchi-tourism.jp/blog/detail_434.html'],
+      ['いかマルシェ（スサノモノミトコ館）・地図 / Ika Marche (map)', gmap('いかマルシェ スサノモノミトコ館 山口県萩市須佐429-4')],
+      ['ジョイフルセンター須佐・地図 / Joyful Center Susa (map)', gmap('ジョイフルセンター須佐 山口県萩市大字須佐7248-10')],
+    ],
   },
   {
     id: 'kottoi',
@@ -331,6 +337,76 @@ export const spots = [
       'Regional pin only. It does not indicate unrestricted harbor access or fishing permission.'
     ),
     links: [['下関市の紹介 / City guide', 'https://www.city.shimonoseki.lg.jp/soshiki/60/1174.html']],
+  },
+  // ここから下：イカが看板のお店があるエリア（ぱっぱ 2026-09-28、案A＝エリアのピンの中にお店を並べる）。
+  // お店のリンクは Google マップの検索（押すとアプリが開き、そこからナビ）。住所は 2026-09-28 に Google マップで確認
+  {
+    id: 'hagi-town',
+    type: 'food',
+    pos: [34.416, 131.402],
+    seaArea: 'hagi',
+    name: pair('萩の町なか', 'Central Hagi'),
+    tag: pair('活イカを、城下町で', 'Live squid in the castle town'),
+    desc: pair(
+      '萩の町なかで、活イカの料理を出すお店。釣りの帰りや観光のついでに。',
+      'A restaurant in central Hagi known for live squid dishes, handy after fishing or sightseeing.'
+    ),
+    notes: pair(
+      '活イカは海の状態で入荷しない日があります。営業日・入荷はお店へ確認を。',
+      'Live squid depends on the sea, so some days it is unavailable. Check opening days and stock with the restaurant.'
+    ),
+    links: [['萩心海・地図 / Hagi Shinkai (map)', gmap('萩心海 山口県萩市土原370-71')]],
+  },
+  {
+    id: 'misumi',
+    type: 'food',
+    pos: [34.391, 131.278],
+    seaArea: 'nagato',
+    name: pair('長門・三隅', 'Misumi, Nagato'),
+    tag: pair('イカ丼とゲソ天', 'Squid bowls and fried tentacles'),
+    desc: pair(
+      '萩と長門のあいだ、三隅の和食のお店。イカ丼が人気で、ゲソは天ぷらにしてくれると評判。',
+      'A Japanese restaurant in Misumi, between Hagi and Nagato, popular for its squid rice bowl.'
+    ),
+    notes: pair(
+      '昼と夜で営業時間が分かれています。営業日・入荷はお店へ確認を。',
+      'Lunch and dinner hours are separate. Check opening days and stock with the restaurant.'
+    ),
+    links: [['旬処 いさ路・地図 / Isaji (map)', gmap('旬処 いさ路 山口県長門市三隅下1860-1')]],
+  },
+  {
+    id: 'yuda',
+    type: 'food',
+    pos: [34.163, 131.455],
+    seaArea: 'hofu',
+    name: pair('山口市・湯田温泉', 'Yuda Onsen, Yamaguchi City'),
+    tag: pair('海から離れて、泳ぐイカ', 'Swimming squid, inland'),
+    desc: pair(
+      '温泉街で、生けすの「泳ぎ活きイカ」を出すお店。海まで行けない日の、イカの入口に。',
+      'A restaurant in the hot-spring town serving live squid from its tank—an easy way in when you cannot reach the coast.'
+    ),
+    notes: pair(
+      '湯田温泉は海から離れたエリアです（風と波のリンクは近くの防府の海）。営業日・入荷はお店へ確認を。',
+      'Yuda Onsen is inland (the wind & waves link shows the nearby Hofu coast). Check opening days and stock with the restaurant.'
+    ),
+    links: [['泳ぎ活きイカ らいが・地図 / Raiga (map)', gmap('長州鶏焼鳥・泳ぎ活きイカ・手作り餃子 らいが 山口県山口市湯田温泉3丁目1-21')]],
+  },
+  {
+    id: 'hofu-town',
+    type: 'food',
+    pos: [34.052, 131.566],
+    seaArea: 'hofu',
+    name: pair('防府', 'Hofu'),
+    tag: pair('瀬戸内側のイカ料理', 'Squid on the Seto Inland Sea side'),
+    desc: pair(
+      '防府駅のそばの、イカ料理が看板の和食のお店。瀬戸内側でイカを味わうなら。',
+      'A Japanese restaurant near Hofu Station with squid as its specialty, on the Seto Inland Sea side.'
+    ),
+    notes: pair(
+      'しけの日は活イカが無いこともあります。営業日・入荷はお店へ確認を。',
+      'Live squid may be unavailable after rough seas. Check opening days and stock with the restaurant.'
+    ),
+    links: [['いか鮮 本家・地図 / Ikasen Honke (map)', gmap('いか鮮 本家 山口県防府市栄町1丁目5-1 ルルサス防府')]],
   },
 ];
 
