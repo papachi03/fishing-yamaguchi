@@ -23,7 +23,7 @@ export const guides = [
     // 元写真が横1500pxしかないため、大きい方も1500px（カードの srcset は 1600w と書かれるが表示に支障はない）
     image: '/assets/images/family_sabiki_800.webp',
     image1600: '/assets/images/family_sabiki_1500.webp',
-    alt: 'まな板の上にずらりと並んだアジと、スズキなどの釣果',
+    alt: 'まな板の上にずらりと並んだアジと、スズキ・カサゴの釣果',
     lead: 'エギングと兼用のロッドとリール、手が汚れないコマセ、水汲みバケツまで。最初の一式をまとめました。',
   },
 ];
