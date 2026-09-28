@@ -134,6 +134,11 @@ export const SIGNAL_LATE = 1.2; // これを過ぎたらイカが離す
 export const SLACK_LIMIT = 1.5; // ラインがゆるみっぱなしでバレるまで（秒）
 export const TENSION_HOLD = 0.3; // しゃくった後これ以上押したままならテンションフォール
 export const DOUBLE_JERK = 0.45; // この間隔以内の2回目のしゃくりは「2段しゃくり」
+// 誘いの動き（2026-09-29 ぱっぱ：しゃくり・2段・ダート・スラックジャークで動きを分ける）。[上がる高さ m, 手前に寄る m]
+//   しゃくり＝上へ／2段の2回目＝大きく上へ／ダート＝横へ跳ぶ（高さは控えめ）／スラックジャーク＝素早い連打で小刻み（0.3秒以内の3回目から）
+export const JERK_MOVE = { lift: [2.6, 1.5], double: [3.4, 1.5], dart: [2.2, 2.5], slack: [0.8, 0.6] };
+export const SLACK_JERK = 0.25; // この間隔以内で3回目以降のしゃくりは「スラックジャーク」
+export const SLACK_MAX = 3;     // スラックジャークとして効くのは3回まで（連打5回まで）。それ以上は「しゃくりすぎ」
 
 export const TIMES = ['morning', 'day', 'evening', 'night'];
 
@@ -190,7 +195,7 @@ export const STALE_AT = 4; // 同じ型の4回目で、良い誘いの効きが�
 export const STALE_HALF = 0.5;
 export const STALE_DROP = -0.03; // 5回目以降は良い誘いが効かず、少し下がる（自動プレイ400回で「いつも同じ誘い」の釣果が約2割減＝ねらい：2〜3割減）
 export const FRESH_GAIN = 0.1; // スレてから型を変えた最初のフォール
-export const lureKey = (s) => `${Math.min(s.jerks.length, 4)}${s.darts > 0 ? 'd' : ''}${s.tensionFall ? 't' : 'f'}`;
+export const lureKey = (s) => `${Math.min(s.jerks.length - (s.slackJerks ?? 0), 4)}${s.darts > 0 ? 'd' : ''}${(s.slackJerks ?? 0) > 0 ? 's' : ''}${s.tensionFall ? 't' : 'f'}`;
 
 export function normalizeEgi(e = {}) {
   const size = EGI_SIZES.includes(Number(e.size)) ? Number(e.size) : DEFAULT_EGI.size;
@@ -470,6 +475,7 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     bottomFor: 0,
     jerks: [],
     darts: 0,
+    slackJerks: 0,
     lastJerk: -99,
     judged: true,
     interest: 0,
@@ -516,8 +522,13 @@ function jerk(s, kind = 'lift') {
   if (s.t - s.lastJerk > 0.9) {
     s.jerks = [];
     s.darts = 0;
+    s.slackJerks = 0;
   }
   const double = s.jerks.length > 0 && s.t - s.lastJerk <= DOUBLE_JERK;
+  // スラックジャーク：0.3秒以内の連打が3回目に達したら、そこからは小刻みの誘い（しゃくりの回数の減点には数えない）
+  const n0 = s.jerks.length;
+  const slack = kind === 'lift' && n0 >= 2 && s.t - s.lastJerk <= SLACK_JERK && s.jerks[n0 - 1] - s.jerks[n0 - 2] <= SLACK_JERK;
+  if (slack) { kind = 'slack'; s.slackJerks = (s.slackJerks ?? 0) + 1; }
   s.jerks.push(s.t);
   if (kind === 'dart') s.darts += 1;
   if (s.depth >= s.bottom - 0.6) s.liftAt = s.t;   // 底から持ち上げた（シリヤケイカが食いつく瞬間）
@@ -549,13 +560,12 @@ function jerk(s, kind = 'lift') {
   s.judged = false;
   s.tensionFall = false;
   // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
-  const lift = kind === 'dart' ? 2.8 : 2.0;
-  const pull = kind === 'dart' ? 2.5 : 1.5;
+  const [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
   s.depth = Math.max(0.5, s.depth - lift);
   s.dist = Math.max(0, s.dist - pull);
   s.bottomFor = 0;
   s.phase = 'action';
-  emit(s, 'jerk', { streak: s.jerks.length, kind, double });
+  emit(s, 'jerk', { streak: s.jerks.length, kind, double: double && kind === 'lift' });
 }
 
 export function press(s) {
@@ -1111,10 +1121,12 @@ export function release(s) {
 // しゃくりの誘いを評価する（フォールに入って2秒たったところで1回だけ）。
 // やる気のある日はダートや2段しゃくりが効き、渋い日は控えめの1〜2回が効いてダートは嫌われる
 function judgeRhythm(s) {
-  const n = s.jerks.length;
+  const n = s.jerks.length - (s.slackJerks ?? 0);   // スラックジャークの分は連打の減点に数えない
   const active = s.mood === 'active';
   let gain;
-  if (n >= 5) gain = active ? -0.2 : -0.25;
+  if ((s.slackJerks ?? 0) > SLACK_MAX || n >= 5) gain = active ? -0.2 : -0.25;   // 連打しすぎ（スラックジャークも5回を超えたら同じ）
+  else if ((s.slackJerks ?? 0) > 0) gain = active ? 0.2 : 0.3;   // 小刻みの誘いは渋い時に効く
+  else if (n >= 5) gain = active ? -0.2 : -0.25;
   else if (s.darts > 0) gain = active ? 0.4 : -0.05;
   else if (n === 1) gain = active ? 0.15 : 0.3;
   else if (n === 2) gain = active ? 0.35 : 0.25;

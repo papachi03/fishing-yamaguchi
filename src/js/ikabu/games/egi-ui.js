@@ -911,6 +911,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
+          else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.streak === 3) callout(t(lang, TX.cue.slack)); }
           else if (e.double) callout(t(lang, TX.cue.double));
           if (guide === 2) { guide = 3; showGuide(); }
           setFallMode(null);
@@ -1925,7 +1926,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (phase === 'sinking') rodAng = 30;
     else if (phase === 'action' || phase === 'signal') {
       const j = now - V.jerkAt;
-      const top = V.jerkKind === 'drag' ? 48 : V.jerkKind === 'dart' ? 80 : V.jerkDouble ? 66 : 72;   // ズル引きは竿を小さく立てるだけ
+      const top = V.jerkKind === 'drag' ? 48 : V.jerkKind === 'dart' ? 80 : V.jerkKind === 'slack' ? 60 : V.jerkDouble ? 66 : 72;   // ズル引きは竿を小さく立てるだけ
       rodAng = j < 0.5 ? lerp(top, 34, easeOut(j / 0.5)) : 34;
       pull = j < 0.2 ? 0.6 : 0;
       if (s.tensionFall) { rodAng = 40; pull = 0.25; }   // テンションフォール：竿を少し立てて糸を張る
@@ -2013,8 +2014,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       } else {
         // ダート：大きく横へ跳ねてから戻る（ジグザグ）。2段：小さく2回目の跳ね
         const dartK = V.dartAt != null ? (now - V.dartAt) / 0.45 : 9;
-        const dartX = dartK < 1 ? 48 * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;
-        V.egi.x += (tx + dartX - V.egi.x) * rate;
+        const dartX = dartK < 1 ? 80 * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;   // 横へ大きく（2026-09-29 高さは控えめに）
+        // スラックジャーク：左右に小刻みにチョンチョン
+        const slackK = V.slackAt != null ? (now - V.slackAt) / 0.25 : 9;
+        const slackX = slackK < 1 ? 22 * (V.slackSide ?? 1) * Math.sin(Math.PI * slackK) : 0;
+        V.egi.x += (tx + dartX + slackX - V.egi.x) * rate;
         V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
         // しゃくった直後は頭を上げて釣り人側へ飛ぶ。テンションフォールは頭を釣り人側へ向けて滑るように、フリーフォールは頭を下げてまっすぐ
