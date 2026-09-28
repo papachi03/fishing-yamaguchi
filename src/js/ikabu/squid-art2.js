@@ -180,9 +180,10 @@ function aoriBody({ len = 56, colors: C = ART, seed = 7 }) {
   const er = Math.min(3.2, hw * 0.3);
   for (const s of [-1, 1]) {
     const ex = s * (hw * 0.92), ey = top - 7;
+    // 細長い楕円（ぱっぱ 2026-09-29）。頭の縁に沿って縦長
     parts.push(
-      svgEl('circle', { cx: f(ex), cy: f(ey), r: f(er + 0.9), fill: C.eye ?? '#cfd9d4', stroke: C.navy, 'stroke-width': '1.2' }),
-      svgEl('circle', { cx: f(ex), cy: f(ey), r: f(er), fill: C.navy }),
+      svgEl('ellipse', { cx: f(ex), cy: f(ey), rx: f(er * 0.62 + 0.8), ry: f(er * 1.35 + 0.8), fill: C.eye ?? '#cfd9d4', stroke: C.navy, 'stroke-width': '1.2' }),
+      svgEl('ellipse', { cx: f(ex), cy: f(ey), rx: f(er * 0.42), ry: f(er * 1.0), fill: C.navy }),   // 黒目は縁より一回り小さく（ぱっぱ 2026-09-29）
     );
   }
   return parts;

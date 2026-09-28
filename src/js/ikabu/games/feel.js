@@ -149,7 +149,7 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
       case 'tap': blip({ type: 'sine', f0: 220, f1: 140, dur: 0.07, vol: 1.4 }); break;
       case 'run': for (let i = 0; i < 4; i++) blip({ type: 'square', f0: 900, dur: 0.018, at: i * 0.045, vol: 0.5 }); break;
       case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); break;
-      case 'jet': { const n = 4 + Math.round(6 * Math.min(1, opt.power ?? 0.5)); for (let i = 0; i < n; i++) blip({ type: 'square', f0: 1100, dur: 0.015, at: i * 0.035, vol: 0.45 }); break; }
+      case 'jet': break;   // 音は出さない（2026-09-29 ぱっぱ：ドラグの「ジジジッ」と被るので「ピピピッ」は消す）。振動だけ
       case 'whoosh': whoosh(opt.vol ?? 1); break;
       case 'break': blip({ type: 'sine', f0: 700, f1: 180, dur: 0.18 }); break;
       case 'landed': blip({ type: 'sine', f0: 520, dur: 0.07 }); blip({ type: 'sine', f0: 780, dur: 0.09, at: 0.09 }); break;
