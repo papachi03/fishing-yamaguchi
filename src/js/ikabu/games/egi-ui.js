@@ -911,7 +911,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
-          else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.streak === 3) callout(t(lang, TX.cue.slack)); }
+          else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.slackN === 1) callout(t(lang, TX.cue.slack)); }   // 何回目の連打かに関係なく、スラックジャークに入った1回目で出す
           else if (e.double) callout(t(lang, TX.cue.double));
           if (guide === 2) { guide = 3; showGuide(); }
           setFallMode(null);
@@ -2016,8 +2016,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const dartK = V.dartAt != null ? (now - V.dartAt) / 0.45 : 9;
         const dartX = dartK < 1 ? 80 * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;   // 横へ大きく（2026-09-29 高さは控えめに）
         // スラックジャーク：左右に小刻みにチョンチョン
-        const slackK = V.slackAt != null ? (now - V.slackAt) / 0.25 : 9;
-        const slackX = slackK < 1 ? 22 * (V.slackSide ?? 1) * Math.sin(Math.PI * slackK) : 0;
+        // 1回ごとに左右交互へ鋭く跳ねる（0.22秒）。最初の3割で一気に振り、残りで戻る
+        const slackK = V.slackAt != null ? (now - V.slackAt) / 0.22 : 9;
+        const slackE = slackK < 1 ? (slackK < 0.3 ? Math.sin((Math.PI / 2) * (slackK / 0.3)) : Math.cos((Math.PI / 2) * ((slackK - 0.3) / 0.7))) : 0;
+        const slackX = reduced ? 0 : 46 * (V.slackSide ?? 1) * slackE;
         V.egi.x += (tx + dartX + slackX - V.egi.x) * rate;
         V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
@@ -2027,6 +2029,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const chasing = V.chaseAt != null && now - V.chaseAt < YAEN_CHASE;
         const target = swimming ? -90 + (reduced ? 0 : Math.sin(now * (chasing ? 22 : 9)) * (chasing ? 22 : 12)) : jerkFresh ? (V.jerkKind === 'drag' ? -100 : V.jerkKind === 'dart' ? -60 : -35) : onBed ? -105 : phase === 'sinking' ? -145 : s.tensionFall ? -112 : -140;
         V.egi.ang += wrap(target - V.egi.ang) * (jerkFresh ? 0.45 : k3);
+        if (slackK < 1 && !reduced) V.egi.ang += 32 * (V.slackSide ?? 1) * slackE * 0.35;   // 頭を左右に振る
         // イカパンチ：足で叩かれてエギが横へ弾かれ、向きがぶれる（0.35秒）
         const pk = V.punchAt != null ? (now - V.punchAt) / 0.35 : 9;
         if (pk < 1 && !reduced) {

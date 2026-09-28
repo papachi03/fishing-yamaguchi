@@ -136,8 +136,8 @@ export const TENSION_HOLD = 0.3; // しゃくった後これ以上押したま�
 export const DOUBLE_JERK = 0.45; // この間隔以内の2回目のしゃくりは「2段しゃくり」
 // 誘いの動き（2026-09-29 ぱっぱ：しゃくり・2段・ダート・スラックジャークで動きを分ける）。[上がる高さ m, 手前に寄る m]
 //   しゃくり＝上へ／2段の2回目＝大きく上へ／ダート＝横へ跳ぶ（高さは控えめ）／スラックジャーク＝素早い連打で小刻み（0.3秒以内の3回目から）
-export const JERK_MOVE = { lift: [2.6, 1.5], double: [3.4, 1.5], dart: [2.2, 2.5], slack: [0.8, 0.6] };
-export const SLACK_JERK = DOUBLE_JERK; // この間隔以内の連打の3回目以降は「スラックジャーク」（0.25秒はスマホの連打では届かなかった：2026-09-29 ぱっぱ）
+export const JERK_MOVE = { lift: [2.6, 1.5], double: [3.4, 1.5], dart: [2.2, 2.5], slack: [0.4, 0.5] };   // スラックジャークはその場で左右に（高さは小さく）
+export const SLACK_JERK = 0.5; // この間隔以内の連打の3回目以降は「スラックジャーク」（0.25秒はスマホの連打では届かなかった：2026-09-29 ぱっぱ）
 export const SLACK_MAX = 3;     // スラックジャークとして効くのは3回まで（連打5回まで）。それ以上は「しゃくりすぎ」
 
 export const TIMES = ['morning', 'day', 'evening', 'night'];
@@ -565,7 +565,7 @@ function jerk(s, kind = 'lift') {
   s.dist = Math.max(0, s.dist - pull);
   s.bottomFor = 0;
   s.phase = 'action';
-  emit(s, 'jerk', { streak: s.jerks.length, kind, double: double && kind === 'lift' });
+  emit(s, 'jerk', { streak: s.jerks.length, kind, double: double && kind === 'lift', slackN: s.slackJerks ?? 0 });
 }
 
 export function press(s) {
