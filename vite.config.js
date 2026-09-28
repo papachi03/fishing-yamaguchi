@@ -106,6 +106,7 @@ export default defineConfig({
         reports: resolve(__dirname, 'reports.html'),
         invite: resolve(__dirname, 'invite.html'),
         'guides/autumn-eging': resolve(__dirname, 'guides/autumn-eging.html'),
+        'guides/family-sabiki': resolve(__dirname, 'guides/family-sabiki.html'),
       },
     },
   },
