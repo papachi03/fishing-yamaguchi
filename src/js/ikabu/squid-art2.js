@@ -295,7 +295,10 @@ export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0 } = {}) {
   const fin = root.querySelector('.ika-fin');
   if (fin?.__fin) {
     const { sh, W, len, top } = fin.__fin;
-    fin.setAttribute('d', finPath(sh, W, len, top, t * (3.2 * speed), calm));
+    // コウイカの仲間は泳ぎが苦手：ひれは激しく揺らさず、ゆるくヒラヒラ（ぱっぱ 2026-09-29）。ファイトで速くなる分も控えめに
+    const skirt = sh.fin === 'skirt';
+    const sp = skirt ? 1.3 * (1 + (speed - 1) * 0.35) : 3.2 * speed;
+    fin.setAttribute('d', finPath(sh, W, len, top, t * sp, calm * (skirt ? 0.55 : 1)));
   }
   // 足：根元を中心に小さく揺れる（1本ずつ位相を変える）。長い足ほど大きく
   const arms = root.querySelectorAll('.ika-arm-front, .ika-arm-back');
