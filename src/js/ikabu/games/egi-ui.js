@@ -18,7 +18,8 @@ import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX } from './egi-scene.js';
-import { svgEl, egiShape, huggingSquid, swimmingSquid, ART, speciesColors } from '../squid-art.js';
+import { svgEl, egiShape, ART, speciesColors } from '../squid-art.js';
+import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
@@ -1148,6 +1149,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           hookDepth = Math.max(0.6, s.depth);
           hookDist = Math.max(s.dist, 1);
           inked = false;
+          // 針に掛かった瞬間、水中で墨を吐く（ぱっぱ 2026-09-29「抱いて乗った時に墨を吐くとリアル」）。外道は吐かない
+          if (!s.hooking?.gedo && !reduced) V.ink = { t0: now, x: V.hug.x + 6, y: Math.max(SCENE.surface + 24, V.hug.y + 26), under: true };
           callout(t(lang, e.lucky ? TX.msg.lucky : s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
           feel.fire('hook', { heavy: V.heavy });
           break;
@@ -2287,6 +2290,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     });
     for (let i = bubbles.length - 1; i >= 0; i--) if (now - bubbles[i].t0 > bubbles[i].life) bubbles.splice(i, 1);
 
+    /* ----- イカの体の動き（第2版の絵）：ひれの波・足の揺れ・胴の脈動。逃げる・ファイト・ジェットの直後は速く ----- */
+    if (!reduced) {
+      const jet = V.lastJet != null ? Math.max(0, 1 - (now - V.lastJet) / 0.6) : 0;
+      const fast = phase === 'fight' ? 1.6 : 1;
+      for (const node of [n.hugWater, n.hugAir]) animateSquid(node, now, { speed: fast, jet });
+      animateSquid(n.escape, now, { speed: 2.4 });
+      for (const node of n.swim) animateSquid(node, now, { speed: 1.1 });
+    }
     /* ----- 気配のイカ：フォール中、気になっているほど寄ってくる（しゃくりの最中は距離をとる） ----- */
     const underwater = V.egi.mode === 'water' && !V.hug.on;
     const falling = underwater && ((phase === 'action' && since >= 1) || (phase === 'sinking' && s.depth > 1.2));
@@ -2327,9 +2338,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
     /* ----- 墨（水面で吐く） ----- */
     if (V.ink) {
-      const g = clamp((now - V.ink.t0) / 2.6, 0, 1);
-      const cx = V.ink.x - 30 * g, cy = V.ink.y;
-      const rx = 30 + 150 * g, ry = 10 + 34 * g;
+      const g = clamp((now - V.ink.t0) / (V.ink.under ? 2.2 : 2.6), 0, 1);
+      const cx = V.ink.under ? V.ink.x + 22 * g : V.ink.x - 30 * g, cy = V.ink.under ? V.ink.y + 10 * g : V.ink.y;
+      const rx = V.ink.under ? 14 + 70 * g : 30 + 150 * g, ry = V.ink.under ? 12 + 50 * g : 10 + 34 * g;
       setAttrs(n.inkBody, { cx: f1(cx), cy: f1(cy), rx: f1(rx), ry: f1(ry) });
       setAttrs(n.inkRim, { cx: f1(cx), cy: f1(cy), rx: f1(rx + 5), ry: f1(ry + 3) });
       n.inkArms.forEach((e, i) => {
@@ -2385,7 +2396,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // ヤエン（2026-09-28 ぱっぱ）：イカが沖へ走っている間はドラグ「ジーーーッ」を鳴らし続け、ときどきジェットの「シュワッ」と泡。
     //   鳴りやんだら食べ始めた合図。イカまでの距離は大きく出す（走った分は「+◯m」）
     const yRun = yaenRunning(s);
-    feel.drag(yRun);
+    // エギング：ジェット噴射で走った直後もドラグが「ジジジッ」と出る（ぱっぱ 2026-09-29）
+    const jetRun = phase === 'fight' && V.lastJet != null && now - V.lastJet < 0.45;
+    feel.drag(yRun || jetRun);
     if (yRun && now >= (V.jetNext ?? 0)) {
       V.jetNext = now + 0.9 + Math.random() * 0.8;
       feel.fire('whoosh');
