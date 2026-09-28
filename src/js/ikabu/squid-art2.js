@@ -42,7 +42,7 @@ const qTangent = (p0, p1, p2, t) => {
 
 // 足1本：中心線（二次ベジェ）に沿って、根元 w0 → 先 w1 の太さで塗りの形にする。吸盤は内側（x=0 の側）に並べる
 //   club: 触腕の先の広がり（ヒレのような小さな葉）
-function taperedArm({ p0, p1, p2, w0 = 2.4, w1 = 0.7, suckers = true, club = false, front = true, color = null }, C) {
+function taperedArm({ p0, p1, p2, w0 = 2.4, w1 = 0.7, suckers = true, club = false, front = true, color = null, stripe = false }, C) {
   const N = 14;
   const L = [], R = [];
   for (let i = 0; i <= N; i++) {
@@ -68,6 +68,9 @@ function taperedArm({ p0, p1, p2, w0 = 2.4, w1 = 0.7, suckers = true, club = fal
     const w = (w0 + (w1 - w0) * t ** 0.85) * 0.5;
     const side = p0[0] <= 0 ? 1 : -1;   // 左の足は右（内）側、右の足は左（内）側
     inner.push([x - ty * w * side * 0.4, y + tx * w * side * 0.4]);
+  }
+  if (stripe) {   // シリヤケイカ：足の真ん中に白い筋（2026-09-29 ぱっぱ）
+    g.append(svgEl('path', { d: `M${f(p0[0])},${f(p0[1])} Q${f(p1[0])},${f(p1[1])} ${f(p2[0])},${f(p2[1])}`, fill: 'none', stroke: '#fff6ea', 'stroke-width': f(Math.max(0.8, w0 * 0.45)), 'stroke-linecap': 'round', opacity: '0.9' }));
   }
   if (suckers) {
     const side = p0[0] <= 0 ? 1 : -1;
@@ -106,7 +109,7 @@ export const SHAPE = {
   daiou: { kind: 'squid', ratio: 0.2, fin: 'rhombus', finFrom: 0.78, finW: 0.6, bigEye: true, tentK: 1.7 },   // 見本：小さなひれ、大きな目、極端に長い触腕
   kouika: { kind: 'cuttle', ratio: 0.36, fin: 'skirt', lines: true, spine: true, whiteTent: true },
   mongo: { kind: 'cuttle', ratio: 0.38, fin: 'skirt', lines: true, beans: true, whiteTent: true },
-  shiriyake: { kind: 'cuttle', ratio: 0.36, fin: 'skirt', whiteDots: true, finDots: true, tailMark: true, whiteTent: true },
+  shiriyake: { kind: 'cuttle', ratio: 0.36, fin: 'skirt', whiteDots: true, finDots: true, tailMark: true, whiteTent: true, armStripe: true },
 };
 export const shapeOf = (species) => SHAPE[species] ?? SHAPE.default;
 
@@ -261,6 +264,7 @@ function speciesBody({ species = 'default', len = 56, colors: C = ART, seed = 7 
   const hw = sh.kind === 'cuttle' ? Math.min(10, W * 0.42) : Math.min(11, Math.max(6.5, W * 0.7));
   const neck = sh.kind === 'cuttle' ? mouth * 0.55 : mouth * 0.7;
   parts.push(svgEl('path', { d: `M${f(-neck)},${top + 2} C${f(-hw - 1)},${top - 4} ${f(-hw - 1)},${top - 12} ${f(-hw * 0.55)},${top - 16} Q0,${top - 19} ${f(hw * 0.55)},${top - 16} C${f(hw + 1)},${top - 12} ${f(hw + 1)},${top - 4} ${f(neck)},${top + 2} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3', 'stroke-linejoin': 'round' }));
+  if (sh.armStripe) for (const s of [-1, 1]) parts.push(svgEl('path', { d: `M${f(s * hw * 0.3)},${top - 15} Q${f(s * hw * 0.34)},${top - 7} ${f(s * neck * 0.6)},${top + 1}`, fill: 'none', stroke: '#fff6ea', 'stroke-width': '1.6', 'stroke-linecap': 'round', opacity: '0.85' }));
   // 目：頭の両端の縦長の楕円、黒目は縁より一回り小さく（ぱっぱ 2026-09-29。キラキラは入れない）。ダイオウは大きい
   const er = Math.min(sh.bigEye ? 5 : 3.2, hw * (sh.bigEye ? 0.5 : 0.3));
   for (const s of [-1, 1]) {
@@ -310,6 +314,7 @@ export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0 } = {}) {
 // 足の配置。squid＝長い足が外へ広がる／cuttle＝足は短く太く、触腕は白く長い
 function armSet(sh, pose, C) {
   const cut = sh.kind === 'cuttle';
+  const st = Boolean(sh.armStripe);
   const tent = cut ? { color: '#f4efe6', w0: 1.8, w1: 0.8 } : { w0: 2.1, w1: 0.9 };
   const k = cut ? 0.72 : 1;   // 足の長さの倍率
   const P = (x, y) => [x * (cut ? 1.1 : 1), y];
@@ -318,33 +323,33 @@ function armSet(sh, pose, C) {
   if (pose === 'hug') {
     return {
       back: [
-        taperedArm({ ...scaleArm([-9, 31], [-18, 12], [-6, -1]), ...tent, club: true, front: false }, C),
-        taperedArm({ ...scaleArm([9, 31], [18, 12], [6, -1]), ...tent, club: true, front: false }, C),
-        taperedArm({ ...scaleArm([-5, 32], [-14, 18], [-4, 4]), w0: 3.1, w1: 1.1, front: false }, C),
-        taperedArm({ ...scaleArm([5, 32], [14, 18], [4, 4]), w0: 3.1, w1: 1.1, front: false }, C),
+        taperedArm({ ...scaleArm([-9, 31], [-18, 12], [-6, -1]), ...tent, club: true, front: false, stripe: st }, C),
+        taperedArm({ ...scaleArm([9, 31], [18, 12], [6, -1]), ...tent, club: true, front: false, stripe: st }, C),
+        taperedArm({ ...scaleArm([-5, 32], [-14, 18], [-4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+        taperedArm({ ...scaleArm([5, 32], [14, 18], [4, 4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
       ],
       front: [
-        taperedArm({ ...scaleArm([-8, 30], [-11, 22], [-4, 13]), w0: 3.3, w1: 1.2 }, C),
-        taperedArm({ ...scaleArm([8, 30], [11, 22], [4, 13]), w0: 3.3, w1: 1.2 }, C),
-        taperedArm({ ...scaleArm([-3, 30], [-5, 25], [-1, 19]), w0: 2.4, w1: 0.9 }, C),
-        taperedArm({ ...scaleArm([3, 30], [5, 25], [1.5, 20]), w0: 2.4, w1: 0.9 }, C),
+        taperedArm({ ...scaleArm([-8, 30], [-11, 22], [-4, 13]), w0: 3.3, w1: 1.2, stripe: st }, C),
+        taperedArm({ ...scaleArm([8, 30], [11, 22], [4, 13]), w0: 3.3, w1: 1.2, stripe: st }, C),
+        taperedArm({ ...scaleArm([-3, 30], [-5, 25], [-1, 19]), w0: 2.4, w1: 0.9, stripe: st }, C),
+        taperedArm({ ...scaleArm([3, 30], [5, 25], [1.5, 20]), w0: 2.4, w1: 0.9, stripe: st }, C),
       ],
     };
   }
   return {
     back: [
-      taperedArm({ ...scaleArm([-4, 31], [-14, 12], [-12, -12], kt), ...tent, club: true, front: false }, C),
-      taperedArm({ ...scaleArm([4, 31], [14, 12], [12, -12], kt), ...tent, club: true, front: false }, C),
-      taperedArm({ ...scaleArm([-9, 30], [-17, 16], [-13, 2]), w0: 3.1, w1: 1.1, front: false }, C),
-      taperedArm({ ...scaleArm([9, 30], [17, 16], [13, 2]), w0: 3.1, w1: 1.1, front: false }, C),
-      taperedArm({ ...scaleArm([-3, 29], [-8, 12], [-6, -4]), w0: 3.1, w1: 1.1, front: false }, C),
-      taperedArm({ ...scaleArm([3, 29], [8, 12], [6, -4]), w0: 3.1, w1: 1.1, front: false }, C),
+      taperedArm({ ...scaleArm([-4, 31], [-14, 12], [-12, -12], kt), ...tent, club: true, front: false, stripe: st }, C),
+      taperedArm({ ...scaleArm([4, 31], [14, 12], [12, -12], kt), ...tent, club: true, front: false, stripe: st }, C),
+      taperedArm({ ...scaleArm([-9, 30], [-17, 16], [-13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+      taperedArm({ ...scaleArm([9, 30], [17, 16], [13, 2]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+      taperedArm({ ...scaleArm([-3, 29], [-8, 12], [-6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
+      taperedArm({ ...scaleArm([3, 29], [8, 12], [6, -4]), w0: 3.1, w1: 1.1, front: false, stripe: st }, C),
     ],
     front: [
-      taperedArm({ ...scaleArm([-7, 29], [-11, 18], [-9, 6]), w0: 3.3, w1: 1.2 }, C),
-      taperedArm({ ...scaleArm([7, 29], [11, 18], [9, 6]), w0: 3.3, w1: 1.2 }, C),
-      taperedArm({ ...scaleArm([-1.5, 30], [-3, 18], [-2.5, 6]), w0: 2.8, w1: 1.1 }, C),
-      taperedArm({ ...scaleArm([1.5, 30], [3, 18], [2.5, 6]), w0: 2.8, w1: 1.1 }, C),
+      taperedArm({ ...scaleArm([-7, 29], [-11, 18], [-9, 6]), w0: 3.3, w1: 1.2, stripe: st }, C),
+      taperedArm({ ...scaleArm([7, 29], [11, 18], [9, 6]), w0: 3.3, w1: 1.2, stripe: st }, C),
+      taperedArm({ ...scaleArm([-1.5, 30], [-3, 18], [-2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }, C),
+      taperedArm({ ...scaleArm([1.5, 30], [3, 18], [2.5, 6]), w0: 2.8, w1: 1.1, stripe: st }, C),
     ],
   };
 }
