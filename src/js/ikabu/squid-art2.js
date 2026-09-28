@@ -261,9 +261,12 @@ function speciesBody({ species = 'default', len = 56, colors: C = ART, seed = 7 
   parts.push(svgEl('path', { d: `M${f(-mouth * 0.7)},${top + 1} Q0,${top + 4} ${f(mouth * 0.7)},${top + 1}`, fill: 'none', stroke: C.navy, 'stroke-width': '1.4', 'stroke-linecap': 'round', opacity: '0.6' }));
 
   // 頭：胴の口から前へ。コウイカの仲間は胴に比べて小さい
-  const hw = sh.kind === 'cuttle' ? Math.min(10, W * 0.42) : Math.min(11, Math.max(6.5, W * 0.7));
-  const neck = sh.kind === 'cuttle' ? mouth * 0.55 : mouth * 0.7;
-  parts.push(svgEl('path', { d: `M${f(-neck)},${top + 2} C${f(-hw - 1)},${top - 4} ${f(-hw - 1)},${top - 12} ${f(-hw * 0.55)},${top - 16} Q0,${top - 19} ${f(hw * 0.55)},${top - 16} C${f(hw + 1)},${top - 12} ${f(hw + 1)},${top - 4} ${f(neck)},${top + 2} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3', 'stroke-linejoin': 'round' }));
+  // コウイカの仲間は頭が胴と同じくらい太く、前後に短い（ぱっぱの写真 2026-09-29）
+  const cut = sh.kind === 'cuttle';
+  const hw = cut ? Math.max(8, W * 0.88) : Math.min(11, Math.max(6.5, W * 0.7));
+  const neck = cut ? mouth * 0.92 : mouth * 0.7;
+  const hh = cut ? 13 : 16;   // 頭の前後の長さ
+  parts.push(svgEl('path', { d: `M${f(-neck)},${top + 2} C${f(-hw - 1)},${top - 3} ${f(-hw - 1)},${top - hh + 4} ${f(-hw * 0.6)},${top - hh} Q0,${top - hh - 3} ${f(hw * 0.6)},${top - hh} C${f(hw + 1)},${top - hh + 4} ${f(hw + 1)},${top - 3} ${f(neck)},${top + 2} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3', 'stroke-linejoin': 'round' }));
   if (sh.armStripe) for (const s of [-1, 1]) parts.push(svgEl('path', { d: `M${f(s * hw * 0.3)},${top - 15} Q${f(s * hw * 0.34)},${top - 7} ${f(s * neck * 0.6)},${top + 1}`, fill: 'none', stroke: '#fff6ea', 'stroke-width': '1.6', 'stroke-linecap': 'round', opacity: '0.85' }));
   // 目：頭の両端の縦長の楕円、黒目は縁より一回り小さく（ぱっぱ 2026-09-29。キラキラは入れない）。ダイオウは大きい
   const er = Math.min(sh.bigEye ? 5 : 3.2, hw * (sh.bigEye ? 0.5 : 0.3));
