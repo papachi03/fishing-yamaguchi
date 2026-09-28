@@ -300,7 +300,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
       <header class="ika-game-head">
         <p class="ika-eyebrow">${solo ? `<span class="ika-eyebrow-num">EGI</span>${t(lang, '山口イカ部のエギングゲーム', 'YAMAGUCHI IKA CLUB ・ EGING')}` : '<span class="ika-eyebrow-num">01</span>GAME ONE ・ EGING'}</p>
         <${H} id="egi-title">${t(lang, T.name)}</${H}>
-        <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります（海の様子とエギの選び方は、ゲーム画面の下）。', ' Today’s real wind, waves and tide in Hagi set the mood (sea conditions and egi choice are below the game).') : ''}</p>
+        <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります。', ' Today’s real wind, waves and tide in Hagi set the mood.') : ''}</p>
       </header>
       ${solo ? '' : howtoHTML(lang, 'egi')}
 
