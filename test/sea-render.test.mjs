@@ -30,7 +30,10 @@ function renderAll(lang) {
 }
 
 test('日本語（lang 省略）の出力は英語対応の前と1文字も変わらない', () => {
-  const expected = readFileSync(new URL('./fixtures/sea-dash-ja.txt', import.meta.url), 'utf8');
+  // Windows で git が改行を CRLF にして取り出すことがあるので、LF にそろえて比べる（中身の比較には関係ない）
+  const expected = readFileSync(new URL('./fixtures/sea-dash-ja.txt', import.meta.url), 'utf8').replace(/
+/g, '
+');
   assert.equal(renderAll(undefined), expected);
   assert.equal(renderAll('ja'), expected, "lang='ja' を明示しても同じ");
 });
