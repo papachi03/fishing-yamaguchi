@@ -92,7 +92,7 @@ const hubHTML = (lang) => `
 // 遊び方の動画（childダディの YouTube、2026-09-26）。あそび場だけに出し、エギング単体のページ（知り合い用）には出さない
 const HOWTO = {
   egi: { id: 'Kdq8l3a82yc', poster: '/assets/ikabu/egi-video-poster.jpg', len: pair('約4分', 'about 4 min') },
-  sumi: { id: 'HSpwXXRKXFU', poster: '/assets/ikabu/sumi-video-poster.jpg', len: pair('約3分', 'about 3 min') },
+  sumi: { id: 'YNhydWdt2e4', poster: '/assets/ikabu/sumi-video-poster.jpg', len: pair('約6分半', 'about 6.5 min') },   // 2026-09-28 第2版（スペシャルパネル・コンボ）に差し替え。前の動画は非公開
 };
 const howtoHTML = (lang, game) => {
   const v = HOWTO[game];
