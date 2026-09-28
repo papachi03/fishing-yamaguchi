@@ -5,7 +5,7 @@
 import { pair } from './i18n.js';
 
 // アフィリエイトの表示スイッチ。海況データの乗り換え（Open-Meteo の無料枠から撤退）が終わってから true にする（ぱっぱ 9/26）
-export const AFFILIATE_ON = false;
+export const AFFILIATE_ON = true;   // 2026-09-29 海況データの乗り換えを本番に出した（商用利用可）ので有効に（ぱっぱ）
 // 冒頭の解説動画（YouTube の動画ID）。childダディのチャンネルに上がったら入れる。null のあいだは「準備中」の枠
 export const GUIDE_VIDEO_ID = '5BiXvdxYBj8';   // childダディ「【秋エギング】新子シーズンのエギ選び」（2026-09-26）
 
