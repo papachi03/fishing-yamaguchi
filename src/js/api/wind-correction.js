@@ -25,10 +25,28 @@ export const bandOf = (hour) => HOUR_BANDS.find((b) => hour >= b.from && hour < 
 // 8方位（風が吹いてくる方角）。N=0, NE=1, …, NW=7
 export const octantOf = (deg) => (deg == null || Number.isNaN(deg) ? null : Math.round(((deg % 360) + 360) % 360 / 45) % 8);
 
+// ★2026-09-29 表向きの差し替え（ぱっぱOK）：まずは「原点を通る比率」（a×生の値、b=0）で入れる。
+//   最小二乗の a×x+b は、比較した4日間が穏やかな日ばかり（アメダス最大3.9〜5.0m/s）だったため傾きが
+//   0.04〜0.4 と小さく、「10m/sの予報が2〜4m/s」につぶれて危険な日を穏やかと出すおそれがあった。
+//   比率なら強い風でも比例して大きく出る。合い方はアメダス実測に対し、今の Open-Meteo と同じくらい
+//   （萩 0.68/0.63・長門 0.64/0.68・下関 1.56/1.87・下松 0.91/1.08・防府 1.13/1.38 m/s）。
+//   さらに weather.js で「気象庁の地域時系列予報と強いほう」を使い、注意報・警報でも判定を引き上げる（安全側）。
+//   記録は 10/24 まで続け、7m/s 以上の日が入ったら見直す（weather-compare/ratio.py・out/まとめ_*.md）
+const flat = (a) => Object.fromEntries(HOUR_BANDS.map((b) => [b.key, { a, b: 0 }]));
 // 風の補正表：WIND[areaId][band] = { a, b, dir?: { [octant]: { a, b } } }。無ければ補正しない
-export const WIND = {};
-// 波の補正表：WAVE[areaId] = { a, b }
-export const WAVE = {};
+export const WIND = {
+  hagi: flat(0.376),
+  nagato: flat(0.287),
+  shimonoseki: flat(0.741),
+  kudamatsu: flat(0.458),
+  hofu: flat(0.555),
+};
+// 波の補正表：WAVE[areaId] = { a, b }（瀬戸内の下松・防府は気象庁の文章なので補正しない）
+export const WAVE = {
+  hagi: { a: 0.807, b: 0 },
+  nagato: { a: 0.949, b: 0 },
+  shimonoseki: { a: 0.855, b: 0 },
+};
 
 const round1 = (v) => Math.round(v * 10) / 10;
 

@@ -10,7 +10,7 @@
 //   検索に一切出なかった。今はビルド時に取得した予報をHTMLに書き込んでおき、
 //   開いた人のブラウザで最新の予報に差し替える。
 
-import { describeWeather, windDirection } from '../api/weather.js';
+import { describeWeather, windDirection, TRIAL_NOTE } from '../api/weather.js';
 import { calcExpectation, seasonalTargets } from '../api/fishing.js';
 import { guidesForMonth, guideHref } from '../data/guides.js';
 import {
@@ -156,6 +156,7 @@ function safetyBandHTML(area, w) {
     windDir: w.current.windDir,
     facing: area.facing,
     seaProfile: area.seaProfile,
+    alerts: w.current.alerts ?? w.alerts,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
   const pf = profileOf(area.seaProfile);
@@ -179,6 +180,7 @@ function safetyLegendHTML(area) {
       <p class="safety-legend t-mono">${legendText(area.seaProfile)}（${pf.label}の基準）。気象庁の注意報・警報が出ている時はそちらを優先${
         pf.provisional ? ' ／ この海域のしきい値は暫定です' : ''
       }</p>
+      <p class="safety-legend safety-trial t-mono">⚠ ${TRIAL_NOTE}</p>
       <p class="safety-legend t-mono">数字は予報値です。海の上では<strong>+2m/sほど強く感じます</strong>（表示5m ≒ 体感7〜8m）。上のしきい値はその体感を織り込んであります</p>`;
 }
 

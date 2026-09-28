@@ -2014,3 +2014,7 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 @media (min-width: 560px) {
   .guide-next { grid-template-columns: 1fr 1fr; }
 }
+
+/* 海況データの調整試験中の一言（2026-09-29） */
+.sea-trial-note { grid-column: 1 / -1; margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--ink-soft, #5b6770); }
+.safety-trial { color: #b5532b; }

@@ -73,7 +73,7 @@ export function isOnshore(windDir, facing) {
 }
 
 // seaProfile を省略すると日本海側の基準（従来の挙動）になる
-export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile }) {
+export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [] }) {
   const pf = profileOf(seaProfile);
   const [w1, w2, w3] = pf.wind;
   const [g1, g2] = pf.gust;
@@ -103,6 +103,8 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
       bump(Math.min(3, level + 1), `周期${wavePeriod.toFixed(0)}秒のうねり`);
     }
   }
+  // 気象庁の注意報・警報（2026-09-29 から実際に取得）：注意報は「危険」以上、警報・特別警報は「中止」。公式の発表を最優先
+  for (const a of alerts ?? []) bump(a.kind === 'warning' ? 3 : 2, a.name);
   // 向かい風の発動ラインは、その海域の「注意」のしきい値に合わせる
   if (wind != null && wind >= w1 && isOnshore(windDir, facing)) {
     bump(Math.min(3, level + 1), '向かい風（海から吹いて波が立つ）');

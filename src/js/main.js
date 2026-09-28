@@ -1,6 +1,6 @@
 // 共通レイヤー: ナビゲーション / フッター / 海況ストリップ / 動画の遅延読み込み
 import { areas } from './data/areas.js';
-import { describeWeather, windDirection } from './api/weather.js';
+import { describeWeather, windDirection, TRIAL_NOTE } from './api/weather.js';
 import { loadSnapshot, atNow } from './api/sea-snapshot.js';
 import { fetchTide } from './api/tide.js';
 import { instagramProfile } from './data/instagram.js';
@@ -171,7 +171,7 @@ export async function renderSeaStrip(container, list = areas) {
       <div class="sea-tide"></div>
     </article>`
     )
-    .join('');
+    .join('') + `<p class="sea-trial-note">⚠ ${TRIAL_NOTE}</p>`;   // 2026-09-29 取得元の切り替え・調整試験中
 
   let snapAt = null;   // 予報の発表時刻（ビルドで取った時刻）
   await Promise.all(
@@ -208,6 +208,7 @@ export async function renderSeaStrip(container, list = areas) {
           windDir: w.current.windDir,
           facing: a.facing,
           seaProfile: a.seaProfile,
+          alerts: w.current.alerts ?? w.alerts,
         });
         const chip = card.querySelector('[data-safety]');
         chip.textContent = s.label;

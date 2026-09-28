@@ -21,18 +21,22 @@ const UA = 'YamaguchiFishingJournal/1.0 (+https://yamaguchifishing.com)';
 const METNO = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 const WW3 = 'https://pae-paha.pacioos.hawaii.edu/erddap/griddap/ww3_global.json';
 const JMA_FORECAST = 'https://www.jma.go.jp/bosai/forecast/data/forecast/350000.json';
+const JMA_VPFD = (code) => `https://www.jma.go.jp/bosai/jmatile/data/wdist/VPFD/${code}.json`;
+const JMA_WARNING = 'https://www.jma.go.jp/bosai/warning/data/warning/350000.json';
 const JST_MS = 9 * 3600 * 1000;
 const HOURS = 72;
 
-export const SOURCE_LABEL = '風・天気: MET Norway（補正あり） / 波: NOAA WaveWatch III・気象庁 / 降水確率: 気象庁';
+export const SOURCE_LABEL = '風・天気: MET Norway（補正あり）・気象庁 地域時系列予報 / 波: NOAA WaveWatch III・気象庁 / 降水確率・注意報: 気象庁';
+// 取得元を切り替えて調整中であることの一言（2026-09-29 ぱっぱ：表向きは差し替え、裏で集計して直しながら運用）
+export const TRIAL_NOTE = '海況データの取得元を切り替え、調整試験中です。釣行前は気象庁の情報と現地の様子もあわせて確かめてください。';
 
 // エリアごとの取り先。jma＝気象庁の予報区（一次細分）、ww3＝波の格子（海のマス）、setouchi＝波は気象庁の「瀬戸内側」
 export const AREA_SOURCES = {
-  hagi: { jma: '350040', ww3: [34.5, 131.0], amedas: '81071', amedasName: '萩' },
-  nagato: { jma: '350040', ww3: [34.5, 131.0], amedas: '81116', amedasName: '油谷' },
-  shimonoseki: { jma: '350010', ww3: [34.0, 130.5], amedas: '81428', amedasName: '下関' },
-  kudamatsu: { jma: '350030', ww3: null, setouchi: true, amedas: '81386', amedasName: '下松' },
-  hofu: { jma: '350020', ww3: null, setouchi: true, amedas: '81371', amedasName: '防府' },
+  hagi: { jma: '350040', ww3: [34.5, 131.0], amedas: '81071', amedasName: '萩', city: '3520400' },
+  nagato: { jma: '350040', ww3: [34.5, 131.0], amedas: '81116', amedasName: '油谷', city: '3521100' },
+  shimonoseki: { jma: '350010', ww3: [34.0, 130.5], amedas: '81428', amedasName: '下関', city: '3520100' },
+  kudamatsu: { jma: '350030', ww3: null, setouchi: true, amedas: '81386', amedasName: '下松', city: '3520700' },
+  hofu: { jma: '350020', ww3: null, setouchi: true, amedas: '81371', amedasName: '防府', city: '3520600' },
 };
 
 const WMO = new Map([
@@ -203,6 +207,49 @@ export async function fetchTodayObsTemps(area, fetchImpl = fetch) {
   return { date: `${m[1]}-${m[2]}-${m[3]}`, max: v.maxTemp?.[0] ?? null, min: v.minTemp?.[0] ?? null };
 }
 
+// 気象庁の地域時系列予報（予報官の出す公式の予報）：3時間ごとの風速の階級（例 "3 5"）→ 1時間ごとの「階級の真ん中」
+export function parseVpfd(d) {
+  const a = d?.areaTimeSeries;
+  if (!a?.timeDefines || !a?.wind) return {};
+  const out = {};
+  a.timeDefines.forEach((td, i) => {
+    const r = String(a.wind[i]?.range ?? '').split(/\s+/).map(Number);
+    if (r.length < 2 || r.some((v) => Number.isNaN(v))) return;
+    const mid = (r[0] + r[1]) / 2;
+    const t0 = new Date(td.dateTime);
+    for (let k = 0; k < 3; k++) out[jstHourKey(new Date(t0.getTime() + k * 3600e3))] = mid;
+  });
+  return out;
+}
+export async function fetchVpfd(area, fetchImpl = fetch) {
+  const code = AREA_SOURCES[area.id]?.jma;
+  if (!code) return {};
+  return parseVpfd(await getJSON(JMA_VPFD(code), fetchImpl));
+}
+
+// 気象庁の注意報・警報（市町村ごと）。釣りに関わる風・波・高潮だけを見る。
+//   ファイルは「最後に出た時の状態」が残るので、status が 発表・継続 など（解除・なし 以外）だけを有効にする
+const ALERT_NAMES = { '02': '暴風雪警報', '05': '暴風警報', '07': '波浪警報', '08': '高潮警報', '13': '風雪注意報', '15': '強風注意報', '16': '波浪注意報', '19': '高潮注意報', '32': '暴風雪特別警報', '35': '暴風特別警報', '37': '波浪特別警報', '38': '高潮特別警報' };
+export function parseAlerts(d, cityCode) {
+  const out = [];
+  for (const t of d?.areaTypes ?? []) {
+    for (const a of t.areas ?? []) {
+      if (a.code !== cityCode) continue;
+      for (const w of a.warnings ?? []) {
+        const name = ALERT_NAMES[w.code];
+        if (!name || !w.status || /解除|なし/.test(w.status)) continue;
+        out.push({ code: w.code, name, kind: name.includes('警報') ? 'warning' : 'advisory' });
+      }
+    }
+  }
+  return out;
+}
+export async function fetchAlerts(area, fetchImpl = fetch) {
+  const city = AREA_SOURCES[area.id]?.city;
+  if (!city) return [];
+  return parseAlerts(await getJSON(JMA_WARNING, fetchImpl), city);
+}
+
 /* ---------------- まとめる ---------------- */
 
 const popAt = (pops, date) => {
@@ -219,11 +266,13 @@ const popAt = (pops, date) => {
  * ブラウザからは呼ばない（met.no の規約上、User-Agent を名乗れる場所＝ビルド時・Worker でだけ呼ぶ）。
  */
 export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch } = {}) {
-  const [mn, wv, jm, obsT] = await Promise.all([
+  const [mn, wv, jm, obsT, vp, alerts] = await Promise.all([
     fetchMetno(area, fetchImpl),
     fetchWaves(area, now, fetchImpl).catch(() => null),
     fetchJma(area, fetchImpl).catch(() => null),
     fetchTodayObsTemps(area, fetchImpl).catch(() => null),
+    fetchVpfd(area, fetchImpl).catch(() => ({})),
+    fetchAlerts(area, fetchImpl).catch(() => []),
   ]);
 
   // 今日の0時（日本時間）から72時間
@@ -250,9 +299,11 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
       temp: m.temp,
       pop: popAt(jm?.pops, date),
       code: m.code,
-      wind: correctWind(area.id, { wind: m.wind, windDir: m.windDir, hour: hourJst }),
+      // 安全側：補正した met.no と、気象庁の地域時系列予報（階級の真ん中）の強いほう
+      wind: safeWind(correctWind(area.id, { wind: m.wind, windDir: m.windDir, hour: hourJst }), vp?.[key]),
       windDir: m.windDir,
       windRaw: m.wind,
+      windJma: vp?.[key] ?? null,
       gust: null,
       rain: m.rain,
       wave,
@@ -283,7 +334,10 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
   return {
     fetchedAt: now.toISOString(),
     source: SOURCE_LABEL,
+    trial: TRIAL_NOTE,
+    alerts,
     current: {
+      alerts,
       temp: cur.temp,
       code: cur.code,
       wind: cur.wind,
@@ -298,6 +352,8 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
     daily,
   };
 }
+
+export const safeWind = (corrected, jma) => (corrected == null ? jma ?? null : jma == null ? corrected : Math.max(corrected, jma));
 
 // 1日の天気は「いちばん悪い天気」で代表させる（晴れ時々雨 → 雨）。同じ重さなら多い方
 const SEVERITY = (c) => (c == null ? -1 : c >= 95 ? 9 : c >= 71 && c <= 86 && c !== 80 && c !== 81 && c !== 82 ? 8 : c >= 61 ? 7 : c >= 51 ? 6 : c >= 45 ? 5 : c);

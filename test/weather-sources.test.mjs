@@ -26,9 +26,12 @@ test('時刻は日本時間の正時のキー（サーバーが UTC でも同じ
   assert.equal(jstHourKey(new Date('2026-09-24T15:30:00Z')), '2026-09-25T00:00');
 });
 
-test('補正表が空のあいだは生の値を返す／時間帯・方位の区切り', () => {
-  assert.equal(correctWind('hagi', { wind: 5.3, windDir: 60, hour: 23 }), 5.3);
-  assert.equal(correctWave('hagi', 0.57), 0.57);
+test('補正：表の無いエリアは生の値／萩は比率（2026-09-29）／時間帯・方位の区切り', () => {
+  assert.equal(correctWind('nowhere', { wind: 5.3, windDir: 60, hour: 23 }), 5.3);
+  assert.equal(correctWave('kudamatsu', 0.57), 0.57);   // 瀬戸内は気象庁の文章なので補正しない
+  assert.equal(correctWind('hagi', { wind: 5.3, windDir: 60, hour: 23 }), 2.0);   // 0.376 × 5.3
+  assert.equal(correctWind('hagi', { wind: 20, windDir: 60, hour: 12 }), 7.5);   // 強い風でもつぶれず比例する
+  assert.equal(correctWave('hagi', 0.57), 0.46);
   assert.equal(bandOf(5), 'night');
   assert.equal(bandOf(13), 'afternoon');
   assert.equal(octantOf(350), 0);
@@ -67,14 +70,21 @@ test('fetchWeather：取得元をまとめて、画面が使う形（current/hou
         { timeDefines: ['2026-09-24T18:00:00+09:00', '2026-09-25T00:00:00+09:00'], areas: [{ area: { code: '350040' }, pops: ['0', '10'] }] },
       ] }]);
     }
+    if (u.includes('VPFD/350040')) return json({ areaTimeSeries: { timeDefines: [{ dateTime: '2026-09-24T21:00:00+09:00' }, { dateTime: '2026-09-25T00:00:00+09:00' }], wind: [{ range: '3 5' }, { range: '0 2' }] } });
+    if (u.includes('warning/350000')) return json({ areaTypes: [{ areas: [] }, { areas: [{ code: '3520400', warnings: [{ code: '15', status: '発表' }, { code: '16', status: '解除' }] }] }] });
     if (u.includes('latest_time')) return { ok: true, text: async () => '2026-09-24T23:00:00+09:00' };
     if (u.includes('amedas/data/point')) return json({ '20260924230000': { maxTemp: [26.7, 0], minTemp: [17.6, 0] } });
     throw new Error(`unexpected ${u}`);
   };
   const w = await fetchWeather({ id: 'hagi', lat: 34.408, lon: 131.399 }, { now, fetchImpl: fake });
-  assert.equal(w.current.wind, 5.3);
+  // 23時：met.no 5.3 × 0.376 = 2.0 と、気象庁 時系列 3〜5（真ん中 4）の強いほう
+  assert.equal(w.current.wind, 4);
+  assert.equal(w.hourly[0].windRaw, 5.3);
+  assert.equal(w.hourly[0].windJma, 4);
+  assert.equal(w.hourly[1].wind, 1.9);   // 0時：5.1 × 0.376 = 1.9 と 0〜2（1）の強いほう
   assert.equal(w.current.gust, null);
-  assert.equal(w.current.wave, 0.57);
+  assert.equal(w.current.wave, 0.46);
+  assert.deepEqual(w.current.alerts.map((a) => a.name), ['強風注意報']);   // 解除は数えない
   assert.equal(w.hourly[0].time, '2026-09-24T23:00');
   assert.equal(w.hourly[1].pop, 10);
   assert.equal(w.daily[0].tMax, 26.7);   // 過ぎた時間の分はアメダスの実測で補う

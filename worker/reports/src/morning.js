@@ -34,6 +34,7 @@ const judge = (area, c) => {
     windDir: c.windDir,
     facing: area.facing,
     seaProfile: area.seaProfile,
+    alerts: c.alerts,
   });
   return { nameJa: area.nameJa, level: s.level, wind: c.wind };
 };
