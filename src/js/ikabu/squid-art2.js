@@ -57,6 +57,7 @@ function taperedArm({ p0, p1, p2, w0 = 2.4, w1 = 0.7, suckers = true, club = fal
   const pts = [...L, tip, ...R.reverse()];
   const g = svgEl('g', { class: front ? 'ika-arm-front' : 'ika-arm-back' });
   g.__root = p0;
+  g.__tent = club;   // 触腕（イカパンチで伸びる）
   g.__reach = Math.hypot(p2[0] - p0[0], p2[1] - p0[1]);
   g.append(svgEl('path', { d: smoothPath(pts), fill: color ?? C.arm ?? C.ivory, stroke: C.navy, 'stroke-width': '1.7', 'stroke-linejoin': 'round' }));
   // 内側の面（少し暗い）：足の丸みを出す
@@ -288,7 +289,7 @@ const bodyGroup = (parts, len) => { const g = svgEl('g', { class: 'ika-body' });
 // 動き（毎フレーム呼ぶ）：ひれの波打ち・足の揺れ・胴の脈動。t＝秒、speed＝速さの倍率（逃げる・ファイトは速く）、
 //   calm＝1 で静かに泳ぐ、0 で止まる。jet＝噴射からの経過が短いほど 1（横に縮んで縦に伸びる）。
 //   第2版の絵（.ika-art-v2）だけに効き、第1版の絵には何もしない
-export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0 } = {}) {
+export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0, reach = 0 } = {}) {
   if (!node || !node.querySelector) return;
   const root = node.classList?.contains('ika-art-v2') ? node : node.querySelector('.ika-art-v2');
   if (!root) return;
@@ -307,7 +308,9 @@ export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0 } = {}) {
     const [rx, ry] = a.__root;
     const side = rx < 0 ? -1 : 1;
     const deg = calm * (2.2 + a.__reach * 0.06) * Math.sin(t * (1.6 + (i % 3) * 0.35) * speed + i * 1.1) * side;
-    a.setAttribute('transform', `rotate(${deg.toFixed(2)} ${rx} ${ry})`);
+    // イカパンチ（reach 0→1）：触腕だけが前へ約2倍に伸び、先が少し内へ寄る（全種共通・ぱっぱ 2026-09-29）
+    const ext = a.__tent && reach > 0 ? ` translate(${rx} ${ry}) scale(${(1 - 0.35 * reach).toFixed(3)} ${(1 + 0.95 * reach).toFixed(3)}) translate(${-rx} ${-ry})` : '';
+    a.setAttribute('transform', `rotate(${(deg * (1 - reach)).toFixed(2)} ${rx} ${ry})${ext}`);
   });
   // 胴：ゆっくり呼吸のように膨らむ。ジェットの直後は横に縮んで縦に伸びる
   const body = root.querySelector('.ika-body');

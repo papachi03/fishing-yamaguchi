@@ -2267,6 +2267,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const px = V.egi.x + 150 - 96 * ease, py = V.egi.y + 8;
       const op = Math.min(1, pq * 8) * (pq < 0.8 ? 0.95 : 0.95 * (1 - pq) / 0.2);
       setAttrs(n.punchSquid, { transform: `translate(${f1(px)} ${f1(py)}) rotate(${f1(angleOf(1, 0))})`, opacity: op.toFixed(2) });
+      // 叩く瞬間（0.18〜0.6）に2本の触腕がエギまでサッと伸びて戻る
+      const reach = pq < 0.18 ? 0 : pq < 0.3 ? (pq - 0.18) / 0.12 : pq < 0.42 ? 1 : pq < 0.6 ? 1 - (pq - 0.42) / 0.18 : 0;
+      animateSquid(n.punchSquid, now, { speed: 1.4, reach });
     } else n.punchSquid.setAttribute('opacity', '0');
     const pp = V.punchAt != null ? (now - V.punchAt) / 0.45 : 9;
     if (pp < 1 && !reduced) {
