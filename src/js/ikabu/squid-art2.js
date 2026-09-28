@@ -266,12 +266,14 @@ function speciesBody({ species = 'default', len = 56, colors: C = ART, seed = 7 
   const hw = cut ? Math.max(8, W * 0.88) : Math.min(11, Math.max(6.5, W * 0.7));
   const neck = cut ? mouth * 0.92 : mouth * 0.7;
   const hh = cut ? 13 : 16;   // 頭の前後の長さ
-  parts.push(svgEl('path', { d: `M${f(-neck)},${top + 2} C${f(-hw - 1)},${top - 3} ${f(-hw - 1)},${top - hh + 4} ${f(-hw * 0.6)},${top - hh} Q0,${top - hh - 3} ${f(hw * 0.6)},${top - hh} C${f(hw + 1)},${top - hh + 4} ${f(hw + 1)},${top - 3} ${f(neck)},${top + 2} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3', 'stroke-linejoin': 'round' }));
-  if (sh.armStripe) for (const s of [-1, 1]) parts.push(svgEl('path', { d: `M${f(s * hw * 0.3)},${top - 15} Q${f(s * hw * 0.34)},${top - 7} ${f(s * neck * 0.6)},${top + 1}`, fill: 'none', stroke: '#fff6ea', 'stroke-width': '1.6', 'stroke-linecap': 'round', opacity: '0.85' }));
+  const hd = cut ? 9 : 0;   // コウイカの仲間：頭を胴の中に押し込む（ぱっぱの赤ペン 2026-09-29）
+  const ht = top + hd;
+  parts.push(svgEl('path', { d: `M${f(-neck)},${ht + 2} C${f(-hw - 1)},${ht - 3} ${f(-hw - 1)},${ht - hh + 4} ${f(-hw * 0.6)},${ht - hh} Q0,${ht - hh - 3} ${f(hw * 0.6)},${ht - hh} C${f(hw + 1)},${ht - hh + 4} ${f(hw + 1)},${ht - 3} ${f(neck)},${ht + 2} Z`, fill: C.ivory, stroke: C.navy, 'stroke-width': '3', 'stroke-linejoin': 'round' }));
+  if (sh.armStripe) for (const s of [-1, 1]) parts.push(svgEl('path', { d: `M${f(s * hw * 0.3)},${ht - 12} Q${f(s * hw * 0.34)},${ht - 6} ${f(s * neck * 0.6)},${ht + 1}`, fill: 'none', stroke: '#fff6ea', 'stroke-width': '1.6', 'stroke-linecap': 'round', opacity: '0.85' }));
   // 目：頭の両端の縦長の楕円、黒目は縁より一回り小さく（ぱっぱ 2026-09-29。キラキラは入れない）。ダイオウは大きい
   const er = Math.min(sh.bigEye ? 5 : 3.2, hw * (sh.bigEye ? 0.5 : 0.3));
   for (const s of [-1, 1]) {
-    const ex = s * (hw * 0.92), ey = top - 7;
+    const ex = s * (hw * 0.92), ey = ht - (cut ? 6 : 7);
     parts.push(
       svgEl('ellipse', { cx: f(ex), cy: f(ey), rx: f(er * 0.62 + 0.8), ry: f(er * 1.35 + 0.8), fill: C.eye ?? '#cfd9d4', stroke: C.navy, 'stroke-width': '1.2' }),
       svgEl('ellipse', { cx: f(ex), cy: f(ey), rx: f(er * 0.42), ry: f(er * 1.0), fill: C.navy }),
@@ -322,9 +324,10 @@ function armSet(sh, pose, C) {
   // コウイカの仲間：足は短く太く、横に広がる（ぱっぱ 2026-09-29「足が太くて短い」）。触腕は長いまま
   const k = cut ? 0.55 : 1;   // 足の長さの倍率
   const aw = cut ? 1.55 : 1;   // 足の太さの倍率
-  const P = (x, y) => [x * (cut ? 1.3 : 1), y];
+  const dy = cut ? 9 : 0;   // 足の根元も頭と一緒に胴の中へ
+  const P = (x, y) => [x * (cut ? 1.3 : 1), y + dy];
   const arm = (o) => taperedArm({ ...o, w0: o.w0 * aw, w1: o.w1 * aw }, C);
-  const scaleArm = (p0, p1, p2, kk = k) => ({ p0: P(...p0), p1: [P(...p1)[0], p0[1] + (p1[1] - p0[1]) * kk], p2: [P(...p2)[0], p0[1] + (p2[1] - p0[1]) * kk] });
+  const scaleArm = (p0, p1, p2, kk = k) => ({ p0: P(...p0), p1: [P(...p1)[0], p0[1] + dy + (p1[1] - p0[1]) * kk], p2: [P(...p2)[0], p0[1] + dy + (p2[1] - p0[1]) * kk] });
   const kt = k * (sh.tentK ?? 1);   // 触腕の長さ
   if (pose === 'hug') {
     return {
@@ -371,6 +374,8 @@ export function huggingSquid({ species = 'default', len = 56, colors = ART } = {
   const arms = armSet(sh, 'hug', C);
   back.append(...arms.back);
   front.append(bodyGroup(speciesBody({ species, len: len / k, colors: C, seed: 7 }), len / k), ...arms.front);
+  // コウイカの仲間は足が短いので、抱いた姿は体ごとエギ側へ寄せる（足の先がエギに届くように）
+  if (sh.kind === 'cuttle') { const up = -11 * k; back.setAttribute('transform', `translate(0 ${f(up)}) scale(${k.toFixed(3)})`); front.setAttribute('transform', `translate(0 ${f(up)}) scale(${k.toFixed(3)})`); }
   g.append(back, egiShape(), front);
   return g;
 }
