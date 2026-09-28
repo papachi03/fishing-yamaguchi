@@ -548,7 +548,8 @@ function jerk(s, kind = 'lift') {
   s.lastJerk = s.t;
   s.judged = false;
   s.tensionFall = false;
-  const lift = kind === 'dart' ? 1.8 : 1.2;
+  // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
+  const lift = kind === 'dart' ? 2.8 : 2.0;
   const pull = kind === 'dart' ? 2.5 : 1.5;
   s.depth = Math.max(0.5, s.depth - lift);
   s.dist = Math.max(0, s.dist - pull);
