@@ -16,7 +16,7 @@ test('分量は2人分が基準で、4人分は2倍・小数は1桁', () => {
 test('レシピの写真・図鑑の写真は data.js の中で解決できる', () => {
   for (const s of species) if (s.photo) assert.ok(photoById(s.photo), `${s.id} の写真 ${s.photo} が photos に無い`);
   for (const p of photos) assert.ok(p.author && p.license && p.source, `${p.id} の出典が欠けている`);
-  assert.equal(recipes.length, 4);
+  assert.equal(recipes.length, 14);
 });
 
 test('殻のパスから page / lang / recipeId を読む', () => {
@@ -27,9 +27,9 @@ test('殻のパスから page / lang / recipeId を読む', () => {
   assert.equal(parseIkabuPath('/x/sea.html'), null);
 });
 
-test('殻の一覧：12ページ×2言語（エギング専用ページ・記事 egi-guide を含む） ＋ レシピ4品×2言語、hreflang は同じ品を指す', () => {
+test('殻の一覧：12ページ×2言語（エギング専用ページ・記事 egi-guide を含む） ＋ レシピ14品×2言語、hreflang は同じ品を指す', () => {
   const shells = ikabuShells();
-  assert.equal(shells.length, 32);
+  assert.equal(shells.length, 52);
   assert.ok(shells.some((s) => s.file === 'ikabu/egi-guide.html') && shells.some((s) => s.file === 'ikabu/en/egi-guide.html'));
   assert.ok(shells.some((s) => s.file === 'ikabu/egi.html') && shells.some((s) => s.file === 'ikabu/en/egi.html'));
   const butterEn = shells.find((s) => s.file === 'ikabu/en/recipes/butter.html');

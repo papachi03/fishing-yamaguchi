@@ -3,6 +3,7 @@
 // 写真の出典は sources ページにそのまま出る。ライセンスと撮影者は書き換えないこと。
 
 export const pair = (ja, en) => ({ ja, en });
+import { moreRecipes } from './kitchen-data.js';
 // Google マップの検索リンク（公式の URL 形式。スマホでは Google マップのアプリが開き、そこからナビを始められる）
 const gmap = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
@@ -419,6 +420,7 @@ export const mapFilters = [
 export const recipes = [
   {
     id: 'butter',
+    squid: ['aori', 'mongo', 'kouika'],
     name: pair('イカとブロッコリーのバター醤油', 'Squid & broccoli with soy butter'),
     time: 15,
     kind: pair('炒める', 'Sauté'),
@@ -440,6 +442,7 @@ export const recipes = [
   },
   {
     id: 'daikon',
+    squid: ['yari', 'mongo'],
     name: pair('イカと大根の生姜煮', 'Ginger-simmered squid & daikon'),
     time: 35,
     kind: pair('煮る', 'Simmer'),
@@ -463,6 +466,7 @@ export const recipes = [
   },
   {
     id: 'pasta',
+    squid: ['kouika', 'mongo', 'kensaki'],
     name: pair('イカのガーリックトマトパスタ', 'Garlic & tomato squid pasta'),
     time: 25,
     kind: pair('洋風', 'Pasta'),
@@ -504,13 +508,14 @@ export const recipes = [
     ],
     tip: pair('酢味噌で生のイカを安全にできるわけではありません。加熱済みを使います。', 'Vinegar dressing does not make raw squid safe. Use fully cooked squid.'),
   },
+  ...moreRecipes,
 ];
 
 export const foodSafety = {
   label: pair('調理前に', 'Before cooking'),
   text: pair(
-    'イカは冷蔵で管理し、加熱料理は中心まで十分に火を通します。酢・塩・わさびでアニサキス対策はできません。',
-    'Keep squid refrigerated and cook it thoroughly. Vinegar, salt and wasabi do not eliminate Anisakis parasites.'
+    'イカは冷蔵で管理し、加熱料理は中心まで十分に火を通します。生で食べるなら−20℃以下で24時間以上冷凍してから。酢・塩・わさびでアニサキス対策はできません。',
+    'Keep squid refrigerated and cook it thoroughly. To eat it raw, freeze it first at −20°C or below for at least 24 hours. Vinegar, salt and wasabi do not eliminate Anisakis parasites.'
   ),
   link: [pair('厚生労働省の案内', 'Official food-safety guidance'), 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000042953.html'],
 };

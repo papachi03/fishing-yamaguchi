@@ -20,7 +20,7 @@ const PAGES = {
   },
   map: { ja: ['山口マップ', '萩・長門・下関の遊漁船の公開案内と、須佐・特牛のイカの食文化スポットを地図に。ピンはエリアの目安で、釣り場そのものは示しません。'], en: ['Map', 'Public boat-trip information for Hagi, Nagato and Shimonoseki, plus squid food-culture stops in Susa and Kottoi. Pins mark areas, never exact fishing spots.'] },
   sea: { ja: ['風と波', '萩・長門・下関・下松・防府の天気、風速、突風、波高、潮汐と堤防の安全判定。ジャーナル本編の海況を部室から。'], en: ['Sea conditions', 'Weather, wind, gusts, wave height, tide and a breakwater safety guide for Hagi, Nagato, Shimonoseki, Kudamatsu and Hofu, from the journal’s sea page.'] },
-  recipes: { ja: ['イカ食堂', 'バター醤油、生姜煮、トマトパスタ、酢味噌和え。家庭で作る４つの加熱料理。人数に合わせて分量を切り替えられます。'], en: ['Recipes', 'Soy butter, ginger simmer, tomato pasta and vinegar miso. Four home recipes using cooked squid, with quantities for two or four servings.'] },
+  recipes: { ja: ['イカ食堂', 'アオリ・ケンサキ・ヤリ・コウイカ・モンゴウ。山口で釣れる5種のイカから選べる家庭料理と、釣ったイカの下処理。刺身は冷凍の約束つき。'], en: ['Recipes', 'Home recipes chosen by the five squid you can catch in Yamaguchi, plus how to handle your catch. Raw dishes come with freezing guidance.'] },
   recipe: { ja: ['材料と作り方', '1品ずつのレシピページ。分量と手順を台所で見やすく。'], en: ['Ingredients & steps', 'One recipe per page, with quantities and steps laid out for the kitchen.'] },
   atlas: { ja: ['世界のイカ', 'アオリイカ、ケンサキイカ、ヤリイカからダイオウイカまで。沿岸から深海まで、山口→日本→世界の順に13種の入門図鑑。'], en: ['Squid atlas', 'From bigfin reef squid and swordtip squid to the giant squid. An introductory atlas of thirteen species, from Yamaguchi to Japan to the world.'] },
   gallery: { ja: ['写真部', '部員の釣果、山口の海、イカの姿、食卓。撮影者と出典を添えた参考アルバム。'], en: ['Gallery', 'Our catches, the Yamaguchi coast, squid life and the table. A reference album with photographers and sources credited.'] },

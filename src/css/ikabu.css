@@ -1137,6 +1137,36 @@
 .ika-print-only { display: none; }
 .ika-recipe-others .ika-recipe-list { grid-template-columns: repeat(3, 1fr); }
 
+/* 山口で釣れる5種のイカ・絞り込み・生食の注意・バリエーション・下処理（2026-09-28） */
+.ika-kitchen-section .ika-h2-small { margin: clamp(28px, 4vw, 44px) 0 14px; }
+.ika-kitchen-squids { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.ika-kitchen-squid { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; font-size: 14px; line-height: 1.8; scroll-margin-top: 90px; }
+.ika-kitchen-squid h3 { font-family: var(--font-maru); font-weight: 900; font-size: 19px; color: var(--ika-sea); }
+.ika-kitchen-season { font-size: 13px; color: var(--ika-ink-soft); }
+.ika-kitchen-season span, .ika-kitchen-best-label { display: inline-block; margin-right: 8px; font-family: var(--font-maru); font-weight: 900; color: var(--ika-orange-deep); }
+.ika-kitchen-best { display: grid; gap: 4px; flex: 1; }
+.ika-kitchen-best a { color: var(--ika-sea); font-weight: 700; border-bottom: 2px solid var(--ika-sea-line); }
+.ika-kitchen-atlas { align-self: flex-start; font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); }
+.ika-kitchen-filter { margin-bottom: 16px; }
+.ika-recipe-card[hidden] { display: none; }
+.ika-recipe-squid { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.ika-recipe-squid i, .ika-recipe-squid a { font-style: normal; padding: 2px 10px; border-radius: 999px; border: 2px solid var(--ika-sea-line); font-size: 12px; font-weight: 700; color: var(--ika-sea); }
+.ika-recipe-squid a i { padding: 0; border: 0; }
+.ika-recipe-meta .ika-recipe-squid { margin-top: 0; }
+.ika-recipe-meta .ika-recipe-squid > span { font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-recipe-raw { align-self: flex-start; margin-top: 8px; padding: 2px 10px; border-radius: 999px; background: #fff4ea; border: 2px solid var(--ika-orange); font-size: 12px; font-weight: 700; color: var(--ika-orange-deep); }
+.ika-raw-note { margin-top: 18px; padding: 14px 18px; background: #fff4ea; border: 3px solid var(--ika-orange); border-radius: 14px; font-size: 14.5px; line-height: 1.9; }
+.ika-raw-note-label { font-family: var(--font-maru); font-weight: 900; color: var(--ika-orange-deep); }
+.ika-variations { margin-top: 22px; }
+.ika-variations ul { margin-top: 10px; display: grid; gap: 10px; }
+.ika-variations li { display: grid; gap: 2px; padding: 12px 16px; background: var(--ika-mist); border-radius: 12px; font-size: 14px; line-height: 1.8; }
+.ika-variations b { font-family: var(--font-maru); font-weight: 900; color: var(--ika-sea); }
+.ika-prep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 18px; }
+.ika-prep-card { padding: 16px 18px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; }
+.ika-prep-card--raw { border-color: var(--ika-orange); background: #fff4ea; }
+.ika-prep-card h3 { font-family: var(--font-maru); font-weight: 900; font-size: 17px; color: var(--ika-sea); }
+.ika-prep-card ol { margin-top: 10px; padding-left: 1.4em; list-style: decimal; display: grid; gap: 6px; font-size: 14px; line-height: 1.85; }
+
 /* ==========================================================================
    04 世界のイカ
    ========================================================================== */

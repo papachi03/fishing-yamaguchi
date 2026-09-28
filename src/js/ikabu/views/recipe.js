@@ -5,7 +5,7 @@
 import { t, pair, esc, pageHref, recipeHref } from '../i18n.js';
 import { recipes } from '../data.js';
 import { pageHead } from './parts.js';
-import { foodSafetyHTML, recipeCardHTML } from './recipes.js';
+import { foodSafetyHTML, recipeCardHTML, squidName } from './recipes.js';
 import { BASE_SERVINGS, scaledIngredients } from '../recipe-scale.js';
 
 export const HEAD = {
@@ -19,12 +19,31 @@ export const recipeById = (id) => recipes.find((r) => r.id === id) ?? null;
 
 export function ingredientsHTML(lang, r, servings = BASE_SERVINGS) {
   return scaledIngredients(r.ingredients, servings)
-    .map(([name, qty, unit], i) => `<li><span>${t(lang, name)}</span><span class="ika-qty" data-qty="${r.ingredients[i][1]}" data-unit="${esc(unit)}">${qty} ${esc(unit)}</span></li>`)
+    .map(([name, qty, unit], i) => {
+      const u = typeof unit === 'string' ? unit : t(lang, unit);   // 「枚」「杯」などは日英で違う
+      return `<li><span>${t(lang, name)}</span><span class="ika-qty" data-qty="${r.ingredients[i][1]}" data-unit="${esc(u)}">${qty} ${esc(u)}</span></li>`;
+    })
     .join('');
 }
 
+// 生で食べる品：手順の前に、冷凍の約束を目立たせる
+const rawNoteHTML = (lang) => `<div class="ika-raw-note" role="note">
+  <p class="ika-raw-note-label">${t(lang, '生で食べる前に', 'Before eating raw')}</p>
+  <p>${t(lang, 'イカにはアニサキス（寄生虫）がいることがあります。この料理は、下処理した身を<b>−20℃以下で24時間以上冷凍してから</b>作ります（厚生労働省の案内）。解凍したら表面を目で見て確かめる。酢・塩・醤油・わさびでは防げません。', 'Squid can carry Anisakis parasites. Make this dish only after <b>freezing the cleaned flesh at −20°C or below for at least 24 hours</b> (Japan’s Ministry of Health guidance). Check the surface after thawing. Vinegar, salt, soy sauce and wasabi do not prevent it.')}</p>
+</div>`;
+
+const variationsHTML = (lang, r) =>
+  r.variations?.length
+    ? `<div class="ika-variations">
+      <h2>${t(lang, 'バリエーション', 'Variations')}</h2>
+      <ul>${r.variations.map(([name, how]) => `<li><b>${t(lang, name)}</b><span>${t(lang, how)}</span></li>`).join('')}</ul>
+    </div>`
+    : '';
+
 function recipePageHTML(lang, r) {
-  const others = recipes.filter((x) => x.id !== r.id);
+  // ほかの一皿：同じイカに向く品を先に、最大4品
+  const shares = (x) => (x.squid ?? []).some((id) => (r.squid ?? []).includes(id));
+  const others = [...recipes.filter((x) => x.id !== r.id && shares(x)), ...recipes.filter((x) => x.id !== r.id && !shares(x))].slice(0, 3);
   return `${pageHead(lang, { num: '03', eyebrow: 'THE IKA KITCHEN', title: r.name, desc: r.intro })}
   <article class="ika-section ika-recipe" data-recipe="${r.id}">
     <div class="wrap">
@@ -32,7 +51,9 @@ function recipePageHTML(lang, r) {
         <span class="ika-recipe-kind">${t(lang, r.kind)}</span>
         <span class="ika-recipe-time"><b>${r.time}</b>${t(lang, '分（目安）', 'min, approximate')}</span>
         <span class="ika-recipe-serves" id="ika-serves-label">${t(lang, `${BASE_SERVINGS}人分`, `${BASE_SERVINGS} servings`)}</span>
+        ${(r.squid ?? []).length ? `<span class="ika-recipe-squid"><span>${t(lang, '向くイカ', 'Good with')}</span>${r.squid.map((id) => `<a href="${pageHref('recipes', lang)}#kitchen-${id}"><i>${squidName(lang, id)}</i></a>`).join('')}</span>` : ''}
       </p>
+      ${r.raw ? rawNoteHTML(lang) : ''}
       <div class="ika-recipe-body">
         <aside class="ika-ingredients">
           <h2>${t(lang, '材料', 'Ingredients')}</h2>
@@ -46,6 +67,7 @@ function recipePageHTML(lang, r) {
           <h2>${t(lang, '作り方', 'Method')}</h2>
           <ol class="ika-steps">${r.steps.map((s) => `<li>${t(lang, s)}</li>`).join('')}</ol>
           <p class="ika-tip"><span class="ika-tip-label">${t(lang, 'コツ', 'Tip')}</span>${t(lang, r.tip)}</p>
+          ${variationsHTML(lang, r)}
           <div class="ika-recipe-actions">
             <button type="button" class="ika-btn ika-btn--sea" id="ika-print">${t(lang, 'レシピを印刷', 'Print recipe')}</button>
             <a class="ika-recipe-back" href="${pageHref('recipes', lang)}">${t(lang, 'ほかのレシピを見る', 'More recipes')} <span aria-hidden="true">→</span></a>
