@@ -724,7 +724,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const b = e.target.closest('.ika-chip[data-feel]');
     if (!b) return;
     const on = b.dataset.on === '1';
-    if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn) callout(t(lang, TX.feel.shakeOn), 'good'); }); return; }
+    if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn) callout(t(lang, TX.feel.shakeOn), 'good', 3200); }); return; }
     if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
     else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
     syncFeel();
