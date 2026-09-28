@@ -15,10 +15,10 @@
 //   → **体感に合わせるつもりで、ここからさらに2を引いてはいけない。** 補正が二重にかかる。
 //   Open-Meteo の生の値をそのまま表示し、しきい値の側で体感を織り込む設計にしてある。
 //
-//   風速   〜3 安全 / 3〜5 注意 / 5〜7 危険 / 7〜 中止
+//   風速   〜3 穏やか / 3〜5 注意 / 5〜7 危険 / 7〜 中止
 //   突風   6〜 注意 / 10〜 危険（平均風速の1.5〜2倍になるのが普通。
 //          2026-09-12に10/15→6/10へ。風速を3/5/7にしたので、平均の約2倍で揃えた）
-//   波高   〜1.0 安全 / 1.0〜1.2 注意 / 1.2〜1.5 危険 / 1.5〜 中止（堤防を波が洗う）
+//   波高   〜1.0 穏やか / 1.0〜1.2 注意 / 1.2〜1.5 危険 / 1.5〜 中止（堤防を波が洗う）
 //   うねり 周期7秒以上 かつ 波高1.0以上 は1段階上げる
 //   向かい風（海から陸へ吹く風）は波が立つので、風速3以上なら1段階上げる
 
@@ -62,7 +62,9 @@ export const profileOf = (key) => SEA_PROFILES[key] ?? SEA_PROFILES.nihonkai;
 
 // labelEn / messageEn はイカ部の英語ページ用。label / message（日本語）は従来のまま
 export const SAFETY_LEVELS = [
-  { level: 0, key: 'ok', label: '安全', short: 'OK', message: '堤防で釣りができるコンディションです。', labelEn: 'SAFE', messageEn: 'Conditions are fine for fishing from the breakwater.' },
+  // 一番下の段階は「安全」でなく「穏やか」（安全を保証するように読まれるため。SNS・紹介動画と表記をそろえる 2026-09-28 ぱっぱ）
+  // 英語も同じ理由で SAFE でなく CALM（イカ部の英語ページ）
+  { level: 0, key: 'ok', label: '穏やか', short: 'OK', message: '堤防で釣りができるコンディションです。', labelEn: 'CALM', messageEn: 'Conditions are fine for fishing from the breakwater.' },
   { level: 1, key: 'caution', label: '注意', short: '注意', message: '軽い仕掛けは流されます。港内・風裏を選んでください。', labelEn: 'CAUTION', messageEn: 'Light rigs will drift. Choose inside the harbor or the lee of the wind.' },
   { level: 2, key: 'danger', label: '危険', short: '危険', message: '外向きの堤防は避けてください。ライフジャケット必須。', labelEn: 'DANGER', messageEn: 'Avoid breakwaters facing the open sea. Life jacket required.' },
   { level: 3, key: 'stop', label: '中止', short: '中止', message: '今日は堤防に立たないでください。', labelEn: 'STOP', messageEn: 'Do not go out on the breakwater today.' },
@@ -82,7 +84,7 @@ export function isOnshore(windDir, facing) {
 }
 
 // seaProfile を省略すると日本海側の基準（従来の挙動）になる
-export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, lang = 'ja' }) {
+export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [], lang = 'ja' }) {
   const pf = profileOf(seaProfile);
   const R = REASON[lang] ?? REASON.ja;
   const [w1, w2, w3] = pf.wind;
@@ -113,6 +115,8 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
       bump(Math.min(3, level + 1), R.swell(wavePeriod.toFixed(0)));
     }
   }
+  // 気象庁の注意報・警報（2026-09-29 から実際に取得）：注意報は「危険」以上、警報・特別警報は「中止」。公式の発表を最優先
+  for (const a of alerts ?? []) bump(a.kind === 'warning' ? 3 : 2, a.name);
   // 向かい風の発動ラインは、その海域の「注意」のしきい値に合わせる
   if (wind != null && wind >= w1 && isOnshore(windDir, facing)) {
     bump(Math.min(3, level + 1), R.onshore);
@@ -128,8 +132,8 @@ export function legendText(seaProfile, lang = 'ja') {
   const pf = profileOf(seaProfile);
   const [w1, w2, w3] = pf.wind;
   const [h1, h2, h3] = pf.wave;
-  if (lang === 'en') return `Wind up to ${w1} safe / ${w1}–${w2} caution / ${w2}–${w3} danger / ${w3}+ stop · Wave ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)} m`;
-  return `風速 〜${w1} 安全 / ${w1}〜${w2} 注意 / ${w2}〜${w3} 危険 / ${w3}〜 中止 ・ 波高 ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)}m`;
+  if (lang === 'en') return `Wind up to ${w1} calm / ${w1}–${w2} caution / ${w2}–${w3} danger / ${w3}+ stop · Wave ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)} m`;
+  return `風速 〜${w1} 穏やか / ${w1}〜${w2} 注意 / ${w2}〜${w3} 危険 / ${w3}〜 中止 ・ 波高 ${h1.toFixed(1)} / ${h2.toFixed(1)} / ${h3.toFixed(1)}m`;
 }
 
 // 時間別テーブルのセル用（その項目だけで段階を返す）。

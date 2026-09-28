@@ -15,12 +15,12 @@
 //   YFJ 本体（sea.html・prerender-sea）の出力は1文字も変わらない（test/sea-render.test.mjs で固定）。
 //   文言はすべて下の T にまとめ、描画の関数はそこから引くだけにしてある。
 
-import { describeWeather, windDirection } from '../api/weather.js';
+import { describeWeather, windDirection, TRIAL_NOTE } from '../api/weather.js';
 import { calcExpectation, seasonalTargets } from '../api/fishing.js';
+import { guidesForMonth, guideHref } from '../data/guides.js';
 import {
   assessSafety,
   windLevel,
-  gustLevel,
   waveLevel,
   isOnshore,
   legendText,
@@ -47,6 +47,11 @@ const T = {
     onshore: ' ／ 海からの風',
     reasonSep: ' ／ ',
     legend: (legend, pfLabel, provisional) => `${legend}（${pfLabel}の基準）。気象庁の注意報・警報が出ている時はそちらを優先${provisional ? ' ／ この海域のしきい値は暫定です' : ''}`,
+    trial: TRIAL_NOTE,
+    obsNone: 'アメダス実測',
+    obsCalm: '静穏',
+    obsLine: (obs, d) => `${obs.station} ${obs.at} 実測 ${d}`,
+    obsGust: (g, at) => ` ・ 今日の最大瞬間 ${g}${at ? `（${at}）` : ''}`,
     legendFeel: '数字は予報値です。海の上では<strong>+2m/sほど強く感じます</strong>（表示5m ≒ 体感7〜8m）。上のしきい値はその体感を織り込んであります',
     seasonHead: 'In Season — 今月の旬',
     seasonMonth: (m) => `${m}月 / 堤防釣りの一般的な目安`,
@@ -56,7 +61,7 @@ const T = {
     tideSource: (src) => `出典: ${src}`,
     popMax: (v) => `降水確率 最大 ${v}%`,
     hiLo: (h, l) => `H ${h}° / L ${l}°`,
-    windDir: (dir) => `${dir.en}（${dir.ja}）`,
+    windDir: (dir) => `予報 ${dir.en}（${dir.ja}）`,
     gust: '突風',
     wavePeriod: (p) => `周期 ${p}秒`,
     waveHeight: '波高',
@@ -68,7 +73,7 @@ const T = {
       // 視聴者の方の釣り場（contributor 付き）は場所が特定できないよう座標を出さない
       const coordNote = area.contributor ? '' : ` / 座標 ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)}`;
       const tideNote = t ? ` / 潮汐: 気象庁 潮位表（${t.stationName}）` : '';
-      return `天気・風: Open-Meteo${tideNote}${coordNote} / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
+      return `予報: 風・天気 MET Norway（地域ごとに補正） / 波 NOAA WaveWatch III・気象庁 / 降水確率 気象庁 ・ 実測: 気象庁アメダス${tideNote}${coordNote} / 出典：気象庁ホームページ（加工して表示） / このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。`;
     },
   },
   en: {
@@ -83,6 +88,11 @@ const T = {
     onshore: ' / onshore wind',
     reasonSep: ' / ',
     legend: (legend, pfLabel, provisional) => `${legend} (${pfLabel} thresholds). JMA advisories and warnings always take precedence${provisional ? ' / thresholds for this area are provisional' : ''}`,
+    trial: 'We have switched our weather data sources and are still fine-tuning them. Before you go, also check JMA information and the conditions on site.',
+    obsNone: 'AMeDAS observed',
+    obsCalm: 'calm',
+    obsLine: (obs, d) => `${obs.stationEn ?? obs.station} ${obs.at} observed ${d}`,
+    obsGust: (g, at) => ` · today's max gust ${g}${at ? ` (${at})` : ''}`,
     legendFeel: 'Numbers are forecast values. On the water the wind <strong>feels about 2 m/s stronger</strong> (5 m/s shown ≈ 7–8 m/s felt). The thresholds above already allow for that',
     seasonHead: 'In season — this month',
     seasonMonth: (m) => `Month ${m} / general guide for breakwater fishing`,
@@ -92,7 +102,7 @@ const T = {
     tideSource: (src) => `Source: ${src}`,
     popMax: (v) => `Rain chance up to ${v}%`,
     hiLo: (h, l) => `H ${h}° / L ${l}°`,
-    windDir: (dir) => dir.en,
+    windDir: (dir) => `Forecast ${dir.en}`,
     gust: 'Gust',
     wavePeriod: (p) => `Period ${p} s`,
     waveHeight: 'Wave height',
@@ -103,7 +113,7 @@ const T = {
     sourceNote: (area, t) => {
       const coordNote = area.contributor ? '' : ` / ${area.lat.toFixed(3)}, ${area.lon.toFixed(3)}`;
       const tideNote = t ? ` / Tide: JMA tide tables (${t.stationNameEn ?? t.stationName})` : '';
-      return `Weather and wind: Open-Meteo${tideNote}${coordNote} / Reference information for planning a trip. Always check official JMA warnings and advisories.`;
+      return `Forecast: weather and wind MET Norway (corrected for each area) / waves NOAA WaveWatch III and JMA / rain chance JMA · Observed: JMA AMeDAS${tideNote}${coordNote} / Source: Japan Meteorological Agency website (processed for display) / Reference information for planning a trip. Always check official JMA warnings and advisories.`;
     },
   },
 };
@@ -243,6 +253,7 @@ function safetyBandHTML(area, w, lang) {
     windDir: w.current.windDir,
     facing: area.facing,
     seaProfile: area.seaProfile,
+    alerts: w.current.alerts ?? w.alerts,
     lang,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
@@ -267,6 +278,7 @@ function safetyLegendHTML(area, lang) {
   const pfLabel = lang === 'en' ? pf.labelEn ?? pf.label : pf.label;
   return `
       <p class="safety-legend t-mono">${L.legend(legendText(area.seaProfile, lang), pfLabel, pf.provisional)}</p>
+      <p class="safety-legend safety-trial t-mono">⚠ ${L.trial}</p>
       <p class="safety-legend t-mono">${L.legendFeel}</p>`;
 }
 
@@ -287,6 +299,9 @@ function seasonPanelHTML(now, lang) {
         <div class="season-group"><dt>Fish</dt>${tag(s.fish)}</div>
         <div class="season-group"><dt>Squid</dt>${tag(s.squid, 'squid')}</div>
       </dl>
+      ${(lang === 'en' ? [] : guidesForMonth(s.month)) // 攻略記事は日本語だけなので、英語ページには出さない
+        .map((g) => `<p class="season-guide"><a href="${guideHref(g)}"><span class="t-mono">GUIDE</span>${g.title}<span aria-hidden="true">→</span></a></p>`)
+        .join('')}
     </div>`;
 }
 
@@ -311,7 +326,19 @@ function tidePanelHTML(t, now, lang) {
     </div>`;
 }
 
-function weatherHTML(area, w, now, updatedLabel, lang) {
+// アメダスの実測（参考）。観測所と時刻を必ず添える。判定には使わない（基準は予報の数字で決めてあるため）
+function obsTileHTML(obs, lang) {
+  const L = textOf(lang);
+  if (!obs) {
+    return `<div><dt>Observed</dt><dd>—<small>m/s</small><span class="sub t-mono">${L.obsNone}</span></dd></div>`;
+  }
+  const dir = windDirection(obs.windDir);
+  const d = obs.calm ? L.obsCalm : lang === 'en' ? dir.en : dir.ja;
+  const gust = obs.gustMax != null ? L.obsGust(fmt1(obs.gustMax), obs.gustAt) : '';
+  return `<div><dt>Observed</dt><dd>${fmt1(obs.wind)}<small>m/s</small><span class="sub t-mono">${L.obsLine(obs, d)}${gust}</span></dd></div>`;
+}
+
+function weatherHTML(area, w, now, updatedLabel, lang, obs) {
   const L = textOf(lang);
   const cond = describeWeather(w.current.code, lang);
   const dir = windDirection(w.current.windDir);
@@ -329,7 +356,7 @@ function weatherHTML(area, w, now, updatedLabel, lang) {
         <div><dt>Weather</dt><dd style="font-family:var(--font-mincho);font-size:clamp(18px,2.2vw,24px);">${cond.text}<span class="sub t-mono">${L.popMax(fmt0(today?.popMax))}</span></dd></div>
         <div><dt>Temp</dt><dd>${fmt1(w.current.temp)}<small>°C</small><span class="sub t-mono">${L.hiLo(fmt0(today?.tMax), fmt0(today?.tMin))}</span></dd></div>
         <div><dt>Wind</dt><dd>${fmt1(w.current.wind)}<small>m/s</small><span class="sub t-mono">${L.windDir(dir)}</span></dd></div>
-        <div><dt>Gust</dt><dd>${fmt1(w.current.gust)}<small>m/s</small><span class="sub t-mono">${L.gust}</span></dd></div>
+        ${obsTileHTML(obs, lang)}
         <div><dt>Wave</dt><dd>${fmt1(w.current.wave)}<small>m</small><span class="sub t-mono">${w.current.wavePeriod != null ? L.wavePeriod(fmt0(w.current.wavePeriod)) : L.waveHeight}</span></dd></div>
         <div style="display:grid;place-items:center;">${bigCompass(dir.deg, lang === 'en' ? dir.en : dir.ja, lang)}</div>
       </dl>
@@ -353,7 +380,6 @@ function weatherHTML(area, w, now, updatedLabel, lang) {
             <tr><th>${L.thTemp}</th>${hours.map((h) => `<td>${fmt0(h.temp)}</td>`).join('')}</tr>
             <tr><th>${L.thPop}</th>${hours.map((h) => `<td>${fmt0(h.pop)}</td>`).join('')}</tr>
             <tr><th>${L.thWind}</th>${hours.map((h) => `<td class="lv${windLevel(h.wind, area.seaProfile)}">${arrow(h.windDir)} ${fmt1(h.wind)}</td>`).join('')}</tr>
-            <tr><th>${L.thGust}</th>${hours.map((h) => `<td class="lv${gustLevel(h.gust, area.seaProfile)}">${fmt1(h.gust)}</td>`).join('')}</tr>
             <tr><th>${L.thWave}</th>${hours.map((h) => `<td class="lv${waveLevel(h.wave, area.seaProfile)}">${fmt1(h.wave)}</td>`).join('')}</tr>
           </tbody>
         </table>
@@ -370,7 +396,7 @@ function weatherHTML(area, w, now, updatedLabel, lang) {
  *   lang: 'ja'（既定）か 'en'
  * 潮汐・今月の旬・安全基準は、天気が取れなくても必ず出す。
  */
-export function dashHTML({ area, w, t, now, updatedLabel, notice = '', lang = 'ja' }) {
+export function dashHTML({ area, w, t, now, updatedLabel, notice = '', obs = null, lang = 'ja' }) {
   const L = textOf(lang);
   const exp = t ? calcExpectation(area, t, now, lang) : null;
 
@@ -383,7 +409,7 @@ export function dashHTML({ area, w, t, now, updatedLabel, notice = '', lang = 'j
       ${notice ? `<p class="sea-error" style="margin-bottom:14px;">${notice}</p>` : ''}`;
 
   const body = w
-    ? weatherHTML(area, w, now, updatedLabel, lang).replace('__BITE__', bitePanelHTML(area, exp, lang))
+    ? weatherHTML(area, w, now, updatedLabel, lang, obs).replace('__BITE__', bitePanelHTML(area, exp, lang))
     : `
       <p class="sea-error">${L.noWeather}</p>
     </div>

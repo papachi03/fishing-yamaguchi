@@ -411,3 +411,24 @@ test('管理ページはどの経路でも検索に載せず、キャッシュ�
     assert.equal(res.headers.get('cache-control'), 'no-store', path);
   }
 });
+
+test('管理ページの「今すぐ送る」で朝の堤防判定をDiscordへ送れる（合言葉と同一オリジンが必要）', async () => {
+  const env = makeEnv({ DISCORD_MENTION_USER_ID: '427260359473364992' });
+  const f = stubFetch((url) => (String(url) === env.DISCORD_WEBHOOK_URL ? new Response(null, { status: 204 }) : new Response('down', { status: 503 })));
+  try {
+    const cookie = await login(env);
+    assert.match(await (await call('/admin', env, { cookie })).text(), /action="\/admin\/morning"/);
+    // 合言葉なし・よそのサイトからは送れない
+    assert.equal((await call('/admin/morning', env, { method: 'POST' })).status, 403);
+    assert.equal((await call('/admin/morning', env, { method: 'POST', cookie, origin: 'https://evil.example' })).status, 403);
+    assert.equal(f.calls.filter((c) => String(c.url) === env.DISCORD_WEBHOOK_URL).length, 0);
+    const res = await call('/admin/morning', env, { method: 'POST', cookie });
+    assert.equal(res.status, 200);
+    assert.match(await res.text(), /送りました/);
+    const sent = f.calls.filter((c) => String(c.url) === env.DISCORD_WEBHOOK_URL);
+    assert.equal(sent.length, 1);
+    assert.match(JSON.parse(sent[0].init.body).content, /^<@427260359473364992>\n/);
+  } finally {
+    f.restore();
+  }
+});

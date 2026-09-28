@@ -28,7 +28,7 @@ const PAGES = {
   egi: { ja: ['しゃくって抱かせろ！ エギングゲーム', '山口イカ部のエギングゲーム。投げて、沈めて、しゃくって、フォールで抱かせる。今日の萩の風・波・潮で釣れ具合が変わります。スマホでそのまま遊べます。'], en: ['Jerk, fall, hug! — an eging game', 'The Yamaguchi Ika Club eging game. Cast, sink, jerk and let the squid hug on the fall. Today’s real wind, waves and tide in Hagi set the mood. Plays in your phone browser.'] },
   'egi-guide': { ja: ['部員おすすめ：新子シーズンのエギ選び', '秋の新子（アオリイカ）ねらいのエギを、号数と色で。ヤマシタ「エギ王K」とデュエル「パタパタ」から、マズメ・日中・夜間の3タイプ別に部員が選んだ候補。'], en: ["Members' pick: egi for young-squid season", 'Egi for autumn’s young bigfin reef squid, by size and color. Picks from YAMASHITA Egi-O K and DUEL PataPata for dawn and dusk, daytime and night anglers.'] },
   studio: { ja: ['スタンプとSNS', '紺とオレンジのイカのスタンプ案（ダジャレ編・山口の地名編）と、ダジャレの解説。YouTube・Instagramは準備中。'], en: ['Stickers & social', 'Sticker concepts with our navy-and-orange squid (puns and Yamaguchi place names), a pun glossary, and what is coming on YouTube and Instagram.'] },
-  sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと Open-Meteo の利用条件についても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and Open-Meteo terms.'] },
+  sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと海況データの出どころについても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and where the sea data comes from.'] },
 };
 
 const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika Club' };

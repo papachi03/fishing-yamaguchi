@@ -52,7 +52,6 @@ export function render(lang) {
         <div>
           <h3 class="ika-h3-small">${t(lang, '地図と海況', 'Maps and sea conditions')}</h3>
           <ul class="ika-source-list">${info}
-            <li><a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener">Open-Meteo Marine ↗</a></li>
             <li><a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/index.php" target="_blank" rel="noopener">${t(lang, '気象庁 潮位表', 'JMA tide tables')} ↗</a></li>
           </ul>
           <h3 class="ika-h3-small">${t(lang, '山口マップの掲載先', 'Map listings')}</h3>
@@ -71,7 +70,7 @@ export function render(lang) {
       ${sectionHead(lang, { num: 'NOTE', en: 'ABOUT THIS SITE', title: pair('このサイトについて', 'About this site') })}
       <dl class="ika-source-dl">
         <div><dt>${t(lang, 'キャラクターとイラスト', 'Character and illustrations')}</dt><dd>${t(lang, 'ロゴのイカ、HEROの夜の海、スタンプ案は AI 生成をもとに部で整えたもの。写真ではありません。', 'The logo squid, the night-sea hero scene and the sticker concepts were developed by the club from AI-generated drafts. They are not photographs.')}</dd></div>
-        <div><dt>${t(lang, 'Open-Meteo の利用条件', 'Open-Meteo terms')}</dt><dd>${t(lang, '天気・風・波は Open-Meteo の無料（非商用）API で取得しています。イカ部で物販などを始める前に、利用契約を見直します。', 'Weather, wind and waves come from Open-Meteo’s free, non-commercial API. Before the club sells anything, the service plan will be reviewed.')}</dd></div>
+        <div><dt>${t(lang, '海況データについて', 'About the sea data')}</dt><dd>${t(lang, '天気・風は MET Norway（CC BY 4.0、地域ごとに補正）と気象庁、波は NOAA WaveWatch III と気象庁、降水確率・注意報・警報・実測は気象庁（出典：気象庁ホームページ、加工して表示）。どれも商用で使える条件のものです。取得元を切り替えたばかりで、調整試験中です。', 'Weather and wind come from MET Norway (CC BY 4.0, corrected for each area) and JMA; waves from NOAA WaveWatch III and JMA; rain chance, advisories, warnings and observations from JMA (source: JMA website, processed for display). All are available for commercial use. We have just switched sources and are still fine-tuning them.')}</dd></div>
         <div><dt>${t(lang, '釣り場について', 'Fishing locations')}</dt><dd>${t(lang, '地図のピンはエリアの目安で、釣りの許可や立ち入りの可否を示しません。部員の釣果写真も釣り場は非公開です。', 'Map pins mark approximate areas and say nothing about permission or access. Member catch photos never disclose the spot.')}</dd></div>
         <div><dt>${t(lang, '掲示板の投稿', 'Board posts')}</dt><dd>${t(lang, '「現地の声」の投稿は投稿者のものです。不適切な投稿は各カードのボタンから知らせてください。', 'Field reports belong to the people who post them. Use the button on each card to report an inappropriate post.')}</dd></div>
       </dl>

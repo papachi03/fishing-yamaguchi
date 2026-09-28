@@ -162,6 +162,20 @@
       </div>
     </section>
 
+    <!-- ============ GUIDE — 攻略ガイド（今月に合う記事。カードはビルド時に vite.config.js が書き込む） ============ -->
+    <section class="guides" aria-labelledby="gd-h">
+      <div class="wrap">
+        <div class="guides-head reveal">
+          <div class="sec-head">
+            <p class="en" id="gd-h">Guide</p>
+            <p class="ja">攻略ガイド</p>
+          </div>
+          <p class="guides-lede">季節に合わせて、道具の選び方から釣り方までを一本の記事にまとめています。</p>
+        </div>
+        <div class="home-guides" id="home-guides"></div>
+      </div>
+    </section>
+
     <!-- ============ INSTAGRAM ============ -->
     <section class="ig" aria-labelledby="ig-h">
       <div class="wrap">
@@ -191,6 +205,13 @@
         </div>
         <div class="yt-grid" id="home-yt"></div>
         <p class="yt-more reveal"><a href="https://www.youtube.com/@childdaddy/videos" target="_blank" rel="noopener">すべての動画を見る<span aria-hidden="true">→</span></a></p>
+        <!-- 山口の釣り仲間への入口（本文は about.html#friends。データは src/js/data/friends.js） -->
+        <a class="friends-strip" href="/about.html#friends">
+          <span class="friends-strip-label">山口の釣りTuber仲間</span>
+          <img src="/assets/friends/meicho-shingi.webp" alt="" width="44" height="44" loading="lazy" decoding="async" />
+          <span class="friends-strip-name">名釣心技さん（下関）</span>
+          <span class="friends-strip-cta">紹介を見る<span aria-hidden="true">→</span></span>
+        </a>
       </div>
     </section>
 
@@ -202,8 +223,8 @@
         <div class="story-grid">
           <figure class="story-media reveal">
             <video muted playsinline loop preload="none"
-                   poster="/assets/posters/dawn_sea.jpg"
-                   data-src="/assets/video/hero/dawn_sea.mp4" aria-label="朝焼けの海面"></video>
+                   poster="/assets/posters/dawn_hookset.jpg"
+                   data-src="/assets/video/hero/dawn_hookset.mp4" aria-label="指の腹で糸のアタリを取ってフッキングする場面"></video>
             <figcaption class="frame-caption t-mono">IMG_2871 — 朝マズメ / 山口</figcaption>
           </figure>
           <div class="story-body reveal">
@@ -279,9 +300,9 @@
         <div class="cook-grid">
           <figure class="cook-media reveal">
             <video muted playsinline loop preload="none"
-                   poster="/assets/posters/vlog_gazami.jpg"
-                   data-src="/assets/video/previews/gazami_cook.mp4"
-                   aria-label="タイワンガザミを捌く様子"></video>
+                   poster="/assets/posters/gazami_miso_scoop.jpg"
+                   data-src="/assets/video/previews/gazami_miso_scoop.mp4"
+                   aria-label="タイワンガザミの甲羅からスプーンで味噌を外す様子"></video>
           </figure>
           <div class="reveal">
             <div class="sec-head">
@@ -315,6 +336,7 @@
           <p class="gear-lede">動画や写真に写っているものだけ。エギング、灯火、撮影機材まで、道具はTACKLEページにまとめています。</p>
         </div>
         <div class="tackle-grid" id="home-gear"></div>
+        <p class="gear-guide reveal"><a href="guides/autumn-eging.html"><span class="t-mono">GUIDE</span>山口で秋の新子アオリを狙う、エギング道具一式<span aria-hidden="true">→</span></a></p>
         <p class="gear-more reveal"><a class="story-link" style="border-color: var(--paper);" href="tackle.html">All Tackle<span aria-hidden="true">→</span></a></p>
       </div>
     </section>

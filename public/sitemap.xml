@@ -48,6 +48,18 @@
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
+  <url>
+    <loc>https://yamaguchifishing.com/guides/autumn-eging.html</loc>
+    <lastmod>2026-09-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://yamaguchifishing.com/guides/family-sabiki.html</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
   <!-- ikabu:start（scripts/gen-ikabu-shells.mjs が書く） -->
   <url>
     <loc>https://yamaguchifishing.com/ikabu/</loc>

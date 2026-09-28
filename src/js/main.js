@@ -1,6 +1,7 @@
 // 共通レイヤー: ナビゲーション / フッター / 海況ストリップ / 動画の遅延読み込み
 import { areas } from './data/areas.js';
-import { fetchWeather, describeWeather, windDirection } from './api/weather.js';
+import { describeWeather, windDirection, TRIAL_NOTE } from './api/weather.js';
+import { loadSnapshot, atNow } from './api/sea-snapshot.js';
 import { fetchTide } from './api/tide.js';
 import { instagramProfile } from './data/instagram.js';
 import { AMAZON_DISCLOSURE } from './config/affiliate.js';
@@ -171,15 +172,21 @@ export async function renderSeaStrip(container, list = areas) {
       <div class="sea-tide"></div>
     </article>`
     )
-    .join('');
+    .join('') + `<p class="sea-trial-note">⚠ ${TRIAL_NOTE}</p>`;   // 2026-09-29 取得元の切り替え・調整試験中
 
+  let snapAt = null;   // 予報の発表時刻（ビルドで取った時刻）
   await Promise.all(
     list.map(async (a) => {
       const card = container.querySelector(`[data-area="${a.id}"]`);
       const nowEl = card.querySelector('.sea-now');
       const tideEl = card.querySelector('.sea-tide');
       try {
-        const [w, t] = await Promise.all([fetchWeather(a), fetchTide(a)]);
+        // 予報はビルド時（3時間ごと）に取った /data/sea-snapshot.json を読む（2026-09-24 乗り換え。
+        // 取得元の met.no はブラウザから呼ばない）。「今」の値は開いた時刻の1時間に合わせ直す
+        const [snap, t] = await Promise.all([loadSnapshot(import.meta.env.BASE_URL), fetchTide(a)]);
+        if (!snap?.areas?.[a.id]) throw new Error('snapshot に予報が無い');
+        const w = atNow(snap.areas[a.id]);
+        snapAt ??= new Date(snap.fetchedAt);
         const cond = describeWeather(w.current.code);
         const dir = windDirection(w.current.windDir);
         const now = new Date();
@@ -202,6 +209,7 @@ export async function renderSeaStrip(container, list = areas) {
           windDir: w.current.windDir,
           facing: a.facing,
           seaProfile: a.seaProfile,
+          alerts: w.current.alerts ?? w.alerts,
         });
         const chip = card.querySelector('[data-safety]');
         chip.textContent = s.label;
@@ -222,10 +230,10 @@ export async function renderSeaStrip(container, list = areas) {
 
   const stamp = document.querySelector('[data-sea-updated]');
   if (stamp) {
-    const d = new Date();
-    stamp.textContent = `UPDATED ${String(d.getHours()).padStart(2, '0')}:${String(
+    const d = snapAt ?? new Date();
+    stamp.textContent = `FORECAST ${String(d.getHours()).padStart(2, '0')}:${String(
       d.getMinutes()
-    ).padStart(2, '0')} JST / SOURCE: OPEN-METEO`;
+    ).padStart(2, '0')} JST / SOURCE: MET NORWAY・NOAA・気象庁`;
   }
 }
 

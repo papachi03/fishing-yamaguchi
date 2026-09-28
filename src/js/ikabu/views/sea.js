@@ -75,7 +75,7 @@ export function render(lang) {
         <p class="sea-error">${t(lang, '海況を取得しています…', 'Loading sea conditions…')}</p>
       </div>
       <div id="ika-sea-reports"></div>
-      <p class="ika-sea-source" id="ika-sea-source">${t(lang, '天気・風: Open-Meteo ／ 潮汐: 気象庁 潮位表 ／ このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。', 'Weather and wind: Open-Meteo / Tide: JMA tide tables / This page is reference information for planning a trip. Always check official JMA warnings and advisories.')}</p>
+      <p class="ika-sea-source" id="ika-sea-source">${t(lang, '天気・風: MET Norway（補正あり）・気象庁 ／ 波: NOAA WaveWatch III・気象庁 ／ 潮汐: 気象庁 潮位表 ／ このページは釣行判断の参考情報です。警報・注意報は必ず気象庁の発表を確認してください。', 'Weather and wind: MET Norway (corrected) and JMA / Waves: NOAA WaveWatch III and JMA / Tide: JMA tide tables / This page is reference information for planning a trip. Always check official JMA warnings and advisories.')}</p>
     </div>
   </section>
 
@@ -104,7 +104,8 @@ export function render(lang) {
       <div class="ika-sea-sources">
         <p class="ika-sea-sources-head">${t(lang, 'データの出どころ', 'Data sources')}</p>
         <ul>
-          <li><a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo Weather ↗</a> ／ <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener">Open-Meteo Marine ↗</a> — ${t(lang, '天気・風・突風・波高（非商用APIを利用）', 'weather, wind, gust and wave height (non-commercial API)')}</li>
+          <li><a href="https://api.met.no/weatherapi/locationforecast/2.0/documentation" target="_blank" rel="noopener">MET Norway ↗</a> ／ <a href="https://www.jma.go.jp/bosai/" target="_blank" rel="noopener">${t(lang, '気象庁', 'JMA')} ↗</a> — ${t(lang, '天気・風（地域ごとに補正し、気象庁の地域時系列予報と強いほう）・降水確率・注意報・警報、アメダスの実測', 'weather and wind (corrected for each area, the stronger of that and JMA’s regional forecast), rain chance, advisories and warnings, AMeDAS observations')}</li>
+          <li><a href="https://www.pacioos.hawaii.edu/waves/model-global/" target="_blank" rel="noopener">NOAA WaveWatch III ↗</a> — ${t(lang, '波高（瀬戸内は気象庁の予報）', 'wave height (JMA forecasts for the Seto Inland Sea)')}</li>
           <li><a href="https://www.data.jma.go.jp/kaiyou/db/tide/suisan/index.php" target="_blank" rel="noopener">${t(lang, '気象庁 潮位表 ↗', 'JMA tide tables ↗')}</a> — ${t(lang, '満潮・干潮と毎時潮位（萩・仙崎は共用の観測点）', 'high and low tides and hourly levels (Hagi and Nagato share one station)')}</li>
           <li><a href="${assetHref('/sea.html')}">${t(lang, 'ジャーナル本編の海況ページ →', 'The journal’s own sea page →')}</a> — ${t(lang, '同じ数字を、ジャーナルの見た目で', 'the same numbers in the journal’s style')}</li>
         </ul>

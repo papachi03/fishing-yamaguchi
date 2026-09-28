@@ -1,6 +1,7 @@
 // 海況の描画（sea-render.js）の言語対応。
-//   1. 日本語（既定）の出力は、英語対応を入れる前に固定した test/fixtures/sea-dash-ja.txt と1文字も違わない
-//      （YFJ 本体の sea.html・prerender-sea の見た目が変わっていない証拠）
+//   1. 日本語（既定）の出力は test/fixtures/sea-dash-ja.txt と1文字も違わない
+//      （YFJ 本体の sea.html・prerender-sea の見た目が変わっていない証拠。2026-09-29 海況データの乗り換えを取り込んだとき、
+//       本家 main の sea-render.js と同じ入力で1文字も違わないことを確かめてから作り直した）
 //   2. 英語（lang='en'）の出力に日本語の文字が1文字も残らない（固有名詞・投稿本文を除く画面すべて）
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -63,9 +64,9 @@ test('部品ごとの英語：天気名・安全判定・凡例・期待値', ()
   assert.equal(en.label, 'DANGER');
   assert.equal(en.level, ja.level, '判定そのものは言語で変わらない');
   assert.deepEqual(en.reasons, ['wind 6.0 m/s']);
-  assert.equal(SAFETY_LEVELS[0].label, '安全', '日本語のラベルはそのまま');
-  assert.match(legendText('setouchi', 'en'), /^Wind up to 5 safe \/ 5–7 caution \/ 7–10 danger \/ 10\+ stop · Wave/);
-  assert.match(legendText('setouchi'), /^風速 〜5 安全/);
+  assert.equal(SAFETY_LEVELS[0].label, '穏やか', '一番下の段階は「穏やか」（2026-09-28 本家で変更）');
+  assert.match(legendText('setouchi', 'en'), /^Wind up to 5 calm \/ 5–7 caution \/ 7–10 danger \/ 10\+ stop · Wave/);
+  assert.match(legendText('setouchi'), /^風速 〜5 穏やか/);
   const exp = calcExpectation(F.areaHagi, F.tide, F.NOW, 'en');
   assert.doesNotMatch(exp.message + exp.reasons.join('') + exp.tideName, JA);
 });

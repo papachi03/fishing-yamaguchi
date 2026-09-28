@@ -5,7 +5,8 @@ import { boot } from '../boot.js';
 import { render } from '../views/sea.js';
 import { t } from '../i18n.js';
 import { areas, areaById } from '../../data/areas.js';
-import { fetchWeather } from '../../api/weather.js';
+import { loadSnapshot, atNow } from '../../api/sea-snapshot.js';
+import { fetchObservation } from '../../api/observation.js';
 import { fetchTide } from '../../api/tide.js';
 import { dashHTML, sourceNoteText, hhmm } from '../../pages/sea-render.js';
 import { mountAreaReports, cancelAreaReports } from '../../components/area-reports.js';
@@ -50,11 +51,24 @@ window.addEventListener('hashchange', () => {
   if (validId(id) && id !== current) selectArea(id);
 });
 
+// 予報は本家と同じく、サイトのビルド時（3時間ごと）に取った sea-snapshot を読む
+// （met.no は User-Agent を名乗れる場所からしか呼べない規約のため、ブラウザから直接取りに行かない。2026-09-29）
 async function loadWeather(area) {
   if (weatherCache.has(area.id)) return weatherCache.get(area.id);
-  const w = await fetchWeather(area);
-  weatherCache.set(area.id, w); // 成功した時だけ覚える
-  return w;
+  const snap = await loadSnapshot(import.meta.env.BASE_URL);
+  const w = snap?.areas?.[area.id];
+  if (!w) throw new Error('snapshot に予報が無い');
+  const v = { w, fetchedAt: new Date(snap.fetchedAt) };
+  weatherCache.set(area.id, v); // 成功した時だけ覚える
+  return v;
+}
+// アメダスの実測（参考・判定には使わない）
+async function loadObservation(area) {
+  try {
+    return await fetchObservation(area.id);
+  } catch {
+    return null;
+  }
 }
 async function loadTide(area) {
   if (tideCache.has(area.id)) return tideCache.get(area.id);
@@ -70,13 +84,18 @@ async function renderArea() {
   cancelAreaReports();
   reportsBox.innerHTML = '';
 
-  const [wr, tr] = await Promise.allSettled([loadWeather(area), loadTide(area)]);
+  const [wr, tr, or] = await Promise.allSettled([loadWeather(area), loadTide(area), loadObservation(area)]);
   if (areaId !== current) return; // 取得中に別のエリアへ切り替えられた
 
   const now = new Date();
-  const w = wr.status === 'fulfilled' ? wr.value : null;
+  const w = wr.status === 'fulfilled' ? atNow(wr.value.w, now) : null;
   const tide = tr.status === 'fulfilled' ? tr.value : null;
-  dash.innerHTML = dashHTML({ area, w, t: tide, now, updatedLabel: `UPDATED ${hhmm(now)} JST`, lang });
+  const obs = or.status === 'fulfilled' ? or.value : null;
+  const at = wr.status === 'fulfilled' ? wr.value.fetchedAt : null;
+  const updatedLabel = at
+    ? t(lang, `${at.getMonth() + 1}/${at.getDate()} ${hhmm(at)} 発表の予報`, `Forecast issued ${at.getMonth() + 1}/${at.getDate()} ${hhmm(at)} JST`)
+    : `UPDATED ${hhmm(now)} JST`;
+  dash.innerHTML = dashHTML({ area, w, t: tide, now, updatedLabel, obs, lang });
   sourceNote.textContent = sourceNoteText(area, tide, lang);
   initReveal();
   mountAreaReports(reportsBox, areaId, lang); // 待たない。失敗しても海況には影響させない

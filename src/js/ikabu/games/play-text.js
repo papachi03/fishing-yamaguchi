@@ -520,7 +520,7 @@ export const EGI_TEXT = {
     wave: pair('波', 'Wave'),
     tide: pair('潮', 'Tide'),
     tod: pair('いまの時間帯', 'Time of day now'),
-    source: pair('天気・波：Open-Meteo ／ 潮汐：気象庁の潮位表（萩）', 'Weather & waves: Open-Meteo / Tide: JMA tide tables (Hagi)'),
+    source: pair('天気・風：MET Norway（補正あり）・気象庁 ／ 波：NOAA WaveWatch III・気象庁 ／ 潮汐：気象庁の潮位表（萩）', 'Weather & wind: MET Norway (corrected) and JMA / Waves: NOAA WaveWatch III and JMA / Tide: JMA tide tables (Hagi)'),
     fetched: pair('取得', 'Fetched'),
     modeLive: pair('今日の萩', "Today's Hagi"),
     modePractice: pair('練習', 'Practice'),

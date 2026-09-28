@@ -51,6 +51,7 @@ function summary(post) {
   ].filter(Boolean).join(NL);
 }
 
+// 2026-09-27 ダディ指示で、新しい投稿でもスマホを鳴らす（@メンション）ようにした
 export async function notifyNewPost(env, post, origin) {
   const token = await makeDeleteToken(env, post.id);
   return send(env, [
@@ -58,7 +59,7 @@ export async function notifyNewPost(env, post, origin) {
     summary(post),
     post.hasPhoto ? `${origin}/photo/${post.id}` : '',
     `削除する → ${origin}/admin/delete?token=${token}`,
-  ]);
+  ], { mention: true });
 }
 
 export async function notifyHidden(env, post, origin) {

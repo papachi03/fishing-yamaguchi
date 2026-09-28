@@ -760,7 +760,9 @@ export const puns = [
 export const infoSources = [
   ['OpenStreetMap', 'https://www.openstreetmap.org/copyright'],
   ['Leaflet', 'https://leafletjs.com/'],
-  ['Open-Meteo Weather / Marine', 'https://open-meteo.com/en/docs'],
+  ['MET Norway Locationforecast', 'https://api.met.no/weatherapi/locationforecast/2.0/documentation'],
+  ['NOAA WaveWatch III (PacIOOS)', 'https://www.pacioos.hawaii.edu/waves/model-global/'],
+  [pair('気象庁 防災情報（予報・注意報・アメダス）', 'JMA forecasts, advisories and AMeDAS'), 'https://www.jma.go.jp/bosai/'],
   [pair('山口県：遊漁ルール', 'Yamaguchi fishing rules'), 'https://www.pref.yamaguchi.lg.jp/soshiki/108/21930.html'],
   [pair('厚生労働省：アニサキス予防', 'MHLW food-safety guidance'), 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000042953.html'],
 ];

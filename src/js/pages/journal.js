@@ -7,6 +7,7 @@ import {
   url,
 } from '../main.js';
 import { vlogs } from '../data/vlogs.js';
+import { guidesForSpecies, guideHref } from '../data/guides.js';
 
 mountChrome('/journal.html');
 mountFooterBottom(document.getElementById('footer-mount'));
@@ -51,6 +52,11 @@ feed.innerHTML = vlogs
                </a>`
             : `<p class="journal-note t-mono">この釣行はYouTube未公開。動画はサイト内のダイジェストのみ</p>`
         }
+        ${guidesForSpecies(v.species)
+          .map(
+            (g) => `<p class="journal-guide"><a href="${url(guideHref(g))}"><span class="t-mono">この釣りの道具一式</span><span aria-hidden="true">→</span>${g.title}</a></p>`
+          )
+          .join('')}
       </div>
     </article>`;
   })
