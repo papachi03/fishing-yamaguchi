@@ -74,6 +74,15 @@ test('2〜3回続けてしゃくって、2秒フォールさせると、イカ�
   assert.ok(s.interest > before + 0.3);
 });
 
+test('テンポよく2回は2段しゃくり、3回目からはスラックジャーク（スマホの連打の速さ 0.3秒でも出る）', () => {
+  const s = createEgi({ rand: calm });
+  cast(s);
+  run(s, 3);
+  const kinds = [];
+  for (let i = 0; i < 4; i++) { press(s); kinds.push(s.events.filter((e) => e.type === 'jerk').map((e) => `${e.kind}${e.double ? '2' : ''}`).pop()); release(s); run(s, 0.3); }
+  assert.deepEqual(kinds, ['lift', 'lift2', 'slack', 'slack']);
+});
+
 test('しゃくりすぎ（5回以上）は、かえって警戒される', () => {
   const s = createEgi({ rand: calm });
   cast(s);

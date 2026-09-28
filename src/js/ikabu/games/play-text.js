@@ -498,8 +498,8 @@ export const EGI_TEXT = {
     lureTitle: pair('⑥ 同じ誘いばかりだと、イカが慣れる', '⑥ Squid get used to the same routine'),
     // ⑦（2026-09-29、ぱっぱ：動きで差をつける）
     moveTitle: pair('⑦ 4つの動きを使い分ける', '⑦ Four moves to mix'),
-    moveBody: pair('<b>しゃくり</b>（タップ）は上へ。<b>2段しゃくり</b>（テンポよく2回）は2回目でぐんと大きく上がり、長いフォールが作れる。<b>ダート</b>（上へスワイプ）は横へ大きく跳ぶ。<b>スラックジャーク</b>（素早く3〜5回の連打）は小刻みにチョンチョンと動いて、渋い時のイカに効く。連打しすぎは逆効果。',
-                   'A <b>jerk</b> (tap) lifts the egi. A <b>double jerk</b> (two quick taps) jumps much higher on the second, giving you a long fall. A <b>dart</b> (swipe up) leaps sideways. A <b>slack jerk</b> (three to five fast taps) twitches in place and works on sluggish squid. More than that just spooks them.'),
+    moveBody: pair('<b>しゃくり</b>（タップ）は上へ。<b>2段しゃくり</b>（テンポよく2回）は2回目でぐんと大きく上がり、長いフォールが作れる。<b>ダート</b>（上へスワイプ）は横へ大きく跳ぶ。<b>スラックジャーク</b>（テンポよく3〜5回の連打）は小刻みにチョンチョンと動いて、渋い時のイカに効く。連打しすぎは逆効果。',
+                   'A <b>jerk</b> (tap) lifts the egi. A <b>double jerk</b> (two quick taps) jumps much higher on the second, giving you a long fall. A <b>dart</b> (swipe up) leaps sideways. A <b>slack jerk</b> (three to five quick taps in a row) twitches in place and works on sluggish squid. More than that just spooks them.'),
     lureBody: pair('いつも同じシャクリ・同じフォールだと、イカが見慣れて抱かなくなる（<b>スレる</b>）。反応がなくなったら、シャクリの回数（1回・2段・3段）、<b>ダート</b>、<b>フリーとテンション</b>を入れ替えてみよう。誘いを変えた直後は、イカの気を引ける。',
                    'Repeat the same jerks and the same fall and squid learn to ignore it (they get <b>wary</b>). When the bites stop, change the number of jerks (one, double, triple), add a <b>dart</b>, or switch between <b>free and tension falls</b>. A fresh routine catches their eye.'),
   },
