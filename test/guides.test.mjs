@@ -14,10 +14,11 @@ test('guidesForSpecies：魚種名に「イカ」を含む釣行だけ秋エギ�
   assert.deepEqual(guidesForSpecies(''), []);
 });
 
-test('guidesForMonth：秋の3か月だけ。homeGuides は合う月が無ければ全記事に落ちる', () => {
-  assert.equal(guidesForMonth(10).length, 1);
+test('guidesForMonth：季節の合う記事だけ。homeGuides は合う月が無ければ全記事に落ちる', () => {
+  assert.ok(guidesForMonth(10).some((g) => g.slug === 'autumn-eging'));
+  assert.ok(!guidesForMonth(5).some((g) => g.slug === 'autumn-eging'));
   assert.equal(guidesForMonth(3).length, 0);
-  assert.equal(homeGuides(10).length, 1);
+  assert.deepEqual(homeGuides(10), guidesForMonth(10));
   assert.equal(homeGuides(3).length, guides.length);
 });
 

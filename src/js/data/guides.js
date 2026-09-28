@@ -15,6 +15,17 @@ export const guides = [
     alt: '灯火の夜に釣れた秋の新子アオリイカ4杯',
     lead: '実際に使っているロッド2本とリール2台を比べながら、最初の1セットをまとめました。',
   },
+  {
+    slug: 'family-sabiki',
+    title: '家族で行く堤防サビキ、最初にそろえる道具',
+    months: [5, 6, 7, 8, 9, 10, 11],
+    badge: '家族ではじめる',
+    // 元写真が横1500pxしかないため、大きい方も1500px（カードの srcset は 1600w と書かれるが表示に支障はない）
+    image: '/assets/images/family_sabiki_800.webp',
+    image1600: '/assets/images/family_sabiki_1500.webp',
+    alt: 'まな板の上にずらりと並んだアジと、スズキ・カサゴの釣果',
+    lead: 'エギングと兼用のロッドとリール、手が汚れないコマセ、水汲みバケツまで。最初の一式をまとめました。',
+  },
 ];
 
 export const guideHref = (g) => `/guides/${g.slug}.html`;

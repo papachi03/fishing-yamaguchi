@@ -1,8 +1,8 @@
 // 毎朝の「堤防判定」をXに投稿するための文章を作る（投稿はダディが手で行う）。
 // ブラウザのAPIに触らないこと（GitHub Actions の Node から使う）。
 
-// サイトの「安全」はSNSでは「穏やか」と言い換える。
-// SNSで「安全」と書くと保証のように読まれるため（2026-09-22 ダディ了承）
+// 一番下の段階はSNSでも「穏やか」（2026-09-22 ダディ了承）。2026-09-28 からサイトの表示も「穏やか」にそろえた。
+// 「安全」と書くと保証のように読まれるため
 export const X_LABELS = [
   { level: 0, mark: '🟢', label: '穏やか' },
   { level: 1, mark: '🟡', label: '注意' },
@@ -37,19 +37,25 @@ export function jstTimeOfDay(date) {
  * @param {{date: Date, rows: {nameJa: string, level: number|null, wind: number|null}[]}} args
  *   level が null のエリアは予報を取れなかったもの
  */
-export function composeMorningPost({ date, rows }) {
+export function composeMorningPost({ date, rows, egiLine = null }) {
   const lines = rows.map(({ nameJa, level, wind }) => {
     if (level == null) return `${nameJa}　⚪ 取得できず`;
     const l = X_LABELS[level];
     return `${nameJa}　${l.mark}${l.label}　風${wind.toFixed(1)}m`;
   });
-  return [
-    `【${jstDateLabel(date)} ${jstTimeOfDay(date).ja}の堤防判定】`,
-    ...lines,
-    '※予報値の目安です。気象庁の注意報・警報を優先してください',
-    SEA_URL,
-    HASHTAGS.join(' '),
-  ].join('\n');
+  const build = (extra) =>
+    [
+      `【${jstDateLabel(date)} ${jstTimeOfDay(date).ja}の堤防判定】`,
+      ...lines,
+      ...(extra ? [extra] : []),
+      // 2026-09-27 ダディ了承で短く（旧：※予報値の目安です。気象庁の注意報・警報を優先してください）。エギの色の行を毎日入れるため
+      '※予報の目安です。気象庁の注意報・警報を優先',
+      SEA_URL,
+      HASHTAGS.join(' '),
+    ].join('\n');
+  // 「今日のエギの色」（lib/egi-color.js、2026-09-27）。280字を超える日はエギの行だけ外す（堤防判定の方が大事）
+  const withEgi = egiLine ? build(egiLine) : null;
+  return withEgi && xWeightedLength(withEgi) <= X_LIMIT ? withEgi : build(null);
 }
 
 /**
@@ -80,7 +86,7 @@ export const X_LIMIT = 280;
 export const xIntentUrl = (text) => `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 
 /** Discordに送る本文（下書き＋「Xで投稿する」リンク）。最長でも約1350字でDiscordの上限2000字に収まる */
-export function morningDiscordContent(text, allFailed = false, date = new Date()) {
+export function morningDiscordContent(text, allFailed = false, date = new Date(), egi = null) {
   const t = jstTimeOfDay(date);
   return [
     allFailed ? '⚠ 予報を取得できませんでした（下書きは参考になりません）' : `${t.icon} ${t.ja}の堤防判定（X投稿の下書き）`,
@@ -88,5 +94,7 @@ export function morningDiscordContent(text, allFailed = false, date = new Date()
     text,
     '```',
     `👉 **Xで投稿する**（タップすると文章入りで開きます）\n${xIntentUrl(text)}`,
+    // エギの色の理由はダディ向けのメモ（Xには入らない）。文字数で下書きから外れた日もここで分かる
+    ...(egi ? [`🦑 エギの色の理由：${egi.reason}${text.includes(egi.line) ? '' : '（今日は文字数が足りず、下書きには入れていません）'}`] : []),
   ].join('\n');
 }

@@ -76,3 +76,12 @@ test('見出しは送る時刻（日本時間）で朝・昼・夜に変わる',
   const night = composeMorningPost({ date: new Date('2026-09-24T13:00:00Z'), rows: [{ nameJa: '萩', level: 0, wind: 1 }] });
   assert.match(night, /^【9\/24\(木\) 夜の堤防判定】/);
 });
+
+test('サイトの判定も一番下の段階は「穏やか」（「安全」と表示しない）', async () => {
+  const { SAFETY_LEVELS, legendText } = await import('../src/js/api/safety.js');
+  assert.equal(SAFETY_LEVELS[0].label, '穏やか');
+  for (const l of SAFETY_LEVELS) assert.doesNotMatch(l.label, /安全/);
+  assert.doesNotMatch(legendText('nihonkai'), /安全/);
+  assert.doesNotMatch(legendText('setouchi'), /安全/);
+});
+

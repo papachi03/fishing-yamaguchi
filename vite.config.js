@@ -63,17 +63,22 @@ export default defineConfig({
       },
     },
     {
-      // 「現地の声」ページに、選べる釣り場の一覧を書き込む（検索エンジンが通信なしで読める本文にする）
+      // 「現地の声」ページと釣り場ページに、釣り場の名前の一覧を書き込む（検索エンジンが通信なしで読める本文にする）
+      // 釣り場ページは 2026-09-28 から（数も一覧から数えて書き込む＝「74か所」がいつも事実どおり）
       name: 'prerender-reports',
       apply: 'build',
       transformIndexHtml: {
         order: 'pre',
         async handler(html, ctx) {
-          if (!ctx.filename.replace(/\\/g, '/').endsWith('/reports.html')) return html;
+          const f = ctx.filename.replace(/\\/g, '/');
+          if (!f.endsWith('/reports.html') && !f.endsWith('/spots.html')) return html;
           const mark = '<dl class="spot-names-list" id="spot-names"></dl>';
-          if (!html.includes(mark)) throw new Error('reports.html に釣り場一覧の目印が見つかりません');
+          if (!html.includes(mark)) throw new Error(`${f} に釣り場一覧の目印が見つかりません`);
           const { spotListHTML } = await import('./src/js/components/spot-list-html.js');
-          return html.replace(mark, () => `<dl class="spot-names-list" id="spot-names">${spotListHTML()}</dl>`);
+          const { SPOTS } = await import('./src/js/data/spot-list.js');
+          return html
+            .replace(mark, () => `<dl class="spot-names-list" id="spot-names">${spotListHTML()}</dl>`)
+            .replace('<span class="spot-count"></span>', `<span class="spot-count">${SPOTS.length}</span>`);
         },
       },
     },
@@ -93,6 +98,24 @@ export default defineConfig({
           const list = homeGuides(new Date().getMonth() + 1);
           const base = process.env.SITE_BASE || '';
           return html.replace(mark, () => `<div class="home-guides" id="home-guides">${guideCardsHTML(list, { base })}</div>`);
+        },
+      },
+    },
+    {
+      // ABOUTの「山口の釣り仲間（Friends）」欄を本文に書き込む（JS無し・検索エンジンでも読める）。
+      // devでも同じ見た目にするため apply は付けない
+      name: 'prerender-about-friends',
+      transformIndexHtml: {
+        order: 'pre',
+        async handler(html, ctx) {
+          // ルートの about.html だけ。下の階層の about.html は対象外
+          if (ctx.filename.replace(/\\/g, '/') !== resolve(__dirname, 'about.html').replace(/\\/g, '/')) return html;
+          const mark = '<div class="friends" id="about-friends"></div>';
+          if (!html.includes(mark)) throw new Error('about.html に釣り仲間の目印が見つかりません');
+          const { friendsSectionHTML } = await import('./src/js/components/friends-html.js');
+          const { friends } = await import('./src/js/data/friends.js');
+          const base = process.env.SITE_BASE || '';
+          return html.replace(mark, () => `<div class="friends" id="about-friends">${friendsSectionHTML(friends, { base })}</div>`);
         },
       },
     },
@@ -122,6 +145,7 @@ export default defineConfig({
         reports: resolve(__dirname, 'reports.html'),
         invite: resolve(__dirname, 'invite.html'),
         'guides/autumn-eging': resolve(__dirname, 'guides/autumn-eging.html'),
+        'guides/family-sabiki': resolve(__dirname, 'guides/family-sabiki.html'),
       },
     },
   },
