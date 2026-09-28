@@ -1237,10 +1237,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'rotation':
           callout(t(lang, TX.egi.rotation), 'good');
           break;
+        case 'lure-stale':
+          callout(t(lang, TX.egi.lureStale), 'bad');
+          break;
+        case 'lure-fresh':
+          callout(t(lang, TX.egi.lureFresh), 'good');
+          break;
         case 'bonus':
           // ラストチャンス：大きく出して、海を金色に光らせる。詳しい一言は着水の時に（着水の知らせの代わり）
           bonusNote = e.kind === 'last' ? (e.guarantee ? TX.egi.lastChanceSure : TX.egi.lastChanceMore)
-            : e.hint === 'color' ? TX.egi.rescueColor : TX.egi.rescueZone;
+            : e.hint === 'lure' ? TX.egi.rescueLure : e.hint === 'color' ? TX.egi.rescueColor : TX.egi.rescueZone;
           if (e.kind === 'last') { el.stage.classList.add('is-lastchance'); callout(t(lang, TX.egi.lastChance), 'last', 1600); }
           break;
         case 'over':

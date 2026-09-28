@@ -627,3 +627,39 @@ test('しゃくったら乗ってた：離された直後のしゃくりで、�
   assert.ok(Math.abs(share - LUCKY_CHANCE) < 0.2, `乗った割合 ${share}`);
   assert.equal(lateLucky, 0);
 });
+
+// 誘いのスレ（2026-09-28）：同じ誘いの型が4回続くと「慣れてきた」、型を変えると「反応した」
+const lureCycle = (s, jerks, tension) => {
+  const ev = [];
+  for (let j = 0; j < jerks; j++) { press(s); ev.push(...run(s, 0.05)); release(s); ev.push(...run(s, 0.3)); }
+  if (tension) press(s);
+  ev.push(...run(s, 3));
+  if (tension) release(s);
+  return ev;
+};
+const lureEvents = (ev) => ev.filter((e) => e.type === 'lure-stale' || e.type === 'lure-fresh').map((e) => e.type);
+
+test('誘いのスレ：同じ型の4回目で「慣れてきた」、型を変えると「反応した」', () => {
+  const s = createEgi({ seed: 'lure1', rand: calm });
+  cast(s);
+  run(s, 3);
+  const seen = [];
+  for (let i = 0; i < 5; i++) seen.push(...lureEvents(lureCycle(s, 2, true)));
+  assert.deepEqual(seen, ['lure-stale'], '同じ型では4回目に1回だけ知らせる');
+  assert.ok(s.lureSame >= 4);
+  assert.deepEqual(lureEvents(lureCycle(s, 3, false)), ['lure-fresh'], '型を変えたら気を引ける');
+  assert.equal(s.lureSame, 1);
+});
+
+test('誘いのスレ：初心者練習・シャクリの無いフォールでは数えない', () => {
+  const easy = createEgi({ seed: 'lure2', rand: calm, easy: true });
+  cast(easy);
+  run(easy, 3);
+  const seen = [];
+  for (let i = 0; i < 6; i++) seen.push(...lureEvents(lureCycle(easy, 2, true)));
+  assert.deepEqual(seen, [], '初心者練習では出さない');
+  const s = createEgi({ seed: 'lure3', rand: calm });
+  cast(s);
+  run(s, 3);
+  assert.equal(s.lureSame, 0, '着水直後のフォール（シャクリなし）は数えない');
+});

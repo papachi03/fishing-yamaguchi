@@ -111,6 +111,10 @@ export const EGI_TEXT = {
     rescue: pair('イカの気配…！', 'A squid is nearby…!'),
     rescueColor: pair('イカの気配…！ 反応がなければエギの色を替えてみよう', 'A squid is nearby…! No luck? Try another colour'),
     rescueZone: pair('イカの気配…！ 棚（深さ）を変えて探ってみよう', 'A squid is nearby…! Try a different depth'),
+    rescueLure: pair('イカの気配…！ 同じ誘いに慣れている。シャクリの回数やフォールを変えてみよう', 'A squid is nearby…! It is used to your routine. Change your jerks or your fall'),
+    // 誘いのスレ（2026-09-28）
+    lureStale: pair('同じ誘いに、イカが慣れてきた…', 'The squid are getting used to the same routine…'),
+    lureFresh: pair('誘いを変えたら、イカが反応した！', 'A new routine caught their eye!'),
     reviewColor: (lang, list) => (lang === 'en' ? `Colours that suited today: ${list}` : `今日の条件に合う色：${list}`),
   },
   gestures: {
@@ -489,6 +493,10 @@ export const EGI_TEXT = {
     weedTitle: pair('④ 藻場の上はチャンス', '④ Weed beds are a chance'),
     weedBody: pair('海底に藻場が出たら、その上を通そう。イカは藻に卵を産み、身を隠すので抱きやすい。ただし藻より下に落とすと絡む。<b>アマモ</b>（約1.2m・砂地）、<b>ホンダワラ</b>（約2m・背が高い）、<b>ウミトラノオ</b>（約0.8m・低い）。背の高い藻ほど、エギを高めに通そう。',
                    'When a weed bed shows on the seabed, pass over it: squid lay eggs and hide there, so they hug more. Drop into the weed and you tangle. <b>Eelgrass</b> (~1.2 m, sand), <b>Sargassum</b> (~2 m, tall), <b>Low weed</b> (~0.8 m). The taller the weed, the higher you keep the egi.'),
+    // ⑥（2026-09-28、誘いのスレ：Instagram のコメントから）
+    lureTitle: pair('⑥ 同じ誘いばかりだと、イカが慣れる', '⑥ Squid get used to the same routine'),
+    lureBody: pair('いつも同じシャクリ・同じフォールだと、イカが見慣れて抱かなくなる（<b>スレる</b>）。反応がなくなったら、シャクリの回数（1回・2段・3段）、<b>ダート</b>、<b>フリーとテンション</b>を入れ替えてみよう。誘いを変えた直後は、イカの気を引ける。',
+                   'Repeat the same jerks and the same fall and squid learn to ignore it (they get <b>wary</b>). When the bites stop, change the number of jerks (one, double, triple), add a <b>dart</b>, or switch between <b>free and tension falls</b>. A fresh routine catches their eye.'),
   },
   // 🔰初心者練習（2026-09-27）：最初の1投だけ手順を案内する
   guide: {

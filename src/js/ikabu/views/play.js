@@ -224,6 +224,8 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <p>${t(lang, T.tips.weedBody)}</p>
         <h4>${t(lang, T.tips.tempoTitle)}</h4>
         <p>${t(lang, T.tips.tempoBody)}</p>
+        <h4>${t(lang, T.tips.lureTitle)}</h4>
+        <p>${t(lang, T.tips.lureBody)}</p>
       </details>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
     </div>

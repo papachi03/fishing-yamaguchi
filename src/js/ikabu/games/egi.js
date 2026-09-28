@@ -182,6 +182,15 @@ export function bestColors(opts) {
 // カラーローテーション：同じ色で ROTATE_AFTER 投続けてアタリが無く、色を替えた次の1投は気を引ける
 export const ROTATE_AFTER = 2;
 export const ROTATE_GAIN = 0.1;
+// 誘いのスレ（2026-09-28、Instagram のコメント「イカが同じシャクリを学習したらおもろそう」→ぱっぱOK）：
+// フォールごとの誘いの型（シャクリの回数・ダートの有無・フリー/テンション）が同じまま続くと、良い誘いが効かなくなる。
+// 型を変えると気を引ける（色のカラーローテーションと同じ大きさ）。ふつうのエギングだけ・初心者練習では使わない。
+// シャクリの無いフォール（着水直後）は数えない（毎投それで数え直しになってしまうため）。イカを釣り上げたら数え直し
+export const STALE_AT = 4; // 同じ型の4回目で、良い誘いの効きが半分
+export const STALE_HALF = 0.5;
+export const STALE_DROP = -0.03; // 5回目以降は良い誘いが効かず、少し下がる（自動プレイ400回で「いつも同じ誘い」の釣果が約2割減＝ねらい：2〜3割減）
+export const FRESH_GAIN = 0.1; // スレてから型を変えた最初のフォール
+export const lureKey = (s) => `${Math.min(s.jerks.length, 4)}${s.darts > 0 ? 'd' : ''}${s.tensionFall ? 't' : 'f'}`;
 
 export function normalizeEgi(e = {}) {
   const size = EGI_SIZES.includes(Number(e.size)) ? Number(e.size) : DEFAULT_EGI.size;
@@ -433,6 +442,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     liftAt: -99, // 底からエギを持ち上げた時刻（シリヤケイカは巻き上げで食う）
     dryCasts: 0, // 同じ色でアタリの無かった投げの数（カラーローテーション用）
     rotated: false, // 色を替えた次の1投（気を引ける）
+    lureKey: null, // 直前のフォールの誘いの型（誘いのスレ用）
+    lureSame: 0, // 同じ型が何回続いているか
     signaled: false, // この投げでアタリがあったか
     reacted: false, // この投げで何かの反応（アタリ・イカパンチ）があったか
     quiet: 0, // 反応の無い投げが何投つづいているか（救済用）
@@ -1090,7 +1101,7 @@ export function release(s) {
     emit(s, 'cast', { dist: s.castDist, bottom: s.bottom, egi: s.spec, weed: s.weed });
     if (s.bonus) {
       // 救済のヒント：同じ色で反応が無い投げが続いていれば色、そうでなければ棚（深さ）
-      const hint = s.bonus === 'rescue' ? ((s.dryCasts ?? 0) >= 2 ? 'color' : 'zone') : null;
+      const hint = s.bonus === 'rescue' ? ((s.lureSame ?? 0) >= STALE_AT ? 'lure' : (s.dryCasts ?? 0) >= 2 ? 'color' : 'zone') : null;
       emit(s, 'bonus', { kind: s.bonus, guarantee: s.guarantee, hint });
     }
   }
@@ -1110,9 +1121,23 @@ function judgeRhythm(s) {
   else gain = 0.05;
   // 棚が合っていないと、いくら誘ってもイカは寄ってこない（良い誘いほど棚の合い具合で割り引く）
   if (gain > 0) gain *= 0.25 + 0.75 * zoneFit(s);
+  // 誘いのスレ（上の STALE_AT の説明）
+  let lureNote = null;
+  if (s.method === 'egi' && !s.easy && n > 0) {
+    const key = lureKey(s);
+    if (key === s.lureKey) s.lureSame += 1;
+    else {
+      if (s.lureSame >= STALE_AT) { gain += FRESH_GAIN; lureNote = 'lure-fresh'; }
+      s.lureKey = key;
+      s.lureSame = 1;
+    }
+    if (s.lureSame === STALE_AT) { if (gain > 0) gain *= STALE_HALF; lureNote = 'lure-stale'; }
+    else if (s.lureSame > STALE_AT) gain = Math.min(gain, 0) + STALE_DROP;
+  }
   s.interest = Math.min(1, Math.max(0, s.interest + gain));
   s.judged = true;
   emit(s, 'rhythm', { streak: n, darts: s.darts, interest: s.interest, mood: s.mood });
+  if (lureNote) emit(s, lureNote, { same: s.lureSame });   // 誘いの一言より後に出して、上書きされないように
 }
 
 // 底にいると根掛かりすることがある（ディープほど掛かりやすい）
@@ -1405,6 +1430,8 @@ export function tick(s, dt) {
       } else if (s.dist <= 0) {
         const c = { id: s.hooking.id, weight: s.hooking.weight, mantle: s.hooking.mantle, ...(s.hooking.boss ? { boss: true } : {}) };
         s.catches.push(c);
+        s.lureKey = null;   // 釣り上げたら、誘いのスレは数え直し（別のイカ）
+        s.lureSame = 0;
         emit(s, 'landed', c);
         s.hooking = null;
         endCast(s, 'landed');
