@@ -29,17 +29,22 @@ export default defineConfig({
       },
     },
     {
-      // 「現地の声」ページに、選べる釣り場の一覧を書き込む（検索エンジンが通信なしで読める本文にする）
+      // 「現地の声」ページと釣り場ページに、釣り場の名前の一覧を書き込む（検索エンジンが通信なしで読める本文にする）
+      // 釣り場ページは 2026-09-28 から（数も一覧から数えて書き込む＝「74か所」がいつも事実どおり）
       name: 'prerender-reports',
       apply: 'build',
       transformIndexHtml: {
         order: 'pre',
         async handler(html, ctx) {
-          if (!ctx.filename.replace(/\\/g, '/').endsWith('/reports.html')) return html;
+          const f = ctx.filename.replace(/\\/g, '/');
+          if (!f.endsWith('/reports.html') && !f.endsWith('/spots.html')) return html;
           const mark = '<dl class="spot-names-list" id="spot-names"></dl>';
-          if (!html.includes(mark)) throw new Error('reports.html に釣り場一覧の目印が見つかりません');
+          if (!html.includes(mark)) throw new Error(`${f} に釣り場一覧の目印が見つかりません`);
           const { spotListHTML } = await import('./src/js/components/spot-list-html.js');
-          return html.replace(mark, () => `<dl class="spot-names-list" id="spot-names">${spotListHTML()}</dl>`);
+          const { SPOTS } = await import('./src/js/data/spot-list.js');
+          return html
+            .replace(mark, () => `<dl class="spot-names-list" id="spot-names">${spotListHTML()}</dl>`)
+            .replace('<span class="spot-count"></span>', `<span class="spot-count">${SPOTS.length}</span>`);
         },
       },
     },
