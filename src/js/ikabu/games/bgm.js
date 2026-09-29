@@ -13,7 +13,7 @@ export const TRACKS = {
   sumi: { src: '/assets/ikabu/audio/bgm_sumi.mp3', loopStart: 9.799, loopEnd: 118.097, volume: 0.18 },
   rush: { src: '/assets/ikabu/audio/bgm_rush.mp3', loopStart: 8.545, loopEnd: 68.104, volume: 0.18 },
 };
-export const DUCK = 0.3;   // 聞かせたい音（ドラグ・アタリ・やり取り）の間は、さらにこの割合まで下げる
+export const DUCK = 0.3;   // エギングのやり取りの間は、この割合（3割）まで下げる。アタリの合図では下げない（音量で先に分かってしまう）
 const FADE = 0.6;
 const level = (st) => (TRACKS[st.playing]?.volume ?? 0) * (st.ducked ? DUCK : 1);
 
@@ -91,7 +91,7 @@ export function createBgm({ on = false, track = null, href = (p) => p } = {}) {
     const t = c.currentTime;
     st.gain.gain.cancelScheduledValues(t);
     st.gain.gain.setValueAtTime(st.gain.gain.value, t);
-    st.gain.gain.linearRampToValueAtTime(level(st), t + (v ? 0.15 : 0.8));   // 下げるのは速く、戻すのはゆっくり
+    st.gain.gain.linearRampToValueAtTime(level(st), t + (v ? 1.2 : 1.5));   // どちらもゆっくりフェード（急に変わると目立つ）
   }
   if (hasWindow) document.addEventListener('visibilitychange', () => { if (document.hidden) stopNow(0.1); sync(); });
   return {

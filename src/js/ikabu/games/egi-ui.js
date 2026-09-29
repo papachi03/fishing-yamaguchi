@@ -2448,8 +2448,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // エギング：ジェット噴射で走った直後もドラグが「ジジジッ」と出る（ぱっぱ 2026-09-29）
     const jetRun = phase === 'fight' && V.lastJet != null && now - V.lastJet < 0.45;
     feel.drag(yRun || jetRun);
-    // BGMは、アタリの合図・やり取り・ドラグの間はさらに下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事）
-    bgm.duck(yRun || jetRun || phase === 'fight' || phase === 'signal');
+    // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。
+    //   アタリの合図やヤエンの走りで下げると、音量の変化でアタリが先に分かってしまうので下げない）
+    bgm.duck(phase === 'fight');
     if (yRun && now >= (V.jetNext ?? 0)) {
       V.jetNext = now + 0.9 + Math.random() * 0.8;
       feel.fire('whoosh');
