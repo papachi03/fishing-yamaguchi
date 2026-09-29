@@ -125,6 +125,23 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (isRush()) inkedSet = new Set(inked(board));
     board.forEach((k, i) => paint(i, k));
   }
+  // 変わったマスだけ描き直す（なぞっている間、36マス全部の絵を作り直すとチカチカした・2026-09-29 ぱっぱ）
+  function renderChanged(board) {
+    const prevInk = inkedSet;
+    if (isRush()) inkedSet = new Set(inked(board));
+    const changed = [];
+    board.forEach((k, i) => { if (shown[i] !== k || prevInk.has(i) !== inkedSet.has(i)) changed.push(i); });
+    // 動いたマークの絵は作り直さずに移す（絵の読み直しで一瞬白く抜けるのを防ぐ）
+    const pool = new Map();
+    for (const i of changed) if (shown[i] != null) { const l = pool.get(shown[i]) ?? []; l.push([...cells[i].childNodes]); pool.set(shown[i], l); }
+    for (const i of changed) {
+      const k = board[i];
+      paint(i, k);
+      const nodes = k != null ? pool.get(k)?.pop() : null;
+      if (nodes) cells[i].replaceChildren(...nodes);
+    }
+    shown = [...board];
+  }
   function setCursor(i, focus = true) {
     cells[cursor].tabIndex = -1;
     cursor = i;
@@ -608,7 +625,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (!rushDragStep(g, hold.at, nx)) break;
       hold.at = nx; hold.moved = true;
     }
-    renderBoard(g.board);
+    renderChanged(g.board);
     markHeld(hold.at);
     sfx.tick?.();
   }
@@ -644,6 +661,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     }
     drag = { i, x: e.clientX, y: e.clientY, done: false };
   });
+  // iPhone：指を動かすとページのスクロールも始まろうとして画面がガタついた → 墨のがれの盤の上ではスクロールを止める
+  el.board.addEventListener('touchmove', (e) => { if (isRush()) e.preventDefault(); }, { passive: false });
   el.board.addEventListener('pointermove', (e) => {
     if (hold) { holdMove(e); return; }
     if (!drag || drag.done) return;
