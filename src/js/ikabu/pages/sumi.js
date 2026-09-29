@@ -3,8 +3,10 @@ import { boot } from '../boot.js';
 import { render } from '../views/sumi.js';
 import { mountMatch3 } from '../games/match3-ui.js';
 import { mountYouTube } from '../yt-facade.js';
+import { mountTrialNotice } from '../views/trial-notice.js';
 
 const { lang } = boot(render);
+mountTrialNotice(lang);   // テストプレイ版だけ：記録・実績・レベルは正式版でリセットの注意書き
 mountYouTube();   // 遊び方の動画：押したら埋め込みに差し替える（2026-09-29 単体ページで呼び忘れていて、押しても再生されなかった）
 
 const demo = import.meta.env.DEV ? new URLSearchParams(location.search).get('gameDemo') : null;

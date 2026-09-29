@@ -2,8 +2,12 @@
 import { boot } from '../boot.js';
 import { render } from '../views/egi.js';
 import { mountEgi } from '../games/egi-ui.js';
+import { mountYouTube } from '../yt-facade.js';
+import { mountTrialNotice } from '../views/trial-notice.js';
 
 const { lang } = boot(render);
+mountTrialNotice(lang);   // テストプレイ版だけ：記録・実績・レベルは正式版でリセットの注意書き
+mountYouTube();   // 遊び方の動画：押したら埋め込みに差し替える（2026-09-29 単体ページにも動画を出した）
 
 // 開発時だけ：?gameDemo=egi:fight などで場面を作って止める（あそび場と同じスイッチ）
 const demo = import.meta.env.DEV ? new URLSearchParams(location.search).get('gameDemo') : null;

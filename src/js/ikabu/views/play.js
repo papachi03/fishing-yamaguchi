@@ -89,7 +89,7 @@ const hubHTML = (lang) => `
     </div>
   </section>`;
 
-// 遊び方の動画（childダディの YouTube、2026-09-26）。あそび場だけに出し、エギング単体のページ（知り合い用）には出さない
+// 遊び方の動画（childダディの YouTube、2026-09-26）。2026-09-29 からエギング・墨つなぎの単体ページ（テストプレイ）にも出す
 const HOWTO = {
   egi: { id: 'U7OJCHXPQGg', poster: '/assets/ikabu/egi-video-poster.jpg', len: pair('約6分半', 'about 6.5 min') },   // 2026-09-28 第4版（BGM入り・初心者練習／季節／くわしい条件／ヤエン・テーラー）。限定公開
   sumi: { id: 'YNhydWdt2e4', poster: '/assets/ikabu/sumi-video-poster.jpg', len: pair('約6分半', 'about 6.5 min') },   // 2026-09-28 第2版（スペシャルパネル・コンボ）に差し替え。前の動画は非公開
@@ -320,7 +320,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
         <${H} id="egi-title">${t(lang, T.name)}</${H}>
         <p class="ika-head-note">${t(lang, T.tagline)}${solo ? t(lang, '今の萩の風・波・潮で釣れ具合が変わります。', ' Today’s real wind, waves and tide in Hagi set the mood.') : ''}</p>
       </header>
-      ${solo ? '' : howtoHTML(lang, 'egi')}
+      ${howtoHTML(lang, 'egi')}   <!-- 2026-09-29 ぱっぱ：テストプレイ（単体ページ）にも遊び方の動画を出す -->
 
       <div class="ika-egi" id="ika-egi" data-lang="${lang}"${solo ? ' data-solo="1"' : ''}>
         <div class="ika-egi-setup" id="ika-egi-setup">${egiSetupHTML(lang, { month, tod: 'evening', solo })}</div>

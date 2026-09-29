@@ -2561,3 +2561,5 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-m3-guide span { transform: translateY(-62%); }
 /* 2026-09-29 ぱっぱ「水面のぐるぐるは何？」・盤の下に黒い柱が突き出る → うずと盤の外の滝はやめる（盤の中の墨が流れる動き＋しぶきで見せる） */
 .ika-m3-swirl, .ika-m3-flow { display: none !important; }
+/* テストプレイ版の注意書き（2026-09-29） */
+.ika-trial-note { margin: 14px 0 0; padding: 10px 14px; border: 2px dashed #f47321; border-radius: 12px; background: #fff4ea; color: #5a3312; font-size: 13.5px; line-height: 1.6; font-weight: 700; }

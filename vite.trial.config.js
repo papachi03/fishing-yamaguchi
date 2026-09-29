@@ -9,6 +9,8 @@ export default defineConfig(async (env) => {
   const b = typeof base === 'function' ? await base(env) : base;
   const { build, ...rest } = b;
   return mergeConfig(rest, {
+    // テストプレイ版の印（views/trial-notice.js が注意書きを出す）
+    define: { __IKABU_TRIAL__: 'true' },
     publicDir: false,
     build: {
       outDir: 'dist-trial',
