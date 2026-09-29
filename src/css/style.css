@@ -1568,6 +1568,8 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 .safety-msg { font-family: var(--font-mincho); font-weight: 700; font-size: 15px; letter-spacing: 0.04em; }
 .safety-reasons { font-size: 12px; color: var(--ink-soft); }
 .safety-legend { font-size: 10.5px; color: var(--ink-soft); opacity: 0.8; }
+.safety-obs { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.safety-mismatch { font-weight: 600; opacity: 1; }
 
 /* 時間別テーブルのセル色（風・突風・波高で共通） */
 .hourly-table td.lv1 { background: rgba(184, 134, 11, 0.14); }

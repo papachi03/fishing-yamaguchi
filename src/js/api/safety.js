@@ -72,8 +72,8 @@ export const SAFETY_LEVELS = [
 
 // 判定理由の文言（lang='en' のときだけ英語。既定は従来の日本語）
 const REASON = {
-  ja: { wind: (v) => `風速${v}m/s`, gust: (v) => `突風${v}m/s`, wave: (v) => `波高${v}m`, swell: (p) => `周期${p}秒のうねり`, onshore: '向かい風（海から吹いて波が立つ）' },
-  en: { wind: (v) => `wind ${v} m/s`, gust: (v) => `gusts ${v} m/s`, wave: (v) => `waves ${v} m`, swell: (p) => `swell with a ${p} s period`, onshore: 'onshore wind (blowing in from the sea, waves build)' },
+  ja: { wind: (v) => `風速${v}m/s`, gust: (v) => `突風${v}m/s`, wave: (v) => `波高${v}m`, swell: (p) => `周期${p}秒のうねり`, onshore: '向かい風（海から吹いて波が立つ）', obsTag: '（実測）', roughWave: (v) => `波高${v}m（気象庁の地域の目安）` },
+  en: { wind: (v) => `wind ${v} m/s`, gust: (v) => `gusts ${v} m/s`, wave: (v) => `waves ${v} m`, swell: (p) => `swell with a ${p} s period`, onshore: 'onshore wind (blowing in from the sea, waves build)', obsTag: ' (observed)', roughWave: (v) => `waves ${v} m (JMA regional estimate)` },
 };
 
 // 風向(deg, 風が吹いてくる方角) が、海に向いた方角(facing) から ±60° 以内なら向かい風
@@ -84,9 +84,12 @@ export function isOnshore(windDir, facing) {
 }
 
 // seaProfile を省略すると日本海側の基準（従来の挙動）になる
-export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [], lang = 'ja' }) {
+export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [], lang = 'ja', waveRough = false, obsWind = null }) {
   const pf = profileOf(seaProfile);
   const R = REASON[lang] ?? REASON.ja;
+  // 実測（アメダス）が予報より強ければ、その風で判定する。弱くても下げない（2026-09-30）
+  const byObs = obsWind != null && (wind == null || obsWind > wind);
+  if (byObs) wind = obsWind;
   const [w1, w2, w3] = pf.wind;
   const [g1, g2] = pf.gust;
   const [h1, h2, h3] = pf.wave;
@@ -99,15 +102,16 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   };
 
   if (wind != null) {
-    if (wind >= w3) bump(3, R.wind(wind.toFixed(1)));
-    else if (wind >= w2) bump(2, R.wind(wind.toFixed(1)));
-    else if (wind >= w1) bump(1, R.wind(wind.toFixed(1)));
+    const tag = byObs ? R.obsTag : '';
+    if (wind >= w3) bump(3, R.wind(wind.toFixed(1)) + tag);
+    else if (wind >= w2) bump(2, R.wind(wind.toFixed(1)) + tag);
+    else if (wind >= w1) bump(1, R.wind(wind.toFixed(1)) + tag);
   }
   if (gust != null) {
     if (gust >= g2) bump(2, R.gust(gust.toFixed(1)));
     else if (gust >= g1) bump(1, R.gust(gust.toFixed(1)));
   }
-  if (waveHeight != null) {
+  if (waveHeight != null && !waveRough) {
     if (waveHeight >= h3) bump(3, R.wave(waveHeight.toFixed(1)));
     else if (waveHeight >= h2) bump(2, R.wave(waveHeight.toFixed(1)));
     else if (waveHeight >= h1) bump(1, R.wave(waveHeight.toFixed(1)));
@@ -121,10 +125,16 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   if (wind != null && wind >= w1 && isOnshore(windDir, facing)) {
     bump(Math.min(3, level + 1), R.onshore);
   }
+  // 波が「気象庁の地域の予報文」での代用のとき（NOAA が取れなかった）：沖も含めた0.5m刻みの目安で高めに出るので、
+  // 波だけでは「危険」までにとどめる。向かい風の一段上げより後に置き、目安の波で「中止」まで上がらないようにする（2026-09-30）
+  if (waveHeight != null && waveRough) {
+    const lv = waveHeight >= h2 ? 2 : waveHeight >= h1 ? 1 : 0;
+    if (lv) bump(lv, R.roughWave(waveHeight.toFixed(1)));
+  }
 
   const lv = SAFETY_LEVELS[level];
   // 英語のときは label / message を英語に差し替えて返す（呼び出し側の取り出し方は同じ）
-  return lang === 'en' ? { ...lv, label: lv.labelEn, message: lv.messageEn, reasons } : { ...lv, reasons };
+  return lang === 'en' ? { ...lv, label: lv.labelEn, message: lv.messageEn, reasons, byObs } : { ...lv, reasons, byObs };
 }
 
 // 凡例の文字列（海域ごとに数字が変わるので、画面側で使い回せるようにする）

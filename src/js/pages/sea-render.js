@@ -46,6 +46,8 @@ const T = {
     safetyFallback: (wind, wave) => `風速${wind}m/s・波高${wave}m`,
     onshore: ' ／ 海からの風',
     reasonSep: ' ／ ',
+    obsLine: (station, at, wind, calm) => `実測 ${station} ${at}：風 ${wind}m/s${calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）`,
+    obsMismatch: '⚠ いまの実測は穏やかで、予報と食い違っています。判定は安全側（予報）のままにしています。現地の海面と気象庁の発表で確かめてください',
     legend: (legend, pfLabel, provisional) => `${legend}（${pfLabel}の基準）。気象庁の注意報・警報が出ている時はそちらを優先${provisional ? ' ／ この海域のしきい値は暫定です' : ''}`,
     trial: TRIAL_NOTE,
     obsNone: 'アメダス実測',
@@ -87,6 +89,8 @@ const T = {
     safetyFallback: (wind, wave) => `wind ${wind} m/s · waves ${wave} m`,
     onshore: ' / onshore wind',
     reasonSep: ' / ',
+    obsLine: (station, at, wind, calm) => `Observed at ${station} ${at}: wind ${wind} m/s${calm ? ' (calm)' : ''} (inland station; expect 1–2 m/s more on the pier)`,
+    obsMismatch: '⚠ The current observation is calm and disagrees with the forecast. The rating stays on the safe side (forecast). Check the sea and JMA before you go.',
     legend: (legend, pfLabel, provisional) => `${legend} (${pfLabel} thresholds). JMA advisories and warnings always take precedence${provisional ? ' / thresholds for this area are provisional' : ''}`,
     trial: 'We have switched our weather data sources and are still fine-tuning them. Before you go, also check JMA information and the conditions on site.',
     obsNone: 'AMeDAS observed',
@@ -243,8 +247,13 @@ function bitePanelHTML(area, exp, lang) {
 }
 
 // 堤防の安全判定（風速・突風・波高・風向）
-function safetyBandHTML(area, w, lang) {
+// 実測が「新しい」とみなす上限（アメダスは10分ごと・公開まで10〜20分）
+const OBS_FRESH_MS = 40 * 60e3;
+export const freshObs = (obs, now) => (obs?.atMs != null && obs.wind != null && now.getTime() - obs.atMs >= 0 && now.getTime() - obs.atMs <= OBS_FRESH_MS ? obs : null);
+
+function safetyBandHTML(area, w, lang, obs = null, now = new Date()) {
   const L = textOf(lang);
+  const fo = freshObs(obs, now);
   const s = assessSafety({
     wind: w.current.wind,
     gust: w.current.gust,
@@ -255,9 +264,13 @@ function safetyBandHTML(area, w, lang) {
     seaProfile: area.seaProfile,
     alerts: w.current.alerts ?? w.alerts,
     lang,
+    waveRough: w.current.waveRough,
+    obsWind: fo?.wind ?? null,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
   const pf = profileOf(area.seaProfile);
+  // 予報で「危険」以上なのに、新しい実測が（堤防ぶんの+2m/sを足しても）「注意」に届かない → 食い違いを伝える
+  const calmObs = fo && s.level >= 2 && fo.wind + 2 < pf.wind[1] && !s.byObs && !(w.current.alerts ?? w.alerts ?? []).length;
   return `
     <div class="safety-band lv${s.level} reveal" role="status">
       <div class="safety-main">
@@ -266,7 +279,11 @@ function safetyBandHTML(area, w, lang) {
       </div>
       <p class="safety-reasons t-mono">${
         s.reasons.length ? s.reasons.join(L.reasonSep) : L.safetyFallback(fmt1(w.current.wind), fmt1(w.current.wave))
-      }${onshore && w.current.wind < pf.wind[0] ? L.onshore : ''}</p>
+      }${onshore && w.current.wind < pf.wind[0] ? L.onshore : ''}</p>${
+        fo ? `
+      <p class="safety-obs t-mono">${L.obsLine(fo.station, fo.at, fmt1(fo.wind), fo.calm)}</p>` : ''
+      }${calmObs ? `
+      <p class="safety-obs safety-mismatch t-mono">${L.obsMismatch}</p>` : ''}
       ${safetyLegendHTML(area, lang)}
     </div>`;
 }
@@ -326,7 +343,7 @@ function tidePanelHTML(t, now, lang) {
     </div>`;
 }
 
-// アメダスの実測（参考）。観測所と時刻を必ず添える。判定には使わない（基準は予報の数字で決めてあるため）
+// アメダスの実測。観測所と時刻を必ず添える。判定には「予報より強い時だけ」使う（safetyBandHTML・2026-09-30）
 function obsTileHTML(obs, lang) {
   const L = textOf(lang);
   if (!obs) {
@@ -362,7 +379,7 @@ function weatherHTML(area, w, now, updatedLabel, lang, obs) {
       </dl>
     </div>
 
-    ${safetyBandHTML(area, w, lang)}
+    ${safetyBandHTML(area, w, lang, obs, now)}
     __BITE__
     <div class="reveal">
       <h3 class="t-label" style="margin-bottom: 12px;">${L.hourlyHead}</h3>
