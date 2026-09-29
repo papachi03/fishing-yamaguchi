@@ -3,7 +3,7 @@
 //   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
 //   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
 //   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
-import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS } from './match3.js';
+import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS, BALL, RARE } from './match3.js';
 
 export const CAP = 30;                  // 水位がここで飲み込まれる
 export const START = 8;                // 最初の水位
@@ -14,7 +14,7 @@ export const FLUSH_POINT = 20;          // 墨を1抜くごとの点
 export const ROW_EVERY = 7;             // ブロックが降る間隔（秒）。最初は ROW_FIRST 秒後
 export const ROW_FIRST = 12;
 // 降ってくるブロックがスペシャル（ライン）になる確率（2026-09-29 ぱっぱ：3消しばかりでスペシャルが出ない）。
-//   なぞる操作で使えるのは、3つそろえると発動するラインだけ（墨ダマ・レアイカは入れ替えで発動するので、このモードでは動かなくなる）
+//   降ってくるのはラインだけ。墨ダマ・レアイカは5つ一直線・L字T字で生まれ、つかんで離すと発動する（rushDrop）
 export const SPECIAL_RATE = 0.1;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
 export const PACE = [[0, 0.5], [20, 0.9], [40, 1.4], [60, 2.0], [90, 2.8], [120, 4.0], [160, 5.5]];   // 道を意識して2秒に1手で約100秒・でたらめ33秒（rush_sim.mjs）
@@ -152,10 +152,15 @@ export function rushDragStep(g, from, to) {
   [g.board[from], g.board[to]] = [g.board[to], g.board[from]];
   return true;
 }
+// つかんで離すと発動するパネル（2026-09-30 友だちの感想「虹色のマスの効果が分からない・消せない」：このモードは入れ替えが無いので、
+//   墨ダマ・レアイカは生まれても発動できなかった → 離した時に発動させる。墨ダマ＝いちばん多いマークを全部、レアイカ＝まわり9マス）
+export const fireable = (v) => v === BALL || v === RARE;
 // 指を離した：そろった所をまとめて消す（連鎖も）。そろわなくても動かした形のまま（補充なし）
 export function rushDrop(g, at) {
   if (g.over) return { ok: false, steps: [] };
-  const r = cascade(g, null, at == null ? [] : [at]);
+  const v = at == null ? null : g.board[at];
+  const first = fireable(v) ? { kind: v === BALL ? 'ball' : 'blast', cells: [at], fx: [] } : null;   // 範囲は cascade の expand が広げる
+  const r = cascade(g, first, at == null ? [] : [at]);
   return afterMove(g, r);
 }
 export function rushFlash(g, idx) {

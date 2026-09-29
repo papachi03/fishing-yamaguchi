@@ -146,3 +146,29 @@ test('降ってくるブロックはだいたい SPECIAL_RATE の割合でライ
   const rate = lines / all;
   assert.ok(rate > SPECIAL_RATE * 0.4 && rate < SPECIAL_RATE * 2, `ラインの割合 ${rate}`);
 });
+
+// 墨ダマ・レアイカは、つかんで離すと発動（2026-09-30 友だちの感想「虹色のマスの効果が分からない・消せない」）
+import { fireable } from '../src/js/ikabu/games/inkrush.js';
+import { BALL, RARE, colorOf, countColors } from '../src/js/ikabu/games/match3.js';
+test('離したマークが墨ダマなら、いちばん多いマークが全部消える（墨ダマも）。レアイカならまわり9マス', () => {
+  assert.ok(fireable(BALL) && fireable(RARE) && !fireable(0) && !fireable(null));
+  const g = createRush({ seed: 'ball' });
+  const at = SIZE * 2 + 2;
+  g.board[at] = BALL;
+  const n = countColors(g.board);
+  const top = n.indexOf(Math.max(...n));
+  const r = rushDrop(g, at);
+  assert.ok(r.ok && r.steps.length >= 1);
+  assert.equal(r.steps[0].kind, 'ball');
+  assert.ok(r.steps[0].cleared.includes(at), '墨ダマ自身も消える');
+  assert.ok(g.board.every((v) => colorOf(v) !== top), 'いちばん多いマークが残っていない');
+  assert.ok(r.steps[0].fx.some((f) => f.type === 'ball'), '光の筋の演出');
+  const g2 = createRush({ seed: 'rare' });
+  g2.board[at] = RARE;
+  const r2 = rushDrop(g2, at);
+  assert.equal(r2.steps[0].kind, 'blast');
+  for (const d of [-SIZE - 1, -SIZE, -SIZE + 1, -1, 0, 1, SIZE - 1, SIZE, SIZE + 1]) assert.equal(g2.board[at + d], null, `まわり ${d}`);
+  // ふつうのマークを離しても発動しない（そろわなければ何も起きない）
+  const g3 = createRush({ seed: 'nomatch' });
+  assert.equal(rushDrop(g3, 0).steps.length, 0);
+});

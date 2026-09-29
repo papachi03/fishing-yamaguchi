@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rushDrop, inked, openBottom, CAP, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rushDrop, fireable, inked, openBottom, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -417,6 +417,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
+      else if (st.kind === 'ball') callout(t(lang, TX.panel.ballFire), 'combo');
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
       // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
@@ -650,13 +651,18 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const h = hold; hold = null;
     markHeld(null);
     el.board.classList.remove('is-holding');
-    if (!h.moved || g.over) return;
+    // 動かしていなくても、墨ダマ・レアイカはタップ（つかんで離す）だけで発動する（2026-09-30）
+    if ((!h.moved && !fireable(g.board[h.at])) || g.over) return;
     drag = { done: true }; setTimeout(() => { drag = null; }, 0);   // 直後の click（タップ選択）を無視
     busy = true;
     syncHud();
     const r = rushDrop(g, h.at);
     setMsg('');
     await playSteps(r.steps, false);
+    // 墨ダマ・レアイカが生まれたら、使い方を一言（このモードは入れ替えが無いので「つかんで はなす」）
+    const bornKinds = r.steps.flatMap((st) => st.created ?? []).map((c) => c.kind);
+    if (bornKinds.includes(BALL)) setMsg(t(lang, TX.rush.ballTip));
+    else if (bornKinds.includes(RARE)) setMsg(t(lang, TX.rush.rareTip));
     await rushAfter(r);
     busy = false;
     syncHud();

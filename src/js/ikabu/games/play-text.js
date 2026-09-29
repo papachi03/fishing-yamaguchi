@@ -644,7 +644,9 @@ export const M3_TEXT = {
   mode: { daily: pair('今日の一戦', "Today's board"), free: pair('自由に遊ぶ', 'Free play'), rush: pair('墨のがれ', 'Ink Escape') },
   // 墨のがれ（2026-09-29）：上から墨が落ちてイカを飲み込む。下のマークを消して墨を流し落とす。競うのは「何手しのいだか」
   rush: {
-    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは指で押したままなぞると、ついて来て通ったマス（斜めも）と入れ替わります。指を離すと、そろった所がまとめて消えます。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. Hold a mark and drag it: it follows your finger and swaps with every cell it passes (diagonals too). Let go and all the matches clear at once. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
+    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは指で押したままなぞると、ついて来て通ったマス（斜めも）と入れ替わります。指を離すと、そろった所がまとめて消えます。5つ一直線で生まれる虹色の「墨ダマ」と、L字・T字で生まれる黒いレアイカは、つかんで離すと発動（墨ダマ＝いちばん多いマークを全部消す、レアイカ＝まわり9マス）。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. Hold a mark and drag it: it follows your finger and swaps with every cell it passes (diagonals too). Let go and all the matches clear at once. The rainbow ink ball (five in a row) and the black rare squid (L or T shape) fire when you pick them up and let go: the ball clears every mark of the most common kind, the squid clears the 3×3 around it. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
+    ballTip: pair('虹色の墨ダマ：つかんで はなすと、いちばん多いマークを ぜんぶ消す！', 'Rainbow ink ball: pick it up and let go to clear every mark of the most common kind!'),
+    rareTip: pair('黒いレアイカ：つかんで はなすと、まわり9マスが消える！', 'Black rare squid: pick it up and let go to clear the 3×3 around it!'),
     time: pair('しのいだ時間', 'Time survived'),
     guide: pair('ここまで道をつなげると墨が抜ける', 'Open a path down to here to drain the ink'),
     lidFall: pair('ブロックが降ってきた！', 'Blocks!'),
@@ -691,6 +693,7 @@ export const M3_TEXT = {
     ball: pair('墨ダマ', 'Ink ball'),
     lineBorn: pair('ラインイカ たんじょう！', 'A line squid is born!'),
     ballBorn: pair('墨ダマ たんじょう！', 'An ink ball is born!'),
+    ballFire: pair('墨ダマ はっしゃ！', 'Ink ball!'),
   },
   combo: {
     cross: pair('十字けし！', 'Cross clear!'),
