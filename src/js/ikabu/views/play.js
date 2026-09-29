@@ -524,11 +524,13 @@ export const m3HTML = (lang) => {
 
           <div class="ika-m3-tools">
             <div class="ika-m3-ink" id="ika-m3-ink">
+              <!-- バーの横のイカ：たまるまではふつうの顔、満タンで墨を吐くイカに（2026-09-30 30代女性のアイデア） -->
+              <span class="ika-m3-ink-squid" aria-hidden="true"><img class="is-wait" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="40" height="44" decoding="async" /><img class="is-go" src="${assetHref('/assets/ikabu/mascot/squirt.webp')}" alt="" width="46" height="44" decoding="async" /></span>
               <span class="ika-m3-ink-label">${t(lang, T.hud.ink)}</span>
               <span class="ika-m3-ink-track"><i id="ika-m3-ink-fill"></i></span>
             </div>
             <button type="button" class="ika-btn ika-btn--ink ika-m3-flash" id="ika-m3-flash" disabled>${t(lang, T.btn.flash)}</button>
-            <button type="button" class="ika-btn ika-m3-hint" id="ika-m3-hint">${t(lang, T.btn.hint)}</button>
+            <button type="button" class="ika-btn ika-m3-sound ika-m3-hint" id="ika-m3-hint" aria-label="${t(lang, T.btn.hint)}" title="${t(lang, T.btn.hint)}">💡</button>
             <button type="button" class="ika-btn ika-m3-sound" id="ika-m3-sound" aria-pressed="true" aria-label="${t(lang, T.btn.soundOff)}">🔊</button>
             <button type="button" class="ika-btn ika-m3-sound ika-m3-bgm" id="ika-m3-bgm" aria-pressed="false" aria-label="${t(lang, T.btn.bgmOn)}" title="${t(lang, T.btn.bgmOn)}">🎵</button>
           </div>
