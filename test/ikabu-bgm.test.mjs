@@ -29,3 +29,13 @@ test('曲ファイルがあり、つなぎ目は前奏の後・曲の終わり�
     assert.ok(tr.loopStart > 4 && tr.loopEnd - tr.loopStart > 40, `${name} の繰り返しは40秒以上`);
   }
 });
+
+// アワセが決まった時の振動（2026-09-30 ぱっぱ：Androidなら激しく）
+import { hookPattern } from '../src/js/ikabu/games/feel.js';
+test('アワセの振動は強い連打で、大きいイカほど締めが長い。合計1秒以内', () => {
+  const small = hookPattern(0.25), big = hookPattern(1.6);
+  assert.ok(small.length >= 5);
+  assert.ok(big.at(-1) > small.at(-1));
+  assert.ok(big.reduce((a, b) => a + b, 0) <= 1000);
+  assert.ok(TRACKS.egi.volume <= 0.1, 'エギングのBGMは控えめ');
+});

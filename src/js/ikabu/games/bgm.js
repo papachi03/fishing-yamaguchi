@@ -9,7 +9,7 @@
 
 // 音量は控えめ（ぱっぱ 2026-09-30：エギングはドラグの出る音などが大事）。エギングがいちばん小さい
 export const TRACKS = {
-  egi: { src: '/assets/ikabu/audio/bgm_egi.mp3', loopStart: 8.731, loopEnd: 67.384, volume: 0.12 },
+  egi: { src: '/assets/ikabu/audio/bgm_egi.mp3', loopStart: 8.731, loopEnd: 67.384, volume: 0.09 },   // 0.12 → 0.09（2026-09-30 ぱっぱ「気持ち少し下げても」）
   sumi: { src: '/assets/ikabu/audio/bgm_sumi.mp3', loopStart: 9.799, loopEnd: 118.097, volume: 0.18 },
   rush: { src: '/assets/ikabu/audio/bgm_rush.mp3', loopStart: 8.545, loopEnd: 68.104, volume: 0.18 },
 };

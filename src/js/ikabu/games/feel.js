@@ -14,12 +14,14 @@ const PATTERN = {
   punch: [12, 45, 12],
   tap: [28],
   run: [110],
-  hook: [70],
+  hook: [120, 40, 60, 40, 220],
   break: [260],
   landed: [30, 70, 30],
   whoosh: [90],
 };
 const jetPattern = (power = 0.5) => [Math.round(120 + 160 * Math.min(1, power))];
+// アワセが決まった「ズドン！」（2026-09-30 ぱっぱ：Androidなら激しくバイブ）：強く1発→細かく2回→大きいイカほど長い締め
+export const hookPattern = (heavy = 0.5) => [120, 40, 60, 40, Math.round(160 + 140 * Math.min(1.6, Math.max(0, heavy)))];
 
 const VOLUME = 0.05; // 控えめに（最大 1）
 
@@ -30,7 +32,7 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     if (!st.vibrate || !canVibrate()) return;
     // ブラウザは、画面を一度も触っていない間は振動を止める（警告が出る）。触る前は呼ばない
     if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-    const p = kind === 'jet' ? jetPattern(opt.power) : kind === 'hook' && opt.heavy != null ? [Math.round(50 + 90 * Math.min(1.6, opt.heavy))] : PATTERN[kind];
+    const p = kind === 'jet' ? jetPattern(opt.power) : kind === 'hook' && opt.heavy != null ? hookPattern(opt.heavy) : PATTERN[kind];
     if (!p) return;
     try { navigator.vibrate(p); } catch { /* 対応していない端末 */ }
   }
@@ -142,13 +144,43 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     src.stop(t + dur + 0.02);
   }
 
+  // アワセが決まった「シャキーン！」（2026-09-30 ぱっぱ：決まった爽快感）：
+  //   刃を抜くような短い「シュッ」（高い帯域のノイズ）→ 金属が鳴る高い音の束（倍音をずらして重ね、少し上へ滑らせ、長めに響かせる）
+  function shing() {
+    const ctx = st.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    // シュッ
+    const nd = 0.09;
+    const buf = ctx.createBuffer(1, Math.round(ctx.sampleRate * nd), ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+    const ns = ctx.createBufferSource(); ns.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass';
+    hp.frequency.setValueAtTime(2500, t); hp.frequency.exponentialRampToValueAtTime(6000, t + nd);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(VOLUME * 2.4, t + 0.02); ng.gain.exponentialRampToValueAtTime(0.0001, t + nd);
+    ns.connect(hp).connect(ng).connect(ctx.destination); ns.start(t); ns.stop(t + nd + 0.02);
+    // キーン（少し遅れて立ち上がる）
+    const t1 = t + 0.05;
+    const partials = [[1760, 1], [2637, 0.7], [3520, 0.45], [4699, 0.28]];
+    for (const [f, a] of partials) {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f * 0.94, t1); o.frequency.exponentialRampToValueAtTime(f, t1 + 0.05);
+      const g = ctx.createGain();
+      const dur = 0.55 + 0.25 * a;
+      g.gain.setValueAtTime(0.0001, t1); g.gain.exponentialRampToValueAtTime(VOLUME * 2.2 * a, t1 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t1 + dur);
+      o.connect(g).connect(ctx.destination); o.start(t1); o.stop(t1 + dur + 0.02);
+    }
+  }
+
   function play(kind, opt = {}) {
     if (!st.sound || !st.ctx) return;
     switch (kind) {
       case 'punch': blip({ type: 'noise', f0: 2400, dur: 0.02 }); blip({ type: 'noise', f0: 2400, dur: 0.02, at: 0.06 }); break;
       case 'tap': blip({ type: 'sine', f0: 220, f1: 140, dur: 0.07, vol: 1.4 }); break;
       case 'run': for (let i = 0; i < 4; i++) blip({ type: 'square', f0: 900, dur: 0.018, at: i * 0.045, vol: 0.5 }); break;
-      case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); break;
+      case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); shing(); break;   // 手に来る「ドン」＋決まった「シャキーン！」
       case 'jet': break;   // 音は出さない（2026-09-29 ぱっぱ：ドラグの「ジジジッ」と被るので「ピピピッ」は消す）。振動だけ
       case 'whoosh': whoosh(opt.vol ?? 1); break;
       case 'break': blip({ type: 'sine', f0: 700, f1: 180, dur: 0.18 }); break;
