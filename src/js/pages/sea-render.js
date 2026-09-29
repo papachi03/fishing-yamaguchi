@@ -177,10 +177,11 @@ function safetyBandHTML(area, w, obs = null, now = new Date()) {
       </div>
       <p class="safety-reasons t-mono">${
         s.reasons.length ? s.reasons.join(' ／ ') : `風速${fmt1(w.current.wind)}m/s・波高${fmt1(w.current.wave)}m`
-      }${onshore && w.current.wind < pf.wind[0] ? ' ／ 海からの風' : ''}</p>
-      ${fo ? `<p class="safety-obs t-mono">実測 ${fo.station} ${fo.at}：風 ${fmt1(fo.wind)}m/s${fo.calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）</p>` : ''}${
-        calmObs ? `<p class="safety-obs safety-mismatch t-mono">⚠ いまの実測は穏やかで、予報と食い違っています。判定は安全側（予報）のままにしています。現地の海面と気象庁の発表で確かめてください</p>` : ''
-      }
+      }${onshore && w.current.wind < pf.wind[0] ? ' ／ 海からの風' : ''}</p>${
+        fo ? `
+      <p class="safety-obs t-mono">実測 ${fo.station} ${fo.at}：風 ${fmt1(fo.wind)}m/s${fo.calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）</p>` : ''
+      }${calmObs ? `
+      <p class="safety-obs safety-mismatch t-mono">⚠ いまの実測は穏やかで、予報と食い違っています。判定は安全側（予報）のままにしています。現地の海面と気象庁の発表で確かめてください</p>` : ''}
       ${safetyLegendHTML(area)}
     </div>`;
 }
