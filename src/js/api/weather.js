@@ -134,6 +134,21 @@ export async function fetchMetno(area, fetchImpl = fetch) {
   return { updated: d.properties?.meta?.updated_at ?? null, hourly: out };
 }
 
+const WAVES_TIMEOUT_MS = 8000;
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`waves: ${ms}ms でタイムアウト`)), ms))]);
+async function wavesWithRetry(area, now, fetchImpl) {
+  if (!AREA_SOURCES[area.id]?.ww3) return null;
+  try {
+    return await withTimeout(fetchWaves(area, now, fetchImpl), WAVES_TIMEOUT_MS);
+  } catch {
+    try {
+      return await withTimeout(fetchWaves(area, now, fetchImpl), WAVES_TIMEOUT_MS);
+    } catch {
+      return null;
+    }
+  }
+}
+
 // NOAA WaveWatch III（PacIOOS）。格子が陸扱いのエリア（瀬戸内）は null
 export async function fetchWaves(area, now = new Date(), fetchImpl = fetch) {
   const cell = AREA_SOURCES[area.id]?.ww3;
@@ -270,8 +285,9 @@ const popAt = (pops, date) => {
 export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch, prevWaves = null } = {}) {
   const [mn, wv, jm, obsT, vp, alerts] = await Promise.all([
     fetchMetno(area, fetchImpl),
-    // NOAA は時々応答しない（9/29 18:56 のビルドで取れず、気象庁の「1.5メートル」がそのまま入って萩が「中止」になった）→ 1回だけ取り直す
-    fetchWaves(area, now, fetchImpl).catch(() => fetchWaves(area, now, fetchImpl)).catch(() => null),
+    // NOAA は時々応答しない（9/29 18:56 のビルドで取れず、気象庁の「1.5メートル」がそのまま入って萩が「中止」になった）→ 1回だけ取り直す。
+    // 1回の問い合わせは 8 秒まで（9/30 0:41 のビルドで、取り直しの分だけ長引いて NOAA を使う3地域が丸ごと取得失敗になった）
+    wavesWithRetry(area, now, fetchImpl),
     fetchJma(area, fetchImpl).catch(() => null),
     fetchTodayObsTemps(area, fetchImpl).catch(() => null),
     fetchVpfd(area, fetchImpl).catch(() => ({})),
