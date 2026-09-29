@@ -281,8 +281,14 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (last && !lastSaid) { lastSaid = true; callout(t(lang, TX.hud.lastMoves), 'last'); }
     el.inkFill.style.width = `${Math.min(100, (g.charge / INK_NEED) * 100).toFixed(0)}%`;
     const full = g.charge >= INK_NEED && !g.over;
-    if (full && !el.ink.classList.contains('is-full')) sfx.full();
+    // 溜まった瞬間：音（音ありの人）＋大きな吹き出し＋Androidは短く振動（2026-09-30 30代女性「音を消してると知らない間に溜まってる」）
+    if (full && !el.ink.classList.contains('is-full')) {
+      sfx.full();
+      if (!isRush()) callout(t(lang, TX.msg.inkReady), 'flash');
+      try { if (navigator.vibrate && !/iPhone|iPad|iPod/.test(navigator.userAgent ?? '')) navigator.vibrate([60, 40, 60]); } catch { /* 振動できない端末 */ }
+    }
     el.ink.classList.toggle('is-full', full);
+    el.flash.classList.toggle('is-ready', full && !targeting);
     const reachedNow = g.score >= goals.goal;
     if (reachedNow && !goalSaid) {
       goalSaid = true;

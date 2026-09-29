@@ -1943,14 +1943,17 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 @keyframes ika-m3-jelly-sel { 0% { transform: scale(1); } 30% { transform: scale(1.16, 0.9); } 55% { transform: scale(0.98, 1.12); } 80% { transform: scale(1.1, 1.04); } 100% { transform: scale(1.08); } }
 .ika-m3-cell.is-clear { animation: ika-m3-pluck 0.3s cubic-bezier(0.3, 1.4, 0.6, 1) forwards; }
 @keyframes ika-m3-pluck { 0% { transform: scale(1); opacity: 1; } 35% { transform: scale(1.25, 0.82); opacity: 1; } 60% { transform: scale(0.9, 1.2); opacity: 0.9; } 100% { transform: scale(0.1); opacity: 0; } }
-/* ライン：色のコマに、白い矢印の帯（横＝横一列を消す、縦＝縦一列） */
-.ika-m3-line { position: absolute; z-index: 1; inset: 45% 5%; opacity: 0.9; border-radius: 999px; background: linear-gradient(90deg, #ffffff00, #ffffffee 20%, #ffffffee 80%, #ffffff00); box-shadow: 0 0 8px #ffffffcc; pointer-events: none; }
-.ika-m3-line::before, .ika-m3-line::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border: 6px solid transparent; transform: translateY(-50%); }
-.ika-m3-line::before { left: -4px; border-right: 8px solid #0b2447; border-left: 0; }
-.ika-m3-line::after { right: -4px; border-left: 8px solid #0b2447; border-right: 0; }
-.ika-m3-cell[data-special='v'] .ika-m3-line { inset: 5% 45%; background: linear-gradient(180deg, #ffffff00, #ffffffee 20%, #ffffffee 80%, #ffffff00); }
-.ika-m3-cell[data-special='v'] .ika-m3-line::before { left: 50%; top: -4px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 8px solid #0b2447; border-top: 0; }
-.ika-m3-cell[data-special='v'] .ika-m3-line::after { left: 50%; top: auto; bottom: -4px; right: auto; transform: translateX(-50%); border: 6px solid transparent; border-top: 8px solid #0b2447; border-bottom: 0; }
+/* ライン：色のコマに、矢印の帯（横＝横一列を消す、縦＝縦一列）。
+   2026-09-30 30代女性の感想「←→の印の色味が弱くて見落としがち」→ 白く細い帯をやめ、オレンジの太い帯＋紺の縁取り＋紺の大きな矢印に。
+   コマ全体にも黄色い縁と光（墨ダマの虹色ほど派手にはしない） */
+.ika-m3-line { position: absolute; z-index: 2; inset: 38% 2%; border-radius: 999px; background: linear-gradient(180deg, #ffd36e, #f47321 55%, #d95f12); border: 2px solid #0b2447; box-shadow: 0 0 0 2px #fff, 0 0 10px #ffb37a; pointer-events: none; }
+.ika-m3-line::before, .ika-m3-line::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border: 8px solid transparent; transform: translateY(-50%); filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
+.ika-m3-line::before { left: -9px; border-right: 11px solid #0b2447; border-left: 0; }
+.ika-m3-line::after { right: -9px; border-left: 11px solid #0b2447; border-right: 0; }
+.ika-m3-cell[data-special='v'] .ika-m3-line { inset: 2% 38%; background: linear-gradient(90deg, #ffd36e, #f47321 55%, #d95f12); }
+.ika-m3-cell[data-special='v'] .ika-m3-line::before { left: 50%; top: -9px; transform: translateX(-50%); border: 8px solid transparent; border-bottom: 11px solid #0b2447; border-top: 0; }
+.ika-m3-cell[data-special='v'] .ika-m3-line::after { left: 50%; top: auto; bottom: -9px; right: auto; transform: translateX(-50%); border: 8px solid transparent; border-top: 11px solid #0b2447; border-bottom: 0; }
+.ika-m3-cell:is([data-special='h'], [data-special='v']):not(.is-selected):not(.is-can):not(.is-can-special):not(.is-hint) { box-shadow: inset 0 0 0 3px #ffd36e, 0 0 10px #ffb37acc, 0 2px 0 var(--edge); }
 .ika-m3-cell[data-special='h']:not(.is-clear):not(.is-born), .ika-m3-cell[data-special='v']:not(.is-clear):not(.is-born) { animation: ika-m3-breathe 1.6s ease-in-out infinite; }
 @keyframes ika-m3-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04, 0.97); } }
 /* 墨ダマ：虹色に光る丸い墨 */
@@ -2039,6 +2042,11 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-ink-track { flex: 1; position: relative; height: 18px; border: 3px solid var(--ika-ink); border-radius: 999px; background: var(--ika-white); overflow: hidden; }
 .ika-m3-ink-track i { display: block; height: 100%; width: 0; background: #0b0f1a; transition: width 0.3s; }
 .ika-m3-ink.is-full .ika-m3-ink-track { animation: ika-m3-inkglow 0.7s ease-in-out infinite alternate; }
+/* 墨フラッシュが使える間（2026-09-30 30代女性「音を消してると溜まったのに気づかない」）：ゲージはオレンジ、ボタンはオレンジで脈打つ */
+.ika-m3-ink.is-full .ika-m3-ink-track i { background: linear-gradient(90deg, #d95f12, #f47321, #ffd36e); }
+.ika-m3-ink.is-full .ika-m3-ink-label { color: var(--ika-orange-deep); }
+.ika-m3-flash.is-ready:not(:disabled) { background: var(--ika-orange); border-color: var(--ika-ink); color: #fff; animation: ika-m3-ready 0.9s ease-in-out infinite; }
+@keyframes ika-m3-ready { 0%, 100% { transform: scale(1); box-shadow: 4px 4px 0 var(--ika-ink), 0 0 0 0 #f4732199; } 50% { transform: scale(1.06); box-shadow: 4px 4px 0 var(--ika-ink), 0 0 0 8px #f4732100; } }
 @keyframes ika-m3-inkglow { from { box-shadow: 0 0 0 0 rgba(244, 115, 33, 0.6); } to { box-shadow: 0 0 0 6px rgba(244, 115, 33, 0); } }
 .ika-m3-tools .ika-btn { min-height: 44px; padding: 6px 16px; font-size: 14px; }
 .ika-m3-tools .ika-btn:disabled { opacity: 0.4; box-shadow: none; transform: none; cursor: not-allowed; }
@@ -2096,7 +2104,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-m3-callout.is-big { font-size: 30px; }
   .ika-m3-card { inset: 4%; padding: 14px 16px; }
   .ika-m3-card-score b { font-size: 36px; }
-  .ika-m3-tools { grid-template-columns: 1fr 1fr auto auto; }   /* 2段目：墨フラッシュ・ヒント・🔊・🎵 */
+  .ika-m3-tools { grid-template-columns: 1fr 1fr auto auto; gap: 8px; }   /* 2段目：墨フラッシュ・ヒント・🔊・🎵 */
+  .ika-m3-tools .ika-btn { padding: 6px 8px; white-space: nowrap; }   /* 🎵が入って狭くなり「墨フラッ／シュ」と折れた（2026-09-30） */
+  .ika-m3-tools .ika-m3-sound { min-width: 44px; padding: 6px !important; }
   .ika-m3-ink { grid-column: 1 / -1; }
 }
 /* 横向きのスマホ（高さが低い）：舞台を画面の高さいっぱいに、操作ボタンとゲージは右の列に縦に並べる */
@@ -2221,7 +2231,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 }
 .ika-egi-fullnote[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ika-egi-callout.is-pop, .ika-egi-flash, .ika-egi-btn.is-signal, .ika-m3-callout.is-pop, .ika-m3-cell.is-hint, .ika-m3-cell.is-born, .ika-m3-cell.is-shake, .ika-m3-ink.is-full .ika-m3-ink-track { animation: none; }
+  .ika-egi-callout.is-pop, .ika-egi-flash, .ika-egi-btn.is-signal, .ika-m3-callout.is-pop, .ika-m3-cell.is-hint, .ika-m3-cell.is-born, .ika-m3-cell.is-shake, .ika-m3-ink.is-full .ika-m3-ink-track, .ika-m3-flash.is-ready { animation: none; }
   .ika-m3-cell.is-clear { animation: none; opacity: 0.2; }
   .ika-m3-cell.is-hint { box-shadow: 0 0 0 4px var(--ika-orange); }
   .ika-m3-cell, .ika-m3-goal-track i, .ika-m3-ink-track i { transition: none; }

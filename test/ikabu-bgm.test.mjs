@@ -53,3 +53,12 @@ test('墨ダマを選んだ時の案内は、いちばん多い数を言う（pl
   assert.match(src, /ballPick: \(lang, n\) =>/);
   assert.match(src, /いちばん多いのは \$\{n\}個/);
 });
+test('ラインの印は目立つ色（オレンジの帯）、墨フラッシュが使える間はボタンが脈打つ・溜まった時の吹き出しがある', () => {
+  const css = readFileSync(new URL('../src/css/ikabu.css', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../src/js/ikabu/games/play-text.js', import.meta.url), 'utf8');
+  const ui = readFileSync(new URL('../src/js/ikabu/games/match3-ui.js', import.meta.url), 'utf8');
+  assert.match(css, /\.ika-m3-line \{[^}]*#f47321/);
+  assert.match(css, /\.ika-m3-flash\.is-ready:not\(:disabled\) \{[^}]*animation: ika-m3-ready/);
+  assert.match(src, /inkReady: pair\('墨フラッシュ たまった！'/);
+  assert.match(ui, /callout\(t\(lang, TX\.msg\.inkReady\)/);
+});
