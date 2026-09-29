@@ -280,6 +280,13 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     else { g = createGame({ seed }); goals = dailyGoals(seed); }
     if (el.rush) el.rush.hidden = !isRush();
     el.board.classList.toggle('is-rush', isRush());   // なぞる操作の間、画面がスクロールしないように
+    // 初めての人への案内（2026-09-29）：盤の一番下に「ここまで道をつなげると墨が抜ける」。初めて道が通るか12秒で消える
+    el.wrap.querySelector('.ika-m3-guide')?.remove();
+    if (isRush()) {
+      const gd = document.createElement('div'); gd.className = 'ika-m3-guide'; gd.setAttribute('aria-hidden', 'true');
+      gd.innerHTML = `<span>⬇ ${t(lang, TX.rush.guide)}</span>`;
+      el.wrap.append(gd);
+    }
     const rn = root.querySelector('#ika-m3-rush-note'); if (rn) rn.hidden = !isRush();
     if (el.goal) el.goal.hidden = isRush();
     if (el.movesLabel) el.movesLabel.textContent = t(lang, isRush() ? TX.rush.time : TX.hud.moves);
@@ -315,6 +322,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function syncFlows() {
     const hs = isRush() && g && !g.over ? new Set(openBottom(g.board).map((i) => i % SIZE)) : new Set();
     el.board.classList.toggle('is-draining', hs.size > 0);   // 道が通っている間、墨のマスが上から下へ流れて見える
+    const gd = el.wrap.querySelector('.ika-m3-guide');
+    if (gd && (hs.size > 0 || (g?.rush?.t ?? 0) > 12 || g?.over)) { gd.classList.add('is-gone'); setTimeout(() => gd.remove(), 600); }
     for (const [c, e] of flows) if (!hs.has(c)) { e.remove(); e._swirl?.remove(); e._splash?.remove(); flows.delete(c); }
     if (!hs.size) return;
     const pool = root.querySelector('#ika-m3-rush-pool');

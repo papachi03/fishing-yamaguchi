@@ -646,6 +646,7 @@ export const M3_TEXT = {
   rush: {
     note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは指で押したままなぞると、ついて来て通ったマス（斜めも）と入れ替わります。指を離すと、そろった所がまとめて消えます。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. Hold a mark and drag it: it follows your finger and swaps with every cell it passes (diagonals too). Let go and all the matches clear at once. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
     time: pair('しのいだ時間', 'Time survived'),
+    guide: pair('ここまで道をつなげると墨が抜ける', 'Open a path down to here to drain the ink'),
     lidFall: pair('ブロックが降ってきた！', 'Blocks!'),
     lidBreak: pair('道が通った！ ドバッ', 'Path open! Whoosh'),
     nextLid: (lang, n) => (lang === 'en' ? `Blocks in ${n}s` : `ブロックまで ${n}秒`),
