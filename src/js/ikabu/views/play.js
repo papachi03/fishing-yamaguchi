@@ -468,18 +468,30 @@ export const m3HTML = (lang) => {
           <div class="ika-chips ika-chips--small" id="ika-m3-mode" role="group" aria-label="${t(lang, 'モード', 'Mode')}">
             <button type="button" class="ika-chip" data-mode="daily" aria-pressed="true">${t(lang, T.mode.daily)}</button>
             <button type="button" class="ika-chip" data-mode="free" aria-pressed="false">${t(lang, T.mode.free)}</button>
+            <button type="button" class="ika-chip ika-chip--rush" data-mode="rush" aria-pressed="false">🌊 ${t(lang, T.mode.rush)}</button>
           </div>
           <p class="ika-m3-daily" id="ika-m3-daily">${t(lang, T.dailyNote)} <b id="ika-m3-day"></b></p>
+          <p class="ika-m3-daily" id="ika-m3-rush-note" hidden>${t(lang, T.rush.note)}</p>
         </div>
 
         <div class="ika-m3-main">
           <dl class="ika-m3-hud">
             <div><dt>${t(lang, T.hud.score)}</dt><dd><b id="ika-m3-score">0</b></dd></div>
-            <div><dt>${t(lang, T.hud.moves)}</dt><dd><b id="ika-m3-moves">${MOVES}</b></dd></div>
+            <div><dt id="ika-m3-moves-label">${t(lang, T.hud.moves)}</dt><dd><b id="ika-m3-moves">${MOVES}</b></dd></div>
             <div><dt>${t(lang, T.hud.best)}</dt><dd><b id="ika-m3-best">0</b></dd></div>
           </dl>
           <div class="ika-m3-goal" id="ika-m3-goal"><span class="ika-m3-goal-label" id="ika-m3-goal-label">${t(lang, T.hud.today)} ${GOAL.toLocaleString()}</span><span class="ika-m3-stars" id="ika-m3-stars" aria-live="polite">☆☆☆</span><span class="ika-m3-goal-track"><i id="ika-m3-goal-fill"></i></span></div>
 
+          <!-- 墨のがれ：イカの舞台（表情・次に落ちる列・墨メーター）。2026-09-29 -->
+          <div class="ika-m3-rush" id="ika-m3-rush" hidden>
+            <div class="ika-m3-rush-wall is-l" aria-hidden="true"></div><div class="ika-m3-rush-wall is-r" aria-hidden="true"></div>
+            <div class="ika-m3-rush-pipe" aria-hidden="true"><i></i></div>
+            <div class="ika-m3-rush-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="ika-m3-rush-ledge" aria-hidden="true"></div>
+            <div class="ika-m3-rush-squid" id="ika-m3-rush-squid" data-mood="calm"><img id="ika-m3-rush-face" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="96" height="100" decoding="async" /><span class="ika-m3-rush-sweat" aria-hidden="true"><i></i><i></i><i></i></span><b id="ika-m3-rush-say">${t(lang, T.rush.moods.calm)}</b></div>
+            <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"></div>
+            <div class="ika-m3-rush-next" id="ika-m3-rush-next" aria-label="${t(lang, '次に墨が落ちる列', 'Next ink columns')}">${Array.from({ length: SIZE }, () => '<span></span>').join('')}</div>
+          </div>
           <div class="ika-m3-board-wrap" id="ika-m3-wrap">
             <div class="ika-m3-board" id="ika-m3-board" role="grid" aria-label="${t(lang, T.a11y.board)}" aria-rowcount="${SIZE}" aria-colcount="${SIZE}">${cells}</div>
             <div class="ika-m3-callout" id="ika-m3-callout" hidden aria-hidden="true"></div>

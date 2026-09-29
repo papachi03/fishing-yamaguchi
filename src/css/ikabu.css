@@ -1782,6 +1782,68 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-pts.is-big { font-size: 30px; color: #ffd2a8; }
 @keyframes ika-m3-pts { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 20% { opacity: 1; transform: translate(-50%, -70%) scale(1.15); } 60% { opacity: 1; transform: translate(-50%, -70%) scale(1); } 100% { opacity: 0; transform: translate(calc(-50% + var(--fly-x, 0px)), calc(-50% + var(--fly-y, -60px))) scale(0.5); } }
 @media (prefers-reduced-motion: reduce) { .ika-m3-cell.is-can-special { animation: none; box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 3px var(--ika-orange), 0 2px 0 var(--edge); } }
+/* 墨のがれ（2026-09-29）：上の舞台（空から墨・イカの表情・次に落ちる列）、墨のマス、流れ落ちる動き */
+.ika-m3-goal[hidden] { display: none; }
+/* 盤面のすぐ上に乗せる（ぱっぱ 2026-09-29：離れていると分かりにくい）。次に落ちる列の印は盤面の列と同じ並び */
+.ika-m3-rush { --ink: 0; position: relative; display: grid; grid-template-columns: 1fr; gap: 4px; margin-bottom: -4px; padding: 12px 8px 0; border: 3px solid var(--ika-ink); border-bottom: 0; border-radius: 18px 18px 0 0; background: linear-gradient(#e8f6f7, #b9dde2); overflow: hidden; margin-bottom: -14px; }
+/* 空の墨：上から広がってイカを飲み込む（--ink＝盤面の墨の割合）。イカの頭から隠れていく */
+/* 岩の穴の断面（ロイヤルマッチの救出ステージのイメージ・2026-09-29）：左右の岩壁・上の割れ目から墨の滝・イカは岩棚の上。盤面は穴の底 */
+.ika-m3-rush { min-height: 150px; background: radial-gradient(ellipse at 50% 70%, #5b6b73 0 30%, #3a474f 70%), #3a474f; border-color: #1e262b; }
+.ika-m3-rush-wall { position: absolute; top: 0; bottom: 0; width: 22px; z-index: 2; background:
+  radial-gradient(circle at 60% 20%, #7c8a91 0 5px, transparent 6px), radial-gradient(circle at 30% 55%, #6b7980 0 6px, transparent 7px), radial-gradient(circle at 70% 85%, #7c8a91 0 5px, transparent 6px),
+  linear-gradient(90deg, #2a3338, #4a575e); }
+.ika-m3-rush-wall.is-l { left: 0; border-right: 2px solid #1e262b; } .ika-m3-rush-wall.is-r { right: 0; transform: scaleX(-1); border-right: 2px solid #1e262b; }
+.ika-m3-rush-pipe { position: absolute; z-index: 3; top: -2px; left: 30px; width: 34px; height: 14px; border-radius: 0 0 10px 10px; background: #1e262b; }
+.ika-m3-rush-pipe i { position: absolute; left: 12px; top: 12px; width: 10px; height: calc(20px + var(--ink) * 90px); border-radius: 0 0 6px 6px; background: linear-gradient(#132033, #1f3050); animation: ika-m3-pour 0.5s linear infinite; }
+@keyframes ika-m3-pour { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.8); } }
+.ika-m3-rush-ledge { position: absolute; z-index: 1; left: 50%; bottom: 22px; width: 120px; height: 14px; margin-left: -60px; border-radius: 6px 6px 10px 10px; background: linear-gradient(#8a979d, #56636a); box-shadow: 0 3px 0 #1e262b; }
+.ika-m3-rush-squid { z-index: 1; margin-bottom: 8px; }
+.ika-m3-rush-squid b { border-color: #1e262b; }
+.ika-m3-rush-next span { background: #ffffff33; border-color: #ffffff44; }
+.ika-m3-rush-sky { position: absolute; inset: 0 0 auto 0; z-index: 2; height: calc(14px + var(--ink) * 92px); background: linear-gradient(#132033 0 72%, #13203300); opacity: 0.94; pointer-events: none; transition: height 0.5s ease; }
+.ika-m3-rush-sky i { position: absolute; bottom: -14px; width: 10px; height: 16px; border-radius: 0 0 8px 8px; background: #132033; animation: ika-m3-drips 2.4s ease-in infinite; }
+.ika-m3-rush-sky i:nth-child(1) { left: 18%; } .ika-m3-rush-sky i:nth-child(2) { left: 52%; animation-delay: 0.8s; } .ika-m3-rush-sky i:nth-child(3) { left: 80%; animation-delay: 1.5s; }
+@keyframes ika-m3-drips { 0% { transform: translateY(-16px) scaleY(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(70px) scaleY(1.3); opacity: 0; } }
+.ika-m3-rush-pool { display: none; }
+.ika-m3-rush-squid { position: relative; display: grid; justify-items: center; width: 78px; margin: 4px auto -6px; }
+.ika-m3-rush-squid img { position: relative; z-index: 1; width: 78px; height: auto; filter: drop-shadow(0 3px 0 #061e2c55); transition: filter 0.4s; }
+.ika-m3-rush-squid b { position: absolute; z-index: 3; top: -6px; right: -70px; padding: 3px 10px; border-radius: 12px; background: #fff; border: 2px solid var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 14px; white-space: nowrap; }
+.ika-m3-rush-squid[data-mood='calm'] img { animation: ika-m3-bob 2.4s ease-in-out infinite; }
+.ika-m3-rush-squid[data-mood='worry'] img { animation: ika-m3-bob 1.2s ease-in-out infinite; }
+.ika-m3-rush-squid[data-mood='panic'] img { animation: ika-m3-jitter 0.35s linear infinite; }
+.ika-m3-rush-squid[data-mood='doom'] img { animation: ika-m3-jitter 0.18s linear infinite; filter: drop-shadow(0 3px 0 #061e2c55) grayscale(0.5) brightness(0.9); }
+.ika-m3-rush-squid[data-mood='relief'] img { animation: ika-m3-hop-once 0.5s ease-out; }
+.ika-m3-rush-squid[data-mood='drown'] img { animation: ika-m3-sink 1.2s ease-in both; }
+@keyframes ika-m3-bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+@keyframes ika-m3-jitter { 0% { transform: translate(-2px, 0) rotate(-3deg); } 25% { transform: translate(2px, -1px) rotate(3deg); } 50% { transform: translate(-1px, 1px) rotate(-2deg); } 75% { transform: translate(2px, 0) rotate(2deg); } 100% { transform: translate(-2px, 0) rotate(-3deg); } }
+@keyframes ika-m3-hop-once { 0% { transform: translateY(0); } 40% { transform: translateY(-14px) scale(1.05); } 100% { transform: translateY(0); } }
+@keyframes ika-m3-sink { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(40px) rotate(8deg); opacity: 0.2; } }
+.ika-m3-rush-sweat { position: absolute; z-index: 3; left: 4px; top: 6px; width: 90px; height: 60px; pointer-events: none; opacity: 0; }
+.ika-m3-rush-sweat i { position: absolute; width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; background: #7ed0ff; border: 1.5px solid #2a6fb0; }
+.ika-m3-rush-sweat i:nth-child(1) { left: 2px; top: 10px; } .ika-m3-rush-sweat i:nth-child(2) { right: 4px; top: 4px; } .ika-m3-rush-sweat i:nth-child(3) { right: -6px; top: 26px; }
+.ika-m3-rush-squid[data-mood='worry'] .ika-m3-rush-sweat { opacity: 1; } .ika-m3-rush-squid[data-mood='worry'] .ika-m3-rush-sweat i:nth-child(n+2) { display: none; }
+.ika-m3-rush-squid[data-mood='panic'] .ika-m3-rush-sweat, .ika-m3-rush-squid[data-mood='doom'] .ika-m3-rush-sweat { opacity: 1; }
+.ika-m3-rush-squid[data-mood='panic'] .ika-m3-rush-sweat i, .ika-m3-rush-squid[data-mood='doom'] .ika-m3-rush-sweat i { animation: ika-m3-sweat 0.7s ease-in infinite; }
+.ika-m3-rush-sweat i:nth-child(2) { animation-delay: 0.25s !important; } .ika-m3-rush-sweat i:nth-child(3) { animation-delay: 0.45s !important; }
+@keyframes ika-m3-sweat { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(22px) scale(1); opacity: 0; } }
+.ika-m3-rush-next { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 0 5px; }
+.ika-m3-rush-next span { height: 20px; border-radius: 8px 8px 0 0; background: #ffffff88; border: 2px dashed #13203333; text-align: center; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; line-height: 18px; color: #fff; }
+.ika-m3-rush-next span.is-on { background: #132033; border-style: solid; border-color: #132033; animation: ika-m3-nextpulse 0.9s ease-in-out infinite; }
+@keyframes ika-m3-nextpulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+.ika-m3-rush.is-doom { animation: ika-m3-doom 0.6s ease-in-out infinite; }
+.is-doom .ika-m3-board { box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 4px #d8342c88; }
+@keyframes ika-m3-doom { 0%, 100% { box-shadow: 0 0 0 0 #d8342c00; } 50% { box-shadow: 0 0 0 6px #d8342c66; } }
+.ika-m3-cell[data-kind='ink'] { --tile: #132033; --edge: #061220; background: radial-gradient(circle at 35% 25%, #3a4a6a, #132033 70%); cursor: not-allowed; }
+.ika-m3-cell[data-kind='ink'] svg { width: 86%; height: 86%; }
+.ika-m3-cell[data-kind='ink']::after { display: none; }
+.ika-m3-cell.is-inked { animation: ika-m3-inked 0.5s ease-out; }
+@keyframes ika-m3-inked { 0% { transform: scale(0.6, 1.3) translateY(-30%); } 60% { transform: scale(1.15, 0.85); } 100% { transform: none; } }
+.ika-m3-cell.is-flush { animation: ika-m3-flush 0.3s ease-in both; }
+@keyframes ika-m3-flush { to { transform: translateY(120%) scaleY(1.4); opacity: 0; } }
+.ika-m3-drip { position: absolute; top: -40px; width: 16px; height: 26px; margin-left: -8px; border-radius: 8px 8px 12px 12px; background: #132033; animation: ika-m3-drip 0.42s cubic-bezier(0.5, 0, 1, 1) both; z-index: 4; }
+@keyframes ika-m3-drip { 0% { transform: translateY(0) scaleY(0.7); opacity: 0.6; } 100% { transform: translateY(calc(var(--to) + 40px)) scaleY(1.2); opacity: 1; } }
+.ika-chip--rush[aria-pressed='true'] { background: #132033; border-color: #132033; color: #fff; }
+@media (prefers-reduced-motion: reduce) { .ika-m3-rush-squid img, .ika-m3-rush-sky i, .ika-m3-rush-next span.is-on, .ika-m3-rush.is-doom, .ika-m3-rush-sweat i { animation: none !important; } }
 /* 今日の評価（★）と、残り3手の緊張（2026-09-29） */
 .ika-m3-stars { font-size: 16px; letter-spacing: 0.06em; color: var(--ika-orange); white-space: nowrap; }
 .ika-m3-stars[data-n="0"] { color: var(--ika-ink-soft); }

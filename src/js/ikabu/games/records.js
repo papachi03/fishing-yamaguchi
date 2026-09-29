@@ -96,7 +96,18 @@ export function storageWorks() {
 
 /* ---------- 墨つなぎ ---------- */
 
-export const emptyM3 = () => ({ best: 0, played: 0, goals: 0, badges: {}, daily: null });
+export const emptyM3 = () => ({ best: 0, played: 0, goals: 0, badges: {}, daily: null, rush: null });
+// 墨のがれの記録（2026-09-29）：しのいだ手数のベストと、今日の盤面のベスト
+export function recordRush(rec, g, { day = null } = {}) {
+  const r = rec ?? emptyM3();
+  const turns = g.rush?.turn ?? 0;
+  const x = r.rush ?? { best: 0, bestScore: 0, played: 0, daily: null };
+  x.played += 1;
+  if (turns > x.best || (turns === x.best && g.score > x.bestScore)) { x.best = turns; x.bestScore = g.score; }
+  if (day) x.daily = { day, turns: Math.max(x.daily?.day === day ? x.daily.turns : 0, turns) };
+  r.rush = x;
+  return r;
+}
 
 // 1戦の結果を記録に足す。新しく取れたバッジの id を返す
 export function recordM3(rec, g, { day = null, today = new Date().toISOString().slice(0, 10) } = {}) {
@@ -249,5 +260,8 @@ export function mergeM3(a, b) {
   const daily = !x.daily ? b.daily ?? null : !b.daily ? x.daily
     : x.daily.day === b.daily.day ? { day: x.daily.day, score: Math.max(x.daily.score, b.daily.score) }
     : x.daily.day > b.daily.day ? x.daily : b.daily;
-  return { best: Math.max(x.best ?? 0, b.best ?? 0), played: Math.max(x.played ?? 0, b.played ?? 0), goals: Math.max(x.goals ?? 0, b.goals ?? 0), badges, daily };
+  const rx = x.rush, rb = b.rush;
+  const rush = !rx ? rb ?? null : !rb ? rx : { best: Math.max(rx.best ?? 0, rb.best ?? 0), bestScore: Math.max(rx.bestScore ?? 0, rb.bestScore ?? 0), played: Math.max(rx.played ?? 0, rb.played ?? 0),
+    daily: !rx.daily ? rb.daily ?? null : !rb.daily ? rx.daily : rx.daily.day === rb.daily.day ? { day: rx.daily.day, turns: Math.max(rx.daily.turns, rb.daily.turns) } : rx.daily.day > rb.daily.day ? rx.daily : rb.daily };
+  return { best: Math.max(x.best ?? 0, b.best ?? 0), played: Math.max(x.played ?? 0, b.played ?? 0), goals: Math.max(x.goals ?? 0, b.goals ?? 0), badges, daily, rush };
 }

@@ -143,7 +143,7 @@ const blastCells = (center, R = 1) => {
 };
 
 // 消えたマスを下に詰め、上から新しいマークを入れる
-function dropAndFill(g) {
+export function dropAndFill(g) {
   for (let c = 0; c < SIZE; c++) {
     const col = [];
     for (let r = SIZE - 1; r >= 0; r--) {
@@ -202,7 +202,7 @@ function clearStep(g, kind, cells0, chain, created = [], fx = []) {
 }
 
 // そろいが無くなるまで連鎖させる。first は最初の段（爆発・墨フラッシュ）で、無ければそろいから始める
-function cascade(g, first, prefer = []) {
+export function cascade(g, first, prefer = []) {
   const steps = [];
   if (first) steps.push(clearStep(g, first.kind, first.cells, 1, [], first.fx ?? []));
   for (;;) {
@@ -215,7 +215,8 @@ function cascade(g, first, prefer = []) {
   }
   g.maxChain = Math.max(g.maxChain, steps.length);
   let shuffled = false;
-  if (!hasMove(g.board)) {
+  // 墨のがれ（inkrush.js）は混ぜ直さず「手詰まり＝終わり」にする（g.noShuffle）
+  if (!hasMove(g.board) && !g.noShuffle) {
     shuffle(g);
     shuffled = true;
   }
