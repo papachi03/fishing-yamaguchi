@@ -144,33 +144,52 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     src.stop(t + dur + 0.02);
   }
 
-  // アワセが決まった「シャキーン！」（2026-09-30 ぱっぱ：決まった爽快感）：
-  //   刃を抜くような短い「シュッ」（高い帯域のノイズ）→ 金属が鳴る高い音の束（倍音をずらして重ね、少し上へ滑らせ、長めに響かせる）
+  // アワセが決まった「シャキーン！」（2026-09-30 ぱっぱ「キター！という感じ。刃物の響き」→ 3案から B＝高めキラッ、を余韻短めにした B2）。
+  //   試聴用は ikabu-research\game-bgm\shing_variants.py（同じ作り。A＝王道／C＝低め重い刃は SHING の数字を替える）
+  //   ①シャ：ノイズの帯域を 2500→9000Hz へ駆け上がらせる（刃がこすれる）
+  //   ②キーン：刃物・鐘のような整数倍でない倍音（1・1.51・2.14・2.76倍）を、少しずらした2本ずつ重ねて「うなり」でキラキラさせ、高い倍音ほど早く消す
+  //   ③キラッ：キーンの頭で、高い小さな音を3つ駆け上がらせる
+  const SHING = { base: 3400, ratios: [1, 1.51, 2.14, 2.76], amps: [1, 0.6, 0.4, 0.25], detune: 9, sha: [3000, 11000, 0.11], ring: 0.7, decay: 1.8, sparkle: true, vol: 0.2 };
   function shing() {
     const ctx = st.ctx;
     if (!ctx) return;
+    const S = SHING;
     const t = ctx.currentTime;
-    // シュッ
-    const nd = 0.09;
-    const buf = ctx.createBuffer(1, Math.round(ctx.sampleRate * nd), ctx.sampleRate);
+    // シャ
+    const [f0, f1, sd] = S.sha;
+    const buf = ctx.createBuffer(1, Math.round(ctx.sampleRate * sd), ctx.sampleRate);
     const ch = buf.getChannelData(0);
     for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
     const ns = ctx.createBufferSource(); ns.buffer = buf;
-    const hp = ctx.createBiquadFilter(); hp.type = 'highpass';
-    hp.frequency.setValueAtTime(2500, t); hp.frequency.exponentialRampToValueAtTime(6000, t + nd);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6;
+    bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + sd);
     const ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(VOLUME * 2.4, t + 0.02); ng.gain.exponentialRampToValueAtTime(0.0001, t + nd);
-    ns.connect(hp).connect(ng).connect(ctx.destination); ns.start(t); ns.stop(t + nd + 0.02);
-    // キーン（少し遅れて立ち上がる）
-    const t1 = t + 0.05;
-    const partials = [[1760, 1], [2637, 0.7], [3520, 0.45], [4699, 0.28]];
-    for (const [f, a] of partials) {
-      const o = ctx.createOscillator(); o.type = 'sine';
-      o.frequency.setValueAtTime(f * 0.94, t1); o.frequency.exponentialRampToValueAtTime(f, t1 + 0.05);
-      const g = ctx.createGain();
-      const dur = 0.55 + 0.25 * a;
-      g.gain.setValueAtTime(0.0001, t1); g.gain.exponentialRampToValueAtTime(VOLUME * 2.2 * a, t1 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t1 + dur);
-      o.connect(g).connect(ctx.destination); o.start(t1); o.stop(t1 + dur + 0.02);
+    ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(S.vol * 1.6, t + sd * 0.6); ng.gain.exponentialRampToValueAtTime(0.0001, t + sd);
+    ns.connect(bp).connect(ng).connect(ctx.destination); ns.start(t); ns.stop(t + sd + 0.02);
+    // キーン（シャの途中から立ち上がる）
+    const t1 = t + sd * 0.55;
+    const sum = S.amps.reduce((a, b) => a + b, 0) * 2;
+    S.ratios.forEach((r, k) => {
+      const tau = 1 / ((1.2 + r * 0.9) * S.decay);   // 高い倍音ほど早く消える（試聴用 shing_variants.py の exp(-t*(1.2+0.9r)*decay) と同じ）
+      for (const d of [-S.detune, S.detune]) {
+        const f = S.base * r + d;
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(f * 0.9, t1); o.frequency.linearRampToValueAtTime(f, t1 + 0.04);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t1); g.gain.exponentialRampToValueAtTime((S.vol * S.amps[k]) / sum * 2.2, t1 + 0.004);
+        g.gain.setTargetAtTime(0, t1 + 0.004, tau);
+        g.gain.setTargetAtTime(0, t1 + S.ring - 0.08, 0.02);   // 最後は短く閉じる（切れ目でプツッと鳴らない）
+        o.connect(g).connect(ctx.destination); o.start(t1); o.stop(t1 + S.ring + 0.05);
+      }
+    });
+    if (S.sparkle) {
+      [1.25, 1.5, 2].forEach((m, k) => {
+        const ts = t1 + 0.05 * k;
+        const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = S.base * m;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, ts); g.gain.exponentialRampToValueAtTime(S.vol * 0.3, ts + 0.003); g.gain.setTargetAtTime(0, ts + 0.003, 1 / 18);
+        o.connect(g).connect(ctx.destination); o.start(ts); o.stop(ts + 0.2);
+      });
     }
   }
 
