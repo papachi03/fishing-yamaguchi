@@ -383,14 +383,18 @@ export const spots = [
     name: pair('山口市・湯田温泉', 'Yuda Onsen, Yamaguchi City'),
     tag: pair('海から離れて、泳ぐイカ', 'Swimming squid, inland'),
     desc: pair(
-      '温泉街で、生けすの「泳ぎ活きイカ」を出すお店。海まで行けない日の、イカの入口に。',
-      'A restaurant in the hot-spring town serving live squid from its tank—an easy way in when you cannot reach the coast.'
+      '温泉街で、生けすの「泳ぎ活きイカ」を出すお店や、イカの活け造りが食べられる居酒屋も。海まで行けない日の、イカの入口に。',
+      'In the hot-spring town: a restaurant serving live squid from its tank, and an izakaya serving squid ikezukuri (live-prepared sashimi)—an easy way in when you cannot reach the coast.'
     ),
     notes: pair(
       '湯田温泉は海から離れたエリアです（風と波のリンクは近くの防府の海）。営業日・入荷はお店へ確認を。',
       'Yuda Onsen is inland (the wind & waves link shows the nearby Hofu coast). Check opening days and stock with the restaurant.'
     ),
-    links: [['泳ぎ活きイカ らいが・地図 / Raiga (map)', gmap('長州鶏焼鳥・泳ぎ活きイカ・手作り餃子 らいが 山口県山口市湯田温泉3丁目1-21')]],
+    links: [
+      ['泳ぎ活きイカ らいが・地図 / Raiga (map)', gmap('長州鶏焼鳥・泳ぎ活きイカ・手作り餃子 らいが 山口県山口市湯田温泉3丁目1-21')],
+      // 2026-09-29 ぱっぱ：イカの活け造りが食べられるお店と聞いた
+      ['IZAKAYA 土火土火 山口湯田店・地図 / Dokadoka Yuda (map)', gmap('IZAKAYA 土火土火 山口湯田店 山口県山口市熊野町5-7')],
+    ],
   },
   {
     id: 'hofu-town',
