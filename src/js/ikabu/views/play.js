@@ -93,13 +93,15 @@ const hubHTML = (lang) => `
 const HOWTO = {
   egi: { id: 'U7OJCHXPQGg', poster: '/assets/ikabu/egi-video-poster.jpg', len: pair('約6分半', 'about 6.5 min') },   // 2026-09-28 第4版（BGM入り・初心者練習／季節／くわしい条件／ヤエン・テーラー）。限定公開
   sumi: { id: 'YNhydWdt2e4', poster: '/assets/ikabu/sumi-video-poster.jpg', len: pair('約6分半', 'about 6.5 min') },   // 2026-09-28 第2版（スペシャルパネル・コンボ）に差し替え。前の動画は非公開
+  // 2026-09-29 新モード「墨のがれ」の遊び方（NotebookLMの声・約4分）。限定公開
+  rush: { id: 'D-jfzMggEdc', poster: '/assets/ikabu/rush-video-poster.jpg', len: pair('約4分', 'about 4 min'), what: pair('新モード「墨のがれ」の遊び方', 'the new Ink Escape mode') },
 };
 const howtoHTML = (lang, game) => {
   const v = HOWTO[game];
   return `
       <div class="ika-howto">
         <div class="ika-howto-video">${ytHTML(lang, { id: v.id, poster: v.poster, label: pair('遊び方の動画を再生', 'Play the how-to video') })}</div>
-        <p class="ika-howto-text"><span class="ika-howto-tag">${t(lang, '動画', 'VIDEO')}</span>${t(lang, `遊び方を${v.len.ja}で紹介しています。押すと再生します（YouTube）。`, `A ${v.len.en} how-to video (in Japanese). Tap to play on YouTube.`)}</p>
+        <p class="ika-howto-text"><span class="ika-howto-tag">${t(lang, '動画', 'VIDEO')}</span>${t(lang, `${v.what ? v.what.ja : '遊び方'}を${v.len.ja}で紹介しています。押すと再生します（YouTube）。`, `A ${v.len.en} how-to video${v.what ? ` for ${v.what.en}` : ''} (in Japanese). Tap to play on YouTube.`)}</p>
       </div>`;
 };
 
@@ -466,6 +468,7 @@ export const m3HTML = (lang) => {
         <p class="ika-head-note">${t(lang, T.tagline)}</p>
       </header>
       ${howtoHTML(lang, 'sumi')}
+      ${howtoHTML(lang, 'rush')}
 
       <div class="ika-m3" id="ika-m3" data-lang="${lang}">
         <div class="ika-m3-top">
