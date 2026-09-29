@@ -488,11 +488,23 @@ export const m3HTML = (lang) => {
 
           <!-- 墨のがれ：イカの舞台（表情・次に落ちる列・墨メーター）。2026-09-29 -->
           <div class="ika-m3-rush" id="ika-m3-rush" hidden>
+            <div class="ika-m3-rush-cave has-art" aria-hidden="true" style="background-image:url('${assetHref('/assets/ikabu/tiles/cave.webp')}')"><svg viewBox="0 0 400 184" preserveAspectRatio="none">
+              <defs><linearGradient id="ika-cave-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26343d"/><stop offset="1" stop-color="#3b4b55"/></linearGradient>
+              <linearGradient id="ika-cave-rock" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6f7f88"/><stop offset="1" stop-color="#46545c"/></linearGradient></defs>
+              <rect width="400" height="184" fill="url(#ika-cave-bg)"/>
+              <path d="M60 184 C70 120 110 96 150 108 C190 80 240 88 262 110 C300 96 336 118 342 184 Z" fill="#33424b"/>
+              <path d="M0 0 H400 V20 L382 24 L372 46 L360 26 L338 30 L326 56 L312 28 L286 22 L270 40 L258 20 L230 24 L214 50 L200 22 L176 26 L160 44 L146 22 L118 28 L106 52 L92 26 L70 22 L56 42 L44 22 L20 24 L0 18 Z" fill="url(#ika-cave-rock)" stroke="#1e262b" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M0 18 L20 24 L28 60 L18 92 L30 130 L20 160 L28 184 H0 Z" fill="url(#ika-cave-rock)" stroke="#1e262b" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M400 20 L382 24 L374 58 L386 96 L372 128 L384 160 L374 184 H400 Z" fill="url(#ika-cave-rock)" stroke="#1e262b" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M150 184 L150 158 C150 150 160 146 172 148 L230 148 C242 146 252 152 250 160 L250 184 Z" fill="url(#ika-cave-rock)" stroke="#1e262b" stroke-width="3" stroke-linejoin="round"/>
+              <g fill="#8f9ea6" opacity="0.7"><circle cx="12" cy="44" r="3"/><circle cx="16" cy="118" r="2.5"/><circle cx="390" cy="80" r="3"/><circle cx="388" cy="142" r="2.5"/><circle cx="82" cy="10" r="2.5"/><circle cx="300" cy="9" r="3"/></g>
+              <g fill="#2e7d5b" stroke="#1e262b" stroke-width="2"><path d="M34 184 C28 168 42 160 34 146 C46 158 40 170 46 184 Z"/><path d="M360 184 C356 170 368 164 362 150 C374 162 368 172 372 184 Z"/></g>
+            </svg></div>
             <div class="ika-m3-rush-wall is-l" aria-hidden="true"></div><div class="ika-m3-rush-wall is-r" aria-hidden="true"></div>
             <div class="ika-m3-rush-pipe" aria-hidden="true"><i></i></div>
             <div class="ika-m3-rush-sky" aria-hidden="true"><i></i><i></i><i></i></div>
             <div class="ika-m3-rush-ledge" aria-hidden="true"></div>
-            <div class="ika-m3-rush-squid" id="ika-m3-rush-squid" data-mood="calm"><img id="ika-m3-rush-face" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="96" height="100" decoding="async" /><span class="ika-m3-rush-sweat" aria-hidden="true"><i></i><i></i><i></i></span><b id="ika-m3-rush-say">${t(lang, T.rush.moods.calm)}</b></div>
+            <div class="ika-m3-rush-squid" id="ika-m3-rush-squid" data-mood="calm"><img id="ika-m3-rush-face" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="96" height="100" decoding="async" /><span class="ika-m3-rush-sweat" aria-hidden="true"><i></i><i></i><i></i></span><span class="ika-m3-rush-alert" aria-hidden="true"><i>!</i><i>!</i></span><span class="ika-m3-rush-pale" aria-hidden="true"></span><b id="ika-m3-rush-say">${t(lang, T.rush.moods.calm)}</b></div>
             <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"><svg class="ika-m3-inkwave" viewBox="0 0 200 100" preserveAspectRatio="none"><path class="ika-m3-wave" d="M0 30 Q25 18 50 30 T100 30 T150 30 T200 30 T250 30 T300 30 V100 H0 Z" fill="#132033"/><path class="ika-m3-wave is-2" d="M0 40 Q25 28 50 40 T100 40 T150 40 T200 40 T250 40 T300 40 V100 H0 Z" fill="#1f3050" opacity="0.6"/></svg><i></i></div>
             <div class="ika-m3-rush-gauge" id="ika-m3-rush-gauge" role="status"><b id="ika-m3-rush-level">0/30</b><span id="ika-m3-rush-next"></span></div>
           </div>

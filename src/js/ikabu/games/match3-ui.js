@@ -302,7 +302,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   }
 
   /* ---------- 墨のがれ：イカの表情・次の墨・墨メーター（2026-09-29） ---------- */
-  const FACE = { calm: 'wink', worry: 'surprise', panic: 'surprise', doom: 'sad', relief: 'banzai', drown: 'sad' };
+  // 焦り専用の表情（2026-09-29 ChatGPTで描いた rush-*.webp。汗・涙は絵に描き込み済み）
+  const FACE = { calm: 'wink', worry: 'rush-worry', panic: 'rush-panic', doom: 'rush-doom', relief: 'rush-relief', drown: 'rush-doom' };
   function setMood(m, { say = true } = {}) {
     if (!el.squid) return;
     el.squid.dataset.mood = m;
@@ -313,8 +314,10 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   const flows = new Map();   // 列 → 流れの部品（穴がある間だけ）
   function syncFlows() {
     const hs = isRush() && g && !g.over ? new Set(openBottom(g.board).map((i) => i % SIZE)) : new Set();
-    for (const [c, e] of flows) if (!hs.has(c)) { e.remove(); flows.delete(c); }
+    el.board.classList.toggle('is-draining', hs.size > 0);   // 道が通っている間、墨のマスが上から下へ流れて見える
+    for (const [c, e] of flows) if (!hs.has(c)) { e.remove(); e._swirl?.remove(); e._splash?.remove(); flows.delete(c); }
     if (!hs.size) return;
+    const pool = root.querySelector('#ika-m3-rush-pool');
     const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
     for (const c of hs) {
       if (flows.has(c)) continue;
@@ -324,6 +327,10 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       Object.assign(e.style, { left: `${bb.cx - bb.w * 0.3}px`, top: `${bb.y + bb.h * 0.6}px`, width: `${bb.w * 0.6}px`, height: `${wb.bottom - wr.top - bb.y + 20}px` });
       void b;
       fxLayer.append(e); flows.set(c, e);
+      // しぶき（滝の先）とうず（部屋の水面・その列の真上）
+      const sp = document.createElement('span'); sp.className = 'ika-m3-splash'; sp.innerHTML = '<i></i><i></i><i></i>';
+      Object.assign(sp.style, { left: `${bb.cx}px`, top: `${bb.y + bb.h - 26}px` }); fxLayer.append(sp); e._splash = sp;
+      if (pool) { const pr = pool.getBoundingClientRect(); const sw = document.createElement('span'); sw.className = 'ika-m3-swirl'; sw.style.left = `${bb.cx + wr.left - pr.left}px`; pool.append(sw); e._swirl = sw; }
     }
   }
   function syncRush() {

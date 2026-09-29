@@ -2493,3 +2493,60 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-m3-board.is-holding .ika-m3-cell { transition: none; }
 .ika-m3-cell.is-held { z-index: 4; transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ika-orange, #f47321), 0 8px 14px rgba(0,0,0,0.35); filter: brightness(1.08); }
 @media (prefers-reduced-motion: reduce) { .ika-m3-cell.is-held { transform: none; } }
+
+/* ===== 墨のがれ 見た目の仕上げ（2026-09-29 ぱっぱOK）=====
+   岩の洞窟の断面・イカは墨に浮いて天井へ追い詰められる（顔が最後まで見える）・焦りの印・道が通ると墨のうずと滝 */
+.ika-m3-rush { height: 210px; min-height: 0; align-content: end; background: #26343d; }
+.ika-m3-rush-cave { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
+.ika-m3-rush-cave svg { width: 100%; height: 100%; display: block; }
+.ika-m3-rush-cave.has-art svg { display: none; }
+.ika-m3-rush-wall, .ika-m3-rush-ledge, .ika-m3-rush-sky { display: none; }
+/* 天井の割れ目から墨が注ぐ */
+.ika-m3-rush-pipe { top: 14px; left: 22%; width: 18px; height: 10px; border-radius: 50%; background: #0b1218; }
+.ika-m3-rush-pipe i { left: 4px; top: 6px; width: 10px; height: calc(196px - var(--ink) * 170px); }
+/* 墨の水位：天井の近くまで上がる */
+.ika-m3-rush-pool { z-index: 4; height: calc(8px + var(--ink) * 170px); }
+.ika-m3-rush-gauge { z-index: 5; }
+/* イカ：水位が岩棚より上に来たら墨に浮き、天井で止まる（足だけ墨に浸かる）。止まった後は墨が顔へ迫る */
+.ika-m3-rush-squid { position: absolute; z-index: 3; left: 50%; bottom: clamp(40px, calc(var(--ink) * 170px - 6px), calc(100% - 76px)); width: 78px; margin: 0 0 0 -39px; transition: bottom 0.5s ease; }
+.ika-m3-rush-squid b { right: -80px; top: 2px; }
+/* 焦り：「！！」と青ざめた縦線 */
+.ika-m3-rush-alert { position: absolute; z-index: 4; left: -24px; top: -2px; display: flex; gap: 1px; opacity: 0; pointer-events: none; }
+.ika-m3-rush-alert i { font-style: normal; font-family: var(--font-varsity); font-weight: 900; font-size: 24px; line-height: 1; color: #f47321; -webkit-text-stroke: 1.5px #1e262b; text-shadow: 0 2px 0 #1e262b; }
+.ika-m3-rush-pale { position: absolute; z-index: 2; left: 22px; top: 8px; width: 34px; height: 30px; opacity: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #3d6fb0 0 2.5px, transparent 2.5px 7px); -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
+.ika-m3-rush-squid[data-mood='panic'] .ika-m3-rush-alert, .ika-m3-rush-squid[data-mood='doom'] .ika-m3-rush-alert { opacity: 1; animation: ika-m3-alert 0.5s ease-in-out infinite alternate; }
+.ika-m3-rush-squid[data-mood='panic'] .ika-m3-rush-pale { opacity: 0.75; }
+.ika-m3-rush-squid[data-mood='doom'] .ika-m3-rush-pale { opacity: 1; height: 40px; }
+@keyframes ika-m3-alert { from { transform: translateY(0) scale(1); } to { transform: translateY(-4px) scale(1.12) rotate(-6deg); } }
+/* 天井に押しつけられる（たすけて）：少しつぶれて震える */
+.ika-m3-rush-squid[data-mood='doom'] img { animation: ika-m3-squish 0.22s linear infinite; filter: drop-shadow(0 3px 0 #061e2c55) saturate(0.7); }
+@keyframes ika-m3-squish { 0%, 100% { transform: translateX(-2px) scale(1.04, 0.93); } 50% { transform: translateX(2px) scale(1.02, 0.95) rotate(2deg); } }
+/* 道が通った列：水面にうず（その列の上で墨が吸い込まれる） */
+.ika-m3-swirl { position: absolute; z-index: 1; top: -8px; width: 34px; height: 12px; margin-left: -17px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, #0b1218 0 22%, transparent 24%), repeating-conic-gradient(#3a5578 0 20deg, #132033 20deg 45deg); animation: ika-m3-swirl 0.7s linear infinite; }
+@keyframes ika-m3-swirl { to { transform: rotate(360deg); } }
+/* 墨の滝：盤の下へ、しぶきを上げて落ちる */
+.ika-m3-flow { border-radius: 0 0 16px 16px; opacity: 0.95; background:
+  linear-gradient(90deg, #13203300, #ffffff22 30%, #ffffff00 45%, #ffffff18 70%, #13203300),
+  repeating-linear-gradient(180deg, #132033 0 18px, #243a5e 18px 24px, #132033 24px 40px); background-size: 100% 100%, 100% 40px; animation: ika-m3-fall 0.35s linear infinite;
+  -webkit-mask: linear-gradient(#000 70%, transparent); mask: linear-gradient(#000 70%, transparent); }
+@keyframes ika-m3-fall { from { background-position: 0 0, 0 0; } to { background-position: 0 0, 0 40px; } }
+.ika-m3-splash { position: absolute; z-index: 4; width: 60px; height: 24px; margin-left: -30px; pointer-events: none; }
+.ika-m3-splash i { position: absolute; bottom: 0; width: 9px; height: 9px; border-radius: 50%; background: #1f3050; animation: ika-m3-splash 0.6s ease-out infinite; }
+.ika-m3-splash i:nth-child(1) { left: 6px; --sx: -16px; } .ika-m3-splash i:nth-child(2) { left: 26px; --sx: 0px; animation-delay: 0.2s; } .ika-m3-splash i:nth-child(3) { left: 44px; --sx: 16px; animation-delay: 0.4s; }
+@keyframes ika-m3-splash { 0% { transform: translate(0, 0) scale(0.6); opacity: 1; } 100% { transform: translate(var(--sx), -20px) scale(1.1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ika-m3-swirl, .ika-m3-splash i, .ika-m3-rush-alert, .ika-m3-flow, .ika-m3-rush-squid[data-mood='doom'] img { animation: none !important; } }
+.ika-m3-rush-squid[data-mood='doom'] .ika-m3-rush-alert { top: 34px; left: -34px; }
+/* 焦り専用の表情の絵（rush-*.webp・少し横長）：汗・涙・青ざめは絵に描いてあるので重ねない */
+.ika-m3-rush-squid:not([data-mood='calm']) { width: 86px; margin-left: -43px; }
+.ika-m3-rush-squid:not([data-mood='calm']) img { width: 86px; }
+.ika-m3-rush-squid .ika-m3-rush-sweat, .ika-m3-rush-squid .ika-m3-rush-pale { display: none; }
+/* 洞窟の背景（ChatGPTで描いた tiles/cave.webp・2026-09-29）：床と岩棚が下に来るよう少し下寄せ。天井の割れ目（左22%）から墨が注ぐ */
+.ika-m3-rush-cave.has-art { background-size: cover; background-position: center 72%; background-color: #26343d; }
+.ika-m3-rush-pipe { top: 8px; left: 22.5%; width: 12px; height: 8px; background: #0b1218; }
+.ika-m3-rush-pipe i { left: 1px; top: 4px; width: 10px; background: linear-gradient(90deg, #132033, #2a3f63 45%, #132033); }
+/* 道が通っている間：墨のマスが上から下へ流れる（盤の外の滝は枠に隠れて見えなかった） */
+.ika-m3-board.is-draining .ika-m3-cell[data-kind='ink'] { background: repeating-linear-gradient(180deg, #132033 0 12px, #2c4670 12px 16px, #132033 16px 28px); background-size: 100% 28px; animation: ika-m3-inkfall 0.32s linear infinite; }
+@keyframes ika-m3-inkfall { from { background-position: 0 0; } to { background-position: 0 28px; } }
+@media (prefers-reduced-motion: reduce) { .ika-m3-board.is-draining .ika-m3-cell[data-kind='ink'] { animation: none; } }
