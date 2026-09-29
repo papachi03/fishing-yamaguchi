@@ -1838,6 +1838,14 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-rush.is-doom { animation: ika-m3-doom 0.6s ease-in-out infinite; }
 .is-doom .ika-m3-board { box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 4px #d8342c88; }
 @keyframes ika-m3-doom { 0%, 100% { box-shadow: 0 0 0 0 #d8342c00; } 50% { box-shadow: 0 0 0 6px #d8342c66; } }
+/* ふた（時間制の墨のがれ）：墨で固まった石のブロック。上から落ちてくる・割れる */
+.ika-m3-cell[data-kind='lid'] { --tile: #2b3a4a; --edge: #0c1622; background: linear-gradient(#3a4a5c, #1e2a38); cursor: not-allowed; box-shadow: inset 0 2px 0 #ffffff22, 0 3px 0 #0c1622; }
+.ika-m3-cell[data-kind='lid'] svg { width: 92%; height: 92%; }
+.ika-m3-cell[data-kind='lid']::after { display: none; }
+.ika-m3-cell.is-lid-drop { animation: ika-m3-liddrop 0.55s cubic-bezier(0.3, 0, 0.7, 1.6) both; }
+@keyframes ika-m3-liddrop { 0% { transform: translateY(-140%); } 70% { transform: translateY(6%); } 100% { transform: none; } }
+.ika-m3-cell.is-lid-break { animation: ika-m3-lidbreak 0.25s ease-in both; }
+@keyframes ika-m3-lidbreak { 50% { transform: scale(1.15) rotate(4deg); filter: brightness(1.6); } 100% { transform: scale(0.4); opacity: 0; } }
 .ika-m3-cell[data-kind='ink'] { --tile: #132033; --edge: #061220; background: radial-gradient(circle at 35% 25%, #3a4a6a, #132033 70%); cursor: not-allowed; }
 .ika-m3-cell[data-kind='ink'] svg { width: 86%; height: 86%; }
 .ika-m3-cell[data-kind='ink']::after { display: none; }

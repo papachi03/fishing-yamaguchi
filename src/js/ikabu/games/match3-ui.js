@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, CAP, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, rushHint, rushTick, LID, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -59,6 +59,44 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let lastSaid = false;    // 「残り3手！」の知らせ（1戦に1回）
   const isRush = () => mode === 'rush' || mode === 'rushfree';   // 墨のがれ（今日の盤面／別の盤面）
   let mood = 'calm';
+  // 墨のがれの時計（第3版・時間制）：100ms ごとに水位が上がる。演出中（busy）は溜めておいて、終わってからまとめて進める。裏のタブでは止まる
+  let rushTimer = 0, rushLast = 0, rushPending = 0;
+  const fmtTime = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  function stopRushClock() { if (rushTimer) clearInterval(rushTimer); rushTimer = 0; rushPending = 0; }
+  function startRushClock() {
+    stopRushClock();
+    rushLast = performance.now();
+    rushTimer = setInterval(() => {
+      const now = performance.now();
+      const dt = Math.min(0.5, (now - rushLast) / 1000);
+      rushLast = now;
+      if (!g || g.over || !isRush() || document.hidden) return;
+      rushPending += dt;
+      if (busy) return;
+      const dtAll = rushPending; rushPending = 0;
+      const events = rushTick(g, dtAll);
+      if (events.length) rushClockEvents(events);
+      else syncRush();
+    }, 100);
+  }
+  async function rushClockEvents(events) {
+    busy = true;
+    try {
+      for (const ev of events) {
+        if (ev.type === 'lid') {
+          callout(t(lang, TX.rush.lidFall), 'blast');
+          sfx.bomb();
+          for (const i of ev.cells) { paint(i, LID); shown[i] = LID; cells[i].classList.add('is-lid-drop'); setTimeout(() => cells[i].classList.remove('is-lid-drop'), 700); }
+          el.board.classList.remove('is-quake'); void el.board.offsetWidth; el.board.classList.add('is-quake');
+          await sleep(dur(500));
+        } else if (ev.type === 'stuck') {
+          setMsg(t(lang, TX.rush.stuck)); el.board.classList.add('is-shuffle'); await sleep(dur(300)); renderBoard(g.board); el.board.classList.remove('is-shuffle');
+        }
+      }
+    } finally { busy = false; }
+    syncHud();
+    if (g.over) finish();
+  }
   const demoHold = demo === 'chain';
 
   /* ---------- 盤面の描画 ---------- */
@@ -68,12 +106,14 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const color = colorOf(kind);
     c.dataset.kind = String(color ?? kind);
     c.dataset.special = kind === RARE ? 'rare' : kind === BALL ? 'ball' : isLine(kind) ? (kind >= LINE_V ? 'v' : 'h') : '';
+    if (kind === LID) { c.dataset.kind = 'lid'; c.dataset.special = ''; c.innerHTML = LID_SVG; c.setAttribute('aria-label', t(lang, 'ふた', 'Lid')); c.disabled = false; return; }
     if (kind === BALL) c.innerHTML = `<img src="${assetHref('/assets/ikabu/tiles/ball_128.webp')}" width="56" height="56" alt="" decoding="async" draggable="false" onerror="this.remove()" /><b class="ika-m3-ballglow" aria-hidden="true"></b><i aria-hidden="true">◎</i>`;
     else c.innerHTML = `${tileImg(color ?? kind, { href: assetHref, size: 56 })}${isLine(kind) ? `<b class="ika-m3-line" aria-hidden="true"></b>` : ''}<i aria-hidden="true">${tileSymbol(color ?? kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
     c.disabled = false;
   }
   const INK_SVG = '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path d="M0,-34 C14,-36 22,-22 30,-18 C42,-12 40,4 34,12 C40,24 26,36 14,32 C6,42 -8,40 -14,30 C-28,34 -40,20 -32,8 C-42,-4 -34,-22 -20,-22 C-18,-32 -8,-34 0,-34 Z" fill="#132033"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#ffffff" opacity="0.35"/><circle cx="18" cy="18" r="4" fill="#ffffff" opacity="0.18"/></svg>';
+  const LID_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="6" y="10" width="88" height="80" rx="14" fill="#2b3a4a" stroke="#0c1622" stroke-width="5"/><path d="M18 30 Q50 18 82 30 Q84 60 50 84 Q16 60 18 30 Z" fill="#132033"/><ellipse cx="38" cy="36" rx="10" ry="5" fill="#ffffff" opacity="0.25"/><path d="M26 62 L40 50 L52 66 L66 52 L76 64" fill="none" stroke="#5a6b7d" stroke-width="4" stroke-linecap="round"/></svg>';
   function renderBoard(board) {
     shown = [...board];
     board.forEach((k, i) => paint(i, k));
@@ -177,7 +217,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   /* ---------- HUD ---------- */
   function syncHud() {
     el.score.textContent = g.score.toLocaleString();
-    el.moves.textContent = String(isRush() ? g.rush.turn : g.moves);
+    el.moves.textContent = isRush() ? fmtTime(g.rush.t) : String(g.moves);
     if (isRush()) syncRush();
     el.best.textContent = rec.best.toLocaleString();
     el.goalFill.style.width = `${Math.min(100, (g.score / goals.goal) * 100).toFixed(1)}%`;
@@ -217,7 +257,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (el.rush) el.rush.hidden = !isRush();
     const rn = root.querySelector('#ika-m3-rush-note'); if (rn) rn.hidden = !isRush();
     if (el.goal) el.goal.hidden = isRush();
-    if (el.movesLabel) el.movesLabel.textContent = t(lang, isRush() ? TX.rush.turns : TX.hud.moves);
+    if (el.movesLabel) el.movesLabel.textContent = t(lang, isRush() ? TX.rush.time : TX.hud.moves);
+    if (isRush()) startRushClock(); else stopRushClock();
     if (isRush()) { mood = 'calm'; setMood('calm'); }
     if (el.goalLabel) el.goalLabel.textContent = `${t(lang, TX.hud.today)} ${goals.goal.toLocaleString()}`;
     recorded = false;
@@ -250,8 +291,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.rush.style.setProperty('--ink', p.toFixed(3));
     el.rush.classList.toggle('is-doom', p >= 0.8 && !g.over);
     root.classList.toggle('is-doom', p >= 0.8 && !g.over);
-    if (el.level) el.level.textContent = TX.rush.level(lang, g.rush.level, CAP);
-    if (el.next) el.next.textContent = g.over ? '' : TX.rush.nextIn(lang, g.rush.inflow);
+    if (el.level) el.level.textContent = TX.rush.level(lang, Math.round(g.rush.level), CAP);
+    if (el.next) el.next.textContent = g.over ? '' : TX.rush.nextLid(lang, Math.max(0, Math.ceil(g.rush.nextLid - g.rush.t)));
+    el.moves.textContent = fmtTime(g.rush.t);
     const m = g.over ? 'drown' : moodOf(p);
     if (m !== mood) { mood = m; setMood(m); }
   }
@@ -267,6 +309,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         callout(TX.rush.drain(lang, ev.amount), 'flash');
         drained = true;
         await sleep(dur(520));
+      } else if (ev.type === 'lidbreak') {
+        callout(t(lang, TX.rush.lidBreak), 'combo'); sfx.bomb();
+        await sleep(dur(350));
       } else if (ev.type === 'stuck') {
         callout(t(lang, TX.rush.stuck), 'blast');
         await sleep(dur(400));
@@ -274,8 +319,6 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     }
     if (drained && !g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }
     syncRush();
-    const rise = (r.events ?? []).find((e) => e.type === 'rise');
-    if (rise && !reduced) { el.pool?.classList.remove('is-rise'); void el.pool?.offsetWidth; el.pool?.classList.add('is-rise'); }
   }
   el.mode.addEventListener('click', (e) => {
     const b = e.target.closest('.ika-chip[data-mode]');
@@ -316,6 +359,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
+      else if (st.kind === 'lidbreak') { sfx.bomb(); for (const i of st.cleared) cells[i].classList.add('is-lid-break'); await sleep(dur(220)); for (const i of st.cleared) cells[i].classList.remove('is-lid-break'); }
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
       // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
@@ -477,14 +521,15 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     writeRecord(KEY_M3, rec);
     syncHud();
     const R = TX.rush;
-    const turns = g.rush.turn;
+    stopRushClock();
+    const turns = Math.floor(g.rush.t);
     const best = rec.rush?.best ?? 0;
     if (!reduced) fxEl('ika-m3-tint is-big', {});
     el.card.innerHTML = `
       <img class="ika-m3-card-mascot" src="${assetHref('/assets/ikabu/mascot/sad.webp')}" alt="" width="96" height="100" />
       <p class="ika-m3-card-title">${t(lang, R.overTitle)} <small>${t(lang, R.overSub)}</small></p>
-      <p class="ika-m3-card-score"><b>${turns}</b><span class="ika-tag ${turns >= best ? 'ika-tag--orange' : ''}">${t(lang, R.turns)}${turns >= best && turns > 0 ? ' ★' : ''}</span></p>
-      <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.flushed)}</dt><dd>${g.rush.flushed}</dd></div><div><dt>${t(lang, TX.hud.score)}</dt><dd>${g.score.toLocaleString()}</dd></div><div><dt>${t(lang, R.bestTurns)}</dt><dd>${best}</dd></div></dl>
+      <p class="ika-m3-card-score"><b>${fmtTime(turns)}</b><span class="ika-tag ${turns >= best ? 'ika-tag--orange' : ''}">${t(lang, R.time)}${turns >= best && turns > 0 ? ' ★' : ''}</span></p>
+      <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.flushed)}</dt><dd>${Math.round(g.rush.flushed)}</dd></div><div><dt>${t(lang, TX.hud.score)}</dt><dd>${g.score.toLocaleString()}</dd></div><div><dt>${t(lang, R.bestTurns)}</dt><dd>${fmtTime(best)}</dd></div></dl>
       <div class="ika-m3-card-actions">
         <button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, mode === 'rush' ? R.again : TX.btn.restart)}</button>
         <button type="button" class="ika-btn" data-rushfree>${t(lang, R.free)}</button>
@@ -572,7 +617,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   });
   el.hint.addEventListener('click', () => {
     if (busy || g.over) return;
-    const h = findHint(g.board);
+    const h = isRush() ? rushHint(g.board) : findHint(g.board);
     if (!h) return;
     for (const i of h) cells[i].classList.add('is-hint');
     setMsg(t(lang, TX.msg.hint));

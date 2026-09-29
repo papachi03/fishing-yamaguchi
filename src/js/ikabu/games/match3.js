@@ -65,7 +65,7 @@ export function findRuns(b) {
 }
 
 // 入れ替えてみて、そろうか（またはレアイカ・墨ダマを動かすか、スペシャル同士か）を調べる。盤面は変えない
-function swapWorks(b, a, c) {
+export function swapWorks(b, a, c) {
   if (!adjacent(a, c)) return false;
   if (b[a] === RARE || b[c] === RARE || b[a] === BALL || b[c] === BALL) return true;
   if (isSpecial(b[a]) && isSpecial(b[c])) return true;
@@ -143,15 +143,20 @@ const blastCells = (center, R = 1) => {
 };
 
 // 消えたマスを下に詰め、上から新しいマークを入れる
+// FIXED（墨のがれの「ふた」）はその場に留まり、ほかのマークはそれをよけて詰まる
+export const FIXED = 41;
 export function dropAndFill(g) {
   for (let c = 0; c < SIZE; c++) {
     const col = [];
     for (let r = SIZE - 1; r >= 0; r--) {
       const v = g.board[r * SIZE + c];
-      if (v !== null) col.push(v);
+      if (v !== null && v !== FIXED) col.push(v);
     }
-    for (let r = SIZE - 1, k = 0; r >= 0; r--, k++) {
-      g.board[r * SIZE + c] = k < col.length ? col[k] : Math.floor(g.rand() * KINDS);
+    for (let r = SIZE - 1, k = 0; r >= 0; r--) {
+      const i = r * SIZE + c;
+      if (g.board[i] === FIXED) continue;
+      g.board[i] = k < col.length ? col[k] : Math.floor(g.rand() * KINDS);
+      k++;
     }
   }
 }

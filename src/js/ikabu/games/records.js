@@ -100,7 +100,7 @@ export const emptyM3 = () => ({ best: 0, played: 0, goals: 0, badges: {}, daily:
 // 墨のがれの記録（2026-09-29）：しのいだ手数のベストと、今日の盤面のベスト
 export function recordRush(rec, g, { day = null } = {}) {
   const r = rec ?? emptyM3();
-  const turns = g.rush?.turn ?? 0;
+  const turns = Math.floor(g.rush?.t ?? 0);   // しのいだ秒数（第3版・時間制）
   const x = r.rush ?? { best: 0, bestScore: 0, played: 0, daily: null };
   x.played += 1;
   if (turns > x.best || (turns === x.best && g.score > x.bestScore)) { x.best = turns; x.bestScore = g.score; }
