@@ -15,6 +15,7 @@ import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
+import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
 import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
@@ -97,6 +98,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
   const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true });   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
+  // BGMは最初はオフ（2026-09-30 ぱっぱ：好みがあるので）。オンにした人だけ曲を読み込む
+  const bgm = createBgm({ on: readPref('ikabu.egi.bgm') ?? false, track: 'egi', href: assetHref });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
   let signalsThisCast = 0;
   // 記録（2026-09-27：控えから戻せる読み書き。釣れた瞬間に1杯ずつ保存）
@@ -718,7 +721,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function syncFeel() {
     if (el.shakeWarn) el.shakeWarn.hidden = !shakeOn;
     el.feel?.querySelectorAll('.ika-chip[data-feel]').forEach((b) => {
-      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : feel.sound;
+      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : b.dataset.feel === 'bgm' ? bgm.on : feel.sound;
       b.setAttribute('aria-pressed', String((b.dataset.on === '1') === on));
     });
   }
@@ -729,6 +732,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 注意書きは設定のすぐ下に出す（ゲーム画面の中の案内は、設定を見ている時は目に入らない：2026-09-29 ぱっぱ iPhone で指摘）
     if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn && el.shakeWarn) { el.shakeWarn.classList.remove('is-pop'); void el.shakeWarn.offsetWidth; el.shakeWarn.classList.add('is-pop'); } }); return; }
     if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
+    else if (b.dataset.feel === 'bgm') { bgm.setOn(on); writePref('ikabu.egi.bgm', on); }
     else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
     syncFeel();
   });
@@ -2444,6 +2448,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // エギング：ジェット噴射で走った直後もドラグが「ジジジッ」と出る（ぱっぱ 2026-09-29）
     const jetRun = phase === 'fight' && V.lastJet != null && now - V.lastJet < 0.45;
     feel.drag(yRun || jetRun);
+    // BGMは、アタリの合図・やり取り・ドラグの間はさらに下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事）
+    bgm.duck(yRun || jetRun || phase === 'fight' || phase === 'signal');
     if (yRun && now >= (V.jetNext ?? 0)) {
       V.jetNext = now + 0.9 + Math.random() * 0.8;
       feel.fire('whoosh');

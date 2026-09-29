@@ -1983,6 +1983,10 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-callout.is-combo { background: linear-gradient(90deg, #ff7eb6, #ffd36e, #7ee0c3); color: var(--ika-ink); font-size: 34px; }
 .ika-m3-callout.is-huge { font-size: 44px; background: #ff7eb6; }
 .ika-m3-sound { min-width: 44px; padding: 6px 10px !important; font-size: 18px !important; }
+/* BGM（最初はオフ）：オフの間は薄く、斜線を引く */
+.ika-m3-bgm { position: relative; }
+.ika-m3-bgm.is-off { opacity: 0.55; }
+.ika-m3-bgm.is-off::after { content: ''; position: absolute; left: 22%; right: 22%; top: 50%; height: 2px; background: currentColor; transform: rotate(-35deg); border-radius: 1px; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .ika-m3-cell[data-special], .ika-m3-cell.is-selected { animation: none; } }
 .ika-m3-board.is-targeting .ika-m3-cell { cursor: crosshair; outline: 2px dashed var(--ika-orange); outline-offset: -5px; }
 .ika-m3-board.is-shuffle .ika-m3-cell { opacity: 0.25; transition: opacity 0.3s; }

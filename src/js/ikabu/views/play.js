@@ -293,6 +293,11 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-chip" data-feel="sound" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
         <button type="button" class="ika-chip" data-feel="sound" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
       </div>
+      <div class="ika-chips ika-chips--small" id="ika-egi-feel-bgm" role="group" aria-label="${t(lang, T.feel.bgm)}">
+        <span class="ika-egi-feel-name">${t(lang, T.feel.bgm)}</span>
+        <button type="button" class="ika-chip" data-feel="bgm" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
+        <button type="button" class="ika-chip" data-feel="bgm" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
+      </div>
       <div class="ika-chips ika-chips--small" id="ika-egi-feel-shake" role="group" aria-label="${t(lang, T.feel.shake)}" hidden>
         <span class="ika-egi-feel-name">${t(lang, T.feel.shake)}</span>
         <button type="button" class="ika-chip" data-feel="shake" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
@@ -525,6 +530,7 @@ export const m3HTML = (lang) => {
             <button type="button" class="ika-btn ika-btn--ink ika-m3-flash" id="ika-m3-flash" disabled>${t(lang, T.btn.flash)}</button>
             <button type="button" class="ika-btn ika-m3-hint" id="ika-m3-hint">${t(lang, T.btn.hint)}</button>
             <button type="button" class="ika-btn ika-m3-sound" id="ika-m3-sound" aria-pressed="true" aria-label="${t(lang, T.btn.soundOff)}">🔊</button>
+            <button type="button" class="ika-btn ika-m3-sound ika-m3-bgm" id="ika-m3-bgm" aria-pressed="false" aria-label="${t(lang, T.btn.bgmOn)}" title="${t(lang, T.btn.bgmOn)}">🎵</button>
           </div>
           <p class="ika-m3-msg" id="ika-m3-msg" role="status" aria-live="polite"></p>
         </div>

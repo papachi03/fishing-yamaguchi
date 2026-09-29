@@ -4,6 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
+import { createBgm } from './bgm.js';
 import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rushDrop, fireable, inked, openBottom, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
@@ -38,6 +39,12 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   soundBtn?.addEventListener('click', () => { sfx.setOn(!sfx.on); writePref('ikabu.sumi.sound', sfx.on); syncSound(); if (sfx.on) sfx.pop(3); });
   syncSound();
   root.addEventListener('pointerdown', () => sfx.unlock(), { once: true, capture: true });
+  // BGM（2026-09-30 ぱっぱ：好みがあるので最初はオフ。控えめの音量）。墨つなぎと墨のがれで曲が替わる
+  const bgm = createBgm({ on: readPref('ikabu.sumi.bgm') ?? false, href: assetHref });
+  const bgmBtn = q('ika-m3-bgm');
+  const syncBgm = () => { if (!bgmBtn) return; bgmBtn.setAttribute('aria-pressed', String(bgm.on)); bgmBtn.classList.toggle('is-off', !bgm.on); const lb = t(lang, bgm.on ? TX.btn.bgmOff : TX.btn.bgmOn); bgmBtn.title = lb; bgmBtn.setAttribute('aria-label', lb); };
+  bgmBtn?.addEventListener('click', () => { bgm.setOn(!bgm.on); writePref('ikabu.sumi.bgm', bgm.on); syncBgm(); });
+  syncBgm();
   // 演出の層（墨のしぶき・筆の線・爆発の輪・光の筋・マスコット）。盤面の上に重ねる
   const fxLayer = document.createElement('div');
   fxLayer.className = 'ika-m3-fx';
@@ -279,6 +286,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (isRush()) { g = createRush({ seed }); goals = { star: GOAL, goal: Infinity, star3: Infinity, model: 0 }; }
     else { g = createGame({ seed }); goals = dailyGoals(seed); }
     if (el.rush) el.rush.hidden = !isRush();
+    bgm.setTrack(isRush() ? 'rush' : 'sumi');
     el.board.classList.toggle('is-rush', isRush());   // なぞる操作の間、画面がスクロールしないように
     // 初めての人への案内（2026-09-29）：盤の一番下に「ここまで道をつなげると墨が抜ける」。初めて道が通るか12秒で消える
     el.wrap.querySelector('.ika-m3-guide')?.remove();

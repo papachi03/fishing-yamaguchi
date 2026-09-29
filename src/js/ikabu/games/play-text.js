@@ -150,6 +150,7 @@ export const EGI_TEXT = {
     title: pair('手ざわり', 'Feel'),
     vibrate: pair('振動', 'Vibration'),
     sound: pair('小さな音', 'Soft sounds'),
+    bgm: pair('BGM', 'Music'),
     on: pair('オン', 'On'),
     off: pair('オフ', 'Off'),
     shake: pair('振ってしゃくる（試験中）', 'Shake to jerk (beta)'),
@@ -680,6 +681,8 @@ export const M3_TEXT = {
   },
   btn: {
     soundOn: pair('音を出す', 'Sound on'),
+    bgmOn: pair('BGMを流す', 'Play music'),
+    bgmOff: pair('BGMを止める', 'Stop music'),
     soundOff: pair('音を消す', 'Sound off'),
     flash: pair('墨フラッシュ', 'Ink Flash'),
     hint: pair('ヒント', 'Hint'),
