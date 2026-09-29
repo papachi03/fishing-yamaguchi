@@ -640,6 +640,7 @@ export const M3_TEXT = {
     goal: pair('目標', 'Goal'),
     today: pair('今日の目標', "Today's goal"),
     lastMoves: pair('残り3手！', '3 moves left!'),
+    model: pair('部長の見本', "Captain's par"),
     ink: pair('墨', 'Ink'),
   },
   btn: {
@@ -668,8 +669,10 @@ export const M3_TEXT = {
   },
   msg: {
     squirt: pair('ぶしゅー！', 'Squirt!'),
+    bigSquirt: pair('大ぶしゅー！ 1.5倍', 'Mega squirt! ×1.5'),
+    canSpecial: pair('光っている所と入れ替えると、スペシャルが生まれる', 'Swap with the glowing mark to make a special'),
     goalNow: pair('目標たっせい！', 'Goal reached!'),
-    pick: pair('消したいマークを1つ選んで', 'Pick a mark to clear'),
+    pick: pair('消したいマークを1つ選んで（数字はその数。10以上で大ぶしゅー）', 'Pick a mark to clear (numbers show how many; 10+ for a mega squirt)'),
     chain: pair('連鎖！', ' chain!'),
     rare: pair('レアイカ誕生！', 'Rare squid!'),
     blast: pair('ドカン！', 'Boom!'),
@@ -677,7 +680,7 @@ export const M3_TEXT = {
     shuffled: pair('手が無いので混ぜ直し', 'No moves left, reshuffled'),
     nomatch: pair('そろわない', 'No match'),
     hint: pair('ここが動かせる', 'Try this swap'),
-    selected: pair('選択中。となりを押して入れ替え', 'Selected. Tap a neighbour to swap'),
+    selected: pair('選択中。光っているとなりと入れ替えられる', 'Selected. Swap with a glowing neighbour'),
   },
   result: {
     title: pair('一戦終了', 'Board complete'),

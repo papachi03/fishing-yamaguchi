@@ -2,7 +2,7 @@
 //   1. タップ・ドラッグ・キーボードを swap / inkFlash に変える
 //   2. 返ってきた steps（消えた段階の記録）を1段ずつ見せる（消える→落ちる→連鎖の吹き出し）
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
-import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf } from './match3.js';
+import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
@@ -79,13 +79,24 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     cells[cursor].tabIndex = 0;
     if (focus) cells[cursor].focus({ preventScroll: true });
   }
+  const clearCan = () => cells.forEach((c) => c.classList.remove('is-can', 'is-can-special'));
   function setSelected(i) {
     if (selected != null) cells[selected].classList.remove('is-selected');
+    clearCan();
     selected = i;
     if (i != null) {
       cells[i].classList.add('is-selected');
       cells[i].setAttribute('aria-selected', 'true');
-      setMsg(t(lang, TX.msg.selected));
+      // 予告：そろう隣を光らせる。スペシャルが生まれる・使える手はオレンジで強く（2026-09-29）
+      let anySpecial = false;
+      for (const j of [i - 1, i + 1, i - SIZE, i + SIZE]) {
+        if (!adjacent(i, j)) continue;
+        const pv = previewSwap(g.board, i, j);
+        if (!pv) continue;
+        cells[j].classList.add(pv.special ? 'is-can-special' : 'is-can');
+        if (pv.special) anySpecial = true;
+      }
+      setMsg(t(lang, anySpecial ? TX.msg.canSpecial : TX.msg.selected));
     } else {
       cells.forEach((c) => c.removeAttribute('aria-selected'));
     }
@@ -248,7 +259,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       const st = steps[k];
       const chain = st.kind === 'match' ? st.chain : 0;
       const combo = (st.fx ?? []).find((f) => f.type === 'combo');
-      if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, TX.msg.flash), 'flash'); }
+      if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
@@ -268,6 +279,12 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         if (seq) setTimeout(() => sfx.popSeq(k), delay);
         if (delay) setTimeout(() => cells[i].classList.add('is-clear'), delay); else cells[i].classList.add('is-clear');
       });
+      if (st.points && !reduced && st.cleared.length) {
+        const bx = st.cleared.map(cellBox); const cx = bx.reduce((a, b) => a + b.cx, 0) / bx.length; const cy = bx.reduce((a, b) => a + b.cy, 0) / bx.length;
+        const sb = el.score.getBoundingClientRect(); const wb = el.wrap.getBoundingClientRect();
+        const e = fxEl(`ika-m3-pts${(st.chain ?? 1) >= 3 || st.kind !== 'match' ? ' is-big' : ''}`, { left: `${cx}px`, top: `${cy}px` }, `+${st.points.toLocaleString()}`);
+        e.style.setProperty('--fly-x', `${sb.left + sb.width / 2 - wb.left - cx}px`); e.style.setProperty('--fly-y', `${sb.top + sb.height / 2 - wb.top - cy}px`);
+      }
       await sleep(dur(seq ? 300 + st.cleared.length * 45 : 300));
       for (const i of st.cleared) cells[i].classList.remove('is-clear');
       // 落ちる距離：消したあとの列を下に詰めた結果が st.board。生き残りは元の行との差、新しいマークは上から
@@ -385,7 +402,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-m3-card-title">${t(lang, R.title)}</p>
       <p class="ika-m3-card-score"><b>${g.score.toLocaleString()}</b><span class="ika-tag ${reached ? 'ika-tag--orange' : ''}">${reached ? t(lang, R.reached) : `${t(lang, R.missed)} ${(goals.goal - g.score).toLocaleString()}`}</span></p>
       <p class="ika-m3-card-stars"><span>${t(lang, R.stars)}</span><b data-n="${n}">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</b><small>${starLine}</small></p>
-      <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.maxChain)}</dt><dd>${g.maxChain}</dd></div><div><dt>${t(lang, R.flashes)}</dt><dd>${g.flashes}</dd></div><div><dt>${t(lang, TX.hud.best)}</dt><dd>${rec.best.toLocaleString()}</dd></div></dl>
+      <dl class="ika-m3-card-rows"><div><dt>${t(lang, TX.hud.model)}</dt><dd>${goals.model.toLocaleString()}</dd></div><div><dt>${t(lang, R.maxChain)}</dt><dd>${g.maxChain}</dd></div><div><dt>${t(lang, R.flashes)}</dt><dd>${g.flashes}</dd></div></dl>
       ${fresh.length ? `<p class="ika-m3-card-badges"><span>${t(lang, R.newBadge)}</span>${fresh.map((id) => `<b>★ ${t(lang, TX.badges[id].name)}</b>`).join('')}</p>` : ''}
       <div class="ika-m3-card-actions">
         <button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, TX.btn.restart)}</button>
@@ -466,6 +483,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (busy || g.over) return;
     targeting = !targeting;
     el.board.classList.toggle('is-targeting', targeting);
+    if (targeting) { const n = countColors(g.board); cells.forEach((c, i) => { const col = colorOf(g.board[i]); if (col != null) c.dataset.count = String(n[col]); else delete c.dataset.count; }); }
+    else cells.forEach((c) => delete c.dataset.count);
     setSelected(null);
     setMsg(targeting ? t(lang, TX.msg.pick) : '');
     syncHud();

@@ -19,7 +19,13 @@ export const isLine = (v) => Number.isInteger(v) && v >= LINE_H && v < LINE_V + 
 export const isSpecial = (v) => v === RARE || v === BALL || isLine(v);
 export const MOVES = 20;
 export const INK_NEED = 36; // 墨フラッシュに必要な、消した数
-export const POINT = 10; // 1匹あたりの基本点（連鎖の段目を掛ける）
+export const POINT = 10; // 1匹あたりの基本点
+// 点の配分（2026-09-29）：連鎖（運）の倍率を緩め、自分で狙った技（特殊パネルを作る・使う）を厚くする。
+//   直す前は点の6割が「自分で選んだ後の連鎖」で決まり、でたらめに動かしても上手な手と点が変わらなかった
+export const CHAIN_MULT = (chain) => 1 + 0.5 * (chain - 1);   // 1, 1.5, 2, 2.5 …（前は 1, 2, 3, 4）
+export const SKILL_MULT = 2;      // ライン・レアイカ・墨ダマ・コンボで消したマスは2倍
+export const BORN_BONUS = 60;     // 特殊パネルを1つ作るごとに（狙って作れる予告とセット）
+export const FLASH_BIG = 10;      // 墨フラッシュで一度にこれ以上消せたら「大ぶしゅー」＝1.5倍
 export const GOAL = 1500;   // ★（一つ星のバッジの線）。★★＝その日の目標、★★★はその上（dailyGoals）
 
 const N = SIZE * SIZE;
@@ -68,6 +74,16 @@ function swapWorks(b, a, c) {
   return findMatches(t).length > 0;
 }
 
+// 入れ替えの予告（2026-09-29 狙って作る楽しさ）：null＝そろわない／{ special }＝そろう（special は特殊パネルができる・使う）
+export function previewSwap(b, a, c) {
+  if (!swapWorks(b, a, c)) return null;
+  if (isSpecial(b[a]) || isSpecial(b[c])) return { special: true };
+  const t = [...b];
+  [t[a], t[c]] = [t[c], t[a]];
+  return { special: createdFor(findRuns(t), [a, c]).length > 0 };
+}
+// 色ごとの数（墨フラッシュで何を消すか選ぶ材料）
+export const countColors = (b) => { const n = Array(KINDS).fill(0); for (const v of b) { const c = colorOf(v); if (c != null) n[c] += 1; } return n; };
 export function findHint(b) {
   for (let i = 0; i < N; i++) {
     if (colOf(i) < SIZE - 1 && swapWorks(b, i, i + 1)) return [i, i + 1];
@@ -172,7 +188,9 @@ function clearStep(g, kind, cells0, chain, created = [], fx = []) {
   const set = new Set(cells);
   for (const c of created) set.delete(c.at);
   const cleared = [...set].sort((a, b) => a - b);
-  const points = cleared.length * POINT * chain;
+  const skill = kind !== 'match' && kind !== 'flash';   // ライン・爆発・墨ダマ・コンボ（自分で撃った技）
+  const big = kind === 'flash' && cleared.length >= FLASH_BIG;
+  const points = Math.round(cleared.length * POINT * CHAIN_MULT(chain) * (skill ? SKILL_MULT : 1) * (big ? 1.5 : 1)) + created.length * BORN_BONUS;
   for (const i of cleared) g.board[i] = null;
   for (const c of created) g.board[c.at] = c.kind;
   g.score += points;
@@ -180,7 +198,7 @@ function clearStep(g, kind, cells0, chain, created = [], fx = []) {
   // 墨フラッシュで消した分は墨に戻さない（連続で撃てないように）
   if (kind !== 'flash') g.charge = Math.min(INK_NEED, g.charge + cleared.length);
   dropAndFill(g);
-  return { kind, cleared, created, points, chain, fx, board: [...g.board] };
+  return { kind, cleared, created, points, chain, fx, big, board: [...g.board] };
 }
 
 // そろいが無くなるまで連鎖させる。first は最初の段（爆発・墨フラッシュ）で、無ければそろいから始める

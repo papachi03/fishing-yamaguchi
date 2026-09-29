@@ -133,7 +133,7 @@ test('手数を使い切ると終わり、それ以上は動かせない', () =>
   assert.equal(inkFlash(g, 0).ok, false, '終わった後は墨フラッシュも使えない');
 });
 
-test('連鎖するほど1匹あたりの点が上がる（段目 × 基本点）', () => {
+test('連鎖するほど1匹あたりの点が上がる（基本点 × 連鎖の倍率 1, 1.5, 2… ＋ 生まれた特殊パネルの分）', () => {
   let seen = 0;
   for (let s = 0; s < 400 && seen < 3; s++) {
     const g = createGame({ seed: 'chain-' + s });
@@ -143,7 +143,7 @@ test('連鎖するほど1匹あたりの点が上がる（段目 × 基本点）
     seen++;
     r.steps.forEach((st, k) => {
       if (st.kind !== 'match') return;
-      assert.equal(st.points, st.cleared.length * POINT * (k + 1));
+      assert.equal(st.points, Math.round(st.cleared.length * POINT * (1 + 0.5 * k)) + st.created.length * 60);
     });
     assert.equal(r.maxChain, r.steps.length);
   }
@@ -242,4 +242,19 @@ test('その日の目標：同じ種なら世界中で同じ。★＜★★＜�
   assert.equal(starsOf(a.goal - 1, a), 1);
   assert.equal(starsOf(a.goal, a), 2);
   assert.equal(starsOf(a.star3, a), 3);
+});
+
+import { previewSwap, countColors, CHAIN_MULT } from '../src/js/ikabu/games/match3.js';
+test('予告：そろわない手は null、そろう手は special の有無を返す。色の数は盤面の合計と合う', () => {
+  const g = createGame({ seed: 'preview' });
+  let found = 0;
+  for (let i = 0; i < SIZE * SIZE && found < 1; i++) for (const j of [i + 1, i + SIZE]) {
+    if (j >= SIZE * SIZE || (j === i + 1 && i % SIZE === SIZE - 1)) continue;
+    const pv = previewSwap(g.board, i, j);
+    if (pv) { assert.ok(typeof pv.special === 'boolean'); found++; }
+  }
+  assert.ok(found > 0);
+  const n = countColors(g.board);
+  assert.equal(n.reduce((a, b) => a + b, 0), SIZE * SIZE);
+  assert.deepEqual([1, 2, 3, 4].map(CHAIN_MULT), [1, 1.5, 2, 2.5]);
 });

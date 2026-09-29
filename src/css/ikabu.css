@@ -1772,6 +1772,16 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-goal-track { flex: 1; height: 12px; border: 2px solid var(--ika-sea); border-radius: 999px; background: var(--ika-white); overflow: hidden; }
 .ika-m3-goal-track i { display: block; height: 100%; width: 0; background: var(--ika-orange); transition: width 0.3s; }
 .ika-m3-goal.is-reached .ika-m3-goal-label { color: var(--ika-orange-deep); }
+/* 予告（選んだら、そろう隣が光る。スペシャルはオレンジで強く）・墨フラッシュの数・点が飛ぶ（2026-09-29） */
+.ika-m3-cell.is-can { box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 3px #ffffffcc, 0 0 12px #ffffffaa, 0 2px 0 var(--edge); }
+.ika-m3-cell.is-can-special { animation: ika-m3-can 0.7s ease-in-out infinite; z-index: 1; }
+/* 選んだマス（is-selected＝濃いオレンジの縁）と見分けがつくよう、候補は白→薄いオレンジで脈打つ */
+@keyframes ika-m3-can { 0%, 100% { box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 3px #fff, 0 0 12px #ffb37a, 0 2px 0 var(--edge); transform: scale(1); } 50% { box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 4px #ffb37a, 0 0 22px var(--ika-orange), 0 2px 0 var(--edge); transform: scale(1.07); } }
+.ika-m3-board.is-targeting .ika-m3-cell[data-count]::before { content: attr(data-count); position: absolute; z-index: 3; left: 3px; top: 3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 6px; background: var(--ika-ink); color: #fff; font-family: var(--font-varsity); font-weight: 800; font-size: 12px; line-height: 18px; text-align: center; }
+.ika-m3-pts { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-varsity); font-weight: 800; font-size: 22px; color: #fff; text-shadow: 0 0 0 #fff, 2px 2px 0 var(--ika-ink), -1px -1px 0 var(--ika-ink), 1px -1px 0 var(--ika-ink), -1px 1px 0 var(--ika-ink); pointer-events: none; z-index: 5; animation: ika-m3-pts 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.ika-m3-pts.is-big { font-size: 30px; color: #ffd2a8; }
+@keyframes ika-m3-pts { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 20% { opacity: 1; transform: translate(-50%, -70%) scale(1.15); } 60% { opacity: 1; transform: translate(-50%, -70%) scale(1); } 100% { opacity: 0; transform: translate(calc(-50% + var(--fly-x, 0px)), calc(-50% + var(--fly-y, -60px))) scale(0.5); } }
+@media (prefers-reduced-motion: reduce) { .ika-m3-cell.is-can-special { animation: none; box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 3px var(--ika-orange), 0 2px 0 var(--edge); } }
 /* 今日の評価（★）と、残り3手の緊張（2026-09-29） */
 .ika-m3-stars { font-size: 16px; letter-spacing: 0.06em; color: var(--ika-orange); white-space: nowrap; }
 .ika-m3-stars[data-n="0"] { color: var(--ika-ink-soft); }
