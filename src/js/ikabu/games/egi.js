@@ -137,6 +137,10 @@ export const DOUBLE_JERK = 0.45; // この間隔以内の2回目のしゃくり�
 // 誘いの動き（2026-09-29 ぱっぱ：しゃくり・2段・ダート・スラックジャークで動きを分ける）。[上がる高さ m, 手前に寄る m]
 //   しゃくり＝上へ／2段の2回目＝大きく上へ／ダート＝横へ跳ぶ（高さは控えめ）／スラックジャーク＝素早い連打で小刻み（0.3秒以内の3回目から）
 export const JERK_MOVE = { lift: [2.6, 1.5], double: [3.4, 1.5], dart: [2.2, 2.5], slack: [0.4, 0.5] };   // スラックジャークはその場で左右に（高さは小さく）
+// 2段しゃくりの2回目：押した瞬間は小さく（DOUBLE_NOW）、DOUBLE_DELAY 秒後に残り（JERK_MOVE.double − DOUBLE_NOW）がぐんと上がる。
+//   その間に3回目が来たらスラックジャーク＝大きな上がりは取り消す（水面近くでスラックジャークにならないように：2026-09-29 ぱっぱ B案）
+export const DOUBLE_NOW = 0.4;
+export const DOUBLE_DELAY = 0.5;
 export const SLACK_JERK = 0.5; // この間隔以内の連打の3回目以降は「スラックジャーク」（0.25秒はスマホの連打では届かなかった：2026-09-29 ぱっぱ）
 export const SLACK_MAX = 3;     // スラックジャークとして効くのは3回まで（連打5回まで）。それ以上は「しゃくりすぎ」
 
@@ -529,6 +533,7 @@ function jerk(s, kind = 'lift') {
   const n0 = s.jerks.length;
   const slack = kind === 'lift' && n0 >= 2 && s.t - s.lastJerk <= SLACK_JERK && s.jerks[n0 - 1] - s.jerks[n0 - 2] <= SLACK_JERK;
   if (slack) { kind = 'slack'; s.slackJerks = (s.slackJerks ?? 0) + 1; }
+  s.pendingLift = null;   // 待っている2段目の上がりは、次のしゃくりが来たら取り消す（スラックジャーク・3段目）
   s.jerks.push(s.t);
   if (kind === 'dart') s.darts += 1;
   if (s.depth >= s.bottom - 0.6) s.liftAt = s.t;   // 底から持ち上げた（シリヤケイカが食いつく瞬間）
@@ -560,12 +565,13 @@ function jerk(s, kind = 'lift') {
   s.judged = false;
   s.tensionFall = false;
   // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
-  const [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
+  let [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
+  if (kind === 'lift' && double) { s.pendingLift = { at: s.t + DOUBLE_DELAY, lift: lift - DOUBLE_NOW }; lift = DOUBLE_NOW; }
   s.depth = Math.max(0.5, s.depth - lift);
   s.dist = Math.max(0, s.dist - pull);
   s.bottomFor = 0;
   s.phase = 'action';
-  emit(s, 'jerk', { streak: s.jerks.length, kind, double: double && kind === 'lift', slackN: s.slackJerks ?? 0 });
+  emit(s, 'jerk', { streak: s.jerks.length, kind, double: false, slackN: s.slackJerks ?? 0 });   // 2段の知らせは、遅れて上がる時に出す
 }
 
 export function press(s) {
@@ -1066,6 +1072,7 @@ export function release(s) {
     s.kotsuPending = false;
     if (s.method === 'jado') s.baitLeft = Math.max(0, s.baitLeft - BAIT_USE.cast);
     s.weedSeen = false;
+    s.pendingLift = null;
     s.bottomFor = 0;
     s.interest = 0.15;
     s.jerks = [];
@@ -1276,6 +1283,15 @@ export function tick(s, dt) {
       break;
     }
     case 'action': {
+      // 2段しゃくりの遅れた上がり
+      if (s.pendingLift && s.t >= s.pendingLift.at) {
+        // アタリなどでフォールから外れていて出しそびれた古い上がりは捨てる（0.3秒以上遅れたもの）
+        if (s.t - s.pendingLift.at < 0.3) {
+          s.depth = Math.max(0.5, s.depth - s.pendingLift.lift);
+          emit(s, 'jerk', { streak: s.jerks.length, kind: 'lift', double: true, delayed: true, slackN: 0 });
+        }
+        s.pendingLift = null;
+      }
       if (s.method === 'jado') { jadoAction(s, dt); break; }
       const since = s.t - s.lastJerk;
       // しゃくった後も押したまま＝テンションフォール（ゆっくり沈み、手前に寄ってくる）
