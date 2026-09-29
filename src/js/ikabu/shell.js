@@ -10,7 +10,7 @@ const YFJ_HOME = '/';
 // （ぱっぱ指示 2026-09-24：小松さん以外にはイカ部の中身を見せない）。
 // ＝部活動のメニュー・出典ページ（イカ部のページ）へのリンクを出さない。YFJ は公開中の本番ドメインを指す
 // （釣り仲間用の確認URLにはこのページしか載せないので、相対リンクだと行き先が無い）
-export const SOLO_PAGES = new Set(['egi']);
+export const SOLO_PAGES = new Set(['egi', 'sumi']);   // ゲームだけの専用ページ（テストプレイ用）
 const YFJ_PUBLIC = 'https://yamaguchifishing.com';
 
 // recipeId があるとき（/ikabu/recipes/<id>.html）は、言語切替も同じ品の静的ページを指す

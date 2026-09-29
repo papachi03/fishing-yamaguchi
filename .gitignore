@@ -4,3 +4,4 @@ dist
 .env.bak
 worker/reports/wrangler.toml
 dist-egi
+dist-trial

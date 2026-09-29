@@ -439,7 +439,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
 
 /* ---------- 墨つなぎ ---------- */
 
-const m3HTML = (lang) => {
+export const m3HTML = (lang) => {
   const T = M3_TEXT;
   const cells = Array.from({ length: SIZE * SIZE }, (_, i) => `<button type="button" class="ika-m3-cell" role="gridcell" data-i="${i}" tabindex="-1" disabled></button>`).join('');
   // バッジの絵：小松氏のコマを流用（入部＝いかり、一つ星＝星、腕前＝太陽、連鎖＝波、墨＝レアイカ、部長＝貝）
