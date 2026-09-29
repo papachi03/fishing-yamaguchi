@@ -126,3 +126,23 @@ test('なぞる：離すとそろった所がまとめて消え、補充され�
   assert.ok(r2.ok && r2.steps.length === 0);
   assert.deepEqual(g2.board, before);
 });
+
+// 降ってくるブロックに、たまにライン（2026-09-29）
+import { SPECIAL_RATE } from '../src/js/ikabu/games/inkrush.js';
+import { isLine } from '../src/js/ikabu/games/match3.js';
+test('降ってくるブロックはだいたい SPECIAL_RATE の割合でラインになり、落ちた時点ではそろっていない。同じ種なら同じ', () => {
+  let lines = 0, all = 0;
+  for (let s = 0; s < 80; s++) {
+    const g = createRush({ seed: 'sp' + s });
+    for (let c = 0; c < SIZE; c++) g.board[c] = null;   // 一番上の列を空けて、ブロックが降りられるように
+    const before = g.board.map((k) => k);
+    const ev = rushTick(g, ROW_FIRST + 0.01).events.find((e) => e.type === 'row');
+    for (const l of ev.landed) { all++; if (isLine(g.board[l.at])) lines++; }
+    assert.equal(findMatches(g.board).length, 0);
+    const g2 = createRush({ seed: 'sp' + s }); for (let c = 0; c < SIZE; c++) g2.board[c] = null; rushTick(g2, ROW_FIRST + 0.01);
+    assert.deepEqual(g2.board, g.board);
+    void before;
+  }
+  const rate = lines / all;
+  assert.ok(rate > SPECIAL_RATE * 0.4 && rate < SPECIAL_RATE * 2, `ラインの割合 ${rate}`);
+});

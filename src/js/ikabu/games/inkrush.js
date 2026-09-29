@@ -3,7 +3,7 @@
 //   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
 //   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
 //   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
-import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, SIZE, KINDS } from './match3.js';
+import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS } from './match3.js';
 
 export const CAP = 30;                  // 水位がここで飲み込まれる
 export const START = 8;                // 最初の水位
@@ -13,6 +13,9 @@ export const CELL_HOLD = 0.6;           // 空き間1マスに入る墨（空き
 export const FLUSH_POINT = 20;          // 墨を1抜くごとの点
 export const ROW_EVERY = 7;             // ブロックが降る間隔（秒）。最初は ROW_FIRST 秒後
 export const ROW_FIRST = 12;
+// 降ってくるブロックがスペシャル（ライン）になる確率（2026-09-29 ぱっぱ：3消しばかりでスペシャルが出ない）。
+//   なぞる操作で使えるのは、3つそろえると発動するラインだけ（墨ダマ・レアイカは入れ替えで発動するので、このモードでは動かなくなる）
+export const SPECIAL_RATE = 0.1;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
 export const PACE = [[0, 0.5], [20, 0.9], [40, 1.4], [60, 2.0], [90, 2.8], [120, 4.0], [160, 5.5]];   // 道を意識して2秒に1手で約100秒・でたらめ33秒（rush_sim.mjs）
 export const inflowAt = (sec) => { let v = PACE[0][1]; for (const [from, amt] of PACE) if (sec >= from) v = amt; return v; };
@@ -76,6 +79,7 @@ function dropBlocks(g) {
     const ok = [...Array(KINDS).keys()].filter((k) => { b[i] = k; const m = findMatches(b).length === 0; b[i] = null; return m; });
     const pool = ok.length ? ok : [...Array(KINDS).keys()];
     b[i] = pool[Math.floor(g.rand() * pool.length)];
+    if (g.rand() < SPECIAL_RATE) b[i] = g.rand() < 0.5 ? lineH(b[i]) : lineV(b[i]);
     landed.push({ at: i, from: -1, rows: rowOf(i) + 1 });
   }
   g.rush.rows += 1;
