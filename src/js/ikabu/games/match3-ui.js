@@ -315,7 +315,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.rush.classList.toggle('is-doom', p >= 0.8 && !g.over);
     root.classList.toggle('is-doom', p >= 0.8 && !g.over);
     if (el.level) el.level.textContent = TX.rush.level(lang, Math.round(g.rush.level), CAP);
-    if (el.next) el.next.textContent = g.over ? '' : TX.rush.nextLid(lang, Math.max(0, Math.ceil(g.rush.nextLid - g.rush.t)));
+    if (el.next) el.next.textContent = g.over ? '' : TX.rush.nextLid(lang, Math.max(0, Math.ceil(g.rush.nextRow - g.rush.t)));
     el.moves.textContent = fmtTime(g.rush.t);
     const m = g.over ? 'drown' : moodOf(p);
     if (m !== mood) { mood = m; setMood(m); }
