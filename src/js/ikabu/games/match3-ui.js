@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, rushHint, INK, DROWN, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -26,7 +26,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     board: q('ika-m3-board'), score: q('ika-m3-score'), moves: q('ika-m3-moves'), best: q('ika-m3-best'), goalFill: q('ika-m3-goal-fill'), goalLabel: q('ika-m3-goal-label'), stars: q('ika-m3-stars'),
     inkFill: q('ika-m3-ink-fill'), ink: q('ika-m3-ink'), flash: q('ika-m3-flash'), hint: q('ika-m3-hint'), msg: q('ika-m3-msg'),
     callout: q('ika-m3-callout'), card: q('ika-m3-card'), mode: q('ika-m3-mode'), day: q('ika-m3-day'), badges: q('ika-m3-badges'), wrap: q('ika-m3-wrap'),
-    rush: q('ika-m3-rush'), squid: q('ika-m3-rush-squid'), face: q('ika-m3-rush-face'), say: q('ika-m3-rush-say'), pool: q('ika-m3-rush-pool'), next: q('ika-m3-rush-next'), movesLabel: q('ika-m3-moves-label'), goal: q('ika-m3-goal'),
+    rush: q('ika-m3-rush'), squid: q('ika-m3-rush-squid'), face: q('ika-m3-rush-face'), say: q('ika-m3-rush-say'), pool: q('ika-m3-rush-pool'), next: q('ika-m3-rush-next'), level: q('ika-m3-rush-level'), movesLabel: q('ika-m3-moves-label'), goal: q('ika-m3-goal'),
   };
   const cells = [...el.board.querySelectorAll('.ika-m3-cell')];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -68,7 +68,6 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const color = colorOf(kind);
     c.dataset.kind = String(color ?? kind);
     c.dataset.special = kind === RARE ? 'rare' : kind === BALL ? 'ball' : isLine(kind) ? (kind >= LINE_V ? 'v' : 'h') : '';
-    if (kind === INK) { c.dataset.kind = 'ink'; c.dataset.special = ''; c.innerHTML = INK_SVG; c.setAttribute('aria-label', t(lang, '墨', 'Ink')); c.disabled = false; return; }
     if (kind === BALL) c.innerHTML = `<img src="${assetHref('/assets/ikabu/tiles/ball_128.webp')}" width="56" height="56" alt="" decoding="async" draggable="false" onerror="this.remove()" /><b class="ika-m3-ballglow" aria-hidden="true"></b><i aria-hidden="true">◎</i>`;
     else c.innerHTML = `${tileImg(color ?? kind, { href: assetHref, size: 56 })}${isLine(kind) ? `<b class="ika-m3-line" aria-hidden="true"></b>` : ''}<i aria-hidden="true">${tileSymbol(color ?? kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
@@ -251,31 +250,32 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.rush.style.setProperty('--ink', p.toFixed(3));
     el.rush.classList.toggle('is-doom', p >= 0.8 && !g.over);
     root.classList.toggle('is-doom', p >= 0.8 && !g.over);
-    const nx = g.rush.next;
-    [...el.next.children].forEach((s, c) => { const on = nx.cols.includes(c); s.classList.toggle('is-on', on); s.dataset.in = on ? String(nx.in) : ''; s.textContent = on ? (nx.in <= 1 ? '💧' : String(nx.in)) : ''; });
-    el.next.title = TX.rush.nextIn(lang, nx.in);
+    if (el.level) el.level.textContent = TX.rush.level(lang, g.rush.level, CAP);
+    if (el.next) el.next.textContent = g.over ? '' : TX.rush.nextIn(lang, g.rush.inflow);
     const m = g.over ? 'drown' : moodOf(p);
     if (m !== mood) { mood = m; setMood(m); }
   }
   // 1手の後の出来事：墨が落ちる（舞台から盤面へ）・手詰まりの混ぜ直し
   async function rushAfter(r) {
+    let drained = false;
     for (const ev of r.events ?? []) {
-      if (ev.type === 'ink' || ev.type === 'stuck') {
-        if (ev.type === 'stuck') { callout(t(lang, TX.rush.stuck), 'blast'); el.board.classList.add('is-shuffle'); await sleep(dur(320)); renderBoard(g.board); el.board.classList.remove('is-shuffle'); }
-        if (ev.cells.length) {
-          if (!reduced) for (const i of ev.cells) { const b = cellBox(i); fxEl('ika-m3-drip', { left: `${b.cx}px`, '--to': `${b.cy}px` }); }
-          await sleep(dur(420));
-          sfx.bomb();
-          for (const i of ev.cells) { paint(i, INK); shown[i] = INK; cells[i].classList.add('is-inked'); setTimeout(() => cells[i].classList.remove('is-inked'), 600); }
-          if (ev.type === 'ink') callout(t(lang, TX.rush.inkFall), 'blast');
-          el.board.classList.remove('is-quake'); void el.board.offsetWidth; el.board.classList.add('is-quake');
-          await sleep(dur(350));
-        }
+      if (ev.type === 'drain' && ev.amount > 0) {
+        // 穴の開いた列に、墨の筋が上から下へ流れる
+        if (!reduced) { const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
+          for (const c of ev.cols) { const b = cellBox(c); fxEl('ika-m3-stream', { left: `${b.cx - b.w * 0.18}px`, top: `${wb.top - wr.top}px`, width: `${b.w * 0.36}px`, height: `${wb.height}px` }); } }
+        sfx.line();
+        callout(TX.rush.drain(lang, ev.amount), 'flash');
+        drained = true;
+        await sleep(dur(520));
+      } else if (ev.type === 'stuck') {
+        callout(t(lang, TX.rush.stuck), 'blast');
+        await sleep(dur(400));
       }
     }
-    // 流せたらホッとする（一瞬だけ）
-    if (r.steps?.some((st) => st.kind === 'flush') && !g.over) { setMood('relief'); await sleep(dur(500)); mood = ''; }
+    if (drained && !g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }
     syncRush();
+    const rise = (r.events ?? []).find((e) => e.type === 'rise');
+    if (rise && !reduced) { el.pool?.classList.remove('is-rise'); void el.pool?.offsetWidth; el.pool?.classList.add('is-rise'); }
   }
   el.mode.addEventListener('click', (e) => {
     const b = e.target.closest('.ika-chip[data-mode]');
@@ -316,7 +316,6 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
-      else if (st.kind === 'flush') { callout(t(lang, TX.rush.flush), 'flash'); sfx.line(); for (const i of st.cleared) cells[i].classList.add('is-flush'); await sleep(dur(260)); for (const i of st.cleared) cells[i].classList.remove('is-flush'); }
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
       // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
@@ -573,7 +572,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   });
   el.hint.addEventListener('click', () => {
     if (busy || g.over) return;
-    const h = isRush() ? rushHint(g.board) : findHint(g.board);
+    const h = findHint(g.board);
     if (!h) return;
     for (const i of h) cells[i].classList.add('is-hint');
     setMsg(t(lang, TX.msg.hint));

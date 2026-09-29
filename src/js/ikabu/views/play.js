@@ -489,8 +489,8 @@ export const m3HTML = (lang) => {
             <div class="ika-m3-rush-sky" aria-hidden="true"><i></i><i></i><i></i></div>
             <div class="ika-m3-rush-ledge" aria-hidden="true"></div>
             <div class="ika-m3-rush-squid" id="ika-m3-rush-squid" data-mood="calm"><img id="ika-m3-rush-face" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="96" height="100" decoding="async" /><span class="ika-m3-rush-sweat" aria-hidden="true"><i></i><i></i><i></i></span><b id="ika-m3-rush-say">${t(lang, T.rush.moods.calm)}</b></div>
-            <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"></div>
-            <div class="ika-m3-rush-next" id="ika-m3-rush-next" aria-label="${t(lang, '次に墨が落ちる列', 'Next ink columns')}">${Array.from({ length: SIZE }, () => '<span></span>').join('')}</div>
+            <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"><i></i></div>
+            <div class="ika-m3-rush-gauge" id="ika-m3-rush-gauge" role="status"><b id="ika-m3-rush-level">0/30</b><span id="ika-m3-rush-next"></span></div>
           </div>
           <div class="ika-m3-board-wrap" id="ika-m3-wrap">
             <div class="ika-m3-board" id="ika-m3-board" role="grid" aria-label="${t(lang, T.a11y.board)}" aria-rowcount="${SIZE}" aria-colcount="${SIZE}">${cells}</div>
