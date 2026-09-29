@@ -638,6 +638,8 @@ export const M3_TEXT = {
     moves: pair('残り手数', 'Moves'),
     best: pair('ベスト', 'Best'),
     goal: pair('目標', 'Goal'),
+    today: pair('今日の目標', "Today's goal"),
+    lastMoves: pair('残り3手！', '3 moves left!'),
     ink: pair('墨', 'Ink'),
   },
   btn: {
@@ -680,6 +682,9 @@ export const M3_TEXT = {
   result: {
     title: pair('一戦終了', 'Board complete'),
     reached: pair('目標達成！', 'Goal reached!'),
+    stars: pair('今日の評価', "Today's rating"),
+    toNext: pair('次の★まで あと', 'Next star in'),
+    perfect: pair('★★★ 満点！', '★★★ Perfect!'),
     missed: pair('目標まであと', 'Short of the goal by'),
     maxChain: pair('最大連鎖', 'Best cascade'),
     flashes: pair('墨フラッシュ', 'Ink Flashes'),

@@ -478,7 +478,7 @@ export const m3HTML = (lang) => {
             <div><dt>${t(lang, T.hud.moves)}</dt><dd><b id="ika-m3-moves">${MOVES}</b></dd></div>
             <div><dt>${t(lang, T.hud.best)}</dt><dd><b id="ika-m3-best">0</b></dd></div>
           </dl>
-          <div class="ika-m3-goal" id="ika-m3-goal"><span class="ika-m3-goal-label">${t(lang, T.hud.goal)} ${GOAL.toLocaleString()}</span><span class="ika-m3-goal-track"><i id="ika-m3-goal-fill"></i></span></div>
+          <div class="ika-m3-goal" id="ika-m3-goal"><span class="ika-m3-goal-label" id="ika-m3-goal-label">${t(lang, T.hud.today)} ${GOAL.toLocaleString()}</span><span class="ika-m3-stars" id="ika-m3-stars" aria-live="polite">☆☆☆</span><span class="ika-m3-goal-track"><i id="ika-m3-goal-fill"></i></span></div>
 
           <div class="ika-m3-board-wrap" id="ika-m3-wrap">
             <div class="ika-m3-board" id="ika-m3-board" role="grid" aria-label="${t(lang, T.a11y.board)}" aria-rowcount="${SIZE}" aria-colcount="${SIZE}">${cells}</div>

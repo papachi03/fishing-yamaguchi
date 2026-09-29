@@ -230,3 +230,16 @@ test('消える範囲に別のスペシャルがあると、それも発動す�
   assert.ok(first.has(8), '爆発の範囲にたてラインが入る');
   for (let r0 = 0; r0 < SIZE; r0++) assert.ok(first.has(r0 * SIZE + 2), '2列目ぜんぶ（巻き込まれたたてライン）');
 });
+
+
+import { dailyGoals, starsOf } from '../src/js/ikabu/games/match3.js';
+test('その日の目標：同じ種なら世界中で同じ。★＜★★＜★★★で、★★は2,000点以上', () => {
+  const a = dailyGoals('2026-09-29');
+  const b = dailyGoals('2026-09-29');
+  assert.deepEqual(a, b);
+  assert.ok(a.star < a.goal && a.goal < a.star3, JSON.stringify(a));
+  assert.ok(a.goal >= 2000 && a.goal % 100 === 0, String(a.goal));
+  assert.equal(starsOf(a.goal - 1, a), 1);
+  assert.equal(starsOf(a.goal, a), 2);
+  assert.equal(starsOf(a.star3, a), 3);
+});

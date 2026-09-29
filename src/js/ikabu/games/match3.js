@@ -20,7 +20,7 @@ export const isSpecial = (v) => v === RARE || v === BALL || isLine(v);
 export const MOVES = 20;
 export const INK_NEED = 36; // 墨フラッシュに必要な、消した数
 export const POINT = 10; // 1匹あたりの基本点（連鎖の段目を掛ける）
-export const GOAL = 1500;
+export const GOAL = 1500;   // ★（一つ星のバッジの線）。★★＝その日の目標、★★★はその上（dailyGoals）
 
 const N = SIZE * SIZE;
 const rowOf = (i) => Math.floor(i / SIZE);
@@ -295,6 +295,33 @@ export function swap(g, a, b) {
 }
 
 // 墨フラッシュ：選んだマスと同じマークを全部消す（レアイカを選んだらその場で爆発）。手数は使わない
+// その日の盤面の目標（2026-09-29）：でたらめに動かしても4回に3回は1,500点に届いていたので、盤面ごとに「上手に選んで届くかどうか」の線を機械で決める。
+//   決め方：この種で、毎手「そろえた瞬間の点（連鎖や落ちてくるマークの運は見ない＝人と同じ見え方）がいちばん大きい入れ替え」を選んで20手遊んだ点。
+//   落ちてくるマークは種から決まるので、世界中で同じ目標になる。
+//   ★＝1,500（バッジの線のまま）／★★＝その8割（今日の目標）／★★★＝その105%。100点単位に丸める
+export function dailyGoals(seed) {
+  const g = createGame({ seed });
+  for (let m = 1; m <= MOVES && !g.over; m++) {
+    let best = null, bestPts = -1;
+    for (let i = 0; i < N; i++) {
+      for (const j of [i + 1, i + SIZE]) {
+        if (!adjacent(i, j) || (j === i + 1 && colOf(i) === SIZE - 1)) continue;
+        const t = { ...g, board: [...g.board], rand: seeded(`${seed}:goal:${m}:${i}:${j}`) };
+        const r = swap(t, i, j);
+        if (!r?.ok) continue;
+        const pts = r.steps[0]?.points ?? 0;   // 最初の段だけ（その先の連鎖は運）
+        if (pts > bestPts) { best = [i, j]; bestPts = pts; }
+      }
+    }
+    if (!best) break;
+    swap(g, best[0], best[1]);   // 本番と同じ乱数の流れで進める
+  }
+  const round100 = (x) => Math.max(0, Math.round(x / 100) * 100);
+  const goal = Math.max(GOAL + 500, round100(g.score * 0.8));
+  return { star: GOAL, goal, star3: Math.max(goal + 700, round100(g.score * 1.05)), model: g.score };
+}
+export const starsOf = (score, goals) => (score >= goals.star3 ? 3 : score >= goals.goal ? 2 : score >= goals.star ? 1 : 0);
+
 export function inkFlash(g, idx) {
   if (g.over || g.charge < INK_NEED || idx < 0 || idx >= N) return { ok: false, steps: [] };
   const kind = g.board[idx];

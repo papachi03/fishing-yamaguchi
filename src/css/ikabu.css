@@ -1772,6 +1772,18 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-goal-track { flex: 1; height: 12px; border: 2px solid var(--ika-sea); border-radius: 999px; background: var(--ika-white); overflow: hidden; }
 .ika-m3-goal-track i { display: block; height: 100%; width: 0; background: var(--ika-orange); transition: width 0.3s; }
 .ika-m3-goal.is-reached .ika-m3-goal-label { color: var(--ika-orange-deep); }
+/* 今日の評価（★）と、残り3手の緊張（2026-09-29） */
+.ika-m3-stars { font-size: 16px; letter-spacing: 0.06em; color: var(--ika-orange); white-space: nowrap; }
+.ika-m3-stars[data-n="0"] { color: var(--ika-ink-soft); }
+.ika-m3-card-stars { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; font-family: var(--font-maru); font-weight: 700; font-size: 13px; color: var(--ika-ink-soft); }
+.ika-m3-card-stars b { font-size: 26px; color: var(--ika-orange); letter-spacing: 0.08em; }
+.ika-m3-card-stars b[data-n="0"] { color: var(--ika-ink-soft); }
+.is-last .ika-m3-board { animation: ika-m3-last 0.9s ease-in-out infinite; }
+.is-last #ika-m3-moves { color: var(--ika-orange-deep); font-size: 34px; }
+@keyframes ika-m3-last { 0%, 100% { box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 0 rgba(244, 115, 33, 0); } 50% { box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 8px rgba(244, 115, 33, 0.45); } }
+.ika-m3-callout.is-last { background: var(--ika-orange-deep); color: #fff; }
+.ika-m3-tint.is-big { animation-duration: 1.6s; opacity: 0.95; }
+@media (prefers-reduced-motion: reduce) { .is-last .ika-m3-board { animation: none; box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 6px rgba(244, 115, 33, 0.45); } }
 .ika-m3-board-wrap { position: relative; }
 .ika-m3-board {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;

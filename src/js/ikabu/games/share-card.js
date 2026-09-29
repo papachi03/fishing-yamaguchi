@@ -44,7 +44,7 @@ const T = {
     trip: '今回の釣果', cups: (n) => `${n}杯`, cupUnit: '杯', biggest: '最大',
     bouzu: 'ボウズ…でも部員', motto: '釣れなくても部員', bouzuSub: '海に立った、それでいい。',
     today: '今日の一戦', sameBoard: '世界中で同じ盤面', free: 'フリープレイ',
-    score: 'スコア', pts: '点', reached: '1,500点 達成！', remain: (n) => `1,500点まで あと${n.toLocaleString('ja-JP')}点`,
+    score: 'スコア', pts: '点', reached: (g) => `${g.toLocaleString('ja-JP')}点 達成！`, remain: (n, g) => `${g.toLocaleString('ja-JP')}点まで あと${n.toLocaleString('ja-JP')}点`,
     chain: '最大チェイン', flashes: 'フラッシュ', newBadge: '称号',
   },
   en: {
@@ -57,7 +57,7 @@ const T = {
     trip: 'This trip', cups: (n) => `${n} squid`, cupUnit: n => (n === 1 ? 'squid' : 'squid'), biggest: 'Biggest',
     bouzu: 'Blank… still a member', motto: 'No catch, still a member', bouzuSub: 'You stood by the sea. That counts.',
     today: "Today's match", sameBoard: 'Same board worldwide', free: 'Free play',
-    score: 'Score', pts: 'pts', reached: '1,500 pts reached!', remain: (n) => `${n.toLocaleString('en-US')} pts to 1,500`,
+    score: 'Score', pts: 'pts', reached: (g) => `${g.toLocaleString('en-US')} pts reached!`, remain: (n, g) => `${n.toLocaleString('en-US')} pts to ${g.toLocaleString('en-US')}`,
     chain: 'Max chain', flashes: 'Flashes', newBadge: 'New title',
   },
 };
@@ -538,7 +538,7 @@ export async function drawSumiCard(data, { lang = 'ja', assetHref = (p) => p, va
   const key = String(variant || 'A').toUpperCase();
   const goal = data.goal ?? 1500;
   const score = Number(data.score) || 0;
-  const goalLine = data.reached ? s.reached : s.remain(Math.max(0, goal - score));
+  const goalLine = data.reached ? s.reached(goal) : s.remain(Math.max(0, goal - score), goal);
   const stats = `${s.chain} ${data.maxChain ?? 0}　${s.flashes} ${data.flashes ?? 0}`;
   const badges = Array.isArray(data.newBadges) ? data.newBadges.filter(Boolean) : [];
   const dailyLabel = data.daily ? `${s.today}${data.dayLabel ? '　' + data.dayLabel : ''}` : s.free;

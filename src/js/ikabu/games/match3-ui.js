@@ -2,7 +2,7 @@
 //   1. タップ・ドラッグ・キーボードを swap / inkFlash に変える
 //   2. 返ってきた steps（消えた段階の記録）を1段ずつ見せる（消える→落ちる→連鎖の吹き出し）
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
-import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine } from './match3.js';
+import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
@@ -22,7 +22,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   if (!root) return null;
   const q = (id) => root.querySelector(`#${id}`);
   const el = {
-    board: q('ika-m3-board'), score: q('ika-m3-score'), moves: q('ika-m3-moves'), best: q('ika-m3-best'), goalFill: q('ika-m3-goal-fill'),
+    board: q('ika-m3-board'), score: q('ika-m3-score'), moves: q('ika-m3-moves'), best: q('ika-m3-best'), goalFill: q('ika-m3-goal-fill'), goalLabel: q('ika-m3-goal-label'), stars: q('ika-m3-stars'),
     inkFill: q('ika-m3-ink-fill'), ink: q('ika-m3-ink'), flash: q('ika-m3-flash'), hint: q('ika-m3-hint'), msg: q('ika-m3-msg'),
     callout: q('ika-m3-callout'), card: q('ika-m3-card'), mode: q('ika-m3-mode'), day: q('ika-m3-day'), badges: q('ika-m3-badges'), wrap: q('ika-m3-wrap'),
   };
@@ -53,6 +53,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let recorded = false;
   let lastResult = null;   // シェアする1戦の結果（share.js）
   let goalSaid = false;    // 目標達成のファンファーレ（1戦に1回）
+  let goals = { star: GOAL, goal: GOAL, star3: GOAL };   // その日の盤面の目標（newGame で決める）
+  let lastSaid = false;    // 「残り3手！」の知らせ（1戦に1回）
   const demoHold = demo === 'chain';
 
   /* ---------- 盤面の描画 ---------- */
@@ -161,13 +163,18 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.score.textContent = g.score.toLocaleString();
     el.moves.textContent = String(g.moves);
     el.best.textContent = rec.best.toLocaleString();
-    el.goalFill.style.width = `${Math.min(100, (g.score / GOAL) * 100).toFixed(1)}%`;
-    el.goalFill.parentElement.parentElement.classList.toggle('is-reached', g.score >= GOAL);
+    el.goalFill.style.width = `${Math.min(100, (g.score / goals.goal) * 100).toFixed(1)}%`;
+    el.goalFill.parentElement.parentElement.classList.toggle('is-reached', g.score >= goals.goal);
+    if (el.stars) { const n = starsOf(g.score, goals); el.stars.textContent = '★'.repeat(n) + '☆'.repeat(3 - n); el.stars.dataset.n = String(n); }
+    // 残り3手：盤面の縁が脈打ち、手数が赤く大きく（2026-09-29 最後の緊張を作る）
+    const last = !g.over && g.moves <= 3;
+    root.classList.toggle('is-last', last);
+    if (last && !lastSaid) { lastSaid = true; callout(t(lang, TX.hud.lastMoves), 'last'); }
     el.inkFill.style.width = `${Math.min(100, (g.charge / INK_NEED) * 100).toFixed(0)}%`;
     const full = g.charge >= INK_NEED && !g.over;
     if (full && !el.ink.classList.contains('is-full')) sfx.full();
     el.ink.classList.toggle('is-full', full);
-    const reachedNow = g.score >= GOAL;
+    const reachedNow = g.score >= goals.goal;
     if (reachedNow && !goalSaid) {
       goalSaid = true;
       sfx.goal();
@@ -189,8 +196,11 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function newGame() {
     const seed = mode === 'daily' ? utcDay() : `free-${Date.now()}`;
     g = createGame({ seed });
+    goals = dailyGoals(seed);
+    if (el.goalLabel) el.goalLabel.textContent = `${t(lang, TX.hud.today)} ${goals.goal.toLocaleString()}`;
     recorded = false;
     goalSaid = false;
+    lastSaid = false;
     busy = false; targeting = false;
     el.board.classList.remove('is-targeting');
     setSelected(null);
@@ -364,11 +374,17 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     syncBadges();
     syncHud();
     const R = TX.result;
-    const reached = g.score >= GOAL;
+    const reached = g.score >= goals.goal;
+    const n = starsOf(g.score, goals);
+    const next = n === 0 ? goals.star : n === 1 ? goals.goal : n === 2 ? goals.star3 : null;
+    const starLine = next == null ? t(lang, R.perfect) : `${t(lang, R.toNext)} ${(next - g.score).toLocaleString()}`;
+    // 最後の1手で目標を超えた：墨が画面いっぱいに（2026-09-29）
+    if (reached && !reduced && g.moves === 0) fxEl('ika-m3-tint is-big', {});
     el.card.innerHTML = `
       <img class="ika-m3-card-mascot" src="${assetHref(`/assets/ikabu/mascot/${reached ? 'yatta' : 'sad'}.webp`)}" alt="" width="96" height="100" />
       <p class="ika-m3-card-title">${t(lang, R.title)}</p>
-      <p class="ika-m3-card-score"><b>${g.score.toLocaleString()}</b><span class="ika-tag ${reached ? 'ika-tag--orange' : ''}">${reached ? t(lang, R.reached) : `${t(lang, R.missed)} ${(GOAL - g.score).toLocaleString()}`}</span></p>
+      <p class="ika-m3-card-score"><b>${g.score.toLocaleString()}</b><span class="ika-tag ${reached ? 'ika-tag--orange' : ''}">${reached ? t(lang, R.reached) : `${t(lang, R.missed)} ${(goals.goal - g.score).toLocaleString()}`}</span></p>
+      <p class="ika-m3-card-stars"><span>${t(lang, R.stars)}</span><b data-n="${n}">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</b><small>${starLine}</small></p>
       <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.maxChain)}</dt><dd>${g.maxChain}</dd></div><div><dt>${t(lang, R.flashes)}</dt><dd>${g.flashes}</dd></div><div><dt>${t(lang, TX.hud.best)}</dt><dd>${rec.best.toLocaleString()}</dd></div></dl>
       ${fresh.length ? `<p class="ika-m3-card-badges"><span>${t(lang, R.newBadge)}</span>${fresh.map((id) => `<b>★ ${t(lang, TX.badges[id].name)}</b>`).join('')}</p>` : ''}
       <div class="ika-m3-card-actions">
@@ -377,7 +393,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         ${shareButtonHTML(lang)}
       </div>`;
     // シェア用（2026-09-27）：この1戦の結果
-    lastResult = { score: g.score, reached, maxChain: g.maxChain, flashes: g.flashes, daily: mode === 'daily', day: utcDay(), newBadges: fresh.map((id) => t(lang, TX.badges[id].name)) };
+    lastResult = { score: g.score, reached, goal: goals.goal, maxChain: g.maxChain, flashes: g.flashes, daily: mode === 'daily', day: utcDay(), newBadges: fresh.map((id) => t(lang, TX.badges[id].name)) };
     el.card.hidden = false;
     el.card.querySelector('[data-again]')?.focus({ preventScroll: true });
   }
@@ -387,7 +403,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       const r = lastResult;
       const dayLabel = r.day.replace(/-/g, '/').replace(/\/0/g, '/');
       openShareView({ lang, button: e.target.closest('[data-share]'), text: sumiText(lang, { score: r.score, daily: r.daily, dayLabel }), url: shareUrl(lang, 'sumi'),
-        draw: async () => (await import('./share-card.js')).drawSumiCard({ score: r.score, goal: GOAL, reached: r.reached, maxChain: r.maxChain, flashes: r.flashes, daily: r.daily, dayLabel, newBadges: r.newBadges },
+        draw: async () => (await import('./share-card.js')).drawSumiCard({ score: r.score, goal: r.goal ?? GOAL, reached: r.reached, maxChain: r.maxChain, flashes: r.flashes, daily: r.daily, dayLabel, newBadges: r.newBadges },
           { lang, assetHref, variant: SHARE_VARIANT }) });
       return;
     }
