@@ -2482,3 +2482,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-eg-weed-blade { transform-box: fill-box; transform-origin: 50% 100%; animation: ika-weed-sway 3s ease-in-out infinite alternate; }
 @keyframes ika-weed-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .ika-eg-weed-blade { animation: none; } }
+
+/* 月の満ち欠け（2026-09-29） */
+.ika-egi-moonicon { vertical-align: -3px; margin-right: 4px; }
+.ika-egi-live-moon { margin: 6px 0 0; font-size: 12.5px; color: var(--ika-ink-soft); }

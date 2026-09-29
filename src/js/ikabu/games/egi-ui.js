@@ -12,6 +12,7 @@ import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, ta
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
+import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
@@ -138,7 +139,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let sc = null;   // SVG の要素
   function buildScene() {
     const bottom = s?.bottom || 8;
-    el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref });
+    el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref, moon: (settings.mode === 'live' ? settings.live?.conditions?.moon : settings.cond?.moon) ?? 0.5 });
     const svg = el.scene.querySelector('svg');
     sc = {
       svg,
@@ -777,6 +778,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     settings.cond = { ...settings.cond, expectation: Number(el.exp.value) };
     usePractice();
   });
+  root.querySelector('#ika-egi-moon')?.addEventListener('click', (e) => {
+    const b = e.target.closest('.ika-chip[data-moon]');
+    if (!b || started()) return;
+    root.querySelectorAll('#ika-egi-moon .ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+    settings.cond = { ...settings.cond, moon: MOON_PRESET[b.dataset.moon] };
+    usePractice();
+  });
   el.wind.addEventListener('click', (e) => {
     const b = e.target.closest('.ika-chip[data-wind]');
     if (!b || started()) return;
@@ -833,6 +841,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   });
 
   // 今日の萩の海を取って、パネルに出す。中止レベルなら練習に、失敗したら練習に（そう言う）
+  // 月の形（0＝新月〜1＝満月）を小さな絵で
+  const moonIcon = (m = 0.5) => { const k = Math.max(0, Math.min(1, m)); const off = (1 - k) * 18; return `<svg class="ika-egi-moonicon" viewBox="-10 -10 20 20" width="18" height="18" aria-hidden="true"><circle r="9" fill="#1c2b44"/><clipPath id="mc${Math.round(k * 100)}"><circle r="9"/></clipPath><g clip-path="url(#mc${Math.round(k * 100)})"><circle r="9" fill="#fff3c4"/><circle cx="${-off.toFixed(1)}" r="9" fill="#1c2b44" opacity="${k < 0.05 ? 1 : 0.96}"/></g></svg>`; };
   function renderLive(L) {
     settings.live = L;
     const c = L.conditions;
@@ -846,7 +856,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         <div><dt>${t(lang, TX.live.wave)}</dt><dd>${f1m(c.wave)}<small>m</small></dd></div>
         <div><dt>${t(lang, TX.live.tide)}</dt><dd>${exp ? esc(exp.tideName) : '—'}</dd></div>
         <div><dt>${t(lang, TX.live.tod)}</dt><dd>${t(lang, TOD[L.tod])}<small>${monthLabel(lang, L.month)}・${t(lang, SEASON[seasonOf(L.month)])}</small></dd></div>
+        <div><dt>${t(lang, TX.moon.title)}</dt><dd>${moonIcon(c.moon)}<small>${t(lang, TX.moon.names[moonPhase(c.moon ?? 0.5)])}</small></dd></div>
       </dl>
+      ${L.tod === 'night' ? `<p class="ika-egi-live-moon">🌙 ${t(lang, (c.moon ?? 0.5) >= 0.8 ? TX.moon.tip.bright : (c.moon ?? 0.5) <= 0.2 ? TX.moon.tip.dark : TX.moon.tip.mid)}</p>` : ''}
       ${sf ? `<p class="ika-egi-live-safety lv${sf.level}"><span class="ika-egi-live-badge">${esc(sf.label)}</span>${esc(sf.message)}</p>` : ''}`;
     el.live.dataset.state = 'ready';
     const at = L.weather?.fetchedAt ? new Date(L.weather.fetchedAt) : L.now;

@@ -204,6 +204,10 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
             <output class="ika-egi-range-out" id="ika-egi-exp-out" for="ika-egi-exp">★5</output>
           </div>
           <div class="ika-egi-setup-item">
+            <span class="ika-egi-setup-label">${t(lang, T.practice.moon)}</span>
+            <div class="ika-chips ika-chips--small" id="ika-egi-moon" role="group" aria-label="${t(lang, T.practice.moon)}"><button type="button" class="ika-chip" data-moon="new" aria-pressed="false">🌑 ${t(lang, T.practice.moonNew)}</button><button type="button" class="ika-chip" data-moon="half" aria-pressed="true">🌓 ${t(lang, T.practice.moonHalf)}</button><button type="button" class="ika-chip" data-moon="full" aria-pressed="false">🌕 ${t(lang, T.practice.moonFull)}</button></div>
+          </div>
+          <div class="ika-egi-setup-item">
             <span class="ika-egi-setup-label">${t(lang, T.practice.wind)}</span>
             <div class="ika-chips ika-chips--small" id="ika-egi-wind" role="group" aria-label="${t(lang, T.practice.wind)}">${winds}</div>
           </div>

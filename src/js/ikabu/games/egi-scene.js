@@ -97,15 +97,26 @@ export function weedSVG(weed, bottom, X) {
 }
 const WEEDS_ROCKY = { hondawara: true, umitoranoo: true };
 
+function moonSVG(cx, cy, r, light, sky, surface, W) {
+  const k = Math.max(0, Math.min(1, light));
+  if (k < 0.06) return '';
+  const off = (1 - k) * r * 2;   // かげの円をずらす量（満月で0）
+  const glow = k > 0.5 ? `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(r * 2.4)}" fill="#fff3c4" opacity="${(0.12 * k).toFixed(2)}" />` : '';
+  const road = k > 0.5 ? `<rect x="${f1(cx - r * 0.9)}" y="${surface}" width="${f1(r * 1.8)}" height="60" fill="#fff3c4" opacity="${(0.18 * k).toFixed(2)}" />` : '';
+  void W;
+  return `${glow}<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${r}" fill="#fff3c4" />${off > 0.5 ? `<circle cx="${f1(cx - off)}" cy="${f1(cy - off * 0.25)}" r="${r}" fill="${sky}" />` : ''}${road}`;
+}
+
 // 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）
-export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom = 8, assetHref = (p) => p } = {}) {
+export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom = 8, assetHref = (p) => p, moon = 0.5 } = {}) {
   const P = PALETTE[tod] ?? PALETTE.evening;
   const S = SCENE;
   const stops = (list) => list.map((c, i) => `<stop offset="${(i / (list.length - 1)) * 100}%" stop-color="${c}" />`).join('');
   const night = tod === 'night';
   const sun = P.sun
     ? `<circle class="ika-eg-sun" cx="${f1(W * P.sun.x)}" cy="${f1(S.surface * P.sun.y)}" r="${P.sun.r}" fill="${P.sun.color}" />`
-    : `<circle cx="${f1(W * P.moon.x)}" cy="${f1(S.surface * P.moon.y)}" r="${P.moon.r}" fill="#fff3c4" /><circle cx="${f1(W * P.moon.x - 9)}" cy="${f1(S.surface * P.moon.y - 6)}" r="${P.moon.r}" fill="${P.sky[1]}" />`;
+    // 月の満ち欠け（2026-09-29）：満月は丸く明るく水面に光の道、新月は見えない
+    : moonSVG(W * P.moon.x, S.surface * P.moon.y, P.moon.r, moon, P.sky[1], S.surface, W);
   const stars = night
     ? [0.3, 0.42, 0.5, 0.61, 0.69, 0.9, 0.95, 0.36, 0.55, 0.84].map((k, i) => `<circle cx="${f1(W * k)}" cy="${f1(20 + ((i * 37) % 120))}" r="${1.2 + (i % 3) * 0.5}" fill="#fff" opacity="0.8" />`).join('')
     : '';

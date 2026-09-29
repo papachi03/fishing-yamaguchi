@@ -181,6 +181,12 @@ export function colorFit(color, { tod, cond, mood }) {
   if (cl === 'clear') k += NATURAL.includes(color) ? 0.05 : FLASHY.includes(color) ? -0.05 : 0;
   if (mood === 'active') k += FLASHY.includes(color) ? 0.05 : 0;
   if (mood === 'calm') k += NATURAL.includes(color) ? 0.05 : FLASHY.includes(color) ? -0.05 : 0;
+  // 月の満ち欠け（夜だけ）：明るい月はパープル・ピンク、月の無い暗い夜は赤・茶（シルエット）が効きやすい
+  if (tod === 'night' && cond?.moon != null) {
+    const m = cond.moon;
+    if (m >= 0.8) k += color === 'purple' ? 0.08 : color === 'pink' ? 0.05 : color === 'red' ? -0.04 : 0;
+    else if (m <= 0.2) k += color === 'red' ? 0.08 : color === 'brown' ? 0.05 : color === 'purple' ? -0.04 : color === 'pink' ? -0.04 : 0;
+  }
   return Math.min(1.25, Math.max(0.75, k));
 }
 // いまの条件でいちばん合う色（ヒント・振り返り用）
@@ -329,7 +335,11 @@ export function moodOf(month, tod, cond) {
 // ---------------- 海の状況 ----------------
 // 「今日の萩の海」の実データ（YFJ の海況：期待値・風・突風・波・安全判定）をそのまま渡す。
 // 渡さなければ「ふつうの日」（期待値5・風3m・波0.5m）として遊ぶ
-export const DEFAULT_CONDITIONS = { expectation: 5, wind: 3, gust: 5, wave: 0.5, safety: 'ok' };
+export const DEFAULT_CONDITIONS = { expectation: 5, wind: 3, gust: 5, wave: 0.5, safety: 'ok', moon: 0.5 };
+// 月の明るさ（0＝新月〜1＝満月）と呼び名。月齢（新月からの日数、api/fishing.js の moonAge）から
+export const moonLight = (age) => (1 - Math.cos((2 * Math.PI * age) / 29.530588853)) / 2;
+export const moonPhase = (light) => (light < 0.15 ? 'new' : light < 0.45 ? 'crescent' : light < 0.8 ? 'half' : light < 0.95 ? 'gibbous' : 'full');
+export const MOON_PRESET = { new: 0, half: 0.5, full: 1 };
 
 export function normalizeConditions(c = {}) {
   const n = { ...DEFAULT_CONDITIONS, ...c };
@@ -337,6 +347,7 @@ export function normalizeConditions(c = {}) {
   n.wind = Math.max(0, Number(n.wind) || 0);
   n.gust = Math.max(n.wind, Number(n.gust) || 0);
   n.wave = Math.max(0, Number(n.wave) || 0);
+  n.moon = Math.min(1, Math.max(0, Number.isFinite(Number(n.moon)) ? Number(n.moon) : 0.5));
   return n;
 }
 

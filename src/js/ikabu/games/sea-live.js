@@ -4,7 +4,8 @@ import { areaById } from '../../data/areas.js';
 import { loadSnapshot, atNow } from '../../api/sea-snapshot.js';
 import { fetchTide } from '../../api/tide.js';
 import { assessSafety } from '../../api/safety.js';
-import { calcExpectation, sunTimes } from '../../api/fishing.js';
+import { calcExpectation, sunTimes, moonAge } from '../../api/fishing.js';
+import { moonLight } from './egi.js';
 
 export const HAGI = areaById('hagi');
 
@@ -55,6 +56,7 @@ export async function loadHagiSea({ lang = 'ja', now = new Date(), area = HAGI }
       gust: w ? w.current.gust ?? null : 5,
       wave: w?.current.wave ?? 0.5,
       safety: safety?.key ?? 'ok',
+      moon: moonLight(moonAge(now)),   // 今夜の月の明るさ（本物の月齢から）
     },
     expectation: exp,          // { score, stars, message, tideName, reasons } または null
     safety,                    // { key, level, label, message, reasons } または null

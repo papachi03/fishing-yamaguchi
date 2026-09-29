@@ -589,6 +589,16 @@ export const EGI_TEXT = {
     calm: pair('穏やか', 'Calm'),
     breezy: pair('やや強い', 'Breezy'),
     strong: pair('強い', 'Strong'),
+    moon: pair('月（夜）', 'Moon (night)'),
+    moonNew: pair('新月', 'New'),
+    moonHalf: pair('半月', 'Half'),
+    moonFull: pair('満月', 'Full'),
+  },
+  // 月の満ち欠け（2026-09-29）
+  moon: {
+    title: pair('月', 'Moon'),
+    names: { new: pair('新月（真っ暗）', 'New moon (dark)'), crescent: pair('細い月', 'Crescent'), half: pair('半月', 'Half moon'), gibbous: pair('ふくらんだ月', 'Gibbous'), full: pair('満月（明るい）', 'Full moon (bright)') },
+    tip: { bright: pair('月が明るい夜は、パープルやピンクも効きやすい', 'On a bright moonlit night, purple and pink work well too'), dark: pair('月の無い暗い夜は、赤や茶の暗い色でシルエットを', 'On a moonless night, go dark: red or brown for a clear silhouette'), mid: pair('月が中くらいの夜は、ふだんの夜の色で', 'Half moon: your usual night colors') },
   },
   setup: {
     tod: pair('時間帯', 'Time of day'),
