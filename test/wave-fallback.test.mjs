@@ -116,3 +116,11 @@ test('実測が「新しい」のは40分以内だけ', async () => {
   assert.equal(freshObs({ atMs: new Date(2026, 8, 30, 0, 10).getTime(), wind: null }, now), null);
   assert.equal(freshObs(null, now), null);
 });
+
+test('波：NOAA が応答しない時は8秒で見切り、全体が止まらない', async () => {
+  const hang = async (url) => (String(url).includes('pacioos') ? new Promise(() => {}) : baseFake(url));
+  const t0 = Date.now();
+  const w = await fetchWeather(HAGI, { now: NOW, fetchImpl: hang });
+  assert.equal(w.current.waveSrc, 'jma-rough');
+  assert.ok(Date.now() - t0 < 20000);
+});

@@ -19,7 +19,7 @@
 
 import { createServer } from 'vite';
 
-const TIMEOUT_MS = 20000;
+const TIMEOUT_MS = 40000;   // 2026-09-30：20秒→40秒（NOAA の取り直しを含めても収まるように）
 const PREV_SNAPSHOT_URL = 'https://yamaguchifishing.com/data/sea-snapshot.json';
 
 const withTimeout = (p, ms, label) =>
@@ -69,7 +69,15 @@ export async function prerenderSea(html, root, onSnapshot = () => {}) {
         snapshot.areas[area.id] = render.trimWeather(w);
         log.push(`${area.id}:ok`);
       } catch (e) {
-        log.push(`${area.id}:NG(${e.message})`);
+        // 取れなかった地域は、前回公開した予報（12時間以内）をそのまま残す。地域が丸ごと消えると SEA ページが「予報が無い」になる（9/30 0:41 のビルドで3地域が消えた）
+        const prev = prevSnap?.areas?.[area.id];
+        const prevAt = new Date(prev?.fetchedAt ?? 0).getTime();
+        if (prev && now.getTime() - prevAt >= 0 && now.getTime() - prevAt <= 12 * 3600e3) {
+          snapshot.areas[area.id] = prev;
+          log.push(`${area.id}:NG→前回の予報(${e.message})`);
+        } else {
+          log.push(`${area.id}:NG(${e.message})`);
+        }
       }
     }
 
