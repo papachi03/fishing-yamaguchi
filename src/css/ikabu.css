@@ -1520,6 +1520,11 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-feel .ika-chips[hidden] { display: none; }
 .ika-egi-feel-name { margin-right: 2px; font-family: var(--font-maru); font-weight: 700; font-size: 12px; color: var(--ika-ink-soft); }
 .ika-egi-cue-note { flex-basis: 100%; font-size: 12px; line-height: 1.7; color: var(--ika-ink-soft); }
+/* 振ってしゃくる：オンの間の注意書き（2026-09-29） */
+.ika-egi-shake-warn { flex-basis: 100%; margin: 4px 0 0; padding: 6px 12px; border-radius: 10px; background: #fff1e6; color: #b3470c; font-family: var(--font-maru); font-weight: 700; font-size: 14px; line-height: 1.5; }
+.ika-egi-shake-warn.is-pop { animation: ika-shake-warn .5s ease-out; }
+@keyframes ika-shake-warn { 0% { transform: scale(.92); background: #ffd2a8; } 60% { transform: scale(1.03); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ika-egi-shake-warn.is-pop { animation: none; } }
 /* HUD：いまのエギ・フォールの種類 */
 .ika-egi-stock-spec { margin-left: 6px; font-family: var(--font-maru); font-weight: 900; font-size: 11px; color: var(--ika-ink); }
 .ika-egi-fallmode { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; background: var(--ika-sea); color: var(--ika-white); font-family: var(--font-maru); font-weight: 900; font-size: 10.5px; }

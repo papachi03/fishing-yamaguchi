@@ -61,7 +61,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
-    feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'), feelShake: q('ika-egi-feel-shake'),
+    feel: q('ika-egi-feel'), feelVib: q('ika-egi-feel-vibrate'), feelSound: q('ika-egi-feel-sound'), feelShake: q('ika-egi-feel-shake'), shakeWarn: q('ika-egi-shake-warn'),
     ajiBox: q('ika-egi-aji'), ajis: q('ika-egi-ajis'), tanaBox: q('ika-egi-tana'), tanas: q('ika-egi-tanas'), tailorBtns: q('ika-egi-tailorbtns'),
     methods: q('ika-egi-methods'), methodAbout: q('ika-egi-method-about'), baitBox: q('ika-egi-bait'), baits: q('ika-egi-baits'),
     baitRow: q('ika-egi-baitrow'), baitFill: q('ika-egi-baitfill'), baitName: q('ika-egi-baitname'),
@@ -715,6 +715,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     syncFeel();
   }
   function syncFeel() {
+    if (el.shakeWarn) el.shakeWarn.hidden = !shakeOn;
     el.feel?.querySelectorAll('.ika-chip[data-feel]').forEach((b) => {
       const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : feel.sound;
       b.setAttribute('aria-pressed', String((b.dataset.on === '1') === on));
@@ -724,7 +725,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const b = e.target.closest('.ika-chip[data-feel]');
     if (!b) return;
     const on = b.dataset.on === '1';
-    if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn) callout(t(lang, TX.feel.shakeOn), 'good', 3200); }); return; }
+    // 注意書きは設定のすぐ下に出す（ゲーム画面の中の案内は、設定を見ている時は目に入らない：2026-09-29 ぱっぱ iPhone で指摘）
+    if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn && el.shakeWarn) { el.shakeWarn.classList.remove('is-pop'); void el.shakeWarn.offsetWidth; el.shakeWarn.classList.add('is-pop'); } }); return; }
     if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
     else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
     syncFeel();
