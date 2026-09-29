@@ -3,7 +3,7 @@
 //   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
 //   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
 //   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
-import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, SIZE, KINDS } from './match3.js';
+import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, SIZE, KINDS } from './match3.js';
 
 export const CAP = 30;                  // 水位がここで飲み込まれる
 export const START = 8;                // 最初の水位
@@ -138,6 +138,20 @@ export function rushSwap(g, a, b) {
   }
   const r = swap(g, a, b);
   if (!r.ok) return r;
+  return afterMove(g, r);
+}
+// なぞって動かす（2026-09-29 パズドラ式・ぱっぱ「1タップ1マスはストレス」）：押している間、つかんだマークが指について行き、
+//   通ったマス（斜めも可）と1つずつ入れ替わる。そろっていても、離すまでは消えない
+export const near = (a, b) => a !== b && a >= 0 && b >= 0 && a < N && b < N && Math.abs(rowOf(a) - rowOf(b)) <= 1 && Math.abs(colOf(a) - colOf(b)) <= 1;
+export function rushDragStep(g, from, to) {
+  if (g.over || !near(from, to) || g.board[from] === null) return false;
+  [g.board[from], g.board[to]] = [g.board[to], g.board[from]];
+  return true;
+}
+// 指を離した：そろった所をまとめて消す（連鎖も）。そろわなくても動かした形のまま（補充なし）
+export function rushDrop(g, at) {
+  if (g.over) return { ok: false, steps: [] };
+  const r = cascade(g, null, at == null ? [] : [at]);
   return afterMove(g, r);
 }
 export function rushFlash(g, idx) {

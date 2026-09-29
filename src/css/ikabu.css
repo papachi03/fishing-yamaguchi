@@ -2486,3 +2486,10 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* 月の満ち欠け（2026-09-29） */
 .ika-egi-moonicon { vertical-align: -3px; margin-right: 4px; }
 .ika-egi-live-moon { margin: 6px 0 0; font-size: 12.5px; color: var(--ika-ink-soft); }
+
+/* 墨のがれ：なぞって動かす（パズドラ式・2026-09-29） */
+.ika-m3-board.is-rush { touch-action: none; }
+.ika-m3-board.is-holding { cursor: grabbing; }
+.ika-m3-board.is-holding .ika-m3-cell { transition: none; }
+.ika-m3-cell.is-held { z-index: 4; transform: scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ika-orange, #f47321), 0 8px 14px rgba(0,0,0,0.35); filter: brightness(1.08); }
+@media (prefers-reduced-motion: reduce) { .ika-m3-cell.is-held { transform: none; } }

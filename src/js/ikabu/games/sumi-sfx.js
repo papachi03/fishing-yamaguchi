@@ -62,6 +62,7 @@ export function createSfx({ on = true } = {}) {
     // 生まれた（パネル）
     born() { tone(note(4), { dur: 0.12, vol: 0.6 }); tone(note(7), { at: 0.07, dur: 0.16, vol: 0.6 }); },
     // そろわない入れ替え：ぼよっ
+    tick() { tone(note(2) * 2, { dur: 0.035, type: 'sine', vol: 0.18 }); },   // なぞって1マス動いた（パズドラ式）
     nope() { tone(220, { dur: 0.16, type: 'sine', vol: 0.7, slide: 0.8 }); },
     // 目標達成のファンファーレ
     goal() { [[0, 0], [2, 0.1], [4, 0.2], [7, 0.32]].forEach(([k, at]) => tone(note(k + 1), { at, dur: at > 0.3 ? 0.5 : 0.14, vol: 0.8 })); },

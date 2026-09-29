@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, rushHint, rushTick, inked, openBottom, CAP, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rushDrop, inked, openBottom, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -262,6 +262,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (isRush()) { g = createRush({ seed }); goals = { star: GOAL, goal: Infinity, star3: Infinity, model: 0 }; }
     else { g = createGame({ seed }); goals = dailyGoals(seed); }
     if (el.rush) el.rush.hidden = !isRush();
+    el.board.classList.toggle('is-rush', isRush());   // なぞる操作の間、画面がスクロールしないように
     const rn = root.querySelector('#ika-m3-rush-note'); if (rn) rn.hidden = !isRush();
     if (el.goal) el.goal.hidden = isRush();
     if (el.movesLabel) el.movesLabel.textContent = t(lang, isRush() ? TX.rush.time : TX.hud.moves);
@@ -583,12 +584,68 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 入力：タップ・ドラッグ・キーボード ---------- */
   let drag = null;
+  // 墨のがれはパズドラ式（2026-09-29）：押している間、つかんだマークが指について行き、通ったマスと入れ替わる。離すとまとめて消える
+  let hold = null;
+  // 指の下のマス。マスの内側（ふち15%を除く）に入った時だけ動く＝斜めの境目でガタつかない
+  const cellAt = (x, y) => {
+    for (let i = 0; i < cells.length; i++) {
+      const r = cells[i].getBoundingClientRect();
+      const ix = r.width * 0.15, iy = r.height * 0.15;
+      if (x >= r.left + ix && x <= r.right - ix && y >= r.top + iy && y <= r.bottom - iy) return i;
+    }
+    return -1;
+  };
+  const markHeld = (i) => { cells.forEach((c) => c.classList.remove('is-held')); if (i != null) cells[i]?.classList.add('is-held'); };
+  function holdMove(e) {
+    if (!hold || g.over) return;
+    const j = cellAt(e.clientX, e.clientY);
+    if (j < 0 || j === hold.at) return;
+    // 指が速くて飛ばしたマスも、1マスずつたどる（斜めも1歩）
+    let guard = 0;
+    while (hold.at !== j && guard++ < 12) {
+      const dr = Math.sign(rowOf(j) - rowOf(hold.at)), dc = Math.sign(colOf(j) - colOf(hold.at));
+      const nx = hold.at + dr * SIZE + dc;
+      if (!rushDragStep(g, hold.at, nx)) break;
+      hold.at = nx; hold.moved = true;
+    }
+    renderBoard(g.board);
+    markHeld(hold.at);
+    sfx.tick?.();
+  }
+  async function holdEnd() {
+    if (!hold) return;
+    const h = hold; hold = null;
+    markHeld(null);
+    el.board.classList.remove('is-holding');
+    if (!h.moved || g.over) return;
+    drag = { done: true }; setTimeout(() => { drag = null; }, 0);   // 直後の click（タップ選択）を無視
+    busy = true;
+    syncHud();
+    const r = rushDrop(g, h.at);
+    setMsg('');
+    await playSteps(r.steps, false);
+    await rushAfter(r);
+    busy = false;
+    syncHud();
+    if (g.over) finish();
+  }
   el.board.addEventListener('pointerdown', (e) => {
     const c = e.target.closest('.ika-m3-cell');
     if (!c || busy) return;
-    drag = { i: Number(c.dataset.i), x: e.clientX, y: e.clientY, done: false };
+    const i = Number(c.dataset.i);
+    if (isRush() && !targeting && g && !g.over && g.board[i] !== null) {
+      hold = { at: i, moved: false };
+      setSelected(null);
+      markHeld(i);
+      el.board.classList.add('is-holding');
+      try { el.board.setPointerCapture(e.pointerId); } catch { /* 無くても動く */ }
+      e.preventDefault();
+      return;
+    }
+    drag = { i, x: e.clientX, y: e.clientY, done: false };
   });
   el.board.addEventListener('pointermove', (e) => {
+    if (hold) { holdMove(e); return; }
     if (!drag || drag.done) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.hypot(dx, dy) < 18) return;
@@ -599,7 +656,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     else j = dy > 0 ? (rowOf(i) < SIZE - 1 ? i + SIZE : -1) : (rowOf(i) > 0 ? i - SIZE : -1);
     if (j >= 0 && !targeting) { setCursor(i, false); trySwap(i, j); }
   });
-  const endDrag = () => { if (drag?.done) setTimeout(() => { drag = null; }, 0); else drag = null; };
+  const endDrag = () => { if (hold) { holdEnd(); return; } if (drag?.done) setTimeout(() => { drag = null; }, 0); else drag = null; };
   addEventListener('pointerup', endDrag);
   addEventListener('pointercancel', endDrag);
   el.board.addEventListener('click', (e) => {

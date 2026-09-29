@@ -644,7 +644,7 @@ export const M3_TEXT = {
   mode: { daily: pair('今日の一戦', "Today's board"), free: pair('自由に遊ぶ', 'Free play'), rush: pair('墨のがれ', 'Ink Escape') },
   // 墨のがれ（2026-09-29）：上から墨が落ちてイカを飲み込む。下のマークを消して墨を流し落とす。競うのは「何手しのいだか」
   rush: {
-    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは隣の空いた所へ動かせます。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. You can slide a mark into a neighbouring empty cell. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
+    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは指で押したままなぞると、ついて来て通ったマス（斜めも）と入れ替わります。指を離すと、そろった所がまとめて消えます。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. Hold a mark and drag it: it follows your finger and swaps with every cell it passes (diagonals too). Let go and all the matches clear at once. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
     time: pair('しのいだ時間', 'Time survived'),
     lidFall: pair('ブロックが降ってきた！', 'Blocks!'),
     lidBreak: pair('道が通った！ ドバッ', 'Path open! Whoosh'),

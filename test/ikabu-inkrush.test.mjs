@@ -95,3 +95,34 @@ test('記録：しのいだ秒のベストと今日の盤面のベスト。控�
   const m = mergeM3(rec, { ...emptyM3(), rush: { best: 999, bestScore: 1, played: 3, daily: { day: '2026-09-28', turns: 5 } } });
   assert.equal(m.rush.best, 999);
 });
+
+// なぞって動かす（パズドラ式・2026-09-29）
+import { rushDragStep, rushDrop, near } from '../src/js/ikabu/games/inkrush.js';
+test('なぞる：つかんだマークは通ったマス（斜めも）と1つずつ入れ替わり、離すまで消えない', () => {
+  const g = createRush({ seed: 'drag' });
+  const held = g.board[0];
+  assert.ok(near(0, 1) && near(0, SIZE + 1) && !near(0, 2) && !near(SIZE - 1, SIZE));
+  assert.ok(rushDragStep(g, 0, 1));
+  assert.ok(rushDragStep(g, 1, SIZE + 2));   // 斜め
+  assert.equal(g.board[SIZE + 2], held);
+  assert.ok(!rushDragStep(g, SIZE + 2, SIZE + 4), '2マス先へは動かない');
+  assert.ok(g.board.every((k) => k !== null), '離すまで消えない');
+});
+test('なぞる：離すとそろった所がまとめて消え、補充されない。そろわなくても動かした形のまま', () => {
+  let cleared = false;
+  for (let s = 0; s < 60 && !cleared; s++) {
+    const g = createRush({ seed: 'drop' + s });
+    // 1列目の3マスを同じ色にして、離す
+    const k = g.board[SIZE * 3];
+    g.board[SIZE * 3 + 1] = k; g.board[SIZE * 3 + 2] = k;
+    const r = rushDrop(g, SIZE * 3);
+    assert.ok(r.ok);
+    if (r.steps.length) { cleared = true; assert.ok(g.board.some((x) => x === null), '消えた所は空いたまま'); }
+  }
+  assert.ok(cleared);
+  const g2 = createRush({ seed: 'nomatch' });
+  const before = [...g2.board];
+  const r2 = rushDrop(g2, 0);
+  assert.ok(r2.ok && r2.steps.length === 0);
+  assert.deepEqual(g2.board, before);
+});
