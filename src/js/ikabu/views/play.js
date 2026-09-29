@@ -181,6 +181,40 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice">${t(lang, T.live.playPractice)}</button>
         <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner">${t(lang, T.live.playBeginner)}</button>
       </div>
+      <!-- 季節を選んで遊ぶ：ボタンのすぐ下に開く（2026-09-29 ぱっぱ） -->
+      <div class="ika-egi-practice" id="ika-egi-practice" hidden>
+        <p class="ika-egi-setup-label">${t(lang, T.seasons.title)}</p>
+        <div class="ika-egi-seasons" id="ika-egi-seasons" role="group" aria-label="${t(lang, T.seasons.title)}">${seasonCardsHTML(lang)}</div>
+        <p class="ika-egi-cue-note">${t(lang, T.seasons.note)}</p>
+        <details class="ika-egi-detail">
+        <summary>${t(lang, T.seasons.detail)}</summary>
+        <div class="ika-egi-setup-row">
+          <div class="ika-egi-setup-item">
+            <span class="ika-egi-setup-label">${t(lang, T.setup.tod)}</span>
+            <div class="ika-chips ika-chips--small" id="ika-egi-tod" role="group" aria-label="${t(lang, T.setup.tod)}">${chips}</div>
+          </div>
+          <div class="ika-egi-setup-item">
+            <label class="ika-egi-setup-label" for="ika-egi-month">${t(lang, T.setup.month)}</label>
+            <select id="ika-egi-month" class="ika-egi-select">${months}</select>
+            <span class="ika-tag ika-tag--orange" id="ika-egi-season">${t(lang, SEASON[seasonOf(month)])}</span>
+          </div>
+          <div class="ika-egi-setup-item">
+            <label class="ika-egi-setup-label" for="ika-egi-exp">${t(lang, T.practice.expectation)}</label>
+            <input type="range" id="ika-egi-exp" class="ika-egi-range" min="0" max="10" step="1" value="5" />
+            <output class="ika-egi-range-out" id="ika-egi-exp-out" for="ika-egi-exp">★5</output>
+          </div>
+          <div class="ika-egi-setup-item">
+            <span class="ika-egi-setup-label">${t(lang, T.practice.wind)}</span>
+            <div class="ika-chips ika-chips--small" id="ika-egi-wind" role="group" aria-label="${t(lang, T.practice.wind)}">${winds}</div>
+          </div>
+        </div>
+        <p class="ika-egi-setup-hint" id="ika-egi-hint">${t(lang, T.setup.hint[tod])}</p>
+        <div class="ika-egi-around">
+          <span class="ika-egi-setup-label">${t(lang, T.setup.around)}</span>
+          <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod, { links: !solo })}</ul>
+        </div>
+        </details>
+      </div>
       <p class="ika-egi-beginner-hint" id="ika-egi-beginner-hint" hidden>${t(lang, T.live.beginnerHint)}</p>
       <details class="ika-egi-tips" id="ika-egi-tips">
         <summary>${t(lang, T.tips.open)}</summary>
@@ -261,39 +295,6 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <span class="ika-egi-cue-note">${t(lang, T.feel.shakeNote)}</span>
       </div>
       <span class="ika-egi-cue-note">${t(lang, T.feel.note)}</span>
-    </div>
-    <div class="ika-egi-practice" id="ika-egi-practice" hidden>
-      <p class="ika-egi-setup-label">${t(lang, T.seasons.title)}</p>
-      <div class="ika-egi-seasons" id="ika-egi-seasons" role="group" aria-label="${t(lang, T.seasons.title)}">${seasonCardsHTML(lang)}</div>
-      <p class="ika-egi-cue-note">${t(lang, T.seasons.note)}</p>
-      <details class="ika-egi-detail">
-      <summary>${t(lang, T.seasons.detail)}</summary>
-      <div class="ika-egi-setup-row">
-        <div class="ika-egi-setup-item">
-          <span class="ika-egi-setup-label">${t(lang, T.setup.tod)}</span>
-          <div class="ika-chips ika-chips--small" id="ika-egi-tod" role="group" aria-label="${t(lang, T.setup.tod)}">${chips}</div>
-        </div>
-        <div class="ika-egi-setup-item">
-          <label class="ika-egi-setup-label" for="ika-egi-month">${t(lang, T.setup.month)}</label>
-          <select id="ika-egi-month" class="ika-egi-select">${months}</select>
-          <span class="ika-tag ika-tag--orange" id="ika-egi-season">${t(lang, SEASON[seasonOf(month)])}</span>
-        </div>
-        <div class="ika-egi-setup-item">
-          <label class="ika-egi-setup-label" for="ika-egi-exp">${t(lang, T.practice.expectation)}</label>
-          <input type="range" id="ika-egi-exp" class="ika-egi-range" min="0" max="10" step="1" value="5" />
-          <output class="ika-egi-range-out" id="ika-egi-exp-out" for="ika-egi-exp">★5</output>
-        </div>
-        <div class="ika-egi-setup-item">
-          <span class="ika-egi-setup-label">${t(lang, T.practice.wind)}</span>
-          <div class="ika-chips ika-chips--small" id="ika-egi-wind" role="group" aria-label="${t(lang, T.practice.wind)}">${winds}</div>
-        </div>
-      </div>
-      <p class="ika-egi-setup-hint" id="ika-egi-hint">${t(lang, T.setup.hint[tod])}</p>
-      <div class="ika-egi-around">
-        <span class="ika-egi-setup-label">${t(lang, T.setup.around)}</span>
-        <ul class="ika-egi-around-list" id="ika-egi-around">${aroundHTML(lang, month, tod, { links: !solo })}</ul>
-      </div>
-      </details>
     </div>
     <p class="ika-egi-mode" id="ika-egi-mode"></p>
     <p class="ika-egi-setup-locked" id="ika-egi-locked" hidden>${t(lang, T.setup.locked)}</p>`;
