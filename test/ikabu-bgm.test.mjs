@@ -70,3 +70,11 @@ test('墨フラッシュは別格のボタン、ヒントは💡の小さな丸�
   assert.match(css, /\.ika-m3-ink\.is-full \.ika-m3-ink-squid \.is-go \{ opacity: 1;/);
   assert.match(css, /\.ika-m3-tools \.ika-btn\.ika-m3-flash \{ min-height: 52px;/);
 });
+test('墨のがれは「スタート」を押すまで時計を止める。説明は1行＋たたんだ遊び方', () => {
+  const ui = readFileSync(new URL('../src/js/ikabu/games/match3-ui.js', import.meta.url), 'utf8');
+  const view = readFileSync(new URL('../src/js/ikabu/views/play.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(ui, /if \(isRush\(\)\) startRushClock\(\); else stopRushClock\(\);/, '選んだ瞬間に時計を動かさない');
+  assert.match(ui, /if \(isRush\(\)\) showRushStart\(\);/);
+  assert.match(ui, /function showRushStart\(\) \{\s*busy = true;/);
+  assert.match(view, /<details><summary>\$\{t\(lang, T\.rush\.howto\)\}<\/summary>/);
+});

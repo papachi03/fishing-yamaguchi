@@ -483,7 +483,11 @@ export const m3HTML = (lang) => {
             <button type="button" class="ika-chip ika-chip--rush" data-mode="rush" aria-pressed="false">🌊 ${t(lang, T.mode.rush)}</button>
           </div>
           <p class="ika-m3-daily" id="ika-m3-daily">${t(lang, T.dailyNote)} <b id="ika-m3-day"></b></p>
-          <p class="ika-m3-daily" id="ika-m3-rush-note" hidden>${t(lang, T.rush.note)}</p>
+          <!-- 説明は1行の要約＋たたんだ「遊び方」（2026-09-30：長い説明で盤面が画面の外に出ていた） -->
+          <div class="ika-m3-daily ika-m3-rush-note" id="ika-m3-rush-note" hidden>
+            <p>${t(lang, T.rush.lead)}</p>
+            <details><summary>${t(lang, T.rush.howto)}</summary><p>${t(lang, T.rush.note)}</p></details>
+          </div>
         </div>
 
         <div class="ika-m3-main">

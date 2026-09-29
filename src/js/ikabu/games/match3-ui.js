@@ -325,7 +325,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const rn = root.querySelector('#ika-m3-rush-note'); if (rn) rn.hidden = !isRush();
     if (el.goal) el.goal.hidden = isRush();
     if (el.movesLabel) el.movesLabel.textContent = t(lang, isRush() ? TX.rush.time : TX.hud.moves);
-    if (isRush()) startRushClock(); else stopRushClock();
+    // 墨のがれは「スタート」を押すまで時計を止めておく（2026-09-30 感想「押した瞬間に始まるから盤面が見えない」）
+    stopRushClock();
+    el.wrap.querySelector('.ika-m3-start')?.remove();
     if (isRush()) { mood = 'calm'; setMood('calm'); }
     if (el.goalLabel) el.goalLabel.textContent = `${t(lang, TX.hud.today)} ${goals.goal.toLocaleString()}`;
     recorded = false;
@@ -341,6 +343,40 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     setCursor(cursor, false);
     setMsg('');
     syncHud();
+    if (isRush()) showRushStart();
+  }
+
+  // 墨のがれのスタート：盤面の上に大きな「スタート」。押すまで盤面は触れない（busy）・時計も止まったまま。
+  //   押したら、イカの部屋と盤面が画面に入る位置まで動かし、3・2・1 と数えてから始める
+  function showRushStart() {
+    busy = true;
+    syncHud();
+    const ov = document.createElement('div');
+    ov.className = 'ika-m3-start';
+    ov.innerHTML = `<button type="button" class="ika-btn ika-btn--primary ika-m3-start-btn">▶ ${t(lang, TX.rush.start)}</button><p>${t(lang, TX.rush.startNote)}</p>`;
+    el.wrap.append(ov);
+    const game = g;
+    ov.querySelector('button').addEventListener('click', async () => {
+      sfx.unlock?.();
+      ov.classList.add('is-go');
+      ov.querySelector('button').disabled = true;
+      const target = el.rush && !el.rush.hidden ? el.rush : el.wrap;
+      const header = document.getElementById('ika-header');
+      const headH = header && getComputedStyle(header).position === 'sticky' ? header.getBoundingClientRect().height : 0;
+      window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - headH - 8), behavior: reduced ? 'auto' : 'smooth' });
+      for (const n of ['3', '2', '1']) {
+        if (g !== game) return;   // 数えている間に別の盤面を選んだ
+        ov.innerHTML = `<b class="ika-m3-start-count">${n}</b>`;
+        sfx.pop?.(1);
+        await sleep(reduced ? 250 : 600);
+      }
+      if (g !== game) return;
+      ov.remove();
+      callout(t(lang, TX.rush.go), 'flash');
+      busy = false;
+      startRushClock();
+      syncHud();
+    });
   }
 
   /* ---------- 墨のがれ：イカの表情・次の墨・墨メーター（2026-09-29） ---------- */

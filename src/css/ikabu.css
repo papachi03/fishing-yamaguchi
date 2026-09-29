@@ -1762,6 +1762,20 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .ika-m3-daily { font-size: 12.5px; color: var(--ika-ink-soft); }
 .ika-m3-daily b { font-family: var(--font-varsity); font-weight: 800; letter-spacing: 0.1em; color: var(--ika-sea); }
+/* 墨のがれの説明：1行の要約＋たたんだ「遊び方」（2026-09-30） */
+.ika-m3-rush-note[hidden] { display: none; }
+.ika-m3-rush-note > p { font-size: 13.5px; font-weight: 700; color: var(--ika-ink); }
+.ika-m3-rush-note details { margin-top: 4px; }
+.ika-m3-rush-note summary { cursor: pointer; display: inline-block; padding: 2px 10px; border: 2px solid var(--ika-sea); border-radius: 999px; font-weight: 700; color: var(--ika-sea); font-size: 12px; }
+.ika-m3-rush-note details p { margin-top: 6px; }
+/* 墨のがれのスタート：盤面の上にかぶせる（押すまで時計は止まっている） */
+.ika-m3-start { position: absolute; inset: 0; z-index: 6; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 16px; border-radius: 18px; background: #0b2a2fcc; text-align: center; }
+.ika-m3-start .ika-m3-start-btn { min-height: 60px; padding: 10px 34px; font-size: 22px; animation: ika-m3-ready 0.9s ease-in-out infinite; }
+.ika-m3-start p { color: #fff; font-size: 13px; font-weight: 700; }
+.ika-m3-start.is-go { background: #0b2a2f99; }
+.ika-m3-start-count { font-family: var(--font-varsity); font-weight: 800; font-size: 96px; line-height: 1; color: #fff; text-shadow: 4px 4px 0 var(--ika-orange); animation: ika-m3-count 0.6s ease-out both; }
+@keyframes ika-m3-count { from { transform: scale(1.8); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ika-m3-start .ika-m3-start-btn, .ika-m3-start-count { animation: none; } }
 .ika-m3-main { width: min(100%, 460px); margin-inline: auto; display: grid; gap: 12px; }
 .ika-m3-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ika-m3-hud div { display: grid; padding: 6px 10px; text-align: center; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 10px; }
