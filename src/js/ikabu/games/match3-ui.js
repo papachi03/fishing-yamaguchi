@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, rushHint, rushTick, LID, CAP, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, rushHint, rushTick, HOLE, holes, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -74,21 +74,26 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       rushPending += dt;
       if (busy) return;
       const dtAll = rushPending; rushPending = 0;
-      const events = rushTick(g, dtAll);
-      if (events.length) rushClockEvents(events);
+      const tk = rushTick(g, dtAll);
+      if (tk.events.length || tk.steps.length) rushClockEvents(tk);
       else syncRush();
     }, 100);
   }
-  async function rushClockEvents(events) {
+  async function rushClockEvents({ events, steps }) {
     busy = true;
     try {
       for (const ev of events) {
-        if (ev.type === 'lid') {
+        if (ev.type === 'row') {
+          // 上から一列降りて、盤面全体が1段下がる（穴はふさがる）
           callout(t(lang, TX.rush.lidFall), 'blast');
           sfx.bomb();
-          for (const i of ev.cells) { paint(i, LID); shown[i] = LID; cells[i].classList.add('is-lid-drop'); setTimeout(() => cells[i].classList.remove('is-lid-drop'), 700); }
-          el.board.classList.remove('is-quake'); void el.board.offsetWidth; el.board.classList.add('is-quake');
-          await sleep(dur(500));
+          setSelected(null);
+          const before = steps.length ? steps[0].board : g.board;   // 連鎖の前の盤面（降りた直後）
+          renderBoard(steps.length ? shownBefore(steps[0]) : g.board);
+          if (!reduced) { const anims = []; for (let i = 0; i < N; i++) anims.push(cells[i].animate([{ transform: 'translateY(-108%)' }, { transform: 'translateY(0)' }], { duration: 420, easing: 'cubic-bezier(0.3, 0, 0.6, 1.2)' }).finished); await Promise.all(anims).catch(() => {}); }
+          void before;
+          if (steps.length) await playSteps(steps, false);
+          await sleep(dur(200));
         } else if (ev.type === 'stuck') {
           setMsg(t(lang, TX.rush.stuck)); el.board.classList.add('is-shuffle'); await sleep(dur(300)); renderBoard(g.board); el.board.classList.remove('is-shuffle');
         }
@@ -106,14 +111,16 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const color = colorOf(kind);
     c.dataset.kind = String(color ?? kind);
     c.dataset.special = kind === RARE ? 'rare' : kind === BALL ? 'ball' : isLine(kind) ? (kind >= LINE_V ? 'v' : 'h') : '';
-    if (kind === LID) { c.dataset.kind = 'lid'; c.dataset.special = ''; c.innerHTML = LID_SVG; c.setAttribute('aria-label', t(lang, 'ふた', 'Lid')); c.disabled = false; return; }
+    if (kind === HOLE) { c.dataset.kind = 'hole'; c.dataset.special = ''; c.innerHTML = HOLE_SVG; c.setAttribute('aria-label', t(lang, '穴', 'Hole')); c.disabled = false; return; }
     if (kind === BALL) c.innerHTML = `<img src="${assetHref('/assets/ikabu/tiles/ball_128.webp')}" width="56" height="56" alt="" decoding="async" draggable="false" onerror="this.remove()" /><b class="ika-m3-ballglow" aria-hidden="true"></b><i aria-hidden="true">◎</i>`;
     else c.innerHTML = `${tileImg(color ?? kind, { href: assetHref, size: 56 })}${isLine(kind) ? `<b class="ika-m3-line" aria-hidden="true"></b>` : ''}<i aria-hidden="true">${tileSymbol(color ?? kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
     c.disabled = false;
   }
   const INK_SVG = '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path d="M0,-34 C14,-36 22,-22 30,-18 C42,-12 40,4 34,12 C40,24 26,36 14,32 C6,42 -8,40 -14,30 C-28,34 -40,20 -32,8 C-42,-4 -34,-22 -20,-22 C-18,-32 -8,-34 0,-34 Z" fill="#132033"/><ellipse cx="-10" cy="-14" rx="9" ry="5" fill="#ffffff" opacity="0.35"/><circle cx="18" cy="18" r="4" fill="#ffffff" opacity="0.18"/></svg>';
-  const LID_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="6" y="10" width="88" height="80" rx="14" fill="#2b3a4a" stroke="#0c1622" stroke-width="5"/><path d="M18 30 Q50 18 82 30 Q84 60 50 84 Q16 60 18 30 Z" fill="#132033"/><ellipse cx="38" cy="36" rx="10" ry="5" fill="#ffffff" opacity="0.25"/><path d="M26 62 L40 50 L52 66 L66 52 L76 64" fill="none" stroke="#5a6b7d" stroke-width="4" stroke-linecap="round"/></svg>';
+  // 一番下の穴：暗い開口。抜けている間は流れ（ika-m3-flow）がこの上を通る
+  const HOLE_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="52" rx="38" ry="30" fill="#061220"/><ellipse cx="50" cy="46" rx="30" ry="20" fill="#0c1b2e"/><path d="M22 70 Q50 92 78 70" fill="none" stroke="#0c1b2e" stroke-width="6" stroke-linecap="round"/></svg>';
+  const LID_SVG = '<svg class="ika-m3-inkwave" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path class="ika-m3-wave" d="M0 30 Q25 18 50 30 T100 30 T150 30 T200 30 T250 30 T300 30 V100 H0 Z" fill="#132033"/><path class="ika-m3-wave is-2" d="M0 36 Q25 26 50 36 T100 36 T150 36 T200 36 T250 36 T300 36 V100 H0 Z" fill="#1f3050" opacity="0.55"/></svg>';
   function renderBoard(board) {
     shown = [...board];
     board.forEach((k, i) => paint(i, k));
@@ -285,8 +292,24 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (say) el.say.textContent = t(lang, TX.rush.moods[m] ?? TX.rush.moods.calm);
   }
   const moodOf = (p) => (p >= 0.8 ? 'doom' : p >= 0.5 ? 'panic' : p >= 0.25 ? 'worry' : 'calm');
+  const shownBefore = (st) => { const b = [...st.board]; return b; };   // 降りた直後の盤面は st.board（消えた後）で近似。ずれは playSteps が直す
+  const flows = new Map();   // 列 → 流れの部品（穴がある間だけ）
+  function syncFlows() {
+    const hs = isRush() && g && !g.over ? new Set(holes(g.board)) : new Set();
+    for (const [c, e] of flows) if (!hs.has(c)) { e.remove(); flows.delete(c); }
+    if (!hs.size) return;
+    const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
+    for (const c of hs) {
+      if (flows.has(c)) continue;
+      const b = cellBox(c);
+      const e = document.createElement('span'); e.className = 'ika-m3-flow';
+      Object.assign(e.style, { left: `${b.cx - b.w * 0.24}px`, top: `${wb.top - wr.top - 30}px`, width: `${b.w * 0.48}px`, height: `${wb.height + 30}px` });
+      fxLayer.append(e); flows.set(c, e);
+    }
+  }
   function syncRush() {
-    if (!isRush() || !el.rush) return;
+    if (!isRush() || !el.rush) { syncFlows(); return; }
+    syncFlows();
     const p = panicOf(g);
     el.rush.style.setProperty('--ink', p.toFixed(3));
     el.rush.classList.toggle('is-doom', p >= 0.8 && !g.over);
@@ -304,14 +327,16 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (ev.type === 'drain' && ev.amount > 0) {
         // 穴の開いた列に、墨の筋が上から下へ流れる
         if (!reduced) { const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
-          for (const c of ev.cols) { const b = cellBox(c); fxEl('ika-m3-stream', { left: `${b.cx - b.w * 0.18}px`, top: `${wb.top - wr.top}px`, width: `${b.w * 0.36}px`, height: `${wb.height}px` }); } }
+          for (const c of ev.cols) { const b = cellBox(c); fxEl('ika-m3-stream', { left: `${b.cx - b.w * 0.3}px`, top: `${wb.top - wr.top}px`, width: `${b.w * 0.6}px`, height: `${wb.height}px` }); } }
         sfx.line();
         callout(TX.rush.drain(lang, ev.amount), 'flash');
         drained = true;
         await sleep(dur(520));
-      } else if (ev.type === 'lidbreak') {
-        callout(t(lang, TX.rush.lidBreak), 'combo'); sfx.bomb();
-        await sleep(dur(350));
+      } else if (ev.type === 'hole') {
+        callout(t(lang, TX.rush.lidBreak), 'flash'); sfx.line();
+        if (!reduced) { const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
+          for (const c of ev.cols) { const b = cellBox(c); fxEl('ika-m3-stream', { left: `${b.cx - b.w * 0.36}px`, top: `${wb.top - wr.top - 24}px`, width: `${b.w * 0.72}px`, height: `${wb.height + 24}px` }); } }
+        if (!g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }
       } else if (ev.type === 'stuck') {
         callout(t(lang, TX.rush.stuck), 'blast');
         await sleep(dur(400));
@@ -359,7 +384,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
-      else if (st.kind === 'lidbreak') { sfx.bomb(); for (const i of st.cleared) cells[i].classList.add('is-lid-break'); await sleep(dur(220)); for (const i of st.cleared) cells[i].classList.remove('is-lid-break'); }
+      else if (st.kind === 'hole') { for (const i of st.opened) { shown[i] = HOLE; paint(i, HOLE); cells[i].classList.add('is-hole-open'); setTimeout(() => cells[i].classList.remove('is-hole-open'), 500); } el.score.textContent = g.score.toLocaleString(); continue; }
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
       // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
@@ -522,6 +547,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     syncHud();
     const R = TX.rush;
     stopRushClock();
+    syncFlows();
     const turns = Math.floor(g.rush.t);
     const best = rec.rush?.best ?? 0;
     if (!reduced) fxEl('ika-m3-tint is-big', {});

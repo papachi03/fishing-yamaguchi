@@ -489,7 +489,7 @@ export const m3HTML = (lang) => {
             <div class="ika-m3-rush-sky" aria-hidden="true"><i></i><i></i><i></i></div>
             <div class="ika-m3-rush-ledge" aria-hidden="true"></div>
             <div class="ika-m3-rush-squid" id="ika-m3-rush-squid" data-mood="calm"><img id="ika-m3-rush-face" src="${assetHref('/assets/ikabu/mascot/wink.webp')}" alt="" width="96" height="100" decoding="async" /><span class="ika-m3-rush-sweat" aria-hidden="true"><i></i><i></i><i></i></span><b id="ika-m3-rush-say">${t(lang, T.rush.moods.calm)}</b></div>
-            <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"><i></i></div>
+            <div class="ika-m3-rush-pool" id="ika-m3-rush-pool" aria-hidden="true"><svg class="ika-m3-inkwave" viewBox="0 0 200 100" preserveAspectRatio="none"><path class="ika-m3-wave" d="M0 30 Q25 18 50 30 T100 30 T150 30 T200 30 T250 30 T300 30 V100 H0 Z" fill="#132033"/><path class="ika-m3-wave is-2" d="M0 40 Q25 28 50 40 T100 40 T150 40 T200 40 T250 40 T300 40 V100 H0 Z" fill="#1f3050" opacity="0.6"/></svg><i></i></div>
             <div class="ika-m3-rush-gauge" id="ika-m3-rush-gauge" role="status"><b id="ika-m3-rush-level">0/30</b><span id="ika-m3-rush-next"></span></div>
           </div>
           <div class="ika-m3-board-wrap" id="ika-m3-wrap">
