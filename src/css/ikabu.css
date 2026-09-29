@@ -1841,16 +1841,15 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-rush.is-doom { animation: ika-m3-doom 0.6s ease-in-out infinite; }
 .is-doom .ika-m3-board { box-shadow: 6px 6px 0 var(--ika-ink), 0 0 0 4px #d8342c88; }
 @keyframes ika-m3-doom { 0%, 100% { box-shadow: 0 0 0 0 #d8342c00; } 50% { box-shadow: 0 0 0 6px #d8342c66; } }
-/* 一番下の穴（第4版）：暗い開口。開いた瞬間に広がる */
-.ika-m3-cell[data-kind='hole'] { --tile: #0c1b2e; --edge: #061220; background: radial-gradient(circle at 50% 45%, #1a2c44, #0c1b2e 70%); cursor: not-allowed; box-shadow: inset 0 3px 8px #000000aa, 0 2px 0 #061220; }
-.ika-m3-cell[data-kind='hole'] svg { width: 90%; height: 90%; }
-.ika-m3-cell[data-kind='hole']::after { display: none; }
-.ika-m3-cell.is-hole-open { animation: ika-m3-holeopen 0.45s ease-out; }
-@keyframes ika-m3-holeopen { 0% { transform: scale(0.4); } 60% { transform: scale(1.12); } 100% { transform: none; } }
-/* つながった流れ：部屋の墨から穴まで、一本の液体として盤面を通り抜ける（マスで区切らない・2026-09-29 ぱっぱ） */
-.ika-m3-flow { position: absolute; z-index: 4; border-radius: 12px; opacity: 0.82; pointer-events: none; background: repeating-linear-gradient(180deg, #132033 0 18px, #1f3050 18px 30px); background-size: 100% 48px; animation: ika-m3-flowmove 0.6s linear infinite; box-shadow: 0 0 10px #13203388; }
-.ika-m3-flow::before { content: ''; position: absolute; left: 50%; top: -6px; width: 160%; height: 14px; transform: translateX(-50%); border-radius: 50%; background: #132033; }
-@keyframes ika-m3-flowmove { from { background-position: 0 0; } to { background-position: 0 48px; } }
+/* 第5版：空いたマス。部屋とつながった所は墨（隣の墨とつながって一体に見えるよう、すき間まで塗る）、つながっていない所は空洞 */
+.ika-m3-cell[data-kind='ink'] { --tile: #132033; --edge: #132033; background: #132033; border: 0; border-radius: 0; outline: 0; box-shadow: 0 0 0 7px #132033; cursor: default; z-index: 0; animation: none; }
+.ika-m3-cell[data-kind='ink']::after { content: ''; position: absolute; inset: 20% 10% auto 10%; height: 18%; border-radius: 50%; background: #ffffff10; filter: none; transform: none; animation: ika-m3-inkshine 2.4s ease-in-out infinite; }
+@keyframes ika-m3-inkshine { 0%, 100% { transform: translateX(-10%); opacity: 0.4; } 50% { transform: translateX(10%); opacity: 1; } }
+.ika-m3-cell[data-kind='empty'] { --tile: #0f3940; --edge: #0a2a30; background: #0f3940; box-shadow: inset 0 2px 6px #00000066; cursor: default; }
+.ika-m3-cell[data-kind='empty']::after { display: none; }
+/* 道が一番下まで通った所から、盤面の下へ墨がこぼれ落ちる */
+.ika-m3-flow { position: absolute; z-index: 4; border-radius: 0 0 12px 12px; opacity: 0.9; pointer-events: none; background: repeating-linear-gradient(180deg, #132033 0 16px, #1f3050 16px 26px); background-size: 100% 42px; animation: ika-m3-flowmove 0.5s linear infinite; }
+@keyframes ika-m3-flowmove { from { background-position: 0 0; } to { background-position: 0 42px; } }
 .ika-m3-cell.is-lid-drop { animation: ika-m3-liddrop 0.55s cubic-bezier(0.3, 0, 0.7, 1.6) both; }
 @keyframes ika-m3-liddrop { 0% { transform: translateY(-140%); } 70% { transform: translateY(6%); } 100% { transform: none; } }
 .ika-m3-cell.is-lid-break { animation: ika-m3-lidbreak 0.25s ease-in both; }

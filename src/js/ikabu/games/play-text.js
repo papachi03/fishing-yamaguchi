@@ -634,11 +634,11 @@ export const M3_TEXT = {
   mode: { daily: pair('今日の一戦', "Today's board"), free: pair('自由に遊ぶ', 'Free play'), rush: pair('墨のがれ', 'Ink Escape') },
   // 墨のがれ（2026-09-29）：上から墨が落ちてイカを飲み込む。下のマークを消して墨を流し落とす。競うのは「何手しのいだか」
   rush: {
-    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。一番下の列のマークを消すと穴が開き、開いている間は墨が抜け続けます。ときどき上から一列降りてきて穴はふさがるので、また一番下を消して穴を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Clear marks in the bottom row to open holes; while a hole is open the ink keeps draining. Now and then a new row drops in from the top and plugs the holes, so clear the bottom again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
+    note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは隣の空いた所へ動かせます。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. You can slide a mark into a neighbouring empty cell. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),
     time: pair('しのいだ時間', 'Time survived'),
-    lidFall: pair('上から一列降ってきた！ 穴がふさがった', 'A new row! Holes plugged'),
-    lidBreak: pair('穴が開いた！ ドバッ', 'Hole open! Whoosh'),
-    nextLid: (lang, n) => (lang === 'en' ? `Next row in ${n}s` : `次の列まで ${n}秒`),
+    lidFall: pair('ブロックが降ってきた！', 'Blocks!'),
+    lidBreak: pair('道が通った！ ドバッ', 'Path open! Whoosh'),
+    nextLid: (lang, n) => (lang === 'en' ? `Blocks in ${n}s` : `ブロックまで ${n}秒`),
     turns: pair('しのいだ秒', 'Seconds survived'),
     flushed: pair('流した墨', 'Ink flushed'),
     meter: pair('墨', 'Ink'),

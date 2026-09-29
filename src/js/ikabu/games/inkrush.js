@@ -1,114 +1,147 @@
-// 墨のがれ（第4版・2026-09-29 ぱっぱ）：盤面の上にイカの部屋（岩の穴）。最初から墨がたまっていて、手を打たなくても
-// 時間とともに水位が上がる（だんだん速く）。**盤面の一番下の列のマークを消すと、そこに穴が開く。穴が開いている間は墨が抜け続ける**（穴が多いほど速い）。
-// 一定時間ごとに上から新しい一列が降りてきて、盤面全体が1段下がり、穴はふさがれる（栓）。また一番下を消して穴を開ける、の繰り返し。
-// 水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と、降ってくる列）は世界中で同じ。
-import { createGame, swap, swapWorks, inkFlash, cascade, findRuns, adjacent, SIZE, KINDS, FIXED } from './match3.js';
+// 墨のがれ（第5版・2026-09-29 ぱっぱ A案）：盤面の上にイカの部屋（岩の穴）。最初から墨がたまっていて、時間とともに水位が上がる（だんだん速く）。
+//   ・マークを消した所は**空いたまま**（上のマークは落ちない・補充しない）。部屋とつながった空き間には墨が流れ込む
+//   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
+//   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
+//   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
+import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, SIZE, KINDS } from './match3.js';
 
-export const HOLE = FIXED;              // 一番下の穴（動かせない・そろえられない・マークが入らない）
 export const CAP = 30;                  // 水位がここで飲み込まれる
-export const START = 10;                // 最初の水位
-export const HOLE_RATE = 1.0;           // 穴1つが1秒に抜く墨
-export const OPEN_BURST = 1.5;          // 穴が開いた瞬間に抜ける墨
+export const START = 8;                // 最初の水位
+export const HOLE_RATE = 0.7;           // 一番下の開いたマス1つが1秒に抜く墨
+export const OPEN_BURST = 1.2;          // 道が新しく一番下に届いた瞬間に抜ける墨（1マスごと）
+export const CELL_HOLD = 0.6;           // 空き間1マスに入る墨（空き間が部屋とつながると水位が下がる／ふさがると押し戻される）
 export const FLUSH_POINT = 20;          // 墨を1抜くごとの点
-export const ROW_EVERY = 16;            // 上から一列が降る間隔（秒）。最初は ROW_FIRST 秒後
-export const ROW_FIRST = 18;
+export const ROW_EVERY = 7;             // ブロックが降る間隔（秒）。最初は ROW_FIRST 秒後
+export const ROW_FIRST = 12;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
-export const PACE = [[0, 1.0], [20, 1.4], [40, 2.0], [60, 2.8], [90, 3.8], [120, 5.2]];
+export const PACE = [[0, 0.5], [20, 0.9], [40, 1.4], [60, 2.0], [90, 2.8], [120, 4.0], [160, 5.5]];   // 道を意識して2秒に1手で約100秒・でたらめ33秒（rush_sim.mjs）
 export const inflowAt = (sec) => { let v = PACE[0][1]; for (const [from, amt] of PACE) if (sec >= from) v = amt; return v; };
 export const panicOf = (g) => Math.min(1, (g.rush?.level ?? 0) / CAP);
 const N = SIZE * SIZE;
 const colOf = (i) => i % SIZE;
+const rowOf = (i) => Math.floor(i / SIZE);
 const BOTTOM = (SIZE - 1) * SIZE;
 
 export function createRush({ seed = String(Date.now()) } = {}) {
   const g = createGame({ seed: `rush:${seed}` });
   g.moves = Infinity;
-  g.rush = { t: 0, level: START, flushed: 0, rows: 0, reason: null, nextRow: ROW_FIRST };
+  g.noRefill = true;
+  g.noShuffle = true;
+  g.rush = { t: 0, level: START, flushed: 0, rows: 0, reason: null, nextRow: ROW_FIRST, open: [], held: 0 };
   return g;
 }
-export const holes = (b) => { const out = []; for (let c = 0; c < SIZE; c++) if (b[BOTTOM + c] === HOLE) out.push(c); return out; };
 
-// 動かせる手（穴をよける）
-const swapOk = (b, a, c) => adjacent(a, c) && b[a] !== HOLE && b[c] !== HOLE && swapWorks(b, a, c);
+// 部屋とつながった空き間（墨が入っているマス）。一番上の列の空きから、上下左右につながった空き
+export function inked(b) {
+  const seen = new Uint8Array(N);
+  const q = [];
+  for (let c = 0; c < SIZE; c++) if (b[c] === null) { seen[c] = 1; q.push(c); }
+  while (q.length) {
+    const i = q.pop();
+    for (const j of [i - 1, i + 1, i - SIZE, i + SIZE]) if (adjacent(i, j) && !seen[j] && b[j] === null) { seen[j] = 1; q.push(j); }
+  }
+  const out = [];
+  for (let i = 0; i < N; i++) if (seen[i]) out.push(i);
+  return out;
+}
+// 墨が抜けている一番下のマス（道が通っている所）
+export const openBottom = (b) => inked(b).filter((i) => i >= BOTTOM);
+
+// 動かせる手：そろう入れ替え、または「マークを隣の空いた所へ動かす」（そろわなくても可。補充が無いので、これが無いと4〜8手で手詰まりになった）
+const isMove = (b, a, c) => adjacent(a, c) && (b[a] === null) !== (b[c] === null);
+const swapOk = (b, a, c) => adjacent(a, c) && !(b[a] === null && b[c] === null) && (swapWorks(b, a, c) || isMove(b, a, c));
 export function rushHint(b) {
+  const both = (i, j) => adjacent(i, j) && b[i] !== null && b[j] !== null && swapWorks(b, i, j);
+  for (let i = 0; i < N; i++) {
+    if (colOf(i) < SIZE - 1 && both(i, i + 1)) return [i, i + 1];
+    if (i + SIZE < N && both(i, i + SIZE)) return [i, i + SIZE];
+  }
   for (let i = 0; i < N; i++) {
     if (colOf(i) < SIZE - 1 && swapOk(b, i, i + 1)) return [i, i + 1];
     if (i + SIZE < N && swapOk(b, i, i + SIZE)) return [i, i + SIZE];
   }
   return null;
 }
-function reshuffle(g) {
-  const idx = g.board.map((v, i) => (v === HOLE ? -1 : i)).filter((i) => i >= 0);
-  for (let tries = 0; tries < 200; tries++) {
-    const vals = idx.map((i) => g.board[i]);
-    for (let k = vals.length - 1; k > 0; k--) { const j = Math.floor(g.rand() * (k + 1)); [vals[k], vals[j]] = [vals[j], vals[k]]; }
-    const b = [...g.board]; idx.forEach((i, k) => { b[i] = vals[k]; });
-    if (findRuns(b).length === 0 && rushHint(b)) { g.board = b; return true; }
-  }
-  return false;
-}
 
-// 上から一列降りる：盤面全体が1段下がり、一番下の列（穴も）は押し出される。新しい列は「隣2つと同じにならない」ように作る
-function dropRow(g) {
+// 降ってくるブロック：各列に1つ、その列の空いた所の一番下まで落ちる。落ちてそろわない色を選ぶ
+function dropBlocks(g) {
   const b = g.board;
-  for (let r = SIZE - 1; r >= 1; r--) for (let c = 0; c < SIZE; c++) b[r * SIZE + c] = b[(r - 1) * SIZE + c];
+  const landed = [];
   for (let c = 0; c < SIZE; c++) {
-    const ban = new Set();
-    if (c >= 2 && b[c - 1] === b[c - 2]) ban.add(b[c - 1]);
-    if (b[SIZE + c] === b[2 * SIZE + c]) ban.add(b[SIZE + c]);
-    const ok = [...Array(KINDS).keys()].filter((k) => !ban.has(k));
-    b[c] = ok[Math.floor(g.rand() * ok.length)];
+    // 一番下の空きより上にマークがあると、そこまでしか落ちない（上から見て最初のマークの手前）
+    let top = -1;
+    for (let r = 0; r < SIZE; r++) { if (b[r * SIZE + c] !== null) break; top = r * SIZE + c; }
+    const i = top >= 0 ? top : -1;
+    if (i < 0) continue;   // 列の一番上が埋まっている：降りられない
+    const ok = [...Array(KINDS).keys()].filter((k) => { b[i] = k; const m = findMatches(b).length === 0; b[i] = null; return m; });
+    const pool = ok.length ? ok : [...Array(KINDS).keys()];
+    b[i] = pool[Math.floor(g.rand() * pool.length)];
+    landed.push({ at: i, from: -1, rows: rowOf(i) + 1 });
   }
   g.rush.rows += 1;
-  return findRuns(b).length ? cascade(g, null).steps : [];   // 降りた拍子にそろったら、その連鎖も
+  return landed;
 }
 
-// 時間を進める：水位が上がる（穴があれば抜ける）／一列が降る。dt＝秒
+function drainUpdate(g) {
+  // 盤面の空き間に入っている墨（受け皿）：増えた分だけ部屋の水位が下がり、減った分（ふさがれた）だけ上がる
+  const held = inked(g.board).length;
+  const dHold = (held - g.rush.held) * CELL_HOLD;
+  g.rush.held = held;
+  g.rush.level = Math.max(0, g.rush.level - dHold);
+  if (dHold > 0) { g.rush.flushed += dHold; g.score += Math.round(dHold * FLUSH_POINT); }
+  const open = openBottom(g.board);
+  const before = new Set(g.rush.open);
+  const fresh = open.filter((i) => !before.has(i));
+  g.rush.open = open;
+  let burst = 0;
+  if (fresh.length) {
+    burst = Math.min(g.rush.level, fresh.length * OPEN_BURST);
+    g.rush.level -= burst;
+    g.rush.flushed += burst;
+    g.score += Math.round(burst * FLUSH_POINT) + fresh.length * 40;
+  }
+  return { open, fresh, burst, dHold };
+}
+
+// 時間を進める：水位が上がる（道が通っていれば抜ける）／ブロックが降る。dt＝秒
 export function rushTick(g, dt) {
   if (g.over || dt <= 0) return { events: [], steps: [] };
-  const events = [], steps = [];
+  const events = [];
   g.rush.t += dt;
-  const h = holes(g.board).length;
-  const out = Math.min(g.rush.level, h * HOLE_RATE * dt);
+  const out = Math.min(g.rush.level, g.rush.open.length * HOLE_RATE * dt);
   g.rush.level += inflowAt(g.rush.t) * dt - out;
   if (out > 0) { g.rush.flushed += out; g.score += Math.round(out * FLUSH_POINT); }
   if (g.rush.t >= g.rush.nextRow) {
     g.rush.nextRow += ROW_EVERY;
-    const plugged = holes(g.board);
-    steps.push(...dropRow(g));
-    events.push({ type: 'row', plugged });
-    if (!rushHint(g.board)) { reshuffle(g); events.push({ type: 'stuck' }); }
+    const before = g.rush.open.length;
+    const landed = dropBlocks(g);
+    drainUpdate(g);
+    events.push({ type: 'row', landed, plugged: Math.max(0, before - g.rush.open.length) });
   }
   if (g.rush.level >= CAP) { g.rush.level = CAP; g.over = true; g.rush.reason = 'drown'; events.push({ type: 'over' }); }
-  return { events, steps };
+  return { events, steps: [] };
 }
 
-// 1手の後：一番下で消えたマスは穴になる（落ちてきたマークは穴から落ちて消える）
 function afterMove(g, r) {
-  const steps = [...r.steps];
+  const d = drainUpdate(g);
   const events = [];
-  const opened = [];
-  for (const st of steps) for (const i of st.cleared) if (i >= BOTTOM && g.board[i] !== HOLE) { g.board[i] = HOLE; opened.push(i); }
-  if (opened.length) {
-    const burst = Math.min(g.rush.level, opened.length * OPEN_BURST);
-    g.rush.level -= burst;
-    g.rush.flushed += burst;
-    const points = Math.round(burst * FLUSH_POINT) + opened.length * 40;
-    g.score += points;
-    steps.push({ kind: 'hole', cleared: [], created: [], points, chain: 0, fx: [], board: [...g.board], opened });
-    events.push({ type: 'hole', cells: opened, cols: opened.map(colOf) });
-  }
-  if (r.shuffled) events.push({ type: 'stuck' });
-  return { ok: true, steps, events, maxChain: r.maxChain, shuffled: r.shuffled, panic: panicOf(g), over: g.over };
+  if (d.fresh.length) events.push({ type: 'hole', cells: d.fresh, cols: d.fresh.map(colOf), amount: Math.round(d.burst * 10) / 10 });
+  if (d.dHold > 0) events.push({ type: 'fill', amount: Math.round(d.dHold * 10) / 10 });
+  return { ok: true, steps: [...r.steps], events, maxChain: r.maxChain, shuffled: false, panic: panicOf(g), over: g.over };
 }
 export function rushSwap(g, a, b) {
   if (g.over || !swapOk(g.board, a, b)) return { ok: false, steps: [] };
+  if (!swapWorks(g.board, a, b)) {
+    // そろわない：マークを空いた所へ動かすだけ
+    [g.board[a], g.board[b]] = [g.board[b], g.board[a]];
+    return afterMove(g, { ok: true, steps: [], maxChain: 0, moved: true });
+  }
   const r = swap(g, a, b);
   if (!r.ok) return r;
   return afterMove(g, r);
 }
 export function rushFlash(g, idx) {
-  if (g.over || g.board[idx] === HOLE) return { ok: false, steps: [] };
+  if (g.over || g.board[idx] === null) return { ok: false, steps: [] };
   const r = inkFlash(g, idx);
   if (!r.ok) return r;
   return afterMove(g, r);

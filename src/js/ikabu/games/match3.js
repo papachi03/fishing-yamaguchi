@@ -146,6 +146,7 @@ const blastCells = (center, R = 1) => {
 // FIXED（墨のがれの「ふた」）はその場に留まり、ほかのマークはそれをよけて詰まる
 export const FIXED = 41;
 export function dropAndFill(g) {
+  if (g.noRefill) return;   // 墨のがれ（第5版）：消した所は空いたまま（落ちない・補充しない）
   for (let c = 0; c < SIZE; c++) {
     const col = [];
     for (let r = SIZE - 1; r >= 0; r--) {

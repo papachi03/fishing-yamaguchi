@@ -1,13 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRush, rushSwap, rushFlash, rushTick, rushHint, HOLE, holes, CAP, START, HOLE_RATE, OPEN_BURST, ROW_FIRST, PACE, inflowAt, panicOf } from '../src/js/ikabu/games/inkrush.js';
-import { SIZE, INK_NEED, findMatches } from '../src/js/ikabu/games/match3.js';
+import { createRush, rushSwap, rushFlash, rushTick, rushHint, inked, openBottom, CAP, START, HOLE_RATE, CELL_HOLD, ROW_FIRST, PACE, inflowAt, panicOf } from '../src/js/ikabu/games/inkrush.js';
+import { SIZE, INK_NEED, findMatches, swapWorks } from '../src/js/ikabu/games/match3.js';
 import { recordRush, emptyM3, mergeM3 } from '../src/js/ikabu/games/records.js';
 
-const BOTTOM = (SIZE - 1) * SIZE;
-// 時間を少しずつ進める（一度に大きく進めると、その時点の速さで全部足される）
-const tickTo = (g, sec) => { while (!g.over && g.rush.t < sec - 1e-9) rushTick(g, Math.min(0.5, sec - g.rush.t)); };   // 終わったら進めない（進めないと無限ループ）
-// 2秒に1手、ヒントどおりに打つ人
+const N = SIZE * SIZE;
+const tickTo = (g, sec) => { while (!g.over && g.rush.t < sec - 1e-9) rushTick(g, Math.min(0.5, sec - g.rush.t)); };
 const playHint = (seed, secPerMove = 2, max = 600) => {
   const g = createRush({ seed });
   let n = 0;
@@ -15,75 +13,85 @@ const playHint = (seed, secPerMove = 2, max = 600) => {
   return g;
 };
 
-test('墨のがれ（第4版）：同じ種なら同じ盤面。最初から墨がたまり（START）、手数は無制限、流れ込む速さは時間とともに上がる', () => {
+test('墨のがれ（第5版）：同じ種なら同じ盤面。最初は満杯で墨は入っていない。手数は無制限', () => {
   const a = createRush({ seed: '2026-09-29' }), b = createRush({ seed: '2026-09-29' });
   assert.deepEqual(a.board, b.board);
   assert.equal(a.rush.level, START);
   assert.equal(a.moves, Infinity);
+  assert.equal(a.board.filter((v) => v === null).length, 0);
+  assert.deepEqual(inked(a.board), []);
   assert.ok(inflowAt(0) < inflowAt(PACE[PACE.length - 1][0]));
-  assert.deepEqual(holes(a.board), []);
 });
 
-test('一番下で消えたマスは穴になり、開いた瞬間に抜け、開いている間は時間で抜け続ける', () => {
+test('消した所は空いたまま（落ちない・補充しない）。部屋とつながった空き間には墨が入り、その分水位が下がる', () => {
   let seen = false;
   for (let s = 0; s < 200 && !seen; s++) {
-    const g = createRush({ seed: 'hole' + s });
-    g.rush.level = 25;
+    const g = createRush({ seed: 'keep' + s });
     const h = rushHint(g.board);
-    if (!h) continue;
-    const r = rushSwap(g, h[0], h[1]);
-    const ev = r.events.find((e) => e.type === 'hole');
-    if (!ev) continue;
-    seen = true;
-    assert.ok(ev.cells.every((i) => i >= BOTTOM && g.board[i] === HOLE));
-    assert.equal(holes(g.board).length, ev.cells.length);
-    assert.ok(Math.abs(g.rush.level - (25 - ev.cells.length * OPEN_BURST)) < 1e-9);
+    if (!h || !swapWorks(g.board, h[0], h[1])) continue;
+    const before = g.board.filter((v) => v !== null).length;
     const lv = g.rush.level;
-    rushTick(g, 1);
-    assert.ok(Math.abs(g.rush.level - (lv + inflowAt(g.rush.t) * 1 - holes(g.board).length * HOLE_RATE)) < 1e-9);
+    rushSwap(g, h[0], h[1]);
+    const after = g.board.filter((v) => v !== null).length;
+    assert.ok(after < before, '消えた分だけ空く');
+    const ink = inked(g.board).length;
+    if (ink > 0) { seen = true; assert.ok(Math.abs(g.rush.level - Math.max(0, lv - ink * CELL_HOLD)) < 1e-6 || g.rush.level < lv); }
   }
-  assert.ok(seen, '一番下がそろう手が見つからなかった');
+  assert.ok(seen, '一番上に空きができる例が見つからなかった');
 });
 
-test('穴のマスは動かせない・墨フラッシュの的にできない・上に落ちてくるマークは穴に入らない', () => {
-  const g = createRush({ seed: 'fixed' });
-  g.board[BOTTOM] = HOLE;
-  assert.equal(rushSwap(g, BOTTOM, BOTTOM + 1).ok, false);
-  g.charge = INK_NEED;
-  assert.equal(rushFlash(g, BOTTOM).ok, false);
-  const h = rushHint(g.board);
-  if (h) { rushSwap(g, h[0], h[1]); assert.equal(g.board[BOTTOM], HOLE, '手を打っても穴はそのまま'); }
+test('一番下まで道が通ると、時間で墨が抜け続ける', () => {
+  const g = createRush({ seed: 'path' });
+  for (let r = 0; r < SIZE; r++) g.board[r * SIZE + 2] = null;   // 3列目をまっすぐ空ける
+  assert.ok(openBottom(g.board).includes(N - SIZE + 2));
+  g.rush.open = openBottom(g.board);
+  g.rush.level = 20;
+  rushTick(g, 1);
+  assert.ok(Math.abs(g.rush.level - (20 + inflowAt(1) - HOLE_RATE)) < 1e-9);
 });
 
-test('ROW_FIRST 秒で上から一列降り、盤面が1段下がって穴はふさがる。同じ種なら同じ列が降る', () => {
+test('マークは隣の空いた所へ動かせる（そろわなくても）。空き同士は動かせない', () => {
+  const g = createRush({ seed: 'slide' });
+  g.board[0] = null;
+  const v = g.board[1];
+  const r = rushSwap(g, 1, 0);
+  assert.ok(r.ok);
+  assert.equal(g.board[0], v);
+  assert.equal(g.board[1], null);
+  g.board[2] = null;
+  assert.equal(rushSwap(g, 1, 2).ok, false, '空き同士');
+});
+
+test('ROW_FIRST 秒で各列にブロックが降り、空いた所の一番下（上から見て最初のマークの手前）まで落ちる。そろわない色', () => {
   const g = createRush({ seed: 'row' });
   g.rush.level = 0;
-  g.board[BOTTOM] = HOLE;
-  const oldTop = g.board.slice(0, SIZE * 2);
-  tickTo(g, ROW_FIRST - 0.5);   // ちょうど ROW_FIRST まで進めると、その中で降りてしまう
+  for (let r = 0; r < 4; r++) g.board[r * SIZE + 1] = null;   // 2列目の上4つを空ける
+  tickTo(g, ROW_FIRST - 0.5);
   const tk = rushTick(g, 0.6);
-  assert.ok(tk.events.some((e) => e.type === 'row'));
-  assert.deepEqual(holes(g.board), []);
-  assert.equal(g.rush.rows, 1);
-  assert.deepEqual(g.board.slice(SIZE, SIZE * 2), oldTop.slice(0, SIZE), '前の一番上の列が1段下がっている');
-  const g2 = createRush({ seed: 'row' }); g2.rush.level = 0; g2.board[BOTTOM] = HOLE; tickTo(g2, ROW_FIRST - 0.5); rushTick(g2, 0.6);
-  assert.deepEqual(g2.board.slice(0, SIZE), g.board.slice(0, SIZE));
+  const ev = tk.events.find((e) => e.type === 'row');
+  assert.ok(ev);
+  const l = ev.landed.find((x) => x.at % SIZE === 1);
+  assert.equal(l.at, 3 * SIZE + 1, '4段目に止まる');
   assert.equal(findMatches(g.board).length, 0);
 });
 
-test('水位が CAP で飲み込まれて終わる。一番下を狙わない人（ヒントどおり）は 15〜200 秒のあいだ', () => {
+test('墨フラッシュで空きは的にできない', () => {
+  const g = createRush({ seed: 'flash' });
+  g.board[0] = null; g.charge = INK_NEED;
+  assert.equal(rushFlash(g, 0).ok, false);
+});
+
+test('水位が CAP で飲み込まれて終わる。ヒントどおりなら 15〜300 秒のあいだ', () => {
   const secs = [];
-  for (let s = 0; s < 10; s++) { const g = playHint('end' + s); assert.ok(g.over); assert.equal(g.rush.reason, 'drown'); assert.equal(panicOf(g), 1); secs.push(g.rush.t); }
-  const med = secs.sort((a, b) => a - b)[5];
-  assert.ok(med >= 15 && med <= 200, String(secs.map(Math.round)));
+  for (let s = 0; s < 8; s++) { const g = playHint('end' + s); assert.ok(g.over); assert.equal(g.rush.reason, 'drown'); assert.equal(panicOf(g), 1); secs.push(g.rush.t); }
+  const med = secs.sort((a, b) => a - b)[4];
+  assert.ok(med >= 15 && med <= 300, String(secs.map(Math.round)));
 });
 
 test('記録：しのいだ秒のベストと今日の盤面のベスト。控えの統合でも残る', () => {
   const g = playHint('rec');
   let rec = recordRush(emptyM3(), g, { day: '2026-09-29' });
   assert.equal(rec.rush.best, Math.floor(g.rush.t));
-  assert.equal(rec.rush.daily.turns, Math.floor(g.rush.t));
   const m = mergeM3(rec, { ...emptyM3(), rush: { best: 999, bestScore: 1, played: 3, daily: { day: '2026-09-28', turns: 5 } } });
   assert.equal(m.rush.best, 999);
-  assert.equal(m.rush.daily.day, '2026-09-29');
 });

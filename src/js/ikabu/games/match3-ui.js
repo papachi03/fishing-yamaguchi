@@ -4,7 +4,7 @@
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
 import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
-import { createRush, rushSwap, rushFlash, rushHint, rushTick, HOLE, holes, CAP, panicOf } from './inkrush.js';
+import { createRush, rushSwap, rushFlash, rushHint, rushTick, inked, openBottom, CAP, panicOf } from './inkrush.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
@@ -84,16 +84,14 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     try {
       for (const ev of events) {
         if (ev.type === 'row') {
-          // 上から一列降りて、盤面全体が1段下がる（穴はふさがる）
+          // 各列の上から1つずつブロックが降り、空いた所の一番下まで落ちる（道をふさぐ）
           callout(t(lang, TX.rush.lidFall), 'blast');
           sfx.bomb();
           setSelected(null);
-          const before = steps.length ? steps[0].board : g.board;   // 連鎖の前の盤面（降りた直後）
-          renderBoard(steps.length ? shownBefore(steps[0]) : g.board);
-          if (!reduced) { const anims = []; for (let i = 0; i < N; i++) anims.push(cells[i].animate([{ transform: 'translateY(-108%)' }, { transform: 'translateY(0)' }], { duration: 420, easing: 'cubic-bezier(0.3, 0, 0.6, 1.2)' }).finished); await Promise.all(anims).catch(() => {}); }
-          void before;
-          if (steps.length) await playSteps(steps, false);
-          await sleep(dur(200));
+          renderBoard(g.board);
+          if (!reduced) { const anims = []; for (const l of ev.landed) anims.push(cells[l.at].animate([{ transform: `translateY(${-l.rows * 108}%)` }, { transform: 'translateY(0) scale(1.1, 0.88)', offset: 0.8 }, { transform: 'none' }], { duration: 260 + l.rows * 70, easing: 'ease-in' }).finished); await Promise.all(anims).catch(() => {}); }
+          void steps;
+          await sleep(dur(150));
         } else if (ev.type === 'stuck') {
           setMsg(t(lang, TX.rush.stuck)); el.board.classList.add('is-shuffle'); await sleep(dur(300)); renderBoard(g.board); el.board.classList.remove('is-shuffle');
         }
@@ -111,7 +109,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const color = colorOf(kind);
     c.dataset.kind = String(color ?? kind);
     c.dataset.special = kind === RARE ? 'rare' : kind === BALL ? 'ball' : isLine(kind) ? (kind >= LINE_V ? 'v' : 'h') : '';
-    if (kind === HOLE) { c.dataset.kind = 'hole'; c.dataset.special = ''; c.innerHTML = HOLE_SVG; c.setAttribute('aria-label', t(lang, '穴', 'Hole')); c.disabled = false; return; }
+    if (kind === null && isRush()) { const ink = inkedSet.has(i); c.dataset.kind = ink ? 'ink' : 'empty'; c.dataset.special = ''; c.innerHTML = ''; c.setAttribute('aria-label', t(lang, ink ? '墨' : '空き', ink ? 'Ink' : 'Empty')); c.disabled = false; c.classList.toggle('is-out', ink && i >= N - SIZE); return; }
     if (kind === BALL) c.innerHTML = `<img src="${assetHref('/assets/ikabu/tiles/ball_128.webp')}" width="56" height="56" alt="" decoding="async" draggable="false" onerror="this.remove()" /><b class="ika-m3-ballglow" aria-hidden="true"></b><i aria-hidden="true">◎</i>`;
     else c.innerHTML = `${tileImg(color ?? kind, { href: assetHref, size: 56 })}${isLine(kind) ? `<b class="ika-m3-line" aria-hidden="true"></b>` : ''}<i aria-hidden="true">${tileSymbol(color ?? kind)}</i>`;
     c.setAttribute('aria-label', TX.a11y.cell(lang, rowOf(i), colOf(i), kindName(kind)));
@@ -121,8 +119,10 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   // 一番下の穴：暗い開口。抜けている間は流れ（ika-m3-flow）がこの上を通る
   const HOLE_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="52" rx="38" ry="30" fill="#061220"/><ellipse cx="50" cy="46" rx="30" ry="20" fill="#0c1b2e"/><path d="M22 70 Q50 92 78 70" fill="none" stroke="#0c1b2e" stroke-width="6" stroke-linecap="round"/></svg>';
   const LID_SVG = '<svg class="ika-m3-inkwave" viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path class="ika-m3-wave" d="M0 30 Q25 18 50 30 T100 30 T150 30 T200 30 T250 30 T300 30 V100 H0 Z" fill="#132033"/><path class="ika-m3-wave is-2" d="M0 36 Q25 26 50 36 T100 36 T150 36 T200 36 T250 36 T300 36 V100 H0 Z" fill="#1f3050" opacity="0.55"/></svg>';
+  let inkedSet = new Set();
   function renderBoard(board) {
     shown = [...board];
+    if (isRush()) inkedSet = new Set(inked(board));
     board.forEach((k, i) => paint(i, k));
   }
   function setCursor(i, focus = true) {
@@ -292,10 +292,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (say) el.say.textContent = t(lang, TX.rush.moods[m] ?? TX.rush.moods.calm);
   }
   const moodOf = (p) => (p >= 0.8 ? 'doom' : p >= 0.5 ? 'panic' : p >= 0.25 ? 'worry' : 'calm');
-  const shownBefore = (st) => { const b = [...st.board]; return b; };   // 降りた直後の盤面は st.board（消えた後）で近似。ずれは playSteps が直す
   const flows = new Map();   // 列 → 流れの部品（穴がある間だけ）
   function syncFlows() {
-    const hs = isRush() && g && !g.over ? new Set(holes(g.board)) : new Set();
+    const hs = isRush() && g && !g.over ? new Set(openBottom(g.board).map((i) => i % SIZE)) : new Set();
     for (const [c, e] of flows) if (!hs.has(c)) { e.remove(); flows.delete(c); }
     if (!hs.size) return;
     const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
@@ -303,7 +302,9 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (flows.has(c)) continue;
       const b = cellBox(c);
       const e = document.createElement('span'); e.className = 'ika-m3-flow';
-      Object.assign(e.style, { left: `${b.cx - b.w * 0.24}px`, top: `${wb.top - wr.top - 30}px`, width: `${b.w * 0.48}px`, height: `${wb.height + 30}px` });
+      const bb = cellBox(N - SIZE + c);
+      Object.assign(e.style, { left: `${bb.cx - bb.w * 0.3}px`, top: `${bb.y + bb.h * 0.6}px`, width: `${bb.w * 0.6}px`, height: `${wb.bottom - wr.top - bb.y + 20}px` });
+      void b;
       fxLayer.append(e); flows.set(c, e);
     }
   }
@@ -334,8 +335,6 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         await sleep(dur(520));
       } else if (ev.type === 'hole') {
         callout(t(lang, TX.rush.lidBreak), 'flash'); sfx.line();
-        if (!reduced) { const wb = el.board.getBoundingClientRect(); const wr = el.wrap.getBoundingClientRect();
-          for (const c of ev.cols) { const b = cellBox(c); fxEl('ika-m3-stream', { left: `${b.cx - b.w * 0.36}px`, top: `${wb.top - wr.top - 24}px`, width: `${b.w * 0.72}px`, height: `${wb.height + 24}px` }); } }
         if (!g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }
       } else if (ev.type === 'stuck') {
         callout(t(lang, TX.rush.stuck), 'blast');
@@ -384,7 +383,6 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (st.kind === 'flash') { await mascotInk(); sfx.flash(); callout(t(lang, st.big ? TX.msg.bigSquirt : TX.msg.flash), st.big ? 'huge' : 'flash'); }
       else if (combo) { callout(t(lang, TX.combo[combo.name] ?? TX.msg.blast), 'combo'); sfx.combo(); }
       else if (st.kind === 'blast') callout(t(lang, TX.msg.blast), 'blast');
-      else if (st.kind === 'hole') { for (const i of st.opened) { shown[i] = HOLE; paint(i, HOLE); cells[i].classList.add('is-hole-open'); setTimeout(() => cells[i].classList.remove('is-hole-open'), 500); } el.score.textContent = g.score.toLocaleString(); continue; }
       else if (chain >= 2) callout(lang === 'en' ? `${chain}${t(lang, TX.msg.chain)}` : `${chain}${t(lang, TX.msg.chain)}`, chain >= 4 ? 'huge' : chain >= 3 ? 'big' : 'chain');
       if (demoHold && chain >= 2) await never();   // 開発用：連鎖の吹き出しで止める
       // スペシャルの演出と音（ライン＝筆、レアイカ＝爆発の輪、墨ダマ＝光の筋）
@@ -415,7 +413,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       for (const i of st.cleared) after[i] = null;
       for (const c of st.created) after[c.at] = c.kind;
       const drops = new Array(N).fill(0);
-      for (let c = 0; c < SIZE; c++) {
+      for (let c = 0; c < SIZE && !g.noRefill; c++) {
         const survivors = [];
         for (let r = SIZE - 1; r >= 0; r--) if (after[r * SIZE + c] !== null) survivors.push(r);
         const fresh = SIZE - survivors.length;
@@ -484,7 +482,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     }
     // 入れ替えは成立：見た目も入れ替えてから段階を見せる
     [shown[a], shown[b]] = [shown[b], shown[a]];
-    paint(a, shown[a]); paint(b, shown[b]);
+    if (isRush()) renderBoard(shown); else { paint(a, shown[a]); paint(b, shown[b]); }
     setMsg('');
     await playSteps(r.steps, r.shuffled);
     if (isRush()) await rushAfter(r);
