@@ -147,7 +147,12 @@ function bitePanelHTML(area, exp) {
 }
 
 // 堤防の安全判定（風速・突風・波高・風向）
-function safetyBandHTML(area, w) {
+// 実測が「新しい」とみなす上限（アメダスは10分ごと・公開まで10〜20分）
+const OBS_FRESH_MS = 40 * 60e3;
+export const freshObs = (obs, now) => (obs?.atMs != null && obs.wind != null && now.getTime() - obs.atMs >= 0 && now.getTime() - obs.atMs <= OBS_FRESH_MS ? obs : null);
+
+function safetyBandHTML(area, w, obs = null, now = new Date()) {
+  const fo = freshObs(obs, now);
   const s = assessSafety({
     wind: w.current.wind,
     gust: w.current.gust,
@@ -157,9 +162,13 @@ function safetyBandHTML(area, w) {
     facing: area.facing,
     seaProfile: area.seaProfile,
     alerts: w.current.alerts ?? w.alerts,
+    waveRough: w.current.waveRough,
+    obsWind: fo?.wind ?? null,
   });
   const onshore = isOnshore(w.current.windDir, area.facing);
   const pf = profileOf(area.seaProfile);
+  // 予報で「危険」以上なのに、新しい実測が（堤防ぶんの+2m/sを足しても）「注意」に届かない → 食い違いを伝える
+  const calmObs = fo && s.level >= 2 && fo.wind + 2 < pf.wind[1] && !s.reasons.some((r) => r.includes('（実測）') || r.includes('注意報') || r.includes('警報'));
   return `
     <div class="safety-band lv${s.level} reveal" role="status">
       <div class="safety-main">
@@ -169,6 +178,9 @@ function safetyBandHTML(area, w) {
       <p class="safety-reasons t-mono">${
         s.reasons.length ? s.reasons.join(' ／ ') : `風速${fmt1(w.current.wind)}m/s・波高${fmt1(w.current.wave)}m`
       }${onshore && w.current.wind < pf.wind[0] ? ' ／ 海からの風' : ''}</p>
+      ${fo ? `<p class="safety-obs t-mono">実測 ${fo.station} ${fo.at}：風 ${fmt1(fo.wind)}m/s${fo.calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）</p>` : ''}${
+        calmObs ? `<p class="safety-obs safety-mismatch t-mono">⚠ いまの実測は穏やかで、予報と食い違っています。判定は安全側（予報）のままにしています。現地の海面と気象庁の発表で確かめてください</p>` : ''
+      }
       ${safetyLegendHTML(area)}
     </div>`;
 }
@@ -228,7 +240,7 @@ function tidePanelHTML(t, now) {
     </div>`;
 }
 
-// アメダスの実測（参考）。観測所と時刻を必ず添える。判定には使わない（基準は予報の数字で決めてあるため）
+// アメダスの実測。観測所と時刻を必ず添える。判定には「予報より強い時だけ」使う（safetyBandHTML・2026-09-30）
 function obsTileHTML(obs) {
   if (!obs) {
     return `<div><dt>Observed</dt><dd>—<small>m/s</small><span class="sub t-mono">アメダス実測</span></dd></div>`;
@@ -259,7 +271,7 @@ function weatherHTML(area, w, now, updatedLabel, obs) {
       </dl>
     </div>
 
-    ${safetyBandHTML(area, w)}
+    ${safetyBandHTML(area, w, obs, now)}
     __BITE__
     <div class="reveal">
       <h3 class="t-label" style="margin-bottom: 12px;">Hourly — 時間別</h3>

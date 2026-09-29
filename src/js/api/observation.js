@@ -1,6 +1,7 @@
 // アメダス（気象庁）の実測。ページを開いたときにブラウザから直接取る（気象庁は CORS 可・出典表記で商用可）。
 //   10分ごとの観測。公開は観測の10〜20分後。観測所は釣り場から離れていることがあるので、必ず観測所名と時刻を添えて出す。
-//   ★判定（safety.js）には使わない。判定の基準は予報の数字で決めてあるため、実測は「参考」として見せるだけ（2026-09-24）。
+//   判定（safety.js）には「上げる方向」でだけ使う（2026-09-30）：新しい実測（40分以内）が予報より強ければその風で判定する。
+//   実測が弱くても判定は下げない（陸の観測所は堤防より弱く出るため）。
 
 import { AREA_SOURCES } from './weather.js';
 
@@ -41,15 +42,19 @@ export async function fetchObservation(areaId, fetchImpl = fetch) {
   const k = keys[keys.length - 1];
   const v = d[k];
   const at = `${k.slice(8, 10)}:${k.slice(10, 12)}`;
+  // 観測の時刻（日本時間）。判定で「新しい実測か」を見るのに使う
+  const atMs = new Date(Number(k.slice(0, 4)), Number(k.slice(4, 6)) - 1, Number(k.slice(6, 8)), Number(k.slice(8, 10)), Number(k.slice(10, 12))).getTime();
   return {
     station: src.amedasName,
     at,
+    atMs,
     wind: v.wind?.[0] ?? null,
     windDir: amedasDirToDeg(v.windDirection?.[0]),
     calm: v.windDirection?.[0] === 0,
     temp: v.temp?.[0] ?? null,
     gustMax: v.gust?.[0] ?? null,
-    gustAt: v.gustTime ? `${v.gustTime.hour}:${String(v.gustTime.minute).padStart(2, '0')}` : null,
+    // gustTime は世界標準時（9/30 0:10 の記録が 15:09＝日本時間 0:09）→ 9時間足す
+    gustAt: v.gustTime ? `${(v.gustTime.hour + 9) % 24}:${String(v.gustTime.minute).padStart(2, '0')}` : null,
     windHistory: keys.map((kk) => ({ at: `${kk.slice(8, 10)}:${kk.slice(10, 12)}`, wind: d[kk].wind?.[0] ?? null })),
   };
 }

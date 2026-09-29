@@ -74,8 +74,11 @@ export function isOnshore(windDir, facing) {
 }
 
 // seaProfile を省略すると日本海側の基準（従来の挙動）になる
-export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [] }) {
+export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, facing, seaProfile, alerts = [], waveRough = false, obsWind = null }) {
   const pf = profileOf(seaProfile);
+  // 実測（アメダス）が予報より強ければ、その風で判定する。弱くても下げない（2026-09-30）
+  const byObs = obsWind != null && (wind == null || obsWind > wind);
+  if (byObs) wind = obsWind;
   const [w1, w2, w3] = pf.wind;
   const [g1, g2] = pf.gust;
   const [h1, h2, h3] = pf.wave;
@@ -88,15 +91,16 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   };
 
   if (wind != null) {
-    if (wind >= w3) bump(3, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= w2) bump(2, `風速${wind.toFixed(1)}m/s`);
-    else if (wind >= w1) bump(1, `風速${wind.toFixed(1)}m/s`);
+    const tag = byObs ? '（実測）' : '';
+    if (wind >= w3) bump(3, `風速${wind.toFixed(1)}m/s${tag}`);
+    else if (wind >= w2) bump(2, `風速${wind.toFixed(1)}m/s${tag}`);
+    else if (wind >= w1) bump(1, `風速${wind.toFixed(1)}m/s${tag}`);
   }
   if (gust != null) {
     if (gust >= g2) bump(2, `突風${gust.toFixed(1)}m/s`);
     else if (gust >= g1) bump(1, `突風${gust.toFixed(1)}m/s`);
   }
-  if (waveHeight != null) {
+  if (waveHeight != null && !waveRough) {
     if (waveHeight >= h3) bump(3, `波高${waveHeight.toFixed(1)}m`);
     else if (waveHeight >= h2) bump(2, `波高${waveHeight.toFixed(1)}m`);
     else if (waveHeight >= h1) bump(1, `波高${waveHeight.toFixed(1)}m`);
@@ -109,6 +113,12 @@ export function assessSafety({ wind, gust, waveHeight, wavePeriod, windDir, faci
   // 向かい風の発動ラインは、その海域の「注意」のしきい値に合わせる
   if (wind != null && wind >= w1 && isOnshore(windDir, facing)) {
     bump(Math.min(3, level + 1), '向かい風（海から吹いて波が立つ）');
+  }
+  // 波が「気象庁の地域の予報文」での代用のとき（NOAA が取れなかった）：沖も含めた0.5m刻みの目安で高めに出るので、
+  // 波だけでは「危険」までにとどめる。向かい風の一段上げより後に置き、目安の波で「中止」まで上がらないようにする（2026-09-30）
+  if (waveHeight != null && waveRough) {
+    const lv = waveHeight >= h2 ? 2 : waveHeight >= h1 ? 1 : 0;
+    if (lv) bump(lv, `波高${waveHeight.toFixed(1)}m（気象庁の地域の目安）`);
   }
 
   return { ...SAFETY_LEVELS[level], reasons };

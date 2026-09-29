@@ -209,6 +209,7 @@ export async function renderSeaStrip(container, list = areas) {
           facing: a.facing,
           seaProfile: a.seaProfile,
           alerts: w.current.alerts ?? w.alerts,
+          waveRough: w.current.waveRough,
         });
         const chip = card.querySelector('[data-safety]');
         chip.textContent = s.label;

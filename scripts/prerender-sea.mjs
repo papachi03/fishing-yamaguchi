@@ -20,6 +20,7 @@
 import { createServer } from 'vite';
 
 const TIMEOUT_MS = 20000;
+const PREV_SNAPSHOT_URL = 'https://yamaguchifishing.com/data/sea-snapshot.json';
 
 const withTimeout = (p, ms, label) =>
   Promise.race([
@@ -45,17 +46,26 @@ export async function prerenderSea(html, root, onSnapshot = () => {}) {
 
   try {
     const { areas, areaById } = await server.ssrLoadModule('/src/js/data/areas.js');
-    const { fetchWeather } = await server.ssrLoadModule('/src/js/api/weather.js');
+    const { fetchWeather, prevWavesOf } = await server.ssrLoadModule('/src/js/api/weather.js');
     const { fetchTide } = await server.ssrLoadModule('/src/js/api/tide.js');
     const render = await server.ssrLoadModule('/src/js/pages/sea-render.js');
 
     const now = new Date();
     const snapshot = { fetchedAt: now.toISOString(), areas: {} };
+    // 前回公開した予報（NOAA が取れなかった時に、その波を使う。2026-09-30）
+    let prevSnap = null;
+    try {
+      const r = await withTimeout(fetch(`${PREV_SNAPSHOT_URL}?t=${now.getTime()}`), 8000, 'prev-snapshot');
+      if (r.ok) prevSnap = await r.json();
+    } catch {
+      // 無くてもよい
+    }
     const log = [];
 
     for (const area of areas) {
       try {
-        const w = await withTimeout(fetchWeather(area), TIMEOUT_MS, area.id);
+        const prevWaves = prevWavesOf(prevSnap?.areas?.[area.id], now);
+        const w = await withTimeout(fetchWeather(area, { now, prevWaves }), TIMEOUT_MS, area.id);
         snapshot.areas[area.id] = render.trimWeather(w);
         log.push(`${area.id}:ok`);
       } catch (e) {

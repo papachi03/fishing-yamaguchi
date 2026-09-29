@@ -48,6 +48,8 @@ export function atNow(w, now = new Date()) {
       precipitation: h.rain ?? null,
       wave: h.wave,
       wavePeriod: h.wavePeriod,
+      waveSrc: h.waveSrc ?? null,
+      waveRough: h.waveSrc === 'jma-rough',
     },
   };
 }

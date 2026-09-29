@@ -265,16 +265,18 @@ const popAt = (pops, date) => {
  * area: { id, lat, lon, ... }（src/js/data/areas.js）を受け取り、現況 + 時間別 + 3日分のサマリを返す。
  * ブラウザからは呼ばない（met.no の規約上、User-Agent を名乗れる場所＝ビルド時・Worker でだけ呼ぶ）。
  */
-export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch } = {}) {
+export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch, prevWaves = null } = {}) {
   const [mn, wv, jm, obsT, vp, alerts] = await Promise.all([
     fetchMetno(area, fetchImpl),
-    fetchWaves(area, now, fetchImpl).catch(() => null),
+    // NOAA は時々応答しない（9/29 18:56 のビルドで取れず、気象庁の「1.5メートル」がそのまま入って萩が「中止」になった）→ 1回だけ取り直す
+    fetchWaves(area, now, fetchImpl).catch(() => fetchWaves(area, now, fetchImpl)).catch(() => null),
     fetchJma(area, fetchImpl).catch(() => null),
     fetchTodayObsTemps(area, fetchImpl).catch(() => null),
     fetchVpfd(area, fetchImpl).catch(() => ({})),
     fetchAlerts(area, fetchImpl).catch(() => []),
   ]);
 
+  const hasWw3 = !!AREA_SOURCES[area.id]?.ww3;
   // 今日の0時（日本時間）から72時間
   const start = keyToDate(`${jstDate(now)}T00:00`);
   const hourly = [];
@@ -287,12 +289,21 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
     const w = wv?.[key];
     let wave = w?.wave ?? null;
     let wavePeriod = w?.wavePeriod ?? null;
-    if (wave == null && jm?.waves?.[key.slice(0, 10)]) {
+    // 波の出どころ：ww3＝NOAA／ww3-prev＝前回取れた NOAA（補正済み）／jma＝瀬戸内の気象庁（本来の取り先）／
+    //   jma-rough＝NOAA が取れず気象庁の地域の予報文で代用（沖も含めた0.5m刻みの目安で高めに出る → 判定は「危険」まで。safety.js）
+    let waveSrc = wave != null ? 'ww3' : null;
+    const prev = prevWaves?.[key];
+    if (wave != null) {
+      wave = correctWave(area.id, wave);
+    } else if (hasWw3 && prev?.wave != null) {
+      wave = prev.wave;
+      wavePeriod = prev.wavePeriod ?? null;
+      waveSrc = 'ww3-prev';
+    } else if (jm?.waves?.[key.slice(0, 10)]) {
       const [am, pm] = jm.waves[key.slice(0, 10)];
       wave = hourJst < 12 ? am : pm;
       wavePeriod = null;
-    } else if (wave != null) {
-      wave = correctWave(area.id, wave);
+      waveSrc = hasWw3 ? 'jma-rough' : 'jma';
     }
     hourly.push({
       time: key,
@@ -308,6 +319,7 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
       rain: m.rain,
       wave,
       wavePeriod,
+      waveSrc,
     });
   }
   if (!hourly.length) throw new Error('met.no: 予報が空');
@@ -346,11 +358,27 @@ export async function fetchWeather(area, { now = new Date(), fetchImpl = fetch }
       precipitation: cur.rain,
       wave: cur.wave,
       wavePeriod: cur.wavePeriod,
+      waveSrc: cur.waveSrc,
+      waveRough: cur.waveSrc === 'jma-rough',
       waveDir: wv?.[cur.time]?.waveDir ?? null,
     },
     hourly,
     daily,
   };
+}
+
+/**
+ * 前回の予報ファイル（sea-snapshot の1エリア分）から、NOAA で取れていた波だけを取り出す。
+ * 12時間より古いファイルは使わない（古すぎる予報で「穏やか」と出さないため）
+ */
+export function prevWavesOf(areaSnap, now = new Date()) {
+  const at = new Date(areaSnap?.fetchedAt ?? 0).getTime();
+  if (!(now.getTime() - at >= 0 && now.getTime() - at <= 12 * 3600e3)) return null;
+  const out = {};
+  for (const h of areaSnap?.hourly ?? []) {
+    if ((h.waveSrc === 'ww3' || h.waveSrc === 'ww3-prev') && h.wave != null) out[h.time] = { wave: h.wave, wavePeriod: h.wavePeriod ?? null };
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 export const safeWind = (corrected, jma) => (corrected == null ? jma ?? null : jma == null ? corrected : Math.max(corrected, jma));

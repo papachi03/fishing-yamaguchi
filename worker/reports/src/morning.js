@@ -36,6 +36,7 @@ const judge = (area, c) => {
     facing: area.facing,
     seaProfile: area.seaProfile,
     alerts: c.alerts,
+    waveRough: c.waveRough ?? c.waveSrc === 'jma-rough',
   });
   return { nameJa: area.nameJa, level: s.level, wind: c.wind };
 };
