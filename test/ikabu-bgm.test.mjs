@@ -39,3 +39,17 @@ test('アワセの振動は強い連打で、大きいイカほど締めが長�
   assert.ok(big.reduce((a, b) => a + b, 0) <= 1000);
   assert.ok(TRACKS.egi.volume <= 0.1, 'エギングのBGMは控えめ');
 });
+
+// 2026-09-30 友だちの感想（墨つなぎ）：残り手数がスクロールしないと見えない／墨ダマでどれが一番多く消せるか知りたい
+import { readFileSync } from 'node:fs';
+test('隠した墨のがれの舞台は場所を取らない（hidden で display:none）。道具の並びは🎵まで入る', () => {
+  const css = readFileSync(new URL('../src/css/ikabu.css', import.meta.url), 'utf8');
+  assert.match(css, /\.ika-m3-rush\[hidden\]\s*\{\s*display:\s*none/);
+  assert.match(css, /\.ika-m3-tools \{ display: grid; grid-template-columns: minmax\(0, 1fr\) auto auto auto auto;/);
+  assert.match(css, /\.ika-m3-tools \{ grid-template-columns: 1fr 1fr auto auto; \}/);
+});
+test('墨ダマを選んだ時の案内は、いちばん多い数を言う（play-text は import.meta.env を読むので文字で確かめる）', () => {
+  const src = readFileSync(new URL('../src/js/ikabu/games/play-text.js', import.meta.url), 'utf8');
+  assert.match(src, /ballPick: \(lang, n\) =>/);
+  assert.match(src, /いちばん多いのは \$\{n\}個/);
+});

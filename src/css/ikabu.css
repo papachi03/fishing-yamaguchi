@@ -1777,6 +1777,11 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-cell.is-can-special { animation: ika-m3-can 0.7s ease-in-out infinite; z-index: 1; }
 /* 選んだマス（is-selected＝濃いオレンジの縁）と見分けがつくよう、候補は白→薄いオレンジで脈打つ */
 @keyframes ika-m3-can { 0%, 100% { box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 3px #fff, 0 0 12px #ffb37a, 0 2px 0 var(--edge); transform: scale(1); } 50% { box-shadow: inset 0 2px 0 #ffffff55, 0 0 0 4px #ffb37a, 0 0 22px var(--ika-orange), 0 2px 0 var(--edge); transform: scale(1.07); } }
+/* 墨ダマを選んだ時（2026-09-30 友だち「どれが1番多く消せるか知りたい」）：となりのマスに、その色が盤面に何個あるか。いちばん多い色はオレンジ */
+.ika-m3-board.is-ballpick .ika-m3-cell[data-count]::before { content: '×' attr(data-count); position: absolute; z-index: 3; left: 3px; top: 3px; min-width: 22px; height: 20px; padding: 0 4px; border-radius: 6px; background: var(--ika-ink); color: #fff; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; line-height: 20px; text-align: center; }
+.ika-m3-board.is-ballpick .ika-m3-cell.is-most[data-count]::before { background: var(--ika-orange); box-shadow: 0 0 0 2px #fff; }
+/* 残り手数：残り5手から数字の色を変える（手数の勝負だと伝わるように） */
+.ika-m3-hud b.is-few { color: var(--ika-orange-deep); }
 .ika-m3-board.is-targeting .ika-m3-cell[data-count]::before { content: attr(data-count); position: absolute; z-index: 3; left: 3px; top: 3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 6px; background: var(--ika-ink); color: #fff; font-family: var(--font-varsity); font-weight: 800; font-size: 12px; line-height: 18px; text-align: center; }
 .ika-m3-pts { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-varsity); font-weight: 800; font-size: 22px; color: #fff; text-shadow: 0 0 0 #fff, 2px 2px 0 var(--ika-ink), -1px -1px 0 var(--ika-ink), 1px -1px 0 var(--ika-ink), -1px 1px 0 var(--ika-ink); pointer-events: none; z-index: 5; animation: ika-m3-pts 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 .ika-m3-pts.is-big { font-size: 30px; color: #ffd2a8; }
@@ -2028,7 +2033,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-card-badges b { padding: 2px 10px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-size: 13px; }
 .ika-m3-card-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .ika-m3-card-actions .ika-btn { min-height: 44px; padding: 6px 18px; font-size: 14px; }
-.ika-m3-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; }
+.ika-m3-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 10px; }   /* 墨・墨フラッシュ・ヒント・🔊・🎵 */
 .ika-m3-ink { display: flex; align-items: center; gap: 8px; }
 .ika-m3-ink-label { font-family: var(--font-maru); font-weight: 900; font-size: 13px; color: var(--ika-sea); }
 .ika-m3-ink-track { flex: 1; position: relative; height: 18px; border: 3px solid var(--ika-ink); border-radius: 999px; background: var(--ika-white); overflow: hidden; }
@@ -2091,7 +2096,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-m3-callout.is-big { font-size: 30px; }
   .ika-m3-card { inset: 4%; padding: 14px 16px; }
   .ika-m3-card-score b { font-size: 36px; }
-  .ika-m3-tools { grid-template-columns: 1fr 1fr auto; }
+  .ika-m3-tools { grid-template-columns: 1fr 1fr auto auto; }   /* 2段目：墨フラッシュ・ヒント・🔊・🎵 */
   .ika-m3-ink { grid-column: 1 / -1; }
 }
 /* 横向きのスマホ（高さが低い）：舞台を画面の高さいっぱいに、操作ボタンとゲージは右の列に縦に並べる */
@@ -2501,6 +2506,9 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* ===== 墨のがれ 見た目の仕上げ（2026-09-29 ぱっぱOK）=====
    岩の洞窟の断面・イカは墨に浮いて天井へ追い詰められる（顔が最後まで見える）・焦りの印・道が通ると墨のうずと滝 */
 .ika-m3-rush { height: 210px; min-height: 0; align-content: end; background: #26343d; }
+/* 2026-09-30 友だちの感想「残りの手数が表示されない」：ふつうの墨つなぎでも、隠した墨のがれの舞台が display:grid のせいで210px 場所を取り、
+   盤面を見ると手数の欄が画面の上に隠れていた → hidden の時は場所も取らない */
+.ika-m3-rush[hidden] { display: none; }
 .ika-m3-rush-cave { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; }
 .ika-m3-rush-cave svg { width: 100%; height: 100%; display: block; }
 .ika-m3-rush-cave.has-art svg { display: none; }

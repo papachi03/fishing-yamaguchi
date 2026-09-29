@@ -671,7 +671,7 @@ export const M3_TEXT = {
   dailyNote: pair('UTCの日付で決まる盤面。世界のどこで遊んでも同じ。', 'The board is set by the UTC date, so it is the same everywhere in the world.'),
   hud: {
     score: pair('スコア', 'Score'),
-    moves: pair('残り手数', 'Moves'),
+    moves: pair('残り手数', 'Moves left'),
     best: pair('ベスト', 'Best'),
     goal: pair('目標', 'Goal'),
     today: pair('今日の目標', "Today's goal"),
@@ -710,6 +710,7 @@ export const M3_TEXT = {
     squirt: pair('ぶしゅー！', 'Squirt!'),
     bigSquirt: pair('大ぶしゅー！ 1.5倍', 'Mega squirt! ×1.5'),
     canSpecial: pair('光っている所と入れ替えると、スペシャルが生まれる', 'Swap with the glowing mark to make a special'),
+    ballPick: (lang, n) => (lang === 'en' ? `Swap the ink ball with a neighbour to clear every mark of that kind (×= how many on the board, up to ${n})` : `墨ダマ：となりと入れ替えると、その色が全部消える（×＝盤面にある数・いちばん多いのは ${n}個）`),
     goalNow: pair('目標たっせい！', 'Goal reached!'),
     pick: pair('消したいマークを1つ選んで（数字はその数。10以上で大ぶしゅー）', 'Pick a mark to clear (numbers show how many; 10+ for a mega squirt)'),
     chain: pair('連鎖！', ' chain!'),

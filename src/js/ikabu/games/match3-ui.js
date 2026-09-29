@@ -155,7 +155,23 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     cells[cursor].tabIndex = 0;
     if (focus) cells[cursor].focus({ preventScroll: true });
   }
-  const clearCan = () => cells.forEach((c) => c.classList.remove('is-can', 'is-can-special'));
+  const clearCan = () => {
+    cells.forEach((c) => c.classList.remove('is-can', 'is-can-special', 'is-most'));
+    if (el.board.classList.contains('is-ballpick')) { el.board.classList.remove('is-ballpick'); if (!targeting) cells.forEach((c) => delete c.dataset.count); }
+  };
+  // 墨ダマを選んだ：となりのマスに「その色が盤面に何個あるか」、いちばん多い所はオレンジ（2026-09-30 友だちの感想）
+  function showBallCounts(i) {
+    const n = countColors(g.board);
+    const around = [i - 1, i + 1, i - SIZE, i + SIZE].filter((j) => adjacent(i, j) && colorOf(g.board[j]) != null);
+    if (!around.length) return null;
+    const most = Math.max(...around.map((j) => n[colorOf(g.board[j])]));
+    for (const j of around) {
+      cells[j].dataset.count = String(n[colorOf(g.board[j])]);
+      cells[j].classList.toggle('is-most', n[colorOf(g.board[j])] === most);
+    }
+    el.board.classList.add('is-ballpick');
+    return most;
+  }
   function setSelected(i) {
     if (selected != null) cells[selected].classList.remove('is-selected');
     clearCan();
@@ -163,6 +179,10 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (i != null) {
       cells[i].classList.add('is-selected');
       cells[i].setAttribute('aria-selected', 'true');
+      if (g.board[i] === BALL && !isRush()) {
+        const most = showBallCounts(i);
+        if (most != null) { setMsg(TX.msg.ballPick(lang, most)); for (const j of [i - 1, i + 1, i - SIZE, i + SIZE]) if (adjacent(i, j) && previewSwap(g.board, i, j)) cells[j].classList.add('is-can-special'); return; }
+      }
       // 予告：そろう隣を光らせる。スペシャルが生まれる・使える手はオレンジで強く（2026-09-29）
       let anySpecial = false;
       for (const j of [i - 1, i + 1, i - SIZE, i + SIZE]) {
@@ -249,6 +269,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function syncHud() {
     el.score.textContent = g.score.toLocaleString();
     el.moves.textContent = isRush() ? fmtTime(g.rush.t) : String(g.moves);
+    el.moves.classList.toggle('is-few', !isRush() && !g.over && g.moves <= 5);
     if (isRush()) syncRush();
     el.best.textContent = rec.best.toLocaleString();
     el.goalFill.style.width = `${Math.min(100, (g.score / goals.goal) * 100).toFixed(1)}%`;
