@@ -97,7 +97,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one' };   // テーラーのタナ（2026-09-28）
   // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
   const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
-  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true });   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
+  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true, dragSample: assetHref('/assets/ikabu/audio/gacha/se_drag.mp3') });   // ドラグ音は本物（2026-09-30）   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
   // BGMは最初はオフ（2026-09-30 ぱっぱ：好みがあるので）。オンにした人だけ曲を読み込む
   const bgm = createBgm({ on: readPref('ikabu.egi.bgm') ?? false, track: 'egi', href: assetHref });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
@@ -949,6 +949,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkAt = now;
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
+          feel.fire('zip');   // しゃくりで一瞬「ジッ！」（2026-09-30 ぱっぱ）
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
           else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.slackN === 1) callout(t(lang, TX.cue.slack)); }   // 何回目の連打かに関係なく、スラックジャークに入った1回目で出す
           else if (e.double) callout(t(lang, TX.cue.double));
@@ -2448,7 +2449,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const yRun = yaenRunning(s);
     // エギング：ジェット噴射で走った直後もドラグが「ジジジッ」と出る（ぱっぱ 2026-09-29）
     const jetRun = phase === 'fight' && V.lastJet != null && now - V.lastJet < 0.45;
-    feel.drag(yRun || jetRun);
+    const reeling = phase === 'fight' && Boolean(s.pressing);
+    feel.drag(yRun || jetRun || reeling);
     // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。
     //   アタリの合図やヤエンの走りで下げると、音量の変化でアタリが先に分かってしまうので下げない）
     bgm.duck(phase === 'fight');

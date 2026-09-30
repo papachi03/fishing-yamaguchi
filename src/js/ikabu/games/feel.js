@@ -25,8 +25,20 @@ export const hookPattern = (heavy = 0.5) => [120, 40, 60, 40, Math.round(160 + 1
 
 const VOLUME = 0.05; // 控えめに（最大 1）
 
-export function createFeel({ vibrate = true, sound = false } = {}) {
-  const st = { vibrate, sound, ctx: null };
+// dragSample：本物のドラグ音（Audiostock se_drag.mp3・ガチャと共用）の住所。2026-09-30 ぱっぱ「ドラグの出る音が凄く良いので巻き取る時の音に。しゃくる時にも一瞬『ジッ！』」
+//   読めた時はそれをループで鳴らし（drag）、頭 0.22 秒を「ジッ！」（zip）に使う。読めない・まだ読み込み中は今までの合成音
+const SAMPLE_VOL = 0.55;
+export function createFeel({ vibrate = true, sound = false, dragSample = null } = {}) {
+  const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null };
+  function loadSample() {
+    if (!st.sampleUrl || st.sample || st.sampleLoading || !st.ctx) return;
+    st.sampleLoading = fetch(st.sampleUrl)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((ab) => new Promise((ok, ng) => { const q = st.ctx.decodeAudioData(ab, ok, ng); if (q?.then) q.then(ok, ng); }))
+      .then((buf) => { st.sample = buf; })
+      .catch(() => {})   // 読めなければ合成音のまま
+      .finally(() => { st.sampleLoading = null; });
+  }
 
   function buzz(kind, opt = {}) {
     if (!st.vibrate || !canVibrate()) return;
@@ -44,7 +56,20 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     try {
       st.ctx = new AC();
       st.ctx.resume?.();
+      loadSample();
     } catch { st.ctx = null; }
+  }
+  // しゃくりの「ジッ！」：本物のドラグ音の頭だけ（0.22秒）。音源が無ければ短い合成音
+  function zip() {
+    const ctx = st.ctx;
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    if (!st.sample) { blip({ type: 'noise', f0: 3400, dur: 0.12, vol: 1.2 }); return; }
+    const src = ctx.createBufferSource(); src.buffer = st.sample;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(SAMPLE_VOL, t); g.gain.setValueAtTime(SAMPLE_VOL, t + 0.16); g.gain.linearRampToValueAtTime(0.0001, t + 0.22);
+    src.connect(g).connect(ctx.destination);
+    src.start(t, 0.02); src.stop(t + 0.24);
   }
 
   // 短い音を1つ。type: 'sine' | 'square' | 'sawtooth' | 'noise'
@@ -98,6 +123,13 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
     }
     if (dragNode) return;
     const t = ctx.currentTime;
+    if (st.sample) {   // 本物のドラグ音をループ（頭の立ち上がりは残し、0.4〜7.8秒を繰り返す）
+      const src = ctx.createBufferSource(); src.buffer = st.sample; src.loop = true; src.loopStart = 0.4; src.loopEnd = Math.min(7.8, st.sample.duration);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(SAMPLE_VOL, t + 0.04);
+      src.connect(g).connect(ctx.destination); src.start(t);
+      dragNode = { g, srcs: [src] };
+      return;
+    }
     const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const ch = buf.getChannelData(0);
     for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
@@ -202,6 +234,7 @@ export function createFeel({ vibrate = true, sound = false } = {}) {
       case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); shing(); break;   // 手に来る「ドン」＋決まった「シャキーン！」
       case 'jet': break;   // 音は出さない（2026-09-29 ぱっぱ：ドラグの「ジジジッ」と被るので「ピピピッ」は消す）。振動だけ
       case 'whoosh': whoosh(opt.vol ?? 1); break;
+      case 'zip': zip(); break;   // しゃくりの「ジッ！」
       case 'break': blip({ type: 'sine', f0: 700, f1: 180, dur: 0.18 }); break;
       case 'landed': blip({ type: 'sine', f0: 520, dur: 0.07 }); blip({ type: 'sine', f0: 780, dur: 0.09, at: 0.09 }); break;
       default: break;
