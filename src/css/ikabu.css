@@ -1360,6 +1360,7 @@
 .ika-cert-art { width: 100%; height: auto; border-radius: 8px; border: 1px solid rgba(20, 40, 70, 0.15); filter: grayscale(0.6); opacity: 0.55; }
 .ika-cert.is-earned .ika-cert-art { filter: none; opacity: 1; box-shadow: 0 3px 10px rgba(80, 60, 0, 0.18); }
 .ika-cert-make { margin-top: 6px; justify-self: start; }
+.ika-cert-make[hidden] { display: none; }   /* .ika-btn の display に負けないように（2026-09-30） */
 .ika-cert-form { margin-top: 14px; padding: 12px 14px; border: 2px solid #d4a017; border-radius: 12px; background: #fffaf0; }
 .ika-cert-form-label { display: block; font-family: var(--font-maru); font-weight: 900; font-size: 13px; }
 .ika-cert-form-row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
