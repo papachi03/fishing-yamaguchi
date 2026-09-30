@@ -6,10 +6,18 @@ import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
 import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, needsTarget, statOf, costOf, starterDeck, view } from './battle.js';
-import { readJSON } from './records.js';
+import { readJSON, writeJSON } from './records.js';
+import { createGachaAudio } from './gacha-audio.js';
 import { tierOf } from './gacha-show.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// 曲（Suno・ぱっぱ 2026-10-01）：対戦中（前奏9秒→9〜66秒を繰り返す）／終盤（エギ残り2以下かターン8以降。6〜156秒を繰り返す）／勝ちのジングル
+const BATTLE_AUDIO = {
+  battle: { src: '/assets/ikabu/audio/battle/bgm_battle.mp3', loop: true, loopStart: 9, loopEnd: 66, volume: 0.18 },
+  climax: { src: '/assets/ikabu/audio/battle/bgm_climax.mp3', loop: true, loopStart: 6, loopEnd: 156, volume: 0.2 },
+  win: { src: '/assets/ikabu/audio/battle/jingle_win.mp3', volume: 0.6 },
+};
+const KEY_SOUND = 'ikabu.battle.sound';
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
 const BACK = assetHref('/assets/ikabu/cards/card_back.webp');
 const TX = {
@@ -50,6 +58,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       <div class="ika-bt-row ika-bt-row--myfront" data-row="me-front"></div>
       <div class="ika-bt-row ika-bt-row--myback" data-row="me-back"></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide></div><div class="ika-bt-nums" data-nums="me"></div></div>
+      <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
       <div class="ika-bt-actions"><button type="button" class="ika-btn ika-bt-direct" data-direct hidden>${t(lang, ...TX.direct)}</button><button type="button" class="ika-btn ika-btn--primary" data-end>${t(lang, ...TX.end)}</button><button type="button" class="ika-bt-quit" data-quit>${t(lang, ...TX.quit)}</button></div>
       <div class="ika-bt-hand" data-hand></div>
       <div class="ika-bt-sheet" data-sheet hidden></div>
@@ -60,6 +69,13 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   document.documentElement.classList.add('is-battle');
   const $ = (s) => ov.querySelector(s);
   const el = { rows: { 'cpu-back': $('[data-row="cpu-back"]'), 'cpu-front': $('[data-row="cpu-front"]'), 'me-front': $('[data-row="me-front"]'), 'me-back': $('[data-row="me-back"]') }, egi: { me: $('[data-egi="me"]'), cpu: $('[data-egi="cpu"]') }, nums: { me: $('[data-nums="me"]'), cpu: $('[data-nums="cpu"]') }, tide: $('[data-tide]'), turn: $('[data-turn]'), msg: $('[data-msg]'), hand: $('[data-hand]'), sheet: $('[data-sheet]'), callout: $('[data-callout]'), over: $('[data-over]'), direct: $('[data-direct]'), end: $('[data-end]') };
+  const audio = createGachaAudio({ on: readJSON(KEY_SOUND) ?? true, href: assetHref, tracks: BATTLE_AUDIO });
+  const soundBtn = $('[data-sound]');
+  const syncSound = () => { soundBtn.textContent = audio.on ? '🔊' : '🔇'; soundBtn.setAttribute('aria-pressed', String(audio.on)); };
+  soundBtn.addEventListener('click', () => { audio.setOn(!audio.on); writeJSON(KEY_SOUND, audio.on); syncSound(); if (audio.on) { audio.unlock(); audio.bgm(climax() ? 'climax' : 'battle'); } });
+  syncSound();
+  const climax = () => st.players.me.egi <= 2 || st.players.cpu.egi <= 2 || st.turn >= 8;
+  audio.unlock(); audio.bgm('battle');
   let sel = null;          // { kind:'hand', x } | { kind:'attacker', x } | { kind:'target', x, who }
   let busy = false;
   let logSeen = st.log.length;
@@ -103,6 +119,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       list.forEach((e) => ov.querySelector(`.ika-bt-card[data-uid="${e.uid}"]`)?.classList.add('is-pick'));
     }
     // 案内
+    if (!st.winner && climax()) audio.bgm('climax', { xfade: 2 });
     el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : '';
     flushLog();
   }
@@ -171,7 +188,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   }
   el.end.addEventListener('click', async () => { if (busy || st.active !== 'me') return; sel = null; el.sheet.hidden = true; endTurn(st); render(); if (!checkOver()) await cpuTurn(); });
   $('[data-quit]').addEventListener('click', close);
-  function close() { ov.remove(); document.documentElement.classList.remove('is-battle'); }
+  function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); }
 
   async function cpuTurn() {
     busy = true; render();
@@ -189,6 +206,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   function checkOver() {
     if (!st.winner) return false;
     const win = st.winner === 'me';
+    audio.stopBgm(0.8); if (win) audio.se('win');
     el.over.hidden = false;
     el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : ''}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice }); });

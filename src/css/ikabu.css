@@ -2947,6 +2947,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-actions { position: absolute; z-index: 3; right: 10px; top: 85.5%; transform: translateY(-50%); display: flex; gap: 6px; align-items: center; }
 .ika-bt-side--me .ika-bt-nums { display: none; }
 .ika-bt-actions .ika-btn { padding: 7px 10px; font-size: 12.5px; }
+.ika-bt-sound { position: absolute; z-index: 4; right: 10px; top: max(38px, calc(env(safe-area-inset-top) + 32px)); width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
 .ika-bt-quit { border: 0; background: rgba(255,255,255,0.12); color: #fff; border-radius: 999px; padding: 7px 10px; font-family: inherit; font-weight: 900; font-size: 12px; cursor: pointer; }
 .ika-bt-hand { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; padding: 6px 10px max(8px, env(safe-area-inset-bottom)); overflow-x: auto; background: linear-gradient(0deg, rgba(2,8,20,0.9), rgba(2,8,20,0.4) 80%, transparent); }
 .ika-bt-hcard { position: relative; flex: none; width: 16%; min-width: 58px; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; transition: transform 0.15s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }

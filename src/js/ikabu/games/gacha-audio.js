@@ -16,7 +16,8 @@ export const AUDIO = {
 };
 const FADE = 0.5;
 
-export function createGachaAudio({ on = true, href = (p) => p } = {}) {
+export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } = {}) {
+  const AUDIO = tracks;   // 対戦は別の表（battle-ui.js）を渡す
   const st = { on: Boolean(on), ctx: null, bgmGain: null, seGain: null, bgm: null, bgmName: null, buffers: new Map(), loading: new Map(), playing: new Map() };
   const hasWindow = typeof window !== 'undefined';
 
@@ -67,7 +68,7 @@ export function createGachaAudio({ on = true, href = (p) => p } = {}) {
     if (!buf || st.bgmName !== name || !st.on) return;
     const c = ac(); const A = AUDIO[name];
     const s = c.createBufferSource(); s.buffer = buf; s.loop = Boolean(A.loop);
-    if (A.loop) { s.loopStart = 0; s.loopEnd = Math.min(A.loopEnd ?? buf.duration, buf.duration); }
+    if (A.loop) { s.loopStart = A.loopStart ?? 0; s.loopEnd = Math.min(A.loopEnd ?? buf.duration, buf.duration); }
     const g = c.createGain(); g.gain.value = 0; s.connect(g).connect(st.bgmGain); s.__gain = g;
     const t = c.currentTime; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(A.volume, t + xfade);
     s.start(t);
