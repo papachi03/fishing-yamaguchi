@@ -2931,7 +2931,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* 両側の情報：エギ（ライフ）と数字 */
 .ika-bt-side { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; font-size: 12px; font-weight: 900; pointer-events: none; }
 .ika-bt-side--cpu { top: max(6px, env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(2,8,20,0.75), transparent); }
-.ika-bt-side--me { top: 85.5%; justify-content: flex-start; gap: 12px; }
+.ika-bt-side--me { top: 55.5%; left: 2%; right: auto; flex-direction: column; align-items: flex-start; gap: 6px; padding: 0; }
+.ika-bt-side--me .ika-bt-egi-i { width: 18px; height: 8px; }
 .ika-bt-egi { display: flex; gap: 4px; }
 .ika-bt-egi-i { display: block; width: 22px; height: 10px; border-radius: 6px 2px 2px 6px / 5px 3px 3px 5px; background: linear-gradient(90deg, #ff7a3a 0 60%, #ffd9a8 60%); box-shadow: 0 2px 0 #0b1a2a, 0 0 6px rgba(255,122,58,0.8); transform: rotate(-20deg); }
 .ika-bt-egi-i.is-lost { background: #2a3a48; box-shadow: none; opacity: 0.5; }
@@ -2941,12 +2942,18 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-tide i.is-max { background: rgba(77,195,255,0.25); }
 .ika-bt-tide i.is-on { background: linear-gradient(180deg, #bfefff, #1e90ff 60%, #0b5fa8); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 6px rgba(77,195,255,0.8); }
 /* 真ん中の潮目の帯 */
-.ika-bt-band { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 12px; background: rgba(2,8,20,0.55); font-size: 12.5px; font-weight: 900; pointer-events: none; }
+.ika-bt-band { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 28% 4px 12px; flex-wrap: wrap; text-align: center; background: rgba(2,8,20,0.55); font-size: 12.5px; font-weight: 900; pointer-events: none; }
 .ika-bt-turn { color: #ffd166; white-space: nowrap; } .ika-bt-msg { color: #fff; }
 /* 手札とボタン */
-.ika-bt-actions { position: absolute; z-index: 3; right: 10px; top: 85.5%; transform: translateY(-50%); display: flex; gap: 6px; align-items: center; }
+.ika-bt-actions { position: absolute; z-index: 3; right: 2%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .ika-bt-side--me .ika-bt-nums { display: none; }
-.ika-bt-actions .ika-btn { padding: 7px 10px; font-size: 12.5px; }
+.ika-bt-imgbtn { padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.55)); transition: transform 0.12s, filter 0.12s; -webkit-tap-highlight-color: transparent; }
+.ika-bt-imgbtn img { display: block; height: auto; pointer-events: none; }
+.ika-bt-imgbtn:active { transform: scale(0.94); }
+.ika-bt-imgbtn:disabled { filter: grayscale(0.7) brightness(0.6); cursor: default; }
+.ika-bt-end img { width: clamp(72px, 22vw, 96px); }
+.ika-bt-direct img { width: clamp(120px, 34vw, 160px); animation: ika-gc-pulse 0.5s ease-in-out infinite alternate; }
+.ika-bt-quit { position: absolute; z-index: 4; right: 10px; top: max(76px, calc(env(safe-area-inset-top) + 70px)); }
 .ika-bt-sound { position: absolute; z-index: 4; right: 10px; top: max(38px, calc(env(safe-area-inset-top) + 32px)); width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
 .ika-bt-quit { border: 0; background: rgba(255,255,255,0.12); color: #fff; border-radius: 999px; padding: 7px 10px; font-family: inherit; font-weight: 900; font-size: 12px; cursor: pointer; }
 .ika-bt-hand { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; padding: 6px 10px max(8px, env(safe-area-inset-bottom)); overflow-x: auto; background: linear-gradient(0deg, rgba(2,8,20,0.9), rgba(2,8,20,0.4) 80%, transparent); }
@@ -2959,7 +2966,11 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-sheet { position: absolute; z-index: 5; left: 0; right: 0; bottom: 21%; display: flex; justify-content: center; padding: 0 12px; }
 .ika-bt-sheet[hidden] { display: none; }
 .ika-bt-sheet-in { width: min(100%, 360px); padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,0.96); color: var(--ika-ink); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.ika-bt-sheet-name { margin: 0; font-weight: 900; font-size: 15px; } .ika-bt-sheet-name small { color: #1e90ff; }
+.ika-bt-sheet-name { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 900; font-size: 15px; } .ika-bt-sheet-name small { color: #1e90ff; font-size: 12px; }
+.ika-bt-sheet-rimg { height: 22px; width: auto; }
+.ika-bt-sheet-stats { margin: 6px 0 0; display: flex; gap: 8px; font-weight: 900; font-size: 13px; }
+.ika-bt-sheet-stats span { padding: 2px 8px; border-radius: 999px; color: #fff; } .ika-bt-sheet-stats .is-atk { background: #d9432b; } .ika-bt-sheet-stats .is-def { background: #2b6cb0; } .ika-bt-sheet-stats b { margin-left: 4px; color: #ffd166; }
+.ika-bt-sheet { bottom: 22%; }
 .ika-bt-sheet-effect { margin: 4px 0 8px; font-size: 12.5px; line-height: 1.6; font-family: var(--font-text); }
 .ika-bt-sheet-in div { display: flex; gap: 8px; } .ika-bt-sheet-in .ika-btn { padding: 8px 12px; font-size: 13px; }
 /* 一言 */

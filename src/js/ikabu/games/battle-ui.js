@@ -16,6 +16,11 @@ const BATTLE_AUDIO = {
   battle: { src: '/assets/ikabu/audio/battle/bgm_battle.mp3', loop: true, loopStart: 9, loopEnd: 66, volume: 0.18 },
   climax: { src: '/assets/ikabu/audio/battle/bgm_climax.mp3', loop: true, loopStart: 6, loopEnd: 156, volume: 0.2 },
   win: { src: '/assets/ikabu/audio/battle/jingle_win.mp3', volume: 0.6 },
+  place: { src: '/assets/ikabu/audio/gacha/se_flip.mp3', volume: 0.7 },      // カードを出す・伏せる・使う（めくり音）
+  swing: { src: '/assets/ikabu/audio/gacha/se_splash.mp3', volume: 0.5 },    // 攻撃の突進（水しぶき）
+  hit: { src: '/assets/ikabu/audio/gacha/se_don.mp3', volume: 0.7 },         // 釣った・ダイレクト（ドン）
+  trap: { src: '/assets/ikabu/audio/gacha/se_thunder.mp3', volume: 0.5 },    // トラップが開く（稲妻）
+  lose: { src: '/assets/ikabu/audio/gacha/se_drag.mp3', volume: 0.35 },      // 負け（仮：ドラグが出ていく音の頭2秒）。負けジングルが来たら差し替え
 };
 const KEY_SOUND = 'ikabu.battle.sound';
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
@@ -35,6 +40,8 @@ const TX = {
   again: ['もう一度', 'Play again'], close: ['閉じる', 'Close'],
   state: { sick: ['出たばかり', 'new'], tired: ['休み', 'rest'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
+  kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
+  noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
 };
 
 export function mountBattle(root, { lang = 'ja' } = {}) {
@@ -59,7 +66,11 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       <div class="ika-bt-row ika-bt-row--myback" data-row="me-back"></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide></div><div class="ika-bt-nums" data-nums="me"></div></div>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
-      <div class="ika-bt-actions"><button type="button" class="ika-btn ika-bt-direct" data-direct hidden>${t(lang, ...TX.direct)}</button><button type="button" class="ika-btn ika-btn--primary" data-end>${t(lang, ...TX.end)}</button><button type="button" class="ika-bt-quit" data-quit>${t(lang, ...TX.quit)}</button></div>
+      <div class="ika-bt-actions">
+        <button type="button" class="ika-bt-imgbtn ika-bt-direct" data-direct hidden><img src="${assetHref('/assets/ikabu/battle/btn_direct.webp')}" alt="${t(lang, ...TX.direct)}" draggable="false" /></button>
+        <button type="button" class="ika-bt-imgbtn ika-bt-end" data-end><img src="${assetHref('/assets/ikabu/battle/btn_end.webp')}" alt="${t(lang, ...TX.end)}" draggable="false" /></button>
+      </div>
+      <button type="button" class="ika-bt-quit" data-quit>${t(lang, ...TX.quit)}</button>
       <div class="ika-bt-hand" data-hand></div>
       <div class="ika-bt-sheet" data-sheet hidden></div>
       <div class="ika-bt-callout" data-callout></div>
@@ -140,10 +151,21 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     if (!c.ok) { callout(t(lang, ...(TX.why[c.why] ?? ['', ''])), 'is-no'); return; }
     sel = { kind: 'hand', x }; render(); showSheet(x);
   });
+  // mode='hand'：出す／使う／伏せるのボタン付き。mode='info'：盤面のカードを見るだけ
+  function cardInfoHTML(x, onField) {
+    const c = x.card;
+    const stats = c.kind === 'squid' ? `<p class="ika-bt-sheet-stats"><span class="is-atk">${t(lang, ...TX.atk)} ${c.atk}${onField && statOf(st, x, 'atk') !== c.atk ? `<b>→${statOf(st, x, 'atk')}</b>` : ''}</span><span class="is-def">${t(lang, ...TX.def)} ${c.def}${onField && statOf(st, x, 'def') !== c.def ? `<b>→${statOf(st, x, 'def')}</b>` : ''}</span></p>` : '';
+    return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
+  }
+  function showInfo(x) {
+    el.sheet.hidden = false;
+    el.sheet.innerHTML = `<div class="ika-bt-sheet-in">${cardInfoHTML(x, true)}<div><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.close)}</button></div></div>`;
+    el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; });
+  }
   function showSheet(x) {
     const label = x.card.kind === 'squid' ? TX.put : x.card.kind === 'tech' ? TX.use : TX.set;
     el.sheet.hidden = false;
-    el.sheet.innerHTML = `<div class="ika-bt-sheet-in"><p class="ika-bt-sheet-name">${esc(x.card.name)} <small>🌊${costOf(st, 'me', x)}</small></p><p class="ika-bt-sheet-effect">${esc(x.card.effect ?? '')}</p><div><button type="button" class="ika-btn ika-btn--primary" data-go>${t(lang, ...label)}</button><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
+    el.sheet.innerHTML = `<div class="ika-bt-sheet-in">${cardInfoHTML(x, false)}<div><button type="button" class="ika-btn ika-btn--primary" data-go>${t(lang, ...label)}</button><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
     el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { sel = null; el.sheet.hidden = true; render(); });
     el.sheet.querySelector('[data-go]').addEventListener('click', () => {
       el.sheet.hidden = true;
@@ -154,14 +176,16 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   }
   function doPlay(x, target) {
     const r = play(st, 'me', x, { target });
+    if (r.ok) audio.se('place');
     sel = null;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
     render(); checkOver();
   }
   // 盤面のタップ：対象を選ぶ／攻撃する
   ov.addEventListener('click', (e) => {
-    const c = e.target.closest('.ika-bt-card'); if (!c || busy || st.active !== 'me') return;
+    const c = e.target.closest('.ika-bt-card'); if (!c) return;
     const x = findInst(c.dataset.uid); if (!x) return;
+    if (busy || st.active !== 'me') { if (!st.players.cpu.back.includes(x)) showInfo(x); return; }
     const mine = st.players.me.front.includes(x), enemy = st.players.cpu.front.includes(x);
     if (sel?.kind === 'target') {
       const okSide = sel.who.startsWith('own') ? mine : enemy;
@@ -171,17 +195,22 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     if (sel?.kind === 'attacker' && enemy) { doAttack(sel.x, x); return; }
     if (mine) {
       const ca = canAttack(st, 'me', x);
-      if (!ca.ok) { callout(t(lang, ...(TX.why[ca.why] ?? ['', ''])), 'is-no'); return; }
+      if (!ca.ok) { callout(t(lang, ...(TX.why[ca.why] ?? ['', ''])), 'is-no'); showInfo(x); return; }
       sel = sel?.kind === 'attacker' && sel.x === x ? null : { kind: 'attacker', x }; render();
+      if (sel) showInfo(x); else el.sheet.hidden = true;
+      return;
     }
+    // 相手の前列・自分の後列（伏せたカード）：説明だけ。相手の伏せカードは見えない
+    if (enemy || st.players.me.back.includes(x)) showInfo(x);
   });
   el.direct.addEventListener('click', () => { if (sel?.kind === 'attacker') doAttack(sel.x, null); });
   async function doAttack(x, target) {
     busy = true;
     const node = ov.querySelector(`.ika-bt-card[data-uid="${x.uid}"]`);
-    node?.classList.add('is-attack-up');
+    node?.classList.add('is-attack-up'); audio.se('swing');
     await wait(280);
     const r = attack(st, 'me', x, target);
+    seForResult(r);
     sel = null; busy = false;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
     render(); checkOver();
@@ -197,16 +226,21 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     while (st.active === 'cpu' && !st.winner && guard++ < 40) {
       const a = cpuNext(st);
       if (a.type === 'end') break;
-      if (a.type === 'play') { play(st, 'cpu', a.x, { target: a.target }); render(); await wait(800); }
-      else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); await wait(280); attack(st, 'cpu', a.x, a.target); render(); await wait(900); }
+      if (a.type === 'play') { play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); await wait(800); }
+      else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const r = attack(st, 'cpu', a.x, a.target); seForResult(r); render(); await wait(900); }
     }
     if (!st.winner) endTurn(st);
     busy = false; render(); checkOver();
   }
+  function seForResult(r) {
+    if (!r?.ok) return;
+    if (r.result === 'trapped') audio.se('trap');
+    else if (r.result === 'catch' || r.result === 'direct') audio.se('hit');
+  }
   function checkOver() {
     if (!st.winner) return false;
     const win = st.winner === 'me';
-    audio.stopBgm(0.8); if (win) audio.se('win');
+    audio.stopBgm(0.8); if (win) audio.se('win'); else audio.se('lose').then((h) => setTimeout(() => h.stop(0.6), 2000));
     el.over.hidden = false;
     el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : ''}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice }); });
