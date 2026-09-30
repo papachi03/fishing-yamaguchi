@@ -2936,6 +2936,37 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* 盤＝背景画像と同じ 9:16 の層。画面の縦横比が違っても、枠は画像の%で置くのでずれない（cover と同じ切れ方） */
 .ika-bt-board { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: 100%; aspect-ratio: 9 / 16; min-width: 100%; background: center / cover no-repeat; }
 .ika-bt-cell { position: absolute; display: grid; place-items: center; }
+/* 演出の層（盤の上・操作の邪魔をしない） */
+.ika-bt-fx { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.ika-bt-fx > div { position: absolute; }
+.ika-bt-fx-catch img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 6px; animation: ika-bt-fx-catch 1s cubic-bezier(0.3, 0.8, 0.4, 1) forwards; filter: drop-shadow(0 10px 14px rgba(0,0,0,0.6)); }
+@keyframes ika-bt-fx-catch { 0% { transform: translateY(0) rotate(0); opacity: 1; } 30% { transform: translateY(-30%) rotate(-12deg) scale(1.1); opacity: 1; } 100% { transform: translateY(-160%) rotate(25deg) scale(0.6); opacity: 0; } }
+.ika-bt-fx-splash i { position: absolute; left: 50%; bottom: 20%; width: 8px; height: 8px; border-radius: 50%; background: #dff6ff; box-shadow: 0 0 6px #9fd8ff; animation: ika-bt-fx-splash 0.8s ease-out forwards; animation-delay: var(--d); opacity: 0; }
+@keyframes ika-bt-fx-splash { 0% { transform: translate(0, 0) scale(0.6); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1.2); opacity: 0; } }
+.ika-bt-fx-trap { perspective: 600px; display: grid; place-items: center; }
+.ika-bt-fx-trap-in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.3, 1.2, 0.4, 1); }
+.ika-bt-fx-trap-in img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 6px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.ika-bt-fx-trap-in .is-front { transform: rotateY(180deg); box-shadow: 0 0 18px 6px rgba(167,139,250,0.9); }
+.ika-bt-fx-trap.is-on .ika-bt-fx-trap-in { transform: rotateY(180deg) scale(1.35); }
+.ika-bt-fx-trap span { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); padding: 2px 10px; border-radius: 999px; background: #7c3aed; color: #fff; font-weight: 900; font-size: 12px; white-space: nowrap; opacity: 0; transition: opacity 0.3s 0.4s; }
+.ika-bt-fx-trap.is-on span { opacity: 1; }
+.ika-bt-fx-trap { animation: ika-bt-fx-trapout 1.5s forwards; }
+@keyframes ika-bt-fx-trapout { 0%, 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
+.ika-bt-fx-ripple::before, .ika-bt-fx-ripple::after { content: ''; position: absolute; left: 50%; top: 60%; width: 140%; height: 60%; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); transform: translate(-50%, -50%) scale(0.3); animation: ika-bt-fx-ripple 0.8s ease-out forwards; }
+.ika-bt-fx-ripple::after { animation-delay: 0.15s; }
+@keyframes ika-bt-fx-ripple { to { transform: translate(-50%, -50%) scale(1.3); opacity: 0; } }
+.ika-bt-stage.is-shake { animation: ika-bt-shake 0.35s; } .ika-bt-stage.is-shake-strong { animation: ika-bt-shake-strong 0.5s; }
+@keyframes ika-bt-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-4px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, 1px); } }
+@keyframes ika-bt-shake-strong { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-8px, 4px); } 40% { transform: translate(8px, -4px); } 60% { transform: translate(-5px, 2px); } 80% { transform: translate(5px, -2px); } }
+.ika-bt-egi-i.is-just { animation: ika-bt-egilost 0.7s ease-out forwards; }
+@keyframes ika-bt-egilost { 0% { transform: rotate(-12deg) scale(1.3); filter: none; opacity: 1; } 60% { transform: rotate(20deg) translateY(6px) scale(1.1); } 100% { transform: rotate(-12deg); filter: grayscale(1) brightness(0.45); opacity: 0.45; } }
+/* 潮ゲージ：ガラスの光沢。満潮（8）で光る */
+.ika-bt-tide i { position: relative; overflow: hidden; }
+.ika-bt-tide i.is-on { background: linear-gradient(180deg, #e6f9ff 0%, #5ec8ff 35%, #1e90ff 60%, #0b5fa8 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 3px rgba(0,0,0,0.25), 0 0 8px rgba(77,195,255,0.9); animation: ika-bt-tidein 0.35s ease-out; }
+.ika-bt-tide i.is-on::after { content: ''; position: absolute; left: 15%; top: 8%; width: 30%; height: 45%; border-radius: 40%; background: rgba(255,255,255,0.75); }
+@keyframes ika-bt-tidein { from { transform: scaleY(0.4); opacity: 0.4; } }
+.ika-bt-tide:has(i:nth-child(8).is-on) i.is-on { box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 12px rgba(120,220,255,1); }
+@media (prefers-reduced-motion: reduce) { .ika-bt-fx-catch img, .ika-bt-fx-splash i, .ika-bt-fx-trap, .ika-bt-fx-ripple::before, .ika-bt-fx-ripple::after, .ika-bt-stage.is-shake, .ika-bt-stage.is-shake-strong, .ika-bt-egi-i.is-just, .ika-bt-tide i.is-on { animation: none; } }
 .ika-bt-cell > .ika-bt-slot, .ika-bt-cell > .ika-bt-card { height: 100%; width: auto; aspect-ratio: 2 / 3; }
 /* 盤面の列と行（背景の岩の位置に合わせる：横 36%・50%・64%、縦 相手後列23%・相手前列38%・自分前列64%・自分後列81%） */
 .ika-bt { --bt-scale: 1; }

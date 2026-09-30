@@ -175,6 +175,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   let busy = false;
   let logSeen = st.log.length;
 
+  const egiPrev = { me: 5, cpu: 5 };
   const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
   const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
   function cardHTML(x, side, row) {
@@ -192,7 +193,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       const p = st.players[side];
       el.rows[`${side}-front`].innerHTML = p.front.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-front`][i])}">${cardHTML(x, side, 'front')}</div>`).join('');
       el.rows[`${side}-back`].innerHTML = p.back.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-back`][i])}">${cardHTML(x, side, 'back')}</div>`).join('');
-      el.egi[side].innerHTML = egiHTML(p.egi);
+      if (p.egi !== egiPrev[side]) { el.egi[side].innerHTML = egiHTML(p.egi); if (p.egi < egiPrev[side]) el.egi[side].querySelectorAll('.ika-bt-egi-i')[p.egi]?.classList.add('is-just'); egiPrev[side] = p.egi; }
       const v = view(st, side);
       el.nums[side].innerHTML = `<span>🌊 ${v.tide}/${v.tideMax}</span><span>${t(lang, ...TX.hand)} ${v.hand}</span><span>${t(lang, ...TX.deck)} ${v.deck}</span>`;
     }
@@ -220,6 +221,40 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : '';
     flushLog();
     if (!busy) tutor();
+  }
+  const fxLayer = document.createElement('div'); fxLayer.className = 'ika-bt-fx'; $('.ika-bt-board').appendChild(fxLayer);
+  // 盤の中の位置（%）を、カードの uid から取る（render の前に控える）
+  const posOf = (uid) => { const n = ov.querySelector(`.ika-bt-card[data-uid="${uid}"]`); if (!n) return null; const b = $('.ika-bt-board').getBoundingClientRect(); const r = n.getBoundingClientRect(); return { left: ((r.left - b.left) / b.width) * 100, top: ((r.top - b.top) / b.height) * 100, width: (r.width / b.width) * 100, height: (r.height / b.height) * 100 }; };
+  const fxEl = (cls, pos, html = '') => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, { left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%` }); d.innerHTML = html; fxLayer.appendChild(d); return d; };
+  // 釣り上げ：カードが上へ引き上げられて回りながら消える＋しぶき
+  function fxCatch(x, pos) {
+    if (!pos) return;
+    const d = fxEl('ika-bt-fx-catch', pos, `<img src="${cardSrc(x.no)}" alt="" />`);
+    const sp = fxEl('ika-bt-fx-splash', pos, Array.from({ length: 10 }, (_, i) => `<i style="--dx:${(i - 4.5) * 12}px;--dy:${-40 - (i % 3) * 22}px;--d:${(i % 4) * 40}ms"></i>`).join(''));
+    setTimeout(() => { d.remove(); sp.remove(); }, 1100);
+  }
+  // トラップが開く：伏せカードが表にめくれて紫に光り、消える
+  function fxTrap(x, pos) {
+    if (!pos) return;
+    const d = fxEl('ika-bt-fx-trap', pos, `<div class="ika-bt-fx-trap-in"><img class="is-back" src="${BACK}" alt="" /><img class="is-front" src="${cardSrc(x.no)}" alt="" /></div><span>${esc(x.card.name)}</span>`);
+    requestAnimationFrame(() => d.classList.add('is-on'));
+    setTimeout(() => d.remove(), 1500);
+  }
+  // 着地の波紋
+  function fxRipple(pos) { if (!pos) return; const d = fxEl('ika-bt-fx-ripple', pos); setTimeout(() => d.remove(), 900); }
+  // 画面の揺れ
+  function fxShake(strong = false) { const s = $('.ika-bt-stage'); s.classList.remove('is-shake', 'is-shake-strong'); void s.offsetWidth; s.classList.add(strong ? 'is-shake-strong' : 'is-shake'); }
+  // 引く前の盤の控え（釣られた・開いたトラップの位置を後で使う）
+  function snapshot() { const m = new Map(); ov.querySelectorAll('.ika-bt-card[data-uid]').forEach((n) => m.set(n.dataset.uid, posOf(n.dataset.uid))); return m; }
+  // 出来事の後：控えと見比べて演出（釣られたカード＝前列から消えた、トラップ＝log の「開いた」）
+  function fxAfter(before, logFrom, r) {
+    const fresh = st.log.slice(logFrom);
+    for (const l of fresh) {
+      const m = l.text.match(/^トラップ「(.+)」が開いた/);
+      if (m) { for (const s of ['me', 'cpu']) { const x = st.players[s].grave.slice().reverse().find((g) => g.card.name === m[1] && g.card.kind === 'trap'); if (x && before.has(String(x.uid))) { fxTrap(x, before.get(String(x.uid))); break; } } }
+    }
+    if (r?.result === 'catch' && r.caught) { fxCatch(r.caught, before.get(String(r.caught.uid))); fxShake(false); }
+    if (r?.result === 'direct') fxShake(true);
   }
   let calloutTimer = 0;
   function callout(text, kind = '') { el.callout.textContent = text; el.callout.className = `ika-bt-callout is-on ${kind}`; clearTimeout(calloutTimer); calloutTimer = setTimeout(() => el.callout.classList.remove('is-on'), 1300); }
@@ -272,11 +307,12 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     });
   }
   function doPlay(x, target) {
+    const before = snapshot(); const logFrom = st.log.length;
     const r = play(st, 'me', x, { target });
     if (r.ok) audio.se('place');
     sel = null;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
-    render(); checkOver();
+    render(); if (r.ok) { fxAfter(before, logFrom, null); if (x.card.kind !== 'trap') fxRipple(posOf(x.uid)); } checkOver();
   }
   // 盤面のタップ：対象を選ぶ／攻撃する
   ov.addEventListener('click', (e) => {
@@ -306,8 +342,10 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const node = ov.querySelector(`.ika-bt-card[data-uid="${x.uid}"]`);
     node?.classList.add('is-attack-up'); audio.se('swing');
     await wait(280);
+    const before = snapshot(); const logFrom = st.log.length;
     const r = attack(st, 'me', x, target);
-    seForResult(r);
+    if (r.ok && r.result === 'catch') r.caught = target;
+    seForResult(r); fxAfter(before, logFrom, r);
     sel = null; busy = false;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
     render(); checkOver();
@@ -346,8 +384,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       const a = cpuNext(st);
       if (a.type === 'end') break;
       if (a.type === 'shakuri') { shakuri(st, 'cpu', a.x); audio.se('place'); render(); await wait(600); continue; }
-      if (a.type === 'play') { play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); await wait(800); }
-      else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const r = attack(st, 'cpu', a.x, a.target); seForResult(r); render(); await wait(900); }
+      if (a.type === 'play') { const before = snapshot(); const logFrom = st.log.length; play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); fxAfter(before, logFrom, null); if (a.x.card.kind !== 'trap') fxRipple(posOf(a.x.uid)); await wait(800); }
+      else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const before = snapshot(); const logFrom = st.log.length; const r = attack(st, 'cpu', a.x, a.target); if (r.ok && r.result === 'catch') r.caught = a.target; seForResult(r); fxAfter(before, logFrom, r); render(); await wait(900); }
     }
     if (!st.winner) endTurn(st);
     busy = false; render(); checkOver();
