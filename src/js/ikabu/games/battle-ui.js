@@ -5,7 +5,7 @@
 import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
-import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
+import { newGame, play, attack, endTurn, overflow, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
 import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
@@ -65,6 +65,8 @@ const TUTOR = [
     ja: '潮が余っていたら「潮しゃくり」！\n自分のイカをタップして、\n🌊2で攻撃+1（1体1回）。\nあと1足りない時の一押しに', en: 'Spare tide? Tap your squid and use Tide Jerk: 2 tide for +1 ATK (once per squid). Also, a defender that bounces you loses 1 DEF permanently, so keep pushing.' },
   { id: 'wear', pic: 'wink', when: (st) => st.players.cpu.front.some((x) => x && x.buffs.some((b) => b.stat === 'def' && b.n < 0 && b.expires === Infinity)),
     ja: '弾かれた！ でも無駄じゃない。\n弾いた相手は「守りの疲れ」で\n防御が1下がった（ずっと）。\n同じ相手をもう一度狙えば抜けるよ', en: "Bounced! Not wasted though: the defender is worn down and loses 1 DEF permanently. Hit it again and you'll break through." },
+  { id: 'over', pic: 'point', when: (st) => st.active === 'me' && overflow(st, 'me') > 0,
+    ja: '手札が7枚を超えている！\nターン終了の時に、超えた分を\n「納竿」で捨てるよ。\nどれを捨てるかは自分で選べる', en: 'More than 7 cards in hand! At end of turn you must discard the extra ones. You choose which.' },
   { id: 'lost', pic: 'sad', when: (st) => st.players.me.egi < 5,
     ja: 'エギを1個取られた…\nでも取られた側は1枚引ける。\n手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
 ];
@@ -84,6 +86,9 @@ const TX = {
   direct: ['ダイレクトアタック！', 'Direct attack!'],
   why: { tide: ['潮が足りません', 'Not enough tide'], summoned: ['イカはこのターンもう出しました', 'Already played a squid this turn'], frontFull: ['前列がいっぱいです', 'Front row is full'], backFull: ['後列がいっぱいです', 'Back row is full'], techLimit: ['このターンはテクニックをもう使えません', 'No more techniques this turn'], sick: ['出したターンは攻撃できません', "Can't attack the turn it was played"], tired: ['弾かれたので、このターンは攻撃できません', 'Bounced last time; rests this turn'], attacked: ['このターンはもう攻撃しました', 'Already attacked'], noAttack: ['このターンは攻撃できません', "Can't attack this turn"], shielded: ['そのイカは守られています', 'That squid is protected'] },
   win: ['勝った！', 'You win!'], lose: ['負けた…', 'You lose…'],
+  over: (lang, n, max) => (lang === 'en' ? `Hand ${n}/${max}: discard ${n - max} at end of turn` : `手札 ${n}／${max}：ターン終了で${n - max}枚捨てます`),
+  pickDiscard: (lang, n) => (lang === 'en' ? `Choose ${n} card${n > 1 ? 's' : ''} to discard (納竿)` : `捨てるカードを${n}枚選んでください（納竿）`),
+  discardGo: ['捨てる', 'Discard'],
   again: ['もう一度', 'Play again'], close: ['閉じる', 'Close'],
   state: { sick: ['出たばかり', 'new'], tired: ['休み', 'rest'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
@@ -129,6 +134,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
         <button type="button" class="ika-bt-imgbtn ika-bt-end" data-end><img src="${assetHref('/assets/ikabu/battle/btn_end.webp')}" alt="${t(lang, ...TX.end)}" draggable="false" /></button>
       </div>
       <button type="button" class="ika-bt-quit" data-quit>${t(lang, ...TX.quit)}</button>
+      <p class="ika-bt-overflow" data-overflow hidden></p>
       <div class="ika-bt-hand" data-hand></div>
       <div class="ika-bt-sheet" data-sheet hidden></div>
       <div class="ika-bt-callout" data-callout></div>
@@ -197,6 +203,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       const c = canPlay(st, 'me', x);
       return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i></button>`;
     }).join('');
+    const ov7 = overflow(st, 'me');
+    const ofEl = $('[data-overflow]'); ofEl.hidden = !(ov7 > 0 && st.active === 'me'); if (ov7 > 0) ofEl.textContent = TX.over(lang, me.hand.length, me.hand.length - ov7);
     const enemies = st.players.cpu.front.filter(Boolean);
     el.direct.hidden = !(sel?.kind === 'attacker' && !enemies.length);
     el.end.disabled = st.active !== 'me' || busy;
@@ -296,7 +304,28 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
     render(); checkOver();
   }
-  el.end.addEventListener('click', async () => { if (busy || st.active !== 'me') return; audio.se('endturn'); sel = null; el.sheet.hidden = true; endTurn(st); render(); if (!checkOver()) await cpuTurn(); });
+  el.end.addEventListener('click', async () => {
+    if (busy || st.active !== 'me') return;
+    sel = null; el.sheet.hidden = true;
+    const n = overflow(st, 'me');
+    let discard = null;
+    if (n > 0) { discard = await pickDiscard(n); if (!discard) { render(); return; } }
+    audio.se('endturn'); endTurn(st, { discard }); render(); if (!checkOver()) await cpuTurn();
+  });
+  // 納竿：捨てるカードを選ぶ窓（n枚タップ→「捨てる」）。「やめる」で戻る
+  function pickDiscard(n) {
+    return new Promise((resolve) => {
+      const picked = new Set();
+      el.sheet.hidden = false;
+      const draw = () => {
+        el.sheet.innerHTML = `<div class="ika-bt-sheet-in ika-bt-discard"><p class="ika-bt-sheet-name">${TX.pickDiscard(lang, n)}</p><div class="ika-bt-discard-list">${st.players.me.hand.map((x) => `<button type="button" class="ika-bt-dcard${picked.has(x.uid) ? ' is-on' : ''}" data-d="${x.uid}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" /></button>`).join('')}</div><div><button type="button" class="ika-btn ika-btn--primary" data-go ${picked.size === n ? '' : 'disabled'}>${t(lang, ...TX.discardGo)}（${picked.size}/${n}）</button><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
+        el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; resolve(null); });
+        el.sheet.querySelector('[data-go]').addEventListener('click', () => { el.sheet.hidden = true; resolve(st.players.me.hand.filter((x) => picked.has(x.uid))); });
+        el.sheet.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { const uid = Number(b.dataset.d); if (picked.has(uid)) picked.delete(uid); else if (picked.size < n) picked.add(uid); draw(); }));
+      };
+      draw();
+    });
+  }
   $('[data-quit]').addEventListener('click', close);
   function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); }
 
@@ -336,6 +365,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     return true;
   }
   render();
+  if (import.meta.env.DEV) window.__bt = { st, render };   // 開発時の確認用
   if (st.active === 'cpu') cpuTurn();
   return { st, close };
 }

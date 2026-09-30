@@ -191,3 +191,22 @@ test('部長デッキは検査に通り、練習デッキより強い（SR入り
   }
   assert.ok(st.winner);
 });
+
+test('納竿：7枚を超えた分は選んだカードを捨てる。指定が無ければコストの高い順（CPU）', async () => {
+  const { overflow } = await import('../src/js/ikabu/games/battle.js');
+  const st = mk();
+  while (st.players.me.hand.length < 9) give(st, 'me', 'しゃくり');
+  const big = give(st, 'me', 'アオリイカ');   // 潮3（手札で一番高い）
+  assert.equal(overflow(st, 'me'), 3);
+  const pick = st.players.me.hand.slice(0, 3);
+  endTurn(st, { discard: pick });
+  assert.equal(st.players.me.hand.length, 7);
+  assert.ok(st.players.me.hand.includes(big));
+  assert.ok(pick.every((x) => st.players.me.grave.includes(x)));
+  const st2 = mk(); endTurn(st2);   // CPUのターンへ
+  while (st2.players.cpu.hand.length < 9) give(st2, 'cpu', 'しゃくり');
+  const big2 = give(st2, 'cpu', 'アオリイカ');
+  endTurn(st2);
+  assert.ok(!st2.players.cpu.hand.includes(big2));   // 高いコストから捨てた
+  assert.equal(st2.players.cpu.hand.length, 7);
+});

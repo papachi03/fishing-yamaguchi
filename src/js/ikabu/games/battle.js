@@ -119,9 +119,16 @@ export function startTurn(st) {
   fireTraps(st, other(side), 'enemyTurnStart', {});
   return st;
 }
-export function endTurn(st) {
+// 納竿で捨てる枚数（7枚を超えた分）
+export const overflow = (st, side) => Math.max(0, P(st, side).hand.length - HAND_MAX);
+export function endTurn(st, { discard = null } = {}) {
   const side = st.active, p = P(st, side);
-  while (p.hand.length > HAND_MAX) p.grave.push(p.hand.pop());   // 納竿：超えた分を捨てる
+  const n = overflow(st, side);
+  if (n > 0) {   // 納竿：超えた分を捨てる。選んだカードがあればそれを、無ければコストの高い順（CPU）
+    const chosen = (discard ?? []).filter((x) => p.hand.includes(x)).slice(0, n);
+    const rest = p.hand.filter((x) => !chosen.includes(x)).sort((a, b) => b.card.cost - a.card.cost);
+    for (const x of [...chosen, ...rest.slice(0, n - chosen.length)]) { p.hand.splice(p.hand.indexOf(x), 1); p.grave.push(x); say(st, `${x.card.name}を捨てた（納竿）`); }
+  }
   for (const s of ['me', 'cpu']) for (const x of P(st, s).front) if (x) { x.buffs = x.buffs.filter((b) => b.expires > st.turn); for (const k of Object.keys(x.flags)) if (x.flags[k] <= st.turn) delete x.flags[k]; }
   st.active = other(side);
   return startTurn(st);
