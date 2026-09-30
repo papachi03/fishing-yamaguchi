@@ -4,7 +4,7 @@
 //   mountTickets   ：TOP（games）の🎫の欄。枚数と「今日あと何枚」を表示し、配布コードの入力を受ける
 //   ゲーム側は終わった時に 'ikabu:game'（detail: { game, goal, seconds, counted }）を投げる
 import { utcDay } from './rng.js';
-import { readTickets, writeTickets, earnPlay, earnSumiGoal, earnRush60, earnCert, todayLeft, CAP } from './tickets.js';
+import { readTickets, writeTickets, earnPlay, earnSumiGoal, earnRush60, earnCert, earnBattle, todayLeft, CAP } from './tickets.js';
 import { HUB_TEXT } from './play-text.js';
 import { t } from '../i18n.js';
 import { redeem, lockState } from './codes.js';
@@ -39,6 +39,7 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
     if (d.counted === false) return;   // 練習（数えない釣行）は🎫も無し
     apply((rec, day) => {
       let got = 0, why = [], r = rec;
+      if (d.game === 'battle') { const b = earnBattle(r, { day, win: Boolean(d.win) }); return { rec: b.rec, got: b.got, why: b.why }; }   // 対戦は「1戦」の枠と別
       const a = earnPlay(r, { day }); r = a.rec; got += a.got; why.push(...a.why);
       if (d.game === 'sumi' && d.goal) { const b = earnSumiGoal(r, { day }); r = b.rec; got += b.got; why.push(...b.why); }
       if (d.game === 'rush') { const c = earnRush60(r, { day, seconds: d.seconds ?? 0 }); r = c.rec; got += c.got; why.push(...c.why); }

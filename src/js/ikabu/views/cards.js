@@ -10,6 +10,7 @@ export function render(lang) {
       <p class="ika-eyebrow"><span class="ika-eyebrow-num">04</span>${t(lang, 'イカカード', 'SQUID CARDS')}</p>
       <h1 class="ika-games-title">${t(lang, 'バインダー', 'Binder')}</h1>
       <p class="ika-games-lead">${t(lang, 'ガチャで引いたカードが並びます。ダブりは「墨のかけら」になり、欲しいカードと交換できます。対戦は準備中。', 'Cards you pull line up here. Duplicates become ink shards you can trade for the card you want. Battles coming soon.')}</p>
+      <div id="ika-battle"></div>
       <div id="ika-binder"></div>
     </div>
   </section>`;

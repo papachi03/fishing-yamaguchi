@@ -1,0 +1,1032 @@
+{
+"1": [
+{
+"when": "enter",
+"do": "draw",
+"n": 1
+}
+],
+"2": [],
+"3": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"4": [
+{
+"when": "passive",
+"do": "techCheaper",
+"n": 1,
+"only": "night"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"5": [
+{
+"when": "passive",
+"do": "haste"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"6": [],
+"7": [
+{
+"when": "caught",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"8": [],
+"9": [
+{
+"when": "enter",
+"do": "tide",
+"n": 1
+}
+],
+"10": [],
+"11": [],
+"12": [
+{
+"when": "passive",
+"do": "haste"
+}
+],
+"13": [
+{
+"when": "passive",
+"do": "tieWins"
+}
+],
+"14": [
+{
+"when": "passive",
+"do": "ignoreTrapOnAttack"
+}
+],
+"15": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "def",
+"n": -2,
+"until": "turnEnd"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"16": [],
+"17": [
+{
+"when": "caught",
+"do": "buff",
+"who": "enemyAll",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"18": [
+{
+"when": "attack",
+"do": "buff",
+"who": "target",
+"stat": "def",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"19": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"20": [
+{
+"when": "passive",
+"do": "noTiredWhenBlocked"
+}
+],
+"21": [],
+"22": [
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"23": [
+{
+"when": "enter",
+"do": "draw",
+"n": 1
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"24": [],
+"25": [],
+"26": [],
+"27": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"28": [],
+"29": [],
+"30": [],
+"31": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"32": [],
+"33": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"34": [
+{
+"when": "attack",
+"do": "buff",
+"who": "target",
+"stat": "def",
+"n": -1,
+"until": "turnEnd"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"35": [
+{
+"when": "passive",
+"do": "noTiredWhenBlocked"
+}
+],
+"36": [],
+"37": [
+{
+"when": "enter",
+"do": "tide",
+"n": 1
+}
+],
+"38": [
+{
+"when": "enter",
+"do": "draw",
+"n": 1
+}
+],
+"39": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"40": [],
+"41": [],
+"42": [
+{
+"when": "attack",
+"do": "buff",
+"who": "target",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"43": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"44": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"45": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -3,
+"until": "turnEnd"
+}
+],
+"46": [
+{
+"when": "enter",
+"do": "bounce",
+"who": "enemyOne"
+}
+],
+"47": [
+{
+"when": "caught",
+"do": "tutor",
+"name": "アオリイカ"
+}
+],
+"48": [
+{
+"when": "passive",
+"do": "ignoreTrapOnAttack"
+}
+],
+"49": [
+{
+"when": "enter",
+"do": "tutor",
+"name": "ヤリイカ"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"50": [
+{
+"when": "passive",
+"do": "techCheaper",
+"n": 1,
+"only": "all"
+}
+],
+"51": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+}
+],
+"52": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 1,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "same",
+"stat": "def",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"53": [
+{
+"when": "play",
+"do": "shield",
+"who": "ownOne"
+}
+],
+"54": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "def",
+"n": 2,
+"until": "oppTurnEnd"
+}
+],
+"55": [
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"56": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "def",
+"n": 1,
+"until": "oppTurnEnd"
+},
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"57": [
+{
+"when": "play",
+"do": "rest",
+"who": "ownOne",
+"thenAtk": 2
+}
+],
+"58": [
+{
+"when": "play",
+"do": "tide",
+"n": 1
+}
+],
+"59": [
+{
+"when": "play",
+"do": "bounce",
+"who": "ownOne"
+},
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"60": [
+{
+"when": "play",
+"do": "peekPick",
+"n": 2
+}
+],
+"61": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"62": [
+{
+"when": "play",
+"do": "tutorSquid",
+"maxCost": 2
+}
+],
+"63": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "same",
+"stat": "def",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"64": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+}
+],
+"65": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 3,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"66": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 4,
+"until": "turnEnd"
+}
+],
+"67": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyOne",
+"stat": "def",
+"n": -3,
+"until": "turnEnd"
+}
+],
+"68": [
+{
+"when": "play",
+"do": "draw",
+"n": 2
+}
+],
+"69": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "atk",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"70": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"71": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownNight",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+}
+],
+"72": [
+{
+"when": "play",
+"do": "revealTrap"
+}
+],
+"73": [
+{
+"when": "play",
+"do": "shield",
+"who": "ownOne"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "same",
+"stat": "atk",
+"n": 1,
+"until": "nextTurn"
+}
+],
+"74": [
+{
+"when": "play",
+"do": "changeMark",
+"who": "ownOne"
+}
+],
+"75": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "oppTurnEnd"
+}
+],
+"76": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownNightOne",
+"stat": "def",
+"n": 2,
+"until": "oppTurnEnd"
+}
+],
+"77": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyOne",
+"stat": "def",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"78": [
+{
+"when": "play",
+"do": "summonFromDeck",
+"maxCost": 1
+}
+],
+"79": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "flag",
+"who": "same",
+"flag": "tieWins",
+"until": "turnEnd"
+}
+],
+"80": [
+{
+"when": "play",
+"do": "heal",
+"who": "ownTiredOne"
+}
+],
+"81": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"82": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyAll",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"83": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 3,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "flag",
+"who": "same",
+"flag": "ignoreTrap",
+"until": "turnEnd"
+}
+],
+"84": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyAll",
+"stat": "def",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"85": [
+{
+"when": "play",
+"do": "heal",
+"who": "ownAll"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "oppTurnEnd"
+}
+],
+"86": [
+{
+"when": "play",
+"do": "buff",
+"who": "enemyAll",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"87": [
+{
+"when": "play",
+"do": "tide",
+"n": 3,
+"ignoreCap": true
+}
+],
+"88": [
+{
+"when": "play",
+"do": "catch",
+"who": "enemyOne",
+"maxDef": 6
+}
+],
+"89": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "atk",
+"n": 1,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"90": [
+{
+"when": "play",
+"do": "draw",
+"n": 2
+},
+{
+"when": "play",
+"do": "buff",
+"who": "ownNightOne",
+"stat": "atk",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"91": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownCheap",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+}
+],
+"92": [
+{
+"when": "play",
+"do": "tutorSquid",
+"n": 2
+}
+],
+"93": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "atk",
+"n": 2,
+"until": "turnEnd"
+}
+],
+"94": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "atk",
+"n": 3,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"95": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 4,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "flag",
+"who": "same",
+"flag": "ignoreTrap",
+"until": "turnEnd"
+}
+],
+"96": [
+{
+"when": "enemyAttack",
+"do": "block"
+}
+],
+"97": [
+{
+"when": "enemySquidEnter",
+"do": "tire",
+"who": "entered"
+}
+],
+"98": [
+{
+"when": "enemySquidEnter",
+"do": "buff",
+"who": "entered",
+"stat": "atk",
+"n": -1,
+"until": "forever"
+}
+],
+"99": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"100": [
+{
+"when": "enemyTech",
+"do": "draw",
+"n": 1
+}
+],
+"101": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"102": [
+{
+"when": "enemyAttack",
+"do": "block",
+"onlyNight": true
+}
+],
+"103": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "bounce",
+"who": "attacker"
+}
+],
+"104": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "discardEnemy",
+"n": 1
+}
+],
+"105": [
+{
+"when": "ownCaught",
+"do": "saveToHand"
+}
+],
+"106": [
+{
+"when": "enemyTech",
+"do": "negate"
+}
+],
+"107": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "defender",
+"stat": "def",
+"n": 3,
+"until": "turnEnd"
+}
+],
+"108": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -3,
+"until": "turnEnd"
+}
+],
+"109": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "drawEnemy",
+"n": 1
+}
+],
+"110": [
+{
+"when": "enemyTech",
+"do": "tideEnemyNext",
+"n": -1
+}
+],
+"111": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+},
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"112": [
+{
+"when": "enemyTurnStart",
+"do": "limitTech",
+"n": 1
+}
+],
+"113": [
+{
+"when": "enemyTurnStart",
+"do": "buff",
+"who": "enemyAll",
+"stat": "atk",
+"n": -1,
+"until": "turnEnd"
+}
+],
+"114": [
+{
+"when": "enemyTurnStart",
+"do": "noAttack"
+}
+],
+"115": [
+{
+"when": "enemyAttack",
+"do": "zeroAtk",
+"who": "enemyAll",
+"until": "turnEnd"
+}
+],
+"116": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -2,
+"until": "forever"
+}
+],
+"117": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "bounce",
+"who": "attacker"
+}
+],
+"118": [
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "attacker",
+"stat": "atk",
+"n": -4,
+"until": "forever"
+}
+],
+"119": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "buff",
+"who": "enemyAll",
+"stat": "atk",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"120": [
+{
+"when": "enemyAttack",
+"do": "block"
+},
+{
+"when": "enemyAttack",
+"do": "draw",
+"n": 2
+}
+]
+}

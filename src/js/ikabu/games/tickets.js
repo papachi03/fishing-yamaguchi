@@ -10,6 +10,8 @@ export const KEY_TICKETS = 'ikabu.tickets.v1';
 export const CAP = 300;
 export const DAILY_PLAY_MAX = 5;
 export const CERT_BONUS = 10;
+export const BATTLE_MAX = 3;   // 対戦は1日3戦まで数える
+export const BATTLE_WIN = 2, BATTLE_LOSE = 1;
 
 export const emptyTickets = () => ({ n: 0, earned: 0, spent: 0, day: null, today: { play: 0, first: 0, sumiGoal: 0, rush60: 0 }, certs: {}, codes: {} });
 
@@ -48,6 +50,15 @@ export function earnRush60(rec, { day, seconds }) {
   r.today.rush60 = 1;
   const got = add(r, 1);
   return { rec: r, got, why: got ? ['rush60'] : [] };
+}
+// CPU対戦（勝ち2・負け1・1日3戦まで）
+export function earnBattle(rec, { day, win }) {
+  const r = roll(rec, day);
+  r.today.battle = r.today.battle ?? 0;
+  if (r.today.battle >= BATTLE_MAX) return { rec: r, got: 0, why: [] };
+  r.today.battle += 1;
+  const got = add(r, win ? BATTLE_WIN : BATTLE_LOSE);
+  return { rec: r, got, why: got ? [win ? 'battleWin' : 'battleLose'] : [] };
 }
 // 認定証を取った（認定証ごとに1回・10枚）
 export function earnCert(rec, certId, { day }) {
