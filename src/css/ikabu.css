@@ -2753,7 +2753,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 @keyframes ika-gc-pulse { from { transform: scale(1); } to { transform: scale(1.06); } }
 .ika-gc-charge { position: absolute; left: 8%; right: 8%; top: -20px; height: 10px; border-radius: 5px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,215,106,0.7); overflow: hidden; pointer-events: none; }   /* 2026-10-01 ぱっぱ：下にあると指で隠れる → 上へ・太く */
 .ika-gc-charge b { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #ffd166, #f47321 70%, #ff4d4d); box-shadow: 0 0 10px rgba(255,209,102,0.9); }
-.ika-gc-hint { margin: 0; font-family: var(--font-gc); font-weight: 800; font-size: 17px; letter-spacing: 0.06em; color: #fff; text-shadow: 0 2px 0 #0b1a2a; min-height: 1.4em; }
+.ika-gc-hint { margin: 0 0 14px; font-family: var(--font-gc); font-weight: 800; font-size: 17px; letter-spacing: 0.06em; color: #fff; text-shadow: 0 2px 0 #0b1a2a; min-height: 1.4em; }
 .ika-gc-tension { width: min(88%, 380px); height: 12px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 2px solid #ffd166; overflow: hidden; }
 .ika-gc-tension i { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, #4dc3ff, #ffe94d 60%, #ff4d4d); transition: width 0.12s; }
 /* 大きな文字 */
