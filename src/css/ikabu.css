@@ -3065,12 +3065,23 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-big { z-index: 30; }
 .ika-bt-big .ika-bd-modal-in { color: var(--ika-ink); font-family: var(--font-text); }
 .ika-bt-big .ika-bt-sheet-name { color: var(--ika-ink); }
-.ika-bt-over { position: absolute; z-index: 20; inset: 0; background: rgba(2,8,20,0.8); display: grid; place-items: center; }
+.ika-bt-over { position: absolute; z-index: 20; inset: 0; display: grid; place-items: center; background: radial-gradient(90% 70% at 50% 40%, rgba(18,58,90,0.96), rgba(2,8,20,0.97)); animation: ika-bt-overin 0.5s ease-out; }
 .ika-bt-over[hidden] { display: none; }
-.ika-bt-over-in { width: min(88%, 340px); padding: 22px; border-radius: 18px; background: #fff; color: var(--ika-ink); text-align: center; }
-.ika-bt-over-title { margin: 0 0 8px; font-size: 34px; font-weight: 900; }
-.ika-bt-over-title.is-win { color: var(--ika-orange-deep); } .ika-bt-over-title.is-lose { color: #4b5563; }
-.ika-bt-over-in div { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+@keyframes ika-bt-overin { from { opacity: 0; } }
+.ika-bt-over-in { position: relative; width: min(92%, 380px); padding: 12px 16px 20px; text-align: center; color: #fff; }
+.ika-bt-over-rays { position: absolute; left: 50%; top: 24%; width: 160%; aspect-ratio: 1; transform: translate(-50%, -50%); background: repeating-conic-gradient(from 0deg, rgba(255,215,106,0.18) 0 6deg, transparent 6deg 14deg); border-radius: 50%; -webkit-mask-image: radial-gradient(closest-side, #000 20%, transparent 70%); mask-image: radial-gradient(closest-side, #000 20%, transparent 70%); animation: ika-bt-rays 24s linear infinite; pointer-events: none; }
+.ika-bt-over.is-lose .ika-bt-over-rays { background: repeating-conic-gradient(from 0deg, rgba(120,160,200,0.1) 0 6deg, transparent 6deg 14deg); animation-duration: 60s; }
+@keyframes ika-bt-rays { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.ika-bt-over-title { position: relative; display: block; width: 88%; max-height: 30vh; object-fit: contain; margin: 0 auto; filter: drop-shadow(0 8px 14px rgba(0,0,0,0.6)); animation: ika-gc-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.ika-bt-over-mascot { position: relative; display: block; width: 110px; height: auto; margin: -6px auto 0; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.5)); animation: ika-bt-mascot 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both 0.15s; }
+@keyframes ika-bt-mascot { from { transform: translateY(30px) scale(0.6); opacity: 0; } }
+.ika-bt-over.is-lose .ika-bt-over-mascot { filter: drop-shadow(0 6px 8px rgba(0,0,0,0.5)) saturate(0.7); }
+.ika-bt-over-sub { position: relative; margin: 10px 0 0; font-size: 13px; line-height: 1.6; color: #cfe3ea; font-family: var(--font-text); font-weight: 700; }
+.ika-bt-over-sub b { display: inline-block; margin-top: 4px; font-family: 'Kaisei Tokumin', 'Shippori Mincho B1', serif; font-size: 17px; color: #ffd76a; }
+.ika-bt-over-btns { position: relative; display: grid; gap: 10px; width: min(100%, 300px); margin: 16px auto 0; }
+.ika-bt-over-btns .ika-gc-imgbtn { padding: 0; border: 0; background: none; cursor: pointer; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
+.ika-bt-over-btns .ika-gc-imgbtn img { display: block; width: 100%; height: auto; }
+@media (prefers-reduced-motion: reduce) { .ika-bt-over, .ika-bt-over-rays, .ika-bt-over-title, .ika-bt-over-mascot { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .ika-bt-card, .ika-bt-card.is-pick, .ika-bt-card.is-attack-up, .ika-bt-card.is-attack-down { animation: none; } }
 
 /* デッキ編成（2026-10-01） */

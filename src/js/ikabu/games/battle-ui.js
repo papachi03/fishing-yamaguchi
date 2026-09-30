@@ -175,7 +175,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   let busy = false;
   let logSeen = st.log.length;
 
-  const egiPrev = { me: 5, cpu: 5 };
+  const egiPrev = { me: null, cpu: null };   // 最初は必ず描く（5→5で描かれずエギが消えた：2026-10-01 ぱっぱ）
   const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
   const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
   function cardHTML(x, side, row) {
@@ -405,7 +405,16 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     el.over.hidden = false;
     const rec = practice ? null : recordResult(level, win);
     if (rec) dispatchEvent(new CustomEvent('ikabu:battle', { detail: { level, win } }));
-    el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : `<p class="ika-bd-hint">${t(lang, ...CPU_DECKS[level].name)} ・ ${TX.record(lang, rec)}</p>`}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
+    el.over.className = `ika-bt-over ${win ? 'is-win' : 'is-lose'}`;
+    el.over.innerHTML = `<div class="ika-bt-over-in">
+      <div class="ika-bt-over-rays" aria-hidden="true"></div>
+      <img class="ika-bt-over-title" src="${assetHref(`/assets/ikabu/battle/${win ? 'co_win' : 'co_lose'}.webp`)}" alt="${t(lang, ...(win ? TX.win : TX.lose))}" />
+      <img class="ika-bt-over-mascot" src="${assetHref(`/assets/ikabu/mascot/${win ? 'banzai' : 'sad'}.webp`)}" alt="" />
+      <p class="ika-bt-over-sub">${practice ? t(lang, ...TX.practiceNote) : `${t(lang, ...CPU_DECKS[level].name)}<br><b>${TX.record(lang, rec)}</b>`}</p>
+      <div class="ika-bt-over-btns">
+        <button type="button" class="ika-gc-imgbtn" data-again><img src="${assetHref('/assets/ikabu/gacha/btn_again.webp')}" alt="${t(lang, ...TX.again)}" /></button>
+        <button type="button" class="ika-gc-imgbtn" data-close><img src="${assetHref('/assets/ikabu/battle/btn_close.webp')}" alt="${t(lang, ...TX.close)}" /></button>
+      </div></div>`;
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice, level }); });
     el.over.querySelector('[data-close]').addEventListener('click', close);
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'battle', win, counted: !practice } }));
