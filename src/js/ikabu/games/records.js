@@ -83,6 +83,8 @@ export function writeRecord(key, value) {
     const text = JSON.stringify(value);
     st.setItem(key, text);
     try { st.setItem(BAK(key), text); } catch { /* 控えが書けなくても本体は書けている */ }
+    // 認定証の欄など、同じページの別の部品に「記録が変わった」と知らせる（2026-09-30）。Node では何もしない
+    if (typeof window !== 'undefined' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('ikabu:records', { detail: { key } }));
     return true;
   } catch {
     return false;

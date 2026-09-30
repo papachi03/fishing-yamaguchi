@@ -3,6 +3,7 @@ import { boot } from '../boot.js';
 import { render } from '../views/play.js';
 import { mountEgi } from '../games/egi-ui.js';
 import { mountMatch3 } from '../games/match3-ui.js';
+import { mountCerts } from '../games/certs-ui.js';
 import { mountYouTube } from '../yt-facade.js';
 
 const { lang } = boot(render);
@@ -16,8 +17,9 @@ const demoOf = (game) => (demo && demo.startsWith(`${game}:`) ? demo.slice(game.
 
 const egi = mountEgi(document.getElementById('ika-egi'), { lang, demo: demoOf('egi') });
 const m3 = mountMatch3(document.getElementById('ika-m3'), { lang, demo: demoOf('match3') });
+const certs = mountCerts(document.getElementById('ika-certs'), { lang });   // ゴールド認定証（2026-09-30）
 // 開発時だけ：自動プレイの検証用に外から触れるようにする
-if (import.meta.env.DEV) window.__ikabuGames = { egi, m3 };
+if (import.meta.env.DEV) window.__ikabuGames = { egi, m3, certs };
 
 // シェアの一言のリンク（…/play.html#egi・#sumi）：SNS のアプリ内ブラウザなどで、開いてもゲームの場所へ
 // 移動しないことがあるので、読み込み後にもう一度そこへ（ぱっぱ 2026-09-28）。ブラウザがもう移動していたり、

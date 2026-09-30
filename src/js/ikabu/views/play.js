@@ -80,6 +80,7 @@ const hubHTML = (lang) => `
         </a>
       </div>
       <p class="ika-play-note">${t(lang, HUB_TEXT.records)}</p>
+      ${certsHTML(lang)}
       <a class="ika-play-read" href="${pageHref('egi-guide', lang)}">
         <span class="ika-play-read-tag">${t(lang, '読みもの', 'READ')}</span>
         <span class="ika-play-read-title">${t(lang, '部員おすすめ：新子シーズンのエギ選び', "Members' pick: egi for young-squid season")}</span>
@@ -88,6 +89,25 @@ const hubHTML = (lang) => `
       </a>
     </div>
   </section>`;
+
+// ゴールド認定証の欄（2026-09-30）：中身（そろい具合・取った日）は games/certs-ui.js が記録から書き込む
+const certsHTML = (lang) => {
+  const C = HUB_TEXT.certs;
+  const card = (id) => `
+        <li class="ika-cert ika-cert--${id}" data-cert="${id}">
+          <span class="ika-cert-seal" aria-hidden="true"><i></i></span>
+          <span class="ika-cert-name">${t(lang, C.names[id])}</span>
+          <span class="ika-cert-how">${t(lang, C.how[id])}</span>
+          <span class="ika-cert-progress" data-cert-progress></span>
+          <span class="ika-cert-date" data-cert-date></span>
+        </li>`;
+  return `
+      <section class="ika-certs" id="ika-certs" aria-label="${t(lang, C.title)}">
+        <p class="ika-certs-head"><span class="ika-certs-tag">${t(lang, 'GOLD', 'GOLD')}</span>${t(lang, C.title)}</p>
+        <p class="ika-certs-lead">${t(lang, C.lead)}</p>
+        <ul class="ika-cert-list">${['sumi', 'rush', 'egi', 'honor'].map(card).join('')}</ul>
+      </section>`;
+};
 
 // 遊び方の動画（childダディの YouTube、2026-09-26）。2026-09-29 からエギング・墨つなぎの単体ページ（テストプレイ）にも出す
 const HOWTO = {

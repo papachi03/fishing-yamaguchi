@@ -783,4 +783,25 @@ export const HUB_TEXT = {
   play: pair('遊ぶ', 'Play'),
   flagship: pair('看板ゲーム', 'Flagship'),
   daily: pair('毎日ちがう盤面', 'A new board every day'),
+  // ゴールド認定証（2026-09-30）：3つのゲームの実績を全部そろえた人に
+  certs: {
+    title: pair('ゴールド認定証', 'Gold certificates'),
+    lead: pair('それぞれのゲームの実績を全部そろえると、ゴールド認定証がもらえます。3枚そろうと「名誉部員証」。', 'Collect every badge in a game to earn its gold certificate. All three make you an honorary member.'),
+    names: {
+      sumi: pair('墨つなぎ ゴールド認定証', 'Ink Link gold certificate'),
+      rush: pair('墨のがれ ゴールド認定証', 'Ink Escape gold certificate'),
+      egi: pair('エギング ゴールド認定証', 'Eging gold certificate'),
+      honor: pair('山口イカ部 名誉部員証', 'Honorary member of the Yamaguchi Squid Club'),
+    },
+    how: {
+      sumi: pair('墨つなぎのバッジを全部そろえる', 'Every Ink Link badge'),
+      rush: pair('墨のがれのバッジを全部そろえる', 'Every Ink Escape badge'),
+      egi: pair('図鑑をそろえる か 部員レベル最大', 'Complete the field guide, or reach max level'),
+      honor: pair('3枚の認定証をそろえる', 'All three certificates'),
+    },
+    progress: (lang, have, need) => (lang === 'en' ? `${have} / ${need}` : `${have} / ${need} 個`),
+    egiProgress: (lang, have, need, level, max) => (lang === 'en' ? `Guide ${have}/${need} · Lv ${level}/${max}` : `図鑑 ${have}/${need}・レベル ${level}/${max}`),
+    since: (lang, day) => (lang === 'en' ? `Earned ${day}` : `${day.replace(/-/g, '/')} 取得`),
+    locked: pair('未取得', 'Not yet'),
+  },
 };

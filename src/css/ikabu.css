@@ -1326,6 +1326,27 @@
 .ika-play-card-desc { margin-top: 8px; font-size: 14px; line-height: 1.85; color: var(--ika-ink-soft); flex: 1; }
 .ika-play-card-go { margin-top: 16px; align-self: flex-start; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); padding-bottom: 1px; }
 .ika-play-note { margin-top: 16px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+/* ゴールド認定証（2026-09-30）。未取得は点線・薄く、取得は金縁、名誉部員証は虹の縁 */
+.ika-certs { margin-top: 22px; padding: 18px 20px 20px; border: 3px solid var(--ika-sea); border-radius: 14px; background: var(--ika-white); }
+.ika-certs-head { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--font-maru); font-weight: 900; font-size: 16px; }
+.ika-certs-tag { padding: 2px 8px; border-radius: 999px; background: linear-gradient(135deg, #f7d774, #c9a227); color: #3a2a00; font-family: var(--font-varsity); font-size: 11px; letter-spacing: 0.12em; }
+.ika-certs-lead { margin: 6px 0 0; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+.ika-cert-list { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0 0; padding: 0; }
+.ika-cert { position: relative; display: grid; gap: 4px; padding: 14px 14px 12px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; background: #f6f8fb; opacity: 0.72; }
+.ika-cert-seal { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 4px; border-radius: 50%; background: #d9dee6; }
+.ika-cert-seal i { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.ika-cert-name { font-family: var(--font-maru); font-weight: 900; font-size: 13.5px; line-height: 1.4; }
+.ika-cert-how { font-size: 11px; line-height: 1.6; color: var(--ika-ink-soft); }
+.ika-cert-progress { font-family: var(--font-varsity); font-weight: 800; font-size: 12px; letter-spacing: 0.06em; color: var(--ika-sea); }
+.ika-cert-date { font-family: var(--font-varsity); font-weight: 800; font-size: 11px; letter-spacing: 0.1em; color: #8a6a00; min-height: 1em; }
+.ika-cert.is-earned { opacity: 1; border: 3px solid #d4a017; background: linear-gradient(160deg, #fff9e6, #fff 55%, #fbf0c8); box-shadow: 0 6px 18px rgba(212, 160, 23, 0.25); }
+.ika-cert.is-earned .ika-cert-seal { background: radial-gradient(circle at 35% 30%, #ffe89a, #d4a017 70%); box-shadow: 0 2px 6px rgba(120, 80, 0, 0.35); }
+.ika-cert.is-earned .ika-cert-seal i { background: #fff7d6; box-shadow: inset 0 0 0 2px #b8860b; }
+.ika-cert--honor.is-earned { border-color: transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #ff7b7b, #ffd166, #7be495, #6cc4ff, #c58cff) border-box; }
+.ika-cert--honor.is-earned .ika-cert-seal { background: conic-gradient(#ff7b7b, #ffd166, #7be495, #6cc4ff, #c58cff, #ff7b7b); }
+.ika-cert.is-fresh { animation: ika-cert-pop 0.8s ease-out; }
+@keyframes ika-cert-pop { 0% { transform: scale(0.94); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@media (max-width: 760px) { .ika-cert-list { grid-template-columns: 1fr 1fr; } }
 .ika-play-read { position: relative; display: grid; gap: 4px; margin-top: 18px; padding: 16px 52px 16px 20px; border: 3px solid var(--ika-sea); border-radius: 14px; background: var(--ika-white); color: var(--ika-ink); box-shadow: 4px 4px 0 var(--ika-orange); transition: background 0.2s; }
 .ika-play-read:hover { background: var(--ika-mist); }
 .ika-play-read-tag { justify-self: start; padding: 2px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 12px; }
