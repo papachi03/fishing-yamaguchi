@@ -5,7 +5,7 @@
 import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
-import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, needsTarget, statOf, costOf, starterDeck, view } from './battle.js';
+import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
 import { createGachaAudio } from './gacha-audio.js';
 import { tierOf } from './gacha-show.js';
@@ -42,6 +42,8 @@ const TUTOR = [
     ja: 'トラップは後列に「伏せる」。相手が攻撃した時などに自動で開いて、1回使ったら捨て札へ。伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
   { id: 'tech', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'tech' && canPlay(st, 'me', x).ok),
     ja: 'テクニックはその場で効く（攻撃+2など）。同じマークのイカが前列にいると潮1安くなるよ。攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
+  { id: 'shakuri', pic: 'point', when: (st) => st.active === 'me' && st.players.me.tide >= SHAKURI_COST && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
+    ja: '潮が余っていたら「潮しゃくり」！ 自分のイカをタップして、🌊2で攻撃+1（1体1回）。あと1足りない時の一押しに。それと、弾かれた相手は防御が1下がる（ずっと）から、何度も掛ければ抜けるよ', en: 'Spare tide? Tap your squid and use Tide Jerk: 2 tide for +1 ATK (once per squid). Also, a defender that bounces you loses 1 DEF permanently, so keep pushing.' },
   { id: 'lost', pic: 'sad', when: (st) => st.players.me.egi < 5,
     ja: 'エギを1個取られた…でも取られた側は1枚引ける。手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
 ];
@@ -64,6 +66,7 @@ const TX = {
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
   kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
   noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
+  shakuri: (lang) => (lang === 'en' ? `Tide jerk (🌊${SHAKURI_COST} → ATK +${SHAKURI_ATK})` : `潮しゃくり（🌊${SHAKURI_COST}で攻撃+${SHAKURI_ATK}）`),
 };
 
 export function mountBattle(root, { lang = 'ja' } = {}) {
@@ -196,8 +199,10 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   }
   function showInfo(x) {
     el.sheet.hidden = false;
-    el.sheet.innerHTML = `<div class="ika-bt-sheet-in">${cardInfoHTML(x, true)}<div><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.close)}</button></div></div>`;
+    const canJ = st.players.me.front.includes(x) && canShakuri(st, 'me', x).ok;
+    el.sheet.innerHTML = `<div class="ika-bt-sheet-in">${cardInfoHTML(x, true)}<div>${canJ ? `<button type="button" class="ika-btn ika-btn--primary" data-shakuri>${TX.shakuri(lang)}</button>` : ''}<button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.close)}</button></div></div>`;
     el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; });
+    el.sheet.querySelector('[data-shakuri]')?.addEventListener('click', () => { const r = shakuri(st, 'me', x); if (r.ok) { audio.se('place'); callout(t(lang, `攻撃+${SHAKURI_ATK}！`, `ATK +${SHAKURI_ATK}!`), 'is-good'); } render(); showInfo(x); });
   }
   function showSheet(x) {
     const label = x.card.kind === 'squid' ? TX.put : x.card.kind === 'tech' ? TX.use : TX.set;
@@ -263,6 +268,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     while (st.active === 'cpu' && !st.winner && guard++ < 40) {
       const a = cpuNext(st);
       if (a.type === 'end') break;
+      if (a.type === 'shakuri') { shakuri(st, 'cpu', a.x); audio.se('place'); render(); await wait(600); continue; }
       if (a.type === 'play') { play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); await wait(800); }
       else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const r = attack(st, 'cpu', a.x, a.target); seForResult(r); render(); await wait(900); }
     }

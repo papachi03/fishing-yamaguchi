@@ -4,11 +4,15 @@
 //   ・相手の前列が0体の時だけダイレクト（エギ1個）。奪われた側は1枚引く。エギ0か、山札が尽きて引けないと負け
 //   ・先攻は最初のターン攻撃できない。同じマークのイカが前列にいると、そのマークのテクニックは潮1安い
 //   ・カードの効果は cards-effects.json（make_effects.py が effect の文から機械的に作る）
+//   2026-10-01 膠着の解消（ぱっぱ「終盤カードが減らないし攻撃補助が無いと詰む」）：
+//   ・潮しゃくり：余った潮2で自分の前列のイカ1体の攻撃+1（このターン・1体につき1回）＝ shakuri()
+//   ・守りの疲れ：攻撃が弾かれる（攻撃＜防御）たびに、受けたイカの防御が1下がる（ずっと・0まで）
 import { seeded } from './rng.js';
 
 export const FRONT = 3, BACK = 3, EGI = 5, HAND_MAX = 7, TIDE_MAX = 8, DECK_SIZE = 30, START_HAND = 5;
 export const DECK_RULE = { squid: [12, 15], tech: [9, 12], trap: [4, 6], copies: 2, SSR: 2, UR: 1 };
 export const NIGHT = ['ケンサキ', 'ヤリ', 'アカ', 'ホタル'];
+export const SHAKURI_COST = 2, SHAKURI_ATK = 1, WEAR_DEF = 1;
 const other = (side) => (side === 'me' ? 'cpu' : 'me');
 const isNight = (card) => NIGHT.some((k) => card.name.includes(k));
 
@@ -29,15 +33,21 @@ export function checkDeck(nos, cards) {
 }
 
 // スターターデッキ（N・Rだけ・30枚・誰でも持っている）。practice=true は「初心者練習デッキ」（CPU用。Nだけ・弱め）
+//   2026-10-01 組み直し：攻撃4〜6のRと、攻撃補助のテクニック（しゃくり・2段しゃくり・3段しゃくり…）を2枚ずつ。安い順だと攻撃2ばかりで詰んだ
+const STARTER = {
+  squid: [14, 14, 15, 28, 29, 6, 6, 5, 5, 12, 4, 4, 11, 1],          // アオリ×2・アカ・アルゼンチン・NZスルメ・スルメ×2・ヤリ×2・トビ・ケンサキ×2・ハリ・ヒイカ
+  tech: [51, 51, 65, 65, 66, 64, 70, 69, 67, 55, 68],               // しゃくり×2・2段×2・3段・ディープ・朝マズメ・夕マズメ・スラック・フリーフォール・常夜灯
+  trap: [96, 99, 103, 108, 107],                                     // 根掛かり・濁り潮・バラシ・フグ・スレたイカ
+};
+const PRACTICE = {
+  squid: [6, 6, 5, 4, 4, 11, 21, 23, 2, 2, 3, 3, 1, 22],             // Nだけ。スルメ×2・ヤリ・ケンサキ×2・ハリ・欧州コウ・カリフォルニアヤリ…
+  tech: [51, 51, 64, 52, 54, 55, 58, 61, 63, 60, 56],
+  trap: [96, 99, 101, 97, 98],
+};
 export function starterDeck(cards, { practice = false } = {}) {
-  const pick = (kind, n, pred) => {
-    const pool = cards.filter((c) => c.kind === kind && pred(c)).sort((a, b) => a.cost - b.cost || a.no - b.no);
-    const out = [];
-    for (const c of pool) { if (out.length >= n) break; out.push(c.no); if (out.length < n && (c.cost <= 2 || practice)) out.push(c.no); }
-    return out.slice(0, n);
-  };
-  const ok = (c) => (practice ? c.rarity === 'N' : c.rarity === 'N' || c.rarity === 'R');
-  const deck = [...pick('squid', 14, ok), ...pick('tech', 11, ok), ...pick('trap', 5, ok)];
+  const src = practice ? PRACTICE : STARTER;
+  const have = new Set(cards.map((c) => c.no));
+  const deck = [...src.squid, ...src.tech, ...src.trap].filter((no) => have.has(no));
   return deck;
 }
 
@@ -78,7 +88,7 @@ export function startTurn(st) {
   p.tideMax = Math.min(TIDE_MAX, p.tideMax + 1);
   p.tide = Math.max(0, p.tideMax + p.tideNext); p.tideNext = 0;
   p.summoned = false; p.techUsed = 0; p.techLimit = null; p.noAttack = st.turn === 1;   // 先攻の最初のターンは攻撃できない
-  for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
+  for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.shakuri = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
   for (const x of P(st, other(side)).front) if (x) x.shield = false;
   if (!draw(st, side)) { finish(st, other(side)); return st; }
   fireTraps(st, other(side), 'enemyTurnStart', {});
@@ -249,6 +259,23 @@ export function play(st, side, x, { target = null } = {}) {
   check(st);
   return { ok: true };
 }
+// 潮しゃくり：潮2で自分の前列のイカ1体の攻撃+1（このターン・1体1回）
+export function canShakuri(st, side, x) {
+  const p = P(st, side);
+  if (st.active !== side || st.winner) return { ok: false, why: 'notYourTurn' };
+  if (!p.front.includes(x)) return { ok: false, why: 'notOnField' };
+  if (x.shakuri) return { ok: false, why: 'shakuried' };
+  if (p.tide < SHAKURI_COST) return { ok: false, why: 'tide' };
+  return { ok: true };
+}
+export function shakuri(st, side, x) {
+  const c = canShakuri(st, side, x);
+  if (!c.ok) return c;
+  P(st, side).tide -= SHAKURI_COST; x.shakuri = true;
+  buff(st, x, 'atk', SHAKURI_ATK, 'turnEnd');
+  say(st, `${x.card.name}を潮でしゃくった（攻撃+${SHAKURI_ATK}）`);
+  return { ok: true };
+}
 export function canAttack(st, side, x) {
   const p = P(st, side);
   if (st.active !== side || st.winner) return { ok: false, why: 'notYourTurn' };
@@ -287,7 +314,7 @@ export function attack(st, side, x, target = null) {
   let result;
   if (A > D || (A === D && tieWins)) { caught(st, other(side), target, side); result = 'catch'; }
   else if (A === D) { say(st, 'バラシ！ どちらも残った'); result = 'tie'; }
-  else { say(st, `${target.card.name}に弾かれた`); if (!passive(st, x, 'noTiredWhenBlocked')) x.skipNext = true; result = 'blocked'; }
+  else { say(st, `${target.card.name}に弾かれた`); if (!passive(st, x, 'noTiredWhenBlocked')) x.skipNext = true; buff(st, target, 'def', -WEAR_DEF, 'forever'); result = 'blocked'; }   // 守りの疲れ：受けた側の防御-1（ずっと）
   check(st);
   return { ok: true, result, A, D, trap: ctx.trap };
 }
@@ -319,6 +346,12 @@ export function cpuNext(st, side = 'cpu') {
     const A = statOf(st, x, 'atk');
     const catchable = enemies.filter((e) => !e.shield && statOf(st, e, 'def') < A).sort((a, b) => strength(b) - strength(a));
     if (catchable.length) return { type: 'attack', x, target: catchable[0] };
+  }
+  // 2b. 潮しゃくり：+1で釣れるようになる相手がいるなら潮を使う
+  for (const x of ready) {
+    if (!enemies.length || !canShakuri(st, side, x).ok) continue;
+    const A = statOf(st, x, 'atk') + SHAKURI_ATK;
+    if (enemies.some((e) => !e.shield && statOf(st, e, 'def') < A)) return { type: 'shakuri', x };
   }
   // 3. テクニック：攻撃+ で釣れるようになるなら使う。引くカードは手札が少ない時に使う
   const techs = p.hand.filter((x) => x.card.kind === 'tech' && canPlay(st, side, x).ok);

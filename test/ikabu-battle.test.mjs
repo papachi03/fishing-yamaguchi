@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { newGame, play, attack, endTurn, cpuNext, checkDeck, starterDeck, statOf, costOf, canAttack, DECK_SIZE } from '../src/js/ikabu/games/battle.js';
+import { newGame, play, attack, endTurn, cpuNext, checkDeck, starterDeck, statOf, costOf, canAttack, shakuri, canShakuri, DECK_SIZE } from '../src/js/ikabu/games/battle.js';
 
 const CARDS = JSON.parse(readFileSync(new URL('../src/js/ikabu/games/cards-data.json', import.meta.url), 'utf8'));
 const EFFECTS = JSON.parse(readFileSync(new URL('../src/js/ikabu/games/cards-effects.json', import.meta.url), 'utf8'));
@@ -132,15 +132,37 @@ test('CPUの手：イカを出す→釣れる相手を攻撃→トラップを�
     if (st.active === 'cpu') {
       const a = cpuNext(st);
       if (a.type === 'end') endTurn(st);
+      else if (a.type === 'shakuri') assert.equal(shakuri(st, 'cpu', a.x).ok, true, a.x.card.name);
       else if (a.type === 'play') assert.equal(play(st, 'cpu', a.x, { target: a.target }).ok, true, a.x.card.name);
       else assert.equal(attack(st, 'cpu', a.x, a.target).ok, true, a.x.card.name);
     } else {
       const a = cpuNext(st, 'me');   // 自分側も同じ頭脳で回す
       if (a.type === 'end') endTurn(st);
+      else if (a.type === 'shakuri') shakuri(st, 'me', a.x);
       else if (a.type === 'play') play(st, 'me', a.x, { target: a.target });
       else attack(st, 'me', a.x, a.target);
     }
   }
   assert.ok(st.winner, '勝負がつく');
   assert.ok(guard < 400);
+});
+
+test('潮しゃくり：潮2で攻撃+1（このターン・1体1回）。守りの疲れ：弾かれるたびに受けたイカの防御-1（ずっと）', () => {
+  const st = rich(mk());
+  const a = give(st, 'me', 'スルメイカ'); play(st, 'me', a); endTurn(st);
+  const b = give(st, 'cpu', 'コウイカ'); play(st, 'cpu', b); endTurn(st);   // 2/4・相手のターンは防御+1 → 5
+  // 4 vs 5 → 弾かれる → コウイカの防御が1下がる（ずっと）
+  assert.equal(attack(st, 'me', a, b).result, 'blocked');
+  assert.equal(statOf(st, b, 'def'), 4);
+  endTurn(st); endTurn(st); endTurn(st); endTurn(st);   // 休みを挟んで自分のターン
+  assert.equal(statOf(st, b, 'def'), 4);   // ずっと
+  // 潮しゃくりで 4+1=5 > 4 → 釣れる
+  const tide = st.players.me.tide;
+  assert.equal(shakuri(st, 'me', a).ok, true);
+  assert.equal(st.players.me.tide, tide - 2);
+  assert.equal(statOf(st, a, 'atk'), 5);
+  assert.equal(canShakuri(st, 'me', a).why, 'shakuried');   // 1体1回
+  assert.equal(attack(st, 'me', a, b).result, 'catch');
+  endTurn(st);
+  assert.equal(statOf(st, a, 'atk'), 4);   // このターンだけ
 });
