@@ -57,3 +57,48 @@ export function summary(deck, cards) {
   for (const n of deck) { const c = byNo.get(n); if (c) cnt[c.kind] += 1; }
   return { ...cnt, total: deck.length, rule: DECK_RULE, check: checkDeck(deck, cards) };
 }
+
+// おすすめ編成：持っているカード（avail）から30枚を組む。決め方：
+//   ①イカ14枚＝強さ（攻＋防、レア度で少し加点）の高い順。ただし潮1〜2の軽いイカを最低4枚は入れる（序盤に出せる）
+//   ②マーク：入れたイカのマークで一番多いものを「主のマーク」にし、テクニックは同じマークを優先（潮1安くなる）
+//   ③テクニック11枚＝攻撃を上げるもの・引くものを優先。トラップ5枚＝攻撃を止める・弱めるものを優先
+//   ④同じカードは2枚まで・SSR2・UR1（addCard の決まりどおり）。足りない種類はある分で埋める
+export function recommendDeck(cards, avail) {
+  const has = (c) => (avail[c.no] ?? 0) > 0;
+  const rarityBonus = { N: 0, R: 0.5, SR: 1, SSR: 1.5, UR: 2 };
+  let deck = [];
+  const tryAdd = (no) => { const r = addCard(deck, no, avail, cards); if (r.ok) deck = r.deck; return r.ok; };
+  const fill = (list, want, kind) => { for (const c of list) { if (deck.filter((n) => cards.find((x) => x.no === n)?.kind === kind).length >= want) break; for (let k = 0; k < (avail[c.no] ?? 0); k++) { if (deck.filter((n) => cards.find((x) => x.no === n)?.kind === kind).length >= want) break; if (!tryAdd(c.no)) break; } } };
+  // ①イカ：軽いイカを先に4枚（潮1〜2で強い順）、残りは強い順
+  const squids = cards.filter((c) => c.kind === 'squid' && has(c));
+  const power = (c) => c.atk + c.def + rarityBonus[c.rarity] - c.cost * 0.6;   // 重いカードは少し割り引く（出せる回数が少ない）
+  const light = squids.filter((c) => c.cost <= 2).sort((a, b) => power(b) - power(a));
+  fill(light, 4, 'squid');
+  fill(squids.slice().sort((a, b) => power(b) - power(a)), 14, 'squid');
+  // ②主のマーク
+  const byNo = new Map(cards.map((c) => [c.no, c]));
+  const markCount = {};
+  for (const n of deck) { const m = byNo.get(n).mark; markCount[m] = (markCount[m] ?? 0) + 1; }
+  const mainMark = Object.entries(markCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  // ③テクニック：攻撃を上げる・引く を優先、主のマークに加点
+  const techScore = (c) => {
+    const e = c.effect ?? '';
+    let sc = 0;
+    if (/攻撃\+/.test(e)) sc += 3;
+    if (/引く/.test(e)) sc += 2;
+    if (/防御-/.test(e)) sc += 2;
+    if (/全部/.test(e)) sc += 1;
+    if (c.mark === mainMark) sc += 1.5;
+    sc += rarityBonus[c.rarity] * 0.5 - c.cost * 0.3;
+    return sc;
+  };
+  const techs = cards.filter((c) => c.kind === 'tech' && has(c)).sort((a, b) => techScore(b) - techScore(a));
+  fill(techs, 11, 'tech');
+  // トラップ：攻撃を止める・弱めるものを優先
+  const trapScore = (c) => { const e = c.effect ?? ''; let sc = 0; if (/止め/.test(e)) sc += 3; if (/攻撃-/.test(e)) sc += 2; if (/手札に戻す/.test(e)) sc += 2; if (/釣られず/.test(e)) sc += 2; sc += rarityBonus[c.rarity] * 0.5 - c.cost * 0.3; return sc; };
+  const traps = cards.filter((c) => c.kind === 'trap' && has(c)).sort((a, b) => trapScore(b) - trapScore(a));
+  fill(traps, 5, 'trap');
+  // ④30枚に届かない時は、種類の幅の中で埋める（イカ15・テク12・トラップ6まで）
+  for (const [list, want, kind] of [[squids.slice().sort((a, b) => power(b) - power(a)), 15, 'squid'], [techs, 12, 'tech'], [traps, 6, 'trap']]) { if (deck.length >= DECK_SIZE) break; fill(list, want, kind); }
+  return { deck, mainMark };
+}

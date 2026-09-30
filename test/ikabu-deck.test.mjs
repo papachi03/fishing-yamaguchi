@@ -46,3 +46,21 @@ test('デッキは3つまで保存。古い形 { nos } はデッキ1に引き継
   assert.equal(st.slots[0].name, 'A'); assert.equal(st.slots[1].name, 'デッキ2'); assert.equal(st.active, 1);
   assert.deepEqual(activeDeck(st, STARTER, CARDS), STARTER);
 });
+
+test('おすすめ編成：持っているカードだけで30枚・検査に通る。スターターだけでも、たくさん持っていても組める', async () => {
+  const { recommendDeck, availableCopies: ac } = await import('../src/js/ikabu/games/deck.js');
+  const { checkDeck } = await import('../src/js/ikabu/games/battle.js');
+  // スターターだけ
+  const a1 = ac({}, STARTER);
+  const r1 = recommendDeck(CARDS, a1);
+  assert.equal(r1.deck.length, 30); assert.equal(checkDeck(r1.deck, CARDS).ok, true, checkDeck(r1.deck, CARDS).errors.join(','));
+  assert.ok(r1.deck.every((no) => (a1[no] ?? 0) >= r1.deck.filter((n) => n === no).length), '持っている枚数の範囲');
+  // 全部2枚ずつ持っている
+  const a2 = ac(Object.fromEntries(CARDS.map((c) => [c.no, 2])), []);
+  const r2 = recommendDeck(CARDS, a2);
+  assert.equal(r2.deck.length, 30); assert.equal(checkDeck(r2.deck, CARDS).ok, true, checkDeck(r2.deck, CARDS).errors.join(','));
+  const rar = (no) => CARDS.find((c) => c.no === no).rarity;
+  assert.ok(r2.deck.filter((n) => rar(n) === 'UR').length <= 1 && r2.deck.filter((n) => rar(n) === 'SSR').length <= 2);
+  assert.ok(r2.deck.filter((n) => CARDS.find((c) => c.no === n).kind === 'squid' && CARDS.find((c) => c.no === n).cost <= 2).length >= 4, '軽いイカが4枚以上');
+  assert.ok(r2.mainMark);
+});
