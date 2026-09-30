@@ -163,7 +163,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   const tutorEl = $('[data-tutor]'); const tutorShown = new Set(); let tutorOpen = false;
   tutorEl.querySelector('[data-tutor-ok]').addEventListener('click', () => { tutorEl.hidden = true; tutorOpen = false; tutor(); });
   function tutor() {
-    if (!practice || tutorOpen || st.winner) return;
+    if (!practice || tutorOpen || st.winner || !el.sheet.hidden) return;   // 窓（説明・納竿）が開いている間は出さない
     const step = TUTOR.find((s) => !tutorShown.has(s.id) && s.when(st));
     if (!step) return;
     tutorShown.add(step.id); tutorOpen = true;
