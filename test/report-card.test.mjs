@@ -52,3 +52,14 @@ test('釣り場一覧は5エリア分の見出しを持つ', () => {
   for (const label of ['萩', '長門', '下関', '下松', '防府']) assert.match(html, new RegExp(`<dt>${label}</dt>`));
   assert.match(html, /越ヶ浜漁港/);
 });
+
+test('釣り場の名前の上にエリア名が出る（名前だけだとどこか分からない。2026-09-30 利用者の声）', () => {
+  const html = reportCardHTML({ ...post, spotId: 'hagi-koshigahama' }, photoUrl);
+  assert.match(html, /<p class="report-area t-mono">萩<\/p><p class="report-place">越ヶ浜漁港<\/p>/);
+  assert.match(html, /alt="萩・越ヶ浜漁港の写真"/);
+});
+
+test('名前にエリアが入っている「市内」と、場所不明にはエリア名を付けない', () => {
+  assert.doesNotMatch(reportCardHTML({ ...post, spotId: 'shimonoseki-city' }, photoUrl), /report-area/);
+  assert.doesNotMatch(reportCardHTML({ ...post, spotId: 'unknown' }, photoUrl), /report-area/);
+});
