@@ -78,3 +78,33 @@ test('墨のがれは「スタート」を押すまで時計を止める。説�
   assert.match(ui, /function showRushStart\(\) \{\s*busy = true;/);
   assert.match(view, /<details><summary>\$\{t\(lang, T\.rush\.howto\)\}<\/summary>/);
 });
+
+// 2026-10-01 ぱっぱ：墨つなぎで曲を停止→再生すると二重に鳴った（読み込みを待つ間の操作）
+test('読み込みを待つ間に停止→再生しても、鳴る曲は1つだけ', async () => {
+  const started = [];
+  let resolveDecode;
+  const fakeCtx = {
+    state: 'running', currentTime: 0, destination: {},
+    resume: () => Promise.resolve(),
+    createGain: () => ({ gain: { value: 0, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime() {} }, connect() { return this; } }),
+    createBufferSource: () => { const s = { loop: false, connect() { return s; }, start() { started.push(s); }, stop() { s.stopped = true; } }; return s; },
+    decodeAudioData: (ab, ok) => { resolveDecode = () => ok({ duration: 100 }); },
+    suspend: () => Promise.resolve(),
+  };
+  globalThis.window = { AudioContext: function () { return fakeCtx; } };
+  globalThis.document = { hidden: false, addEventListener() {} };
+  globalThis.fetch = () => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) });
+  try {
+    const b = createBgm({ on: false, track: 'sumi' });
+    b.setOn(true);                 // 1回目の再生（読み込み中）
+    await new Promise((r) => setTimeout(r, 10));
+    b.setOn(false);                // 停止
+    b.setOn(true);                 // 再生し直し（同じ読み込みを待つ）
+    await new Promise((r) => setTimeout(r, 10));
+    resolveDecode();               // 読み込みが終わる → 待っていた2つが同時に動く
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(started.filter((s) => !s.stopped).length, 1, '鳴っている曲は1つ');
+  } finally {
+    delete globalThis.window; delete globalThis.document; delete globalThis.fetch;
+  }
+});
