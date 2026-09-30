@@ -454,7 +454,7 @@ export const m3HTML = (lang) => {
   const T = M3_TEXT;
   const cells = Array.from({ length: SIZE * SIZE }, (_, i) => `<button type="button" class="ika-m3-cell" role="gridcell" data-i="${i}" tabindex="-1" disabled></button>`).join('');
   // バッジの絵：小松氏のコマを流用（入部＝いかり、一つ星＝星、腕前＝太陽、連鎖＝波、墨＝レアイカ、部長＝貝）
-  const BADGE_TILE = { join: 0, star1: 3, skilled: 1, chain: 2, ink: RARE, captain: 4 };
+  const BADGE_TILE = { join: 0, star1: 3, skilled: 1, chain: 2, ink: RARE, captain: 4, stars3: 3, chain6: 2, ink4: RARE, score5k: 1, score7k: 4, score9k: RARE };
   const badges = Object.entries(T.badges).map(([id, b]) => `
         <li class="ika-m3-badge" data-badge="${id}">
           <span class="ika-m3-badge-mark" aria-hidden="true">${tileImg(BADGE_TILE[id], { href: assetHref, size: 24 })}</span>
@@ -539,6 +539,8 @@ export const m3HTML = (lang) => {
             <button type="button" class="ika-btn ika-m3-sound ika-m3-bgm" id="ika-m3-bgm" aria-pressed="false" aria-label="${t(lang, T.btn.bgmOn)}" title="${t(lang, T.btn.bgmOn)}">🎵</button>
           </div>
           <p class="ika-m3-msg" id="ika-m3-msg" role="status" aria-live="polite"></p>
+          <!-- マスの右下の記号（色の見分けを助ける）：最初は隠す。必要な人だけオン（2026-09-30 感想「右下のマークでイカが隠れる」） -->
+          <button type="button" class="ika-m3-symtoggle" id="ika-m3-sym" aria-pressed="false">${t(lang, T.btn.symbolsOn)}</button>
         </div>
 
         <aside class="ika-m3-side" aria-label="${t(lang, 'バッジ', 'Badges')}">

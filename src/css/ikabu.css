@@ -1953,6 +1953,10 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-cell::after { content: ''; position: absolute; left: 14%; top: 8%; width: 30%; height: 14%; border-radius: 999px; background: #ffffffb0; filter: blur(0.5px); transform: rotate(-12deg); pointer-events: none; }
 .ika-m3-cell img { position: relative; z-index: 1; }
 .ika-m3-cell i { z-index: 2; }
+/* 色の見分けを助ける記号：最初は隠す（イカの絵を隠さない）。設定でオンにした人だけ出す（2026-09-30） */
+.ika-m3:not(.is-symbols) .ika-m3-cell i { display: none; }
+.ika-m3-symtoggle { display: block; margin: 2px auto 0; padding: 4px 12px; border: 1.5px solid var(--ika-sea-line); border-radius: 999px; background: transparent; color: var(--ika-ink-soft); font-size: 11.5px; cursor: pointer; }
+.ika-m3-symtoggle[aria-pressed='true'] { background: var(--ika-mist); color: var(--ika-sea); border-color: var(--ika-sea); }
 .ika-m3-cell.is-selected { animation: ika-m3-jelly-sel 0.5s ease-out; }
 @keyframes ika-m3-jelly-sel { 0% { transform: scale(1); } 30% { transform: scale(1.16, 0.9); } 55% { transform: scale(0.98, 1.12); } 80% { transform: scale(1.1, 1.04); } 100% { transform: scale(1.08); } }
 .ika-m3-cell.is-clear { animation: ika-m3-pluck 0.3s cubic-bezier(0.3, 1.4, 0.6, 1) forwards; }
@@ -2023,6 +2027,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   white-space: nowrap; pointer-events: none;
 }
 .ika-m3-callout.is-big { font-size: 38px; }
+/* 墨のがれ：吹き出しは上のイカの部屋の中（盤面を隠さない）。部屋に合わせて小さめ */
+.ika-m3-rush .ika-m3-callout { top: 30%; left: 50%; z-index: 6; font-size: 20px; padding: 5px 14px; border-width: 3px; box-shadow: 3px 3px 0 var(--ika-sea-deep); }
+.ika-m3-rush .ika-m3-callout.is-big { font-size: 24px; }
 .ika-m3-callout.is-flash, .ika-m3-callout.is-blast { background: var(--ika-ink); color: var(--ika-white); }
 .ika-m3-callout.is-rare { background: var(--ika-white); border-color: var(--ika-ink); }
 @keyframes ika-m3-pop {

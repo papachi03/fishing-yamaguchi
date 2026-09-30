@@ -687,6 +687,8 @@ export const M3_TEXT = {
   btn: {
     soundOn: pair('音を出す', 'Sound on'),
     bgmOn: pair('BGMを流す', 'Play music'),
+    symbolsOn: pair('色の見分けを助ける記号を出す', 'Show colour-help symbols'),
+    symbolsOff: pair('色の見分けを助ける記号を消す', 'Hide colour-help symbols'),
     bgmOff: pair('BGMを止める', 'Stop music'),
     soundOff: pair('音を消す', 'Sound off'),
     flash: pair('墨フラッシュ', 'Ink Flash'),
@@ -742,10 +744,17 @@ export const M3_TEXT = {
   badges: {
     join: { name: pair('入部しました', 'Joined the club'), how: pair('1戦を完走', 'Finish one board') },
     star1: { name: pair('一つ星のイカ', 'One-star squid'), how: pair('1,500点', '1,500 points') },
-    skilled: { name: pair('イカした腕前', 'Ink-redible skills'), how: pair('2,400点', '2,400 points') },
+    // 並びは やさしい→難しい（2026-09-30）
     chain: { name: pair('連鎖の達人', 'Cascade master'), how: pair('3連鎖', 'A three-step cascade') },
     ink: { name: pair('墨の使い手', 'Ink handler'), how: pair('1戦で墨フラッシュ2回', 'Two Ink Flashes in one board') },
-    captain: { name: pair('部長への道', 'Road to captain'), how: pair('3,500点', '3,500 points') },
+    skilled: { name: pair('イカした腕前', 'Ink-redible skills'), how: pair('2,400点', '2,400 points') },
+    captain: { name: pair('エース部員', 'Ace member'), how: pair('3,500点', '3,500 points') },
+    stars3: { name: pair('三つ星の部員', 'Three-star member'), how: pair('今日の一戦で★★★', "★★★ on today's board") },
+    chain6: { name: pair('連鎖の鬼', 'Cascade demon'), how: pair('6連鎖', 'A six-step cascade') },
+    ink4: { name: pair('墨の達人', 'Ink master'), how: pair('1戦で墨フラッシュ4回', 'Four Ink Flashes in one board') },
+    score5k: { name: pair('部長候補', 'Captain candidate'), how: pair('5,000点', '5,000 points') },
+    score7k: { name: pair('部長への道', 'Road to captain'), how: pair('7,000点', '7,000 points') },
+    score9k: { name: pair('伝説の部長', 'Legendary captain'), how: pair('9,000点', '9,000 points') },
   },
   a11y: {
     board: pair('墨つなぎの盤面。矢印キーで移動、Enterで選択と入れ替え、Escで取り消し', 'Ink Link board. Arrow keys to move, Enter to select and swap, Escape to cancel'),

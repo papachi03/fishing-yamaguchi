@@ -71,3 +71,14 @@ test('しゃくりの手ほどき：やる気のある日のダートは褒め�
   assert.equal(rhythmHintKey({ streak: 2, darts: 0, mood: 'active' }), 'goodRhythm');
   assert.equal(rhythmHintKey({ streak: 4, darts: 0, mood: 'active' }), null);
 });
+
+// 2026-09-30 友だちの感想「部長への道がすぐ取れる」→ 上の段を足した（ふつうに遊んで取れない数字）
+test('墨つなぎの難しいバッジ：6連鎖・墨4回・5,000/7,000/9,000点・今日の一戦で★★★', () => {
+  assert.deepEqual(badgesFor({ score: 1850, maxChain: 4, flashes: 2 }), ['join', 'star1', 'chain', 'ink'], 'ふつうの1戦では上の段は取れない');
+  const all = badgesFor({ score: 9000, maxChain: 6, flashes: 4 }, { stars: 3 });
+  for (const id of ['stars3', 'chain6', 'ink4', 'score5k', 'score7k', 'score9k']) assert.ok(all.includes(id), id);
+  assert.ok(!badgesFor({ score: 6999, maxChain: 1, flashes: 0 }).includes('score7k'));
+  assert.ok(!badgesFor({ score: 9999, maxChain: 1, flashes: 0 }).includes('stars3'), '★★★は今日の一戦の結果が要る');
+  const r = recordM3(emptyM3(), { score: 5200, maxChain: 6, flashes: 1 }, { day: '2026-09-30', today: '2026-09-30', stars: 3 });
+  assert.ok(r.fresh.includes('score5k') && r.fresh.includes('chain6') && r.fresh.includes('stars3'));
+});

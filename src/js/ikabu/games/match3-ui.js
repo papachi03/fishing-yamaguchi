@@ -45,6 +45,12 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   const syncBgm = () => { if (!bgmBtn) return; bgmBtn.setAttribute('aria-pressed', String(bgm.on)); bgmBtn.classList.toggle('is-off', !bgm.on); const lb = t(lang, bgm.on ? TX.btn.bgmOff : TX.btn.bgmOn); bgmBtn.title = lb; bgmBtn.setAttribute('aria-label', lb); };
   bgmBtn?.addEventListener('click', () => { bgm.setOn(!bgm.on); writePref('ikabu.sumi.bgm', bgm.on); syncBgm(); });
   syncBgm();
+  // 色の見分けを助ける記号（⚓☀≈★◆）：最初は隠す。オンにした人だけ出す（2026-09-30）
+  const symBtn = q('ika-m3-sym');
+  let showSym = readPref('ikabu.sumi.symbols') ?? false;
+  const syncSym = () => { root.classList.toggle('is-symbols', showSym); if (symBtn) { symBtn.setAttribute('aria-pressed', String(showSym)); symBtn.textContent = t(lang, showSym ? TX.btn.symbolsOff : TX.btn.symbolsOn); } };
+  symBtn?.addEventListener('click', () => { showSym = !showSym; writePref('ikabu.sumi.symbols', showSym); syncSym(); });
+  syncSym();
   // 演出の層（墨のしぶき・筆の線・爆発の輪・光の筋・マスコット）。盤面の上に重ねる
   const fxLayer = document.createElement('div');
   fxLayer.className = 'ika-m3-fx';
@@ -58,6 +64,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let selected = null;
   let targeting = false;
   let busy = false;
+  let waitingStart = false;   // 墨のがれの「スタート」待ち（busy だが、モードの切り替えはできる）
   let cursor = 0;
   let recorded = false;
   let lastResult = null;   // シェアする1戦の結果（share.js）
@@ -313,6 +320,8 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (isRush()) { g = createRush({ seed }); goals = { star: GOAL, goal: Infinity, star3: Infinity, model: 0 }; }
     else { g = createGame({ seed }); goals = dailyGoals(seed); }
     if (el.rush) el.rush.hidden = !isRush();
+    // 吹き出しの置き場所（2026-09-30 感想「ブロックが降ってきた！のテロップが盤面を隠して邪魔」）：墨のがれでは上のイカの部屋に出す。墨つなぎは今までどおり盤面の上
+    if (el.rush && el.callout) (isRush() ? el.rush : el.wrap).append(el.callout);
     bgm.setTrack(isRush() ? 'rush' : 'sumi');
     el.board.classList.toggle('is-rush', isRush());   // なぞる操作の間、画面がスクロールしないように
     // 初めての人への案内（2026-09-29）：盤の一番下に「ここまで道をつなげると墨が抜ける」。初めて道が通るか12秒で消える
@@ -328,6 +337,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     // 墨のがれは「スタート」を押すまで時計を止めておく（2026-09-30 感想「押した瞬間に始まるから盤面が見えない」）
     stopRushClock();
     el.wrap.querySelector('.ika-m3-start')?.remove();
+    waitingStart = false;
     if (isRush()) { mood = 'calm'; setMood('calm'); }
     if (el.goalLabel) el.goalLabel.textContent = `${t(lang, TX.hud.today)} ${goals.goal.toLocaleString()}`;
     recorded = false;
@@ -349,7 +359,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   // 墨のがれのスタート：盤面の上に大きな「スタート」。押すまで盤面は触れない（busy）・時計も止まったまま。
   //   押したら、イカの部屋と盤面が画面に入る位置まで動かし、3・2・1 と数えてから始める
   function showRushStart() {
-    busy = true;
+    busy = true; waitingStart = true;
     syncHud();
     const ov = document.createElement('div');
     ov.className = 'ika-m3-start';
@@ -359,6 +369,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     ov.querySelector('button').addEventListener('click', async () => {
       sfx.unlock?.();
       ov.classList.add('is-go');
+      waitingStart = false;
       ov.querySelector('button').disabled = true;
       const target = el.rush && !el.rush.hidden ? el.rush : el.wrap;
       const header = document.getElementById('ika-header');
@@ -373,7 +384,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       if (g !== game) return;
       ov.remove();
       callout(t(lang, TX.rush.go), 'flash');
-      busy = false;
+      busy = false; waitingStart = false;
       startRushClock();
       syncHud();
     });
@@ -451,7 +462,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   }
   el.mode.addEventListener('click', (e) => {
     const b = e.target.closest('.ika-chip[data-mode]');
-    if (!b || busy) return;
+    if (!b || (busy && !waitingStart)) return;   // スタート待ちの間は、別のモードへ切り替えてよい（2026-09-30 直し）
     mode = b.dataset.mode;
     el.mode.querySelectorAll('.ika-chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
     newGame();
@@ -616,7 +627,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     if (recorded) return;
     recorded = true;
     if (isRush()) { finishRush(); return; }
-    const { rec: r, fresh } = recordM3(rec, g, { day: mode === 'daily' ? utcDay() : null });
+    const { rec: r, fresh } = recordM3(rec, g, { day: mode === 'daily' ? utcDay() : null, stars: mode === 'daily' ? starsOf(g.score, goals) : 0 });   // ★★★のバッジは今日の一戦だけ
     rec = r;
     writeRecord(KEY_M3, rec);
     syncBadges();

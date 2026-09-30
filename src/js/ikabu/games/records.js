@@ -6,17 +6,26 @@ import { POINTS, catchPoints } from './progress.js';
 export const KEY_EGI = 'ikabu.egi.v1';
 export const KEY_M3 = 'ikabu.sumi.v1';
 
-// 墨つなぎのバッジ（小松氏の設計案）。check は1戦の結果 { score, maxChain, flashes } を受ける
+// 墨つなぎのバッジ（小松氏の設計案）。check は1戦の結果 { score, maxChain, flashes } と { stars }（今日の一戦の★の数）を受ける
+// 2026-09-30 友だちの感想「部長への道がすぐ取れる。やり込み要素が少ない」→ 自動プレイで測った（ふつう＝真ん中1,850点・4連鎖・墨2回／
+//   上手＝真ん中4,900点・上位1割7,000点・7連鎖・墨6回）。やさしい→難しいの順に並べ、上の段を足した。
+//   id は変えない（取った人の記録を消さない）。captain は「エース部員」に改名し、「部長への道」は7,000点へ
 export const BADGES = [
   { id: 'join', check: () => true },                       // 入部しました：1戦を完走
   { id: 'star1', check: (g) => g.score >= GOAL },          // 一つ星のイカ：1,500点
-  { id: 'skilled', check: (g) => g.score >= 2400 },        // イカした腕前：2,400点
   { id: 'chain', check: (g) => g.maxChain >= 3 },          // 連鎖の達人：3連鎖
   { id: 'ink', check: (g) => g.flashes >= 2 },             // 墨の使い手：1戦で墨フラッシュ2回
-  { id: 'captain', check: (g) => g.score >= 3500 },        // 部長への道：3,500点
+  { id: 'skilled', check: (g) => g.score >= 2400 },        // イカした腕前：2,400点
+  { id: 'captain', check: (g) => g.score >= 3500 },        // エース部員：3,500点
+  { id: 'stars3', check: (g, c) => (c?.stars ?? 0) >= 3 }, // 三つ星の部員：今日の一戦で★★★
+  { id: 'chain6', check: (g) => g.maxChain >= 6 },         // 連鎖の鬼：6連鎖
+  { id: 'ink4', check: (g) => g.flashes >= 4 },            // 墨の達人：1戦で墨フラッシュ4回
+  { id: 'score5k', check: (g) => g.score >= 5000 },        // 部長候補：5,000点
+  { id: 'score7k', check: (g) => g.score >= 7000 },        // 部長への道：7,000点
+  { id: 'score9k', check: (g) => g.score >= 9000 },        // 伝説の部長：9,000点
 ];
 
-export const badgesFor = (g) => BADGES.filter((b) => b.check(g)).map((b) => b.id);
+export const badgesFor = (g, ctx = {}) => BADGES.filter((b) => b.check(g, ctx)).map((b) => b.id);
 
 export function readJSON(key) {
   try {
@@ -110,14 +119,14 @@ export function recordRush(rec, g, { day = null } = {}) {
 }
 
 // 1戦の結果を記録に足す。新しく取れたバッジの id を返す
-export function recordM3(rec, g, { day = null, today = new Date().toISOString().slice(0, 10) } = {}) {
+export function recordM3(rec, g, { day = null, today = new Date().toISOString().slice(0, 10), stars = 0 } = {}) {
   const r = rec ?? emptyM3();
   r.played += 1;
   r.best = Math.max(r.best, g.score);
   if (g.score >= GOAL) r.goals += 1;
   if (day) r.daily = { day, score: Math.max(r.daily?.day === day ? r.daily.score : 0, g.score) };
   const fresh = [];
-  for (const id of badgesFor(g)) {
+  for (const id of badgesFor(g, { stars })) {
     if (!r.badges[id]) {
       r.badges[id] = today;
       fresh.push(id);
