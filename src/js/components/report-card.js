@@ -2,7 +2,7 @@
 // 投稿者が書いた文字は必ず esc() を通すこと。投稿を画面に描くのはこの関数だけにする。
 // lang='en'（イカ部の英語ページ）では見出し・タグ・ボタンだけ英語にする。投稿者の文字（名前・本文）は
 // 書かれたまま出し、釣り場名（固有名詞）も日本語のまま。エリア名だけローマ字にする
-import { placeById, AREA_LABELS_EN } from '../data/spot-list.js';
+import { placeById, AREA_LABELS, AREA_LABELS_EN } from '../data/spot-list.js';
 import { FISH, WIND_FEEL, nameOf } from '../data/report-options.js';
 
 export const esc = (s) =>
@@ -27,17 +27,28 @@ function placeName(place, lang) {
   return place.name;
 }
 
+// 釣り場の名前だけだと、土地に詳しくない人にはどこの話か分からない（2026-09-30 30代の女性から）→ エリア名を添える。
+// 「下関市内（詳しい場所は非公開）」のように名前にエリアが入っているもの・場所不明には付けない
+export function areaOfPlace(p, lang = 'ja') {
+  if (!p?.areaId || p.id.endsWith('-city')) return null;
+  const area = (lang === 'en' ? AREA_LABELS_EN : AREA_LABELS)[p.areaId];
+  return area && !p.name.startsWith(AREA_LABELS[p.areaId]) ? area : null;
+}
+
 export function reportCardHTML(post, photoUrl, lang = 'ja') {
   const L = LABELS[lang] ?? LABELS.ja;
-  const place = placeName(placeById(post.spotId), lang) ?? L.unknown;
+  const p = placeById(post.spotId);
+  const place = placeName(p, lang) ?? L.unknown;
+  const area = areaOfPlace(p, lang);
+  const where = area ? (lang === 'en' ? `${place}, ${area}` : `${area}・${place}`) : place;
   const fish = nameOf(FISH, post.fish, lang);
   const wind = nameOf(WIND_FEEL, post.wind, lang);
   const day = monthDay(post.date);
   return `
   <article class="report-card reveal" data-id="${esc(post.id)}">
-    ${post.hasPhoto ? `<figure class="report-photo"><img src="${esc(photoUrl(post.id))}" alt="${esc(L.photoAlt(place))}" loading="lazy" decoding="async" /></figure>` : ''}
+    ${post.hasPhoto ? `<figure class="report-photo"><img src="${esc(photoUrl(post.id))}" alt="${esc(L.photoAlt(where))}" loading="lazy" decoding="async" /></figure>` : ''}
     <div class="report-body">
-      <p class="report-place">${esc(place)}</p>
+      ${area ? `<p class="report-area t-mono">${esc(area)}</p>` : ''}<p class="report-place">${esc(place)}</p>
       <p class="report-meta t-mono">${esc(post.name)}${day ? esc(L.dated(day)) : ''}</p>
       ${fish || wind ? `<p class="report-tags">${fish ? `<span>${esc(fish)}</span>` : ''}${wind ? `<span class="wind wind-${esc(post.wind)}">${L.wind}${esc(wind)}</span>` : ''}</p>` : ''}
       <p class="report-comment">${esc(post.comment)}</p>
