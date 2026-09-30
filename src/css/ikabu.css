@@ -2978,6 +2978,15 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-callout.is-on { animation: ika-gc-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
 .ika-bt-callout.is-good { background: #f47321; } .ika-bt-callout.is-trap { background: #7c3aed; } .ika-bt-callout.is-no { background: #6b7280; }
 /* 勝敗 */
+/* 部長イカの How to（練習だけ）：左下から顔を出して吹き出し */
+.ika-bt-tutor { position: absolute; z-index: 8; left: 8px; right: 8px; bottom: 22%; display: flex; align-items: flex-end; gap: 6px; animation: ika-bt-tutor 0.4s cubic-bezier(0.2, 1.2, 0.4, 1); }
+.ika-bt-tutor[hidden] { display: none; }
+@keyframes ika-bt-tutor { from { transform: translateY(20px); opacity: 0; } }
+.ika-bt-tutor img { width: 84px; height: auto; flex: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+.ika-bt-tutor-bubble { position: relative; flex: 1; padding: 10px 12px; border-radius: 14px; background: #fff; color: var(--ika-ink); box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+.ika-bt-tutor-bubble::before { content: ''; position: absolute; left: -8px; bottom: 18px; border: 8px solid transparent; border-right-color: #fff; border-left: 0; }
+.ika-bt-tutor-bubble p { margin: 0 0 8px; font-size: 13px; line-height: 1.6; font-family: var(--font-text); font-weight: 700; }
+.ika-bt-tutor-bubble .ika-btn { padding: 6px 14px; font-size: 13px; }
 .ika-bt-over { position: absolute; z-index: 20; inset: 0; background: rgba(2,8,20,0.8); display: grid; place-items: center; }
 .ika-bt-over[hidden] { display: none; }
 .ika-bt-over-in { width: min(88%, 340px); padding: 22px; border-radius: 18px; background: #fff; color: var(--ika-ink); text-align: center; }

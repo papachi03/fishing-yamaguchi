@@ -23,6 +23,23 @@ const BATTLE_AUDIO = {
   lose: { src: '/assets/ikabu/audio/gacha/se_drag.mp3', volume: 0.35 },      // 負け（仮：ドラグが出ていく音の頭2秒）。負けジングルが来たら差し替え
 };
 const KEY_SOUND = 'ikabu.battle.sound';
+// 部長イカの How to（練習デッキの対戦だけ。2026-10-01 ぱっぱ）。状況に合った一言を順に出す
+const TUTOR = [
+  { id: 'start', pic: 'wave', when: (st) => st.active === 'me' && st.players.me.front.every((x) => !x),
+    ja: 'ようこそ、イカ部カードバトルへ！ まずは手札のイカをタップして「前列に出す」。左上の数字が「潮」（コスト）で、ターンごとに1ずつ増えるよ', en: 'Welcome! Tap a squid in your hand and play it to the front row. The number on the card is its tide cost; you gain 1 tide per turn.' },
+  { id: 'end', pic: 'point', when: (st) => st.active === 'me' && st.players.me.summoned,
+    ja: '出したターンのイカは攻撃できない。右の丸い「ターン終了」で相手の番へ。手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
+  { id: 'attack', pic: 'point', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
+    ja: '攻撃しよう！ 自分のイカをタップ→相手のイカをタップ。赤い数字（攻撃）が相手の青い数字（防御）より大きければ釣れる。同じなら「バラシ」、小さいと弾かれて次のターン休みだよ', en: 'Attack! Tap your squid, then an enemy squid. Red (ATK) higher than their blue (DEF) catches it. Equal is a miss; lower bounces you and the squid rests next turn.' },
+  { id: 'direct', pic: 'yatta', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && !st.players.cpu.front.some(Boolean),
+    ja: '相手の前列が空だ！ 自分のイカをタップして「ダイレクトアタック」。相手のエギ（左上のオレンジ）を1個奪えるよ。5個ぜんぶ奪えば勝ち！', en: "The enemy front row is empty! Tap your squid and hit Direct Attack to take one of their egi. Take all five to win!" },
+  { id: 'trap', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'trap' && canPlay(st, 'me', x).ok),
+    ja: 'トラップは後列に「伏せる」。相手が攻撃した時などに自動で開いて、1回使ったら捨て札へ。伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
+  { id: 'tech', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'tech' && canPlay(st, 'me', x).ok),
+    ja: 'テクニックはその場で効く（攻撃+2など）。同じマークのイカが前列にいると潮1安くなるよ。攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
+  { id: 'lost', pic: 'sad', when: (st) => st.players.me.egi < 5,
+    ja: 'エギを1個取られた…でも取られた側は1枚引ける。手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
+];
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
 const BACK = assetHref('/assets/ikabu/cards/card_back.webp');
 const TX = {
@@ -74,6 +91,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       <div class="ika-bt-hand" data-hand></div>
       <div class="ika-bt-sheet" data-sheet hidden></div>
       <div class="ika-bt-callout" data-callout></div>
+      <div class="ika-bt-tutor" data-tutor hidden><img src="" alt="" width="433" height="480" /><div class="ika-bt-tutor-bubble"><p data-tutor-text></p><button type="button" class="ika-btn ika-btn--primary" data-tutor-ok>OK</button></div></div>
       <div class="ika-bt-over" data-over hidden></div>
     </div>`;
   document.body.appendChild(ov);
@@ -87,6 +105,18 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   syncSound();
   const climax = () => st.players.me.egi <= 2 || st.players.cpu.egi <= 2 || st.turn >= 8;
   audio.unlock(); audio.bgm('battle');
+  // 部長イカの How to（練習だけ）
+  const tutorEl = $('[data-tutor]'); const tutorShown = new Set(); let tutorOpen = false;
+  tutorEl.querySelector('[data-tutor-ok]').addEventListener('click', () => { tutorEl.hidden = true; tutorOpen = false; tutor(); });
+  function tutor() {
+    if (!practice || tutorOpen || st.winner) return;
+    const step = TUTOR.find((s) => !tutorShown.has(s.id) && s.when(st));
+    if (!step) return;
+    tutorShown.add(step.id); tutorOpen = true;
+    tutorEl.querySelector('img').src = assetHref(`/assets/ikabu/mascot/${step.pic}.webp`);
+    tutorEl.querySelector('[data-tutor-text]').textContent = t(lang, step.ja, step.en);
+    tutorEl.hidden = false;
+  }
   let sel = null;          // { kind:'hand', x } | { kind:'attacker', x } | { kind:'target', x, who }
   let busy = false;
   let logSeen = st.log.length;
@@ -133,6 +163,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     if (!st.winner && climax()) audio.bgm('climax', { xfade: 2 });
     el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : '';
     flushLog();
+    if (!busy) tutor();
   }
   let calloutTimer = 0;
   function callout(text, kind = '') { el.callout.textContent = text; el.callout.className = `ika-bt-callout is-on ${kind}`; clearTimeout(calloutTimer); calloutTimer = setTimeout(() => el.callout.classList.remove('is-on'), 1300); }
