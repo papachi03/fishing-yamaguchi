@@ -51,6 +51,8 @@ const cellStyle = (p) => `left:${p.cx - p.w / 2}%;top:${p.cy - p.h / 2}%;width:$
 const TUTOR = [
   { id: 'start', pic: 'wave', when: (st) => st.active === 'me' && st.players.me.front.every((x) => !x),
     ja: 'ようこそ、イカ部カードバトルへ！\nまずは手札のイカをタップして\n「前列に出す」。\n左上の数字が「潮」（コスト）。\nターンごとに1ずつ増えるよ', en: 'Welcome! Tap a squid in your hand and play it to the front row. The number on the card is its tide cost; you gain 1 tide per turn.' },
+  { id: 'tailwind', pic: 'wink', when: (st) => st.active === 'me' && st.players.me.tailwind,
+    ja: '後攻は「追い風」！\n自分の最初の2ターンは潮が+1。\n先攻より1歩早く強いイカを出せるよ', en: 'Second player gets a tailwind: +1 tide on your first two turns. Play a strong squid a step early.' },
   { id: 'end', pic: 'point', when: (st) => st.active === 'me' && st.players.me.summoned,
     ja: '出したターンのイカは攻撃できない。\n右の丸い「ターン終了」で\n相手の番へ。\n手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
   { id: 'attack', pic: 'point', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
@@ -79,6 +81,7 @@ const TX = {
   practiceNote: ['初心者練習デッキのCPUと対戦します。練習なので記録と🎫には数えません。', 'Practice against the beginner CPU deck. Practice matches are not recorded and earn no 🎫.'],
   yourTurn: ['あなたの番', 'Your turn'], cpuTurn: ['相手の番', "CPU's turn"],
   firstNoAttack: ['先攻の最初のターンは攻撃できません', 'The first player cannot attack on turn 1'],
+  tailwind: ['追い風 🌊+1（後攻の最初の2ターン）', 'Tailwind 🌊+1 (2nd player, first 2 turns)'],
   end: ['ターン終了', 'End turn'], quit: ['やめる', 'Quit'],
   put: ['前列に出す', 'Play'], use: ['使う', 'Use'], set: ['伏せる', 'Set'], cancel: ['やめる', 'Cancel'],
   pickTarget: ['対象を選んでください（光っているイカ）', 'Pick a target (glowing squid)'],
@@ -218,7 +221,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     }
     // 案内
     if (!st.winner && climax() && !climaxOn) { climaxOn = true; audio.se('climaxIn'); audio.bgm('climax', { xfade: 2 }); }
-    el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : '';
+    el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : st.players[st.active].tailwind ? t(lang, ...TX.tailwind) : '';
     flushLog();
     if (!busy) tutor();
   }

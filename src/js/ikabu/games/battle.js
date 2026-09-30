@@ -13,6 +13,7 @@ export const FRONT = 3, BACK = 3, EGI = 5, HAND_MAX = 7, TIDE_MAX = 8, DECK_SIZE
 export const DECK_RULE = { squid: [12, 15], tech: [9, 12], trap: [4, 6], copies: 2, SSR: 2, UR: 1 };
 export const NIGHT = ['ケンサキ', 'ヤリ', 'アカ', 'ホタル'];
 export const SHAKURI_COST = 2, SHAKURI_ATK = 1, WEAR_DEF = 1;
+export const TAILWIND_TURNS = 2, TAILWIND_TIDE = 1;   // 後攻の追い風：自分の最初の2ターンは潮+1（2026-10-01 自動対戦で先攻71%→54%）
 const other = (side) => (side === 'me' ? 'cpu' : 'me');
 const isNight = (card) => NIGHT.some((k) => card.name.includes(k));
 
@@ -112,6 +113,8 @@ export function startTurn(st) {
   const side = st.active, p = P(st, side);
   p.tideMax = Math.min(TIDE_MAX, p.tideMax + 1);
   p.tide = Math.max(0, p.tideMax + p.tideNext); p.tideNext = 0;
+  p.tailwind = side !== st.first && Math.ceil(st.turn / 2) <= TAILWIND_TURNS;   // 後攻の追い風
+  if (p.tailwind) p.tide = Math.min(TIDE_MAX, p.tide + TAILWIND_TIDE);
   p.summoned = false; p.techUsed = 0; p.techLimit = null; p.noAttack = st.turn === 1;   // 先攻の最初のターンは攻撃できない
   for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.shakuri = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
   for (const x of P(st, other(side)).front) if (x) x.shield = false;

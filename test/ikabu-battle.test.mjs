@@ -210,3 +210,14 @@ test('納竿：7枚を超えた分は選んだカードを捨てる。指定が�
   assert.ok(!st2.players.cpu.hand.includes(big2));   // 高いコストから捨てた
   assert.equal(st2.players.cpu.hand.length, 7);
 });
+
+test('後攻の追い風：後攻は自分の最初の2ターンだけ潮+1（3ターン目からは無し）。先攻には無い', () => {
+  const st = mk({ first: 'me' });
+  assert.equal(st.players.me.tailwind, false); assert.equal(st.players.me.tide, 1);
+  endTurn(st);   // T2 後攻（cpu）1回目
+  assert.equal(st.players.cpu.tailwind, true); assert.equal(st.players.cpu.tide, 2);
+  endTurn(st); endTurn(st);   // T4 後攻 2回目
+  assert.equal(st.players.cpu.tailwind, true); assert.equal(st.players.cpu.tide, 3);
+  endTurn(st); endTurn(st);   // T6 後攻 3回目
+  assert.equal(st.players.cpu.tailwind, false); assert.equal(st.players.cpu.tide, 3);
+});
