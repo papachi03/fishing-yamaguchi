@@ -10,7 +10,6 @@ import { openShareView, shareUrl } from './share.js';
 const KEY_NAME = 'ikabu.certs.name';   // 認定証に入れる名前（このブラウザだけ）
 
 export function mountCerts(root, { lang = 'ja' } = {}) {
-  if (!root) return null;
   const zukanIds = GAME_ZUKAN.map((z) => z.id);
   const sync = () => {
     const egi = { ...emptyEgi(), ...(readRecord(KEY_EGI).value ?? {}) };
@@ -19,7 +18,7 @@ export function mountCerts(root, { lang = 'ja' } = {}) {
     const { certs, fresh } = awardCerts(readCerts(), status);
     if (fresh.length) { writeCerts(certs); dispatchEvent(new CustomEvent('ikabu:cert', { detail: { fresh } })); }   // チケット🎫+10（2026-09-30）
     for (const id of CERT_IDS) {
-      const li = root.querySelector(`[data-cert="${id}"]`);
+      const li = root?.querySelector(`[data-cert="${id}"]`);
       if (!li) continue;
       const st = status[id];
       li.classList.toggle('is-earned', Boolean(certs[id]));
@@ -41,6 +40,7 @@ export function mountCerts(root, { lang = 'ja' } = {}) {
   addEventListener('ikabu:records', sync);
   addEventListener('storage', sync);
 
+  if (!root) return { sync };   // 欄が無いページ（ゲームのページ）は判定だけ
   // 「認定証をつくる」→ 名前の入力欄を出す → 「画像にする」→ 名前と日付を載せた画像をシェア画面へ（保存は長押し・𝕏は投稿画面）
   const form = root.querySelector('#ika-cert-form');
   const input = root.querySelector('#ika-cert-name');

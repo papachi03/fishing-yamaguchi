@@ -21,6 +21,13 @@ export default defineConfig(async (env) => {
           'ikabu-en-egi': resolve(__dirname, 'ikabu/en/egi.html'),
           'ikabu-sumi': resolve(__dirname, 'ikabu/sumi.html'),
           'ikabu-en-sumi': resolve(__dirname, 'ikabu/en/sumi.html'),
+          // 2026-09-30 TOP・ガチャ・カード
+          'ikabu-games': resolve(__dirname, 'ikabu/games.html'),
+          'ikabu-en-games': resolve(__dirname, 'ikabu/en/games.html'),
+          'ikabu-gacha': resolve(__dirname, 'ikabu/gacha.html'),
+          'ikabu-en-gacha': resolve(__dirname, 'ikabu/en/gacha.html'),
+          'ikabu-cards': resolve(__dirname, 'ikabu/cards.html'),
+          'ikabu-en-cards': resolve(__dirname, 'ikabu/en/cards.html'),
         },
       },
     },

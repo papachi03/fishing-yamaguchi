@@ -1,0 +1,6 @@
+audiostock_52868 → se_splash（着水）1.4s
+audiostock_823735 → se_drag（ドラグ）8.5s
+audiostock_263761 → se_don（ドン）5.0s
+audiostock_110684 → se_flip（めくり）0.3s
+audiostock_1091594 → se_thunder（稲妻）2.0s
+audiostock_852085 → se_fanfare（ファンファーレ）3.0s

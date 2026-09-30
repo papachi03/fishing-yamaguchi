@@ -27,9 +27,9 @@ test('殻のパスから page / lang / recipeId を読む', () => {
   assert.equal(parseIkabuPath('/x/sea.html'), null);
 });
 
-test('殻の一覧：13ページ×2言語（エギング・墨つなぎの専用ページ・記事 egi-guide を含む） ＋ レシピ14品×2言語、hreflang は同じ品を指す', () => {
+test('殻の一覧：16ページ（テストプレイ版のTOP・ガチャ・カードを含む。2026-09-30）×2言語（エギング・墨つなぎの専用ページ・記事 egi-guide を含む） ＋ レシピ14品×2言語、hreflang は同じ品を指す', () => {
   const shells = ikabuShells();
-  assert.equal(shells.length, 54);
+  assert.equal(shells.length, 60);
   assert.ok(shells.some((s) => s.file === 'ikabu/sumi.html') && shells.some((s) => s.file === 'ikabu/en/sumi.html'));
   assert.ok(shells.some((s) => s.file === 'ikabu/egi-guide.html') && shells.some((s) => s.file === 'ikabu/en/egi-guide.html'));
   assert.ok(shells.some((s) => s.file === 'ikabu/egi.html') && shells.some((s) => s.file === 'ikabu/en/egi.html'));

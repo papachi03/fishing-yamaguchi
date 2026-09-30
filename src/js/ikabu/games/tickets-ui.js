@@ -1,6 +1,8 @@
-// チケット🎫の欄（あそび場の入口）と、ゲームの結果に合わせた付与（2026-09-30）。
-//   ゲーム側は終わった時に 'ikabu:game'（detail: { game, goal, seconds, counted }）を投げる。認定証は 'ikabu:cert'（detail: { fresh }）
-//   ここで枚数を足し、欄を更新し、「🎫+1」を出す。コード入力は codes.js（次の段階）
+// チケット🎫（2026-09-30）。2つの役目に分ける：
+//   mountTicketEarn：どのページでも動く「付与」係。ゲームの終わり（'ikabu:game'）と認定証（'ikabu:cert'）を受けて枚数を足し、
+//                    画面の隅に「🎫 +2」の小さな知らせを出す。付与したら 'ikabu:tickets' を投げる
+//   mountTickets   ：TOP（games）の🎫の欄。枚数と「今日あと何枚」を表示し、配布コードの入力を受ける
+//   ゲーム側は終わった時に 'ikabu:game'（detail: { game, goal, seconds, counted }）を投げる
 import { utcDay } from './rng.js';
 import { readTickets, writeTickets, earnPlay, earnSumiGoal, earnRush60, earnCert, todayLeft, CAP } from './tickets.js';
 import { HUB_TEXT } from './play-text.js';
@@ -8,42 +10,35 @@ import { t } from '../i18n.js';
 import { redeem, lockState } from './codes.js';
 import CODE_TABLE from './codes-table.json';
 
-export function mountTickets(root, { lang = 'ja' } = {}) {
-  if (!root) return null;
-  const el = {
-    n: root.querySelector('[data-tickets-n]'),
-    left: root.querySelector('[data-tickets-left]'),
-    pop: root.querySelector('[data-tickets-pop]'),
-  };
+let earnMounted = false;
+
+// 付与係（ページに1回だけ）。toast=true で隅に「🎫 +n」を出す
+export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
+  if (earnMounted) return;
+  earnMounted = true;
   const T = HUB_TEXT.tickets;
-  const render = (rec) => {
-    const day = utcDay();
-    if (el.n) el.n.textContent = String(rec.n);
-    if (el.left) el.left.textContent = T.left(lang, todayLeft(rec, { day }), rec.n >= CAP);
-  };
-  const pop = (got, why) => {
-    if (!el.pop || got <= 0) return;
-    el.pop.textContent = T.pop(lang, got, why);
-    el.pop.classList.remove('is-on');
-    void el.pop.offsetWidth;   // アニメを頭から
-    el.pop.classList.add('is-on');
+  let toastEl = null;
+  const show = (got, why) => {
+    if (!toast || got <= 0) return;
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'ika-tickets-toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
+    toastEl.textContent = T.pop(lang, got, why);
+    toastEl.classList.remove('is-on');
+    void toastEl.offsetWidth;
+    toastEl.classList.add('is-on');
   };
   const apply = (fn) => {
     const day = utcDay();
     const out = fn(readTickets(), day);
     if (!out) return;
     writeTickets(out.rec);
-    render(out.rec);
-    pop(out.got, out.why);
+    dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: out.got, why: out.why } }));
+    show(out.got, out.why);
   };
-  render(readTickets());
-
   addEventListener('ikabu:game', (e) => {
     const d = e.detail ?? {};
     if (d.counted === false) return;   // 練習（数えない釣行）は🎫も無し
     apply((rec, day) => {
-      let got = 0, why = [];
-      let r = rec;
+      let got = 0, why = [], r = rec;
       const a = earnPlay(r, { day }); r = a.rec; got += a.got; why.push(...a.why);
       if (d.game === 'sumi' && d.goal) { const b = earnSumiGoal(r, { day }); r = b.rec; got += b.got; why.push(...b.why); }
       if (d.game === 'rush') { const c = earnRush60(r, { day, seconds: d.seconds ?? 0 }); r = c.rec; got += c.got; why.push(...c.why); }
@@ -59,9 +54,30 @@ export function mountTickets(root, { lang = 'ja' } = {}) {
       return { rec: r, got, why: got ? ['cert'] : [] };
     });
   });
+}
+
+// TOPの🎫の欄
+export function mountTickets(root, { lang = 'ja' } = {}) {
+  if (!root) return null;
+  const el = { n: root.querySelector('[data-tickets-n]'), left: root.querySelector('[data-tickets-left]'), pop: root.querySelector('[data-tickets-pop]') };
+  const T = HUB_TEXT.tickets;
+  const render = (rec) => {
+    const day = utcDay();
+    if (el.n) el.n.textContent = String(rec.n);
+    if (el.left) el.left.textContent = T.left(lang, todayLeft(rec, { day }), rec.n >= CAP);
+  };
+  const pop = (got, why) => {
+    if (!el.pop || got <= 0) return;
+    el.pop.textContent = T.pop(lang, got, why);
+    el.pop.classList.remove('is-on');
+    void el.pop.offsetWidth;
+    el.pop.classList.add('is-on');
+  };
+  render(readTickets());
+  addEventListener('ikabu:tickets', (e) => { render(readTickets()); pop(e.detail?.got ?? 0, e.detail?.why ?? []); });
   addEventListener('storage', () => render(readTickets()));
 
-  // 配布コード（2026-09-30）：入力→ハッシュで照合→枚数を足す。外れが3回続いたら30秒待ち
+  // 配布コード：入力→ハッシュで照合→枚数を足す。外れが3回続いたら30秒待ち
   const open = root.querySelector('[data-code-open]');
   const form = root.querySelector('[data-code-form]');
   const input = root.querySelector('#ika-tickets-input');
@@ -78,8 +94,7 @@ export function mountTickets(root, { lang = 'ja' } = {}) {
     busy = true;
     try {
       const day = utcDay();
-      const before = readTickets();
-      const r = await redeem(input?.value ?? '', { table: CODE_TABLE, tickets: before, day });
+      const r = await redeem(input?.value ?? '', { table: CODE_TABLE, tickets: readTickets(), day });
       if (r.ok) {
         fails = 0;
         writeTickets(r.rec); render(r.rec); pop(r.got, ['code']);

@@ -29,10 +29,15 @@ const PAGES = {
   sumi: { ja: ['墨つなぎ パズルゲーム', '山口イカ部のパズル「墨つなぎ」。同じイカを3つそろえて消す、毎日ちがう盤面。スマホでそのまま遊べます。'], en: ['Ink Link — a puzzle game', 'Ink Link, the Yamaguchi Ika Club puzzle. Match three squid to clear them, with a new board every day. Plays in your phone browser.'] },
   'egi-guide': { ja: ['部員おすすめ：新子シーズンのエギ選び', '秋の新子（アオリイカ）ねらいのエギを、号数と色で。ヤマシタ「エギ王K」とデュエル「パタパタ」から、マズメ・日中・夜間の3タイプ別に部員が選んだ候補。'], en: ["Members' pick: egi for young-squid season", 'Egi for autumn’s young bigfin reef squid, by size and color. Picks from YAMASHITA Egi-O K and DUEL PataPata for dawn and dusk, daytime and night anglers.'] },
   studio: { ja: ['スタンプとSNS', '紺とオレンジのイカのスタンプ案（ダジャレ編・山口の地名編）と、ダジャレの解説。YouTube・Instagramは準備中。'], en: ['Stickers & social', 'Sticker concepts with our navy-and-orange squid (puns and Yamaguchi place names), a pun glossary, and what is coming on YouTube and Instagram.'] },
+  // テストプレイ版のTOP・ガチャ・カード（2026-09-30）。公開前なので検索には載せない（下の NOINDEX）
+  games: { ja: ['イカ部のあそび場 TOP', 'エギング・墨つなぎ・ガチャ・イカカード。遊ぶとチケットがたまり、ガチャでカードが引けます。'], en: ['Playground TOP', 'Eging, Ink Link, the gacha and squid cards. Play to earn tickets and pull cards.'] },
+  gacha: { ja: ['イカ部ガチャ', 'チケットを使って、エギングの動きでイカカードを引く。'], en: ['Squid Gacha', 'Spend tickets and reel in squid cards, eging style.'] },
+  cards: { ja: ['イカカード', 'ガチャで引いたカードのバインダー。対戦は準備中。'], en: ['Squid Cards', 'Your binder of pulled cards. Battles coming soon.'] },
   sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと海況データの出どころについても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and where the sea data comes from.'] },
 };
 
 const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika Club' };
+export const NOINDEX = new Set(['games', 'gacha', 'cards']);   // 公開前のページ（テストプレイ版の入口）
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap';
 
@@ -43,7 +48,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 // 1枚の殻。path(lang) は同じページの各言語の URL（hreflang と canonical に使う）
 function shell({ page, lang, name, desc, path }) {
   // 「recipe.html」は旧URLからの転送と1品を選ぶだけのページなので検索には載せない（1品ずつのページを載せる）
-  const robots = path(lang).endsWith('/recipe.html') ? '  <meta name="robots" content="noindex" />\n' : '';
+  const robots = path(lang).endsWith('/recipe.html') || NOINDEX.has(page) ? '  <meta name="robots" content="noindex" />\n' : '';
   const title = page === 'index' ? name : `${name} | ${SITE[lang]}`;
   const canonical = ORIGIN + path(lang);
   return `<!doctype html>
@@ -120,7 +125,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const today = new Date().toISOString().slice(0, 10);
   const entries = ikabuShells()
     .map((sh) => sh.path(sh.lang))
-    .filter((u) => !u.endsWith('/recipe.html'))
+    .filter((u) => !u.endsWith('/recipe.html') && ![...NOINDEX].some((p) => u.endsWith(`/${p}.html`)))   // 公開前のページはサイトマップにも載せない
     .map((u) => `  <url>\n    <loc>${ORIGIN}${u}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${u.includes('/sea.html') ? 'daily' : 'monthly'}</changefreq>\n    <priority>${/\/ikabu\/(en\/)?$/.test(u) ? '0.8' : '0.6'}</priority>\n  </url>`)
     .join('\n');
   const smFile = resolve(ROOT, 'public/sitemap.xml');

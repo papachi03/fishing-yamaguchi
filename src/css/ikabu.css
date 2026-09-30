@@ -1326,6 +1326,15 @@
 .ika-play-card-desc { margin-top: 8px; font-size: 14px; line-height: 1.85; color: var(--ika-ink-soft); flex: 1; }
 .ika-play-card-go { margin-top: 16px; align-self: flex-start; font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); border-bottom: 3px solid var(--ika-orange); padding-bottom: 1px; }
 .ika-play-note { margin-top: 16px; font-size: 12.5px; line-height: 1.8; color: var(--ika-ink-soft); }
+/* テストプレイ版のTOP（games）と「← TOPへ」（2026-09-30） */
+.ika-games-title { margin: 6px 0 0; font-family: var(--font-maru); font-weight: 900; font-size: clamp(26px, 5vw, 40px); line-height: 1.25; }
+.ika-games-lead { margin: 10px 0 0; font-size: 14px; line-height: 1.8; color: var(--ika-ink-soft); }
+.ika-games-tiles { margin-top: 20px; }
+.ika-play-card--gacha { background: linear-gradient(135deg, #fff8e6 0 55%, #ffe9c2 100%); }
+.ika-play-card--cards { background: linear-gradient(135deg, var(--ika-white) 0 55%, #e8f3ff 100%); }
+.ika-tickets-toast { position: fixed; left: 50%; bottom: 18px; transform: translate(-50%, 20px); z-index: 60; padding: 10px 16px; border-radius: 999px; background: var(--ika-ink); color: #ffd166; font-family: var(--font-maru); font-weight: 900; font-size: 15px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); opacity: 0; pointer-events: none; }
+.ika-tickets-toast.is-on { animation: ika-tickets-toast 2.4s ease-out forwards; }
+@keyframes ika-tickets-toast { 0% { opacity: 0; transform: translate(-50%, 20px); } 12% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -6px); } }
 /* チケット🎫（2026-09-30） */
 .ika-tickets { position: relative; margin-top: 22px; padding: 16px 20px 16px; border: 3px solid var(--ika-sea); border-radius: 14px; background: linear-gradient(135deg, #fff8e8, var(--ika-white) 60%); }
 .ika-tickets-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

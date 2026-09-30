@@ -10,7 +10,7 @@ const YFJ_HOME = '/';
 // （ぱっぱ指示 2026-09-24：小松さん以外にはイカ部の中身を見せない）。
 // ＝部活動のメニュー・出典ページ（イカ部のページ）へのリンクを出さない。YFJ は公開中の本番ドメインを指す
 // （釣り仲間用の確認URLにはこのページしか載せないので、相対リンクだと行き先が無い）
-export const SOLO_PAGES = new Set(['egi', 'sumi']);   // ゲームだけの専用ページ（テストプレイ用）
+export const SOLO_PAGES = new Set(['egi', 'sumi', 'games', 'gacha', 'cards']);   // ゲームだけの専用ページ（テストプレイ用）。games＝TOP
 const YFJ_PUBLIC = 'https://yamaguchifishing.com';
 
 // recipeId があるとき（/ikabu/recipes/<id>.html）は、言語切替も同じ品の静的ページを指す
@@ -75,9 +75,11 @@ function soloHeaderHTML(lang, page) {
           <span aria-hidden="true">｜</span>
           <a href="${pageHref(page, 'en')}" lang="en" data-lang="en"${lang === 'en' ? ' aria-current="true"' : ''}>EN</a>
         </div>
-        <a class="ika-yfj" href="${YFJ_PUBLIC}/" title="YAMAGUCHI FISHING JOURNAL" aria-label="YAMAGUCHI FISHING JOURNAL">
+        ${page === 'games' ? `<a class="ika-yfj" href="${YFJ_PUBLIC}/" title="YAMAGUCHI FISHING JOURNAL" aria-label="YAMAGUCHI FISHING JOURNAL">
           <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">YAMAGUCHI FISHING JOURNAL</span><span class="ika-yfj-short" aria-hidden="true">YFJ</span>
-        </a>
+        </a>` : `<a class="ika-yfj ika-solo-back" href="${pageHref('games', lang)}">
+          <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">${t(lang, 'あそび場TOPへ', 'Back to TOP')}</span><span class="ika-yfj-short" aria-hidden="true">TOP</span>
+        </a>`}
       </div>
     </div>
     <div class="ika-stripe" aria-hidden="true"></div>
