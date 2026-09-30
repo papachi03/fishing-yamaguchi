@@ -80,6 +80,7 @@ const hubHTML = (lang) => `
         </a>
       </div>
       <p class="ika-play-note">${t(lang, HUB_TEXT.records)}</p>
+      ${ticketsHTML(lang)}
       ${certsHTML(lang)}
       <a class="ika-play-read" href="${pageHref('egi-guide', lang)}">
         <span class="ika-play-read-tag">${t(lang, '読みもの', 'READ')}</span>
@@ -89,6 +90,23 @@ const hubHTML = (lang) => `
       </a>
     </div>
   </section>`;
+
+// チケット🎫の欄（2026-09-30）：枚数と「今日あと何枚」は games/tickets-ui.js が書き込む
+export const ticketsHTML = (lang) => {
+  const T = HUB_TEXT.tickets;
+  return `
+      <section class="ika-tickets" id="ika-tickets" aria-label="${t(lang, T.title)}">
+        <div class="ika-tickets-main">
+          <span class="ika-tickets-icon" aria-hidden="true">🎫</span>
+          <span class="ika-tickets-count"><b data-tickets-n>0</b><small>${t(lang, '枚', '')}</small></span>
+          <span class="ika-tickets-left" data-tickets-left></span>
+          <span class="ika-tickets-pop" data-tickets-pop aria-live="polite"></span>
+        </div>
+        <p class="ika-tickets-lead">${t(lang, T.lead)}</p>
+        <p class="ika-tickets-how">${t(lang, T.how)}</p>
+        <div class="ika-tickets-code" id="ika-tickets-code"></div>
+      </section>`;
+};
 
 // ゴールド認定証の欄（2026-09-30）：中身（そろい具合・取った日）は games/certs-ui.js が記録から書き込む
 export const certsHTML = (lang) => {

@@ -2,13 +2,13 @@
 // ゲームの土台はあそび場（views/play.js）と同じ部品を使い、ここではページの頭と足だけを持つ。
 // 公開前のクラブの各ページへのリンクは置かない（ヘッダー・フッターも shell.js の SOLO_PAGES で伏せる）
 import { t } from '../i18n.js';
-import { certsHTML } from './play.js';   // ゴールド認定証の欄（2026-09-30）
+import { certsHTML, ticketsHTML } from './play.js';   // ゴールド認定証・チケットの欄（2026-09-30）
 import { egiHTML } from './play.js';
 
 export function render(lang) {
   const month = new Date().getMonth() + 1;   // ビルド時の月。ブラウザでは egi-ui.js が今の月に直す
   return `${egiHTML(lang, month, { solo: true })}
-  <section class="ika-section ika-egi-solo-foot"><div class="wrap">${certsHTML(lang)}</div>
+  <section class="ika-section ika-egi-solo-foot"><div class="wrap">${ticketsHTML(lang)}${certsHTML(lang)}</div>
   </section>
   <section class="ika-section ika-egi-solo-foot">
     <div class="wrap">

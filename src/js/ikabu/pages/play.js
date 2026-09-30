@@ -4,6 +4,7 @@ import { render } from '../views/play.js';
 import { mountEgi } from '../games/egi-ui.js';
 import { mountMatch3 } from '../games/match3-ui.js';
 import { mountCerts } from '../games/certs-ui.js';
+import { mountTickets } from '../games/tickets-ui.js';
 import { mountYouTube } from '../yt-facade.js';
 
 const { lang } = boot(render);
@@ -17,6 +18,7 @@ const demoOf = (game) => (demo && demo.startsWith(`${game}:`) ? demo.slice(game.
 
 const egi = mountEgi(document.getElementById('ika-egi'), { lang, demo: demoOf('egi') });
 const m3 = mountMatch3(document.getElementById('ika-m3'), { lang, demo: demoOf('match3') });
+mountTickets(document.getElementById('ika-tickets'), { lang });   // チケット🎫（2026-09-30）：認定証より先に（認定証の+10を受け取る）
 const certs = mountCerts(document.getElementById('ika-certs'), { lang });   // ゴールド認定証（2026-09-30）
 // 開発時だけ：自動プレイの検証用に外から触れるようにする
 if (import.meta.env.DEV) window.__ikabuGames = { egi, m3, certs };

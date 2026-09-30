@@ -17,7 +17,7 @@ export function mountCerts(root, { lang = 'ja' } = {}) {
     const sumi = { ...emptyM3(), ...(readRecord(KEY_M3).value ?? {}) };
     const status = certStatus({ sumi, egi, zukanIds });
     const { certs, fresh } = awardCerts(readCerts(), status);
-    if (fresh.length) writeCerts(certs);
+    if (fresh.length) { writeCerts(certs); dispatchEvent(new CustomEvent('ikabu:cert', { detail: { fresh } })); }   // チケット🎫+10（2026-09-30）
     for (const id of CERT_IDS) {
       const li = root.querySelector(`[data-cert="${id}"]`);
       if (!li) continue;

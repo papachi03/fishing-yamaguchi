@@ -635,6 +635,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const { rec: r, fresh } = recordM3(rec, g, { day: mode === 'daily' ? utcDay() : null, stars: mode === 'daily' ? starsOf(g.score, goals) : 0 });   // ★★★のバッジは今日の一戦だけ
     rec = r;
     writeRecord(KEY_M3, rec);
+    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'sumi', goal: mode === 'daily' && g.score >= goals.goal } }));   // チケット🎫（2026-09-30）
     syncBadges();
     syncHud();
     const R = TX.result;
@@ -665,6 +666,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const { rec: r, fresh } = recordRush(rec, g, { day: mode === 'rush' ? utcDay() : null });
     rec = r;
     writeRecord(KEY_M3, rec);
+    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'rush', seconds: Math.floor(g.rush.t) } }));   // チケット🎫（2026-09-30）
     syncBadges();
     syncHud();
     const R = TX.rush;
