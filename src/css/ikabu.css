@@ -2933,8 +2933,12 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt { position: fixed; z-index: 90; inset: 0; background: #020814; display: grid; place-items: center; font-family: var(--font-maru); color: #fff; user-select: none; -webkit-user-select: none; }
 .ika-bt-stage { position: relative; width: 100vw; width: 100dvw; height: 100vh; height: 100dvh; max-width: calc(100dvh * 9 / 16 + 40px); overflow: hidden; background: #071a33 center / cover no-repeat; }
 /* 盤面の列と行（背景の岩の位置に合わせる：横 36%・50%・64%、縦 相手後列23%・相手前列38%・自分前列64%・自分後列81%） */
-.ika-bt-row { position: absolute; left: 50%; transform: translate(-50%, -50%); width: 46%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
-.ika-bt-row--cpuback { top: 22%; } .ika-bt-row--cpufront { top: 37.5%; } .ika-bt-row--myfront { top: 62.5%; } .ika-bt-row--myback { top: 78%; }
+.ika-bt { --bt-w-cpu: 50%; --bt-w-me: 58%; }
+.ika-bt[data-scale='s'] { --bt-w-cpu: 44%; --bt-w-me: 50%; }
+.ika-bt[data-scale='l'] { --bt-w-cpu: 56%; --bt-w-me: 66%; }
+.ika-bt-row { position: absolute; left: 50%; transform: translate(-50%, -50%); width: var(--bt-w-cpu); display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
+.ika-bt-row--myfront, .ika-bt-row--myback { width: var(--bt-w-me); }
+.ika-bt-row--cpuback { top: 22.5%; } .ika-bt-row--cpufront { top: 37%; } .ika-bt-row--myfront { top: 63%; } .ika-bt-row--myback { top: 79%; }
 .ika-bt-slot { aspect-ratio: 2 / 3; border-radius: 6px; border: 2px dashed rgba(255,255,255,0.18); }
 .ika-bt-card { position: relative; aspect-ratio: 2 / 3; border-radius: 6px; overflow: visible; cursor: pointer; transition: transform 0.25s; animation: ika-bt-land 0.35s cubic-bezier(0.2, 1.3, 0.4, 1); filter: drop-shadow(0 6px 8px rgba(0,0,0,0.55)); }
 @keyframes ika-bt-land { from { transform: translateY(-24px) scale(1.15); opacity: 0; } }
@@ -2954,12 +2958,15 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-state.is-shield { background: #138c96; color: #fff; } .ika-bt-state.is-set { background: #7c3aed; color: #fff; } .ika-bt-state.is-tired { background: #6b7280; color: #fff; } .ika-bt-state.is-attacked { background: #374151; color: #cbd5e1; }
 /* 両側の情報：エギ（ライフ）と数字 */
 .ika-bt-side { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; font-size: 12px; font-weight: 900; pointer-events: none; }
-.ika-bt-side--cpu { top: max(6px, env(safe-area-inset-top)); background: linear-gradient(180deg, rgba(2,8,20,0.75), transparent); }
+.ika-bt-side--cpu { top: max(6px, env(safe-area-inset-top)); align-items: flex-start; background: linear-gradient(180deg, rgba(2,8,20,0.75), transparent); }
+.ika-bt-side-left { display: grid; gap: 4px; }
+.ika-bt-side--cpu .ika-bt-tide i { width: 9px; height: 12px; }
+.ika-bt-scale { position: absolute; z-index: 4; left: 10px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; }
 .ika-bt-side--me { top: 55.5%; left: 2%; right: auto; flex-direction: column; align-items: flex-start; gap: 6px; padding: 0; }
-.ika-bt-side--me .ika-bt-egi-i { width: 18px; height: 8px; }
+.ika-bt-side--me .ika-bt-egi-i { width: 26px; }
 .ika-bt-egi { display: flex; gap: 4px; }
-.ika-bt-egi-i { display: block; width: 22px; height: 10px; border-radius: 6px 2px 2px 6px / 5px 3px 3px 5px; background: linear-gradient(90deg, #ff7a3a 0 60%, #ffd9a8 60%); box-shadow: 0 2px 0 #0b1a2a, 0 0 6px rgba(255,122,58,0.8); transform: rotate(-20deg); }
-.ika-bt-egi-i.is-lost { background: #2a3a48; box-shadow: none; opacity: 0.5; }
+.ika-bt-egi-i { display: block; width: 30px; height: auto; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.6)); transform: rotate(-12deg); transition: filter 0.4s, opacity 0.4s; }
+.ika-bt-egi-i.is-lost { filter: grayscale(1) brightness(0.45); opacity: 0.45; }
 .ika-bt-nums { display: flex; gap: 8px; text-shadow: 0 1px 0 #000; color: #cfe3ea; }
 .ika-bt-tide { display: flex; gap: 3px; }
 .ika-bt-tide i { display: block; width: 12px; height: 16px; border-radius: 4px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); }

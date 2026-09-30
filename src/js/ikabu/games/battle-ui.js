@@ -44,6 +44,8 @@ const TUTOR = [
     ja: 'テクニックはその場で効く（攻撃+2など）。同じマークのイカが前列にいると潮1安くなるよ。攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
   { id: 'shakuri', pic: 'point', when: (st) => st.active === 'me' && st.players.me.tide >= SHAKURI_COST && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
     ja: '潮が余っていたら「潮しゃくり」！ 自分のイカをタップして、🌊2で攻撃+1（1体1回）。あと1足りない時の一押しに。それと、弾かれた相手は防御が1下がる（ずっと）から、何度も掛ければ抜けるよ', en: 'Spare tide? Tap your squid and use Tide Jerk: 2 tide for +1 ATK (once per squid). Also, a defender that bounces you loses 1 DEF permanently, so keep pushing.' },
+  { id: 'wear', pic: 'wink', when: (st) => st.players.cpu.front.some((x) => x && x.buffs.some((b) => b.stat === 'def' && b.n < 0 && b.expires === Infinity)),
+    ja: '弾かれた！ でも無駄じゃない。弾いた相手は「守りの疲れ」で防御が1下がった（ずっと）。同じ相手をもう一度狙えば抜けるよ', en: "Bounced! Not wasted though: the defender is worn down and loses 1 DEF permanently. Hit it again and you'll break through." },
   { id: 'lost', pic: 'sad', when: (st) => st.players.me.egi < 5,
     ja: 'エギを1個取られた…でも取られた側は1枚引ける。手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
 ];
@@ -83,13 +85,14 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   ov.className = 'ika-bt';
   ov.innerHTML = `
     <div class="ika-bt-stage" style="background-image:url('${assetHref('/assets/ikabu/battle/stage_b.webp')}')">
-      <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
+      <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-side-left"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-tide" data-tide="cpu"></div></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
       <div class="ika-bt-row ika-bt-row--cpuback" data-row="cpu-back"></div>
       <div class="ika-bt-row ika-bt-row--cpufront" data-row="cpu-front"></div>
       <div class="ika-bt-band"><span class="ika-bt-turn" data-turn></span><span class="ika-bt-msg" data-msg></span></div>
       <div class="ika-bt-row ika-bt-row--myfront" data-row="me-front"></div>
       <div class="ika-bt-row ika-bt-row--myback" data-row="me-back"></div>
-      <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide></div><div class="ika-bt-nums" data-nums="me"></div></div>
+      <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide="me"></div><div class="ika-bt-nums" data-nums="me"></div></div>
+      <button type="button" class="ika-bt-scale" data-scale aria-label="${t(lang, 'カードの大きさ', 'Card size')}">⚙</button>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
       <div class="ika-bt-actions">
         <button type="button" class="ika-bt-imgbtn ika-bt-direct" data-direct hidden><img src="${assetHref('/assets/ikabu/battle/btn_direct.webp')}" alt="${t(lang, ...TX.direct)}" draggable="false" /></button>
@@ -105,7 +108,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   document.body.appendChild(ov);
   document.documentElement.classList.add('is-battle');
   const $ = (s) => ov.querySelector(s);
-  const el = { rows: { 'cpu-back': $('[data-row="cpu-back"]'), 'cpu-front': $('[data-row="cpu-front"]'), 'me-front': $('[data-row="me-front"]'), 'me-back': $('[data-row="me-back"]') }, egi: { me: $('[data-egi="me"]'), cpu: $('[data-egi="cpu"]') }, nums: { me: $('[data-nums="me"]'), cpu: $('[data-nums="cpu"]') }, tide: $('[data-tide]'), turn: $('[data-turn]'), msg: $('[data-msg]'), hand: $('[data-hand]'), sheet: $('[data-sheet]'), callout: $('[data-callout]'), over: $('[data-over]'), direct: $('[data-direct]'), end: $('[data-end]') };
+  const el = { tide: { me: $('[data-tide="me"]'), cpu: $('[data-tide="cpu"]') }, rows: { 'cpu-back': $('[data-row="cpu-back"]'), 'cpu-front': $('[data-row="cpu-front"]'), 'me-front': $('[data-row="me-front"]'), 'me-back': $('[data-row="me-back"]') }, egi: { me: $('[data-egi="me"]'), cpu: $('[data-egi="cpu"]') }, nums: { me: $('[data-nums="me"]'), cpu: $('[data-nums="cpu"]') }, turn: $('[data-turn]'), msg: $('[data-msg]'), hand: $('[data-hand]'), sheet: $('[data-sheet]'), callout: $('[data-callout]'), over: $('[data-over]'), direct: $('[data-direct]'), end: $('[data-end]') };
   const audio = createGachaAudio({ on: readJSON(KEY_SOUND) ?? true, href: assetHref, tracks: BATTLE_AUDIO });
   const soundBtn = $('[data-sound]');
   const syncSound = () => { soundBtn.textContent = audio.on ? '🔊' : '🔇'; soundBtn.setAttribute('aria-pressed', String(audio.on)); };
@@ -114,6 +117,12 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   const climax = () => st.players.me.egi <= 2 || st.players.cpu.egi <= 2 || st.turn >= 8;
   let climaxOn = false;
   audio.unlock(); audio.bgm('battle');
+  // カードの大きさ（小・中・大）。⚙で切替、保存
+  const SCALES = ['s', 'm', 'l'];
+  let scale = readJSON('ikabu.battle.scale') ?? 'm';
+  const applyScale = () => { ov.dataset.scale = scale; };
+  applyScale();
+  $('[data-scale]').addEventListener('click', () => { scale = SCALES[(SCALES.indexOf(scale) + 1) % SCALES.length]; writeJSON('ikabu.battle.scale', scale); applyScale(); callout(t(lang, { s: '小', m: '中', l: '大' }[scale], { s: 'S', m: 'M', l: 'L' }[scale])); });
   // 部長イカの How to（練習だけ）
   const tutorEl = $('[data-tutor]'); const tutorShown = new Set(); let tutorOpen = false;
   tutorEl.querySelector('[data-tutor-ok]').addEventListener('click', () => { tutorEl.hidden = true; tutorOpen = false; tutor(); });
@@ -130,7 +139,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   let busy = false;
   let logSeen = st.log.length;
 
-  const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<i class="ika-bt-egi-i${i < n ? '' : ' is-lost'}"></i>`).join('');
+  const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
   const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
   function cardHTML(x, side, row) {
     if (!x) return '<div class="ika-bt-slot"></div>';
@@ -152,7 +161,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       el.nums[side].innerHTML = `<span>🌊 ${v.tide}/${v.tideMax}</span><span>${t(lang, ...TX.hand)} ${v.hand}</span><span>${t(lang, ...TX.deck)} ${v.deck}</span>`;
     }
     const me = st.players.me;
-    el.tide.innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < me.tide ? 'is-on' : i < me.tideMax ? 'is-max' : ''}"></i>`).join('');
+    for (const side of ['me', 'cpu']) { const q = st.players[side]; el.tide[side].innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < q.tide ? 'is-on' : i < q.tideMax ? 'is-max' : ''}"></i>`).join(''); }
     el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}`;
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
