@@ -17,7 +17,7 @@ const TX = {
   saved: ['保存しました', 'Saved'], use: ['このデッキを使う', 'Use this deck'], using: ['使用中', 'In use'], unsaved: ['保存していない変更があります', 'Unsaved changes'],
   deck: ['いまのデッキ', 'Your deck'], pool: ['使えるカード', 'Available cards'],
   poolNote: ['スターターの30枚は全員が持っています。ガチャで引いた分も使えます（同じカードは2枚まで）', 'Everyone has the 30 starter cards. Cards from the gacha can be added too (max 2 copies).'],
-  tapRemove: ['タップで1枚外す', 'Tap to remove one'], tapAdd: ['タップで1枚入れる', 'Tap to add one'],
+  tapRemove: ['タップで1枚外す', 'Tap to remove one'], tapAdd: ['タップで1枚入れる・「−」で外す', 'Tap to add one, − to remove'],
   why: { full: ['30枚でいっぱいです', 'Deck is full (30)'], copies: ['同じカードは2枚までです', 'Max 2 copies'], none: ['そのカードは持っていません', "You don't own that card"], SSR: ['SSRは2枚までです', 'Max 2 SSR'], UR: ['URは1枚までです', 'Max 1 UR'] },
   all: ['すべて', 'All'],
 };
@@ -86,10 +86,20 @@ export function openDeck({ lang = 'ja' } = {}) {
     el.deck.innerHTML = uniq.map((c) => `<button type="button" class="ika-dk-card" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)} ×${count(c.no)}"><img src="${cardSrc(c.no)}" alt="" width="240" height="360" loading="lazy" /><i>×${count(c.no)}</i></button>`).join('') || `<p class="ika-dk-note">—</p>`;
     // 使えるカード
     const pool = CARDS.filter((c) => (kind === 'all' || c.kind === kind)).sort((a, b) => ((avail[b.no] ?? 0) > 0) - ((avail[a.no] ?? 0) > 0) || a.no - b.no);
-    el.pool.innerHTML = pool.map((c) => { const a = avail[c.no] ?? 0, h = count(c.no); return `<button type="button" class="ika-dk-card${a ? '' : ' is-none'}${h >= a && a ? ' is-max' : ''}" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)}"><img src="${cardSrc(c.no)}" alt="" width="240" height="360" loading="lazy" /><i>${h}/${a}</i></button>`; }).join('');
+    el.pool.innerHTML = pool.map((c) => { const a = avail[c.no] ?? 0, h = count(c.no); return `<div class="ika-dk-poolcell"><button type="button" class="ika-dk-card${a ? '' : ' is-none'}${h >= a && a ? ' is-max' : ''}" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)}"><img src="${cardSrc(c.no)}" alt="" width="240" height="360" loading="lazy" /><i>${h}/${a}</i></button>${h > 0 ? `<button type="button" class="ika-dk-minus" data-minus="${c.no}" aria-label="${t(lang, '1枚外す', 'Remove one')}">−</button>` : ''}</div>`; }).join('');
   }
   el.deck.addEventListener('click', (e) => { const b = e.target.closest('[data-no]'); if (!b) return; deck = removeCard(deck, Number(b.dataset.no)); render(); });
-  el.pool.addEventListener('click', (e) => { const b = e.target.closest('[data-no]'); if (!b) return; const r = addCard(deck, Number(b.dataset.no), avail, CARDS); if (!r.ok) { say(t(lang, ...TX.why[r.why])); return; } deck = r.deck; render(); });
+  el.pool.addEventListener('click', (e) => {
+    const m = e.target.closest('[data-minus]'); if (m) { deck = removeCard(deck, Number(m.dataset.minus)); render(); return; }
+    const b = e.target.closest('[data-no]'); if (!b) return;
+    const no = Number(b.dataset.no);
+    const r = addCard(deck, no, avail, CARDS);
+    if (!r.ok) {
+      if ((r.why === 'full' || r.why === 'copies') && count(no) > 0) { deck = removeCard(deck, no); render(); return; }   // いっぱい／2枚入れ済みのカードをタップ＝1枚外す
+      say(t(lang, ...TX.why[r.why])); return;
+    }
+    deck = r.deck; render();
+  });
   $('[data-dk-kind]').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return; kind = b.dataset.v; $('[data-dk-kind]').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); render(); });
   $('[data-dk-reset]').addEventListener('click', () => { deck = starter.slice(); render(); });
   const persist = () => writeJSON(KEY_DECK, store);
