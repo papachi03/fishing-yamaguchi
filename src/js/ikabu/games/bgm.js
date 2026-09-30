@@ -94,6 +94,12 @@ export function createBgm({ on = false, track = null, href = (p) => p } = {}) {
     st.gain.gain.linearRampToValueAtTime(level(st), t + (v ? 1.2 : 1.5));   // どちらもゆっくりフェード（急に変わると目立つ）
   }
   if (hasWindow) document.addEventListener('visibilitychange', () => { if (document.hidden) stopNow(0.1); sync(); });
+  // 最初からオン（前回オンにして閉じた人）：ブラウザは画面を触るまで音を出せないので、最初の操作で鳴らし始める
+  //   （2026-09-30 ぱっぱ：エギングで最初からBGMがオンだと鳴らなかった。作った時点では誰も sync() を呼んでいなかった）
+  if (hasWindow && st.on) {
+    const kick = () => { if (!st.on) return; ac(); sync(); };
+    for (const ev of ['pointerdown', 'keydown', 'touchstart']) document.addEventListener(ev, kick, { once: true, passive: true });
+  }
   return {
     get on() { return st.on; },
     get track() { return st.track; },
