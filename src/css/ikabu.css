@@ -2291,6 +2291,11 @@ html.is-egi-full, html.is-egi-full body { overflow: hidden; }
   font-family: var(--font-maru); font-weight: 900; font-size: 12px; line-height: 1.4; cursor: pointer;
 }
 .ika-egi-fullbtn:hover { background: var(--ika-white); }
+/* BGMのスピーカー（右上。2026-10-01 ぱっぱ：設定の行をやめてボタンに） */
+.ika-egi-bgmbtn { position: absolute; z-index: 6; top: 8px; right: 8px; width: 34px; height: 34px; padding: 0; border: 2px solid var(--ika-sea); border-radius: 50%; background: rgba(255, 255, 255, 0.85); font-size: 16px; line-height: 1; cursor: pointer; }
+.ika-egi-bgmbtn[aria-pressed='true'] { background: var(--ika-sea); }
+.is-egi-full-btn .ika-egi-bgmbtn { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); }
+html.is-egi-rot .ika-egi-bgmbtn { top: 8px; right: 8px; }
 .is-egi-full:not(.is-egi-full-btn) .ika-egi-fullbtn { display: none; }
 /* 横画面モード（2026-09-27）：縦向きのまま、ゲームだけを時計回りに90度回して画面いっぱいに（iPhone・画面ロック中でも横で遊べる） */
 html.is-egi-rot .ika-egi-main {

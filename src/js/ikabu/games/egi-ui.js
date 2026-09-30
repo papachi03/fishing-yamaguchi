@@ -718,10 +718,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     writePref('ikabu.egi.shake', on);
     syncFeel();
   }
+  // BGM：舞台の右上のスピーカー（🔊／🔇）。押した時に AudioContext を作れるので iPhone でも鳴る
+  const bgmBtn = q('ika-egi-bgmbtn');
+  const syncBgmBtn = () => { if (!bgmBtn) return; bgmBtn.textContent = bgm.on ? '🔊' : '🔇'; bgmBtn.setAttribute('aria-pressed', String(bgm.on)); };
+  bgmBtn?.addEventListener('click', (e) => { e.stopPropagation(); bgm.setOn(!bgm.on); writePref('ikabu.egi.bgm', bgm.on); syncBgmBtn(); });
+  syncBgmBtn();
   function syncFeel() {
     if (el.shakeWarn) el.shakeWarn.hidden = !shakeOn;
     el.feel?.querySelectorAll('.ika-chip[data-feel]').forEach((b) => {
-      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : b.dataset.feel === 'bgm' ? bgm.on : feel.sound;
+      const on = b.dataset.feel === 'vibrate' ? feel.vibrate : b.dataset.feel === 'shake' ? shakeOn : feel.sound;
       b.setAttribute('aria-pressed', String((b.dataset.on === '1') === on));
     });
   }
@@ -732,7 +737,6 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 注意書きは設定のすぐ下に出す（ゲーム画面の中の案内は、設定を見ている時は目に入らない：2026-09-29 ぱっぱ iPhone で指摘）
     if (b.dataset.feel === 'shake') { setShake(on, true).then(() => { if (shakeOn && el.shakeWarn) { el.shakeWarn.classList.remove('is-pop'); void el.shakeWarn.offsetWidth; el.shakeWarn.classList.add('is-pop'); } }); return; }
     if (b.dataset.feel === 'vibrate') { feel.setVibrate(on); writePref('ikabu.egi.vibrate', on); if (on) feel.fire('tap'); }
-    else if (b.dataset.feel === 'bgm') { bgm.setOn(on); writePref('ikabu.egi.bgm', on); }
     else { feel.setSound(on); writePref('ikabu.egi.sound', on); if (on) feel.fire('tap'); }
     syncFeel();
   });
@@ -1674,7 +1678,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (s?.method === 'tailor' && s.phase === 'tailor' && !e.target.closest?.('.ika-egi-btn, .ika-egi-tailorbtns, a, details, .ika-egi-fullbtn')) {
+    if (s?.method === 'tailor' && s.phase === 'tailor' && !e.target.closest?.('.ika-egi-btn, .ika-egi-tailorbtns, a, details, .ika-egi-fullbtn, .ika-egi-bgmbtn')) {
       const svg = sc?.svg;
       const m = svg?.getScreenCTM?.();
       if (m) {
@@ -1690,7 +1694,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       return;
     }
     if (el.colorPop && !el.colorPop.hidden) { el.colorPop.hidden = true; if (!e.target.closest?.('.ika-egi-btn')) return; }
-    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop, .ika-egi-fullbtn')) return;
+    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) return;
     if (ptr) return;
     const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
@@ -1743,7 +1747,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 色選びの窓（.ika-egi-colorpop）は除く：touchstart を止めるとスマホでは click が起きず、色のボタンが押せなくなる（ぱっぱ指摘 2026-09-25）
   // 結果・まとめのカード（.ika-egi-card）の中も除く：止めると指でカードの中をスクロールできず、下のボタンに届かない（ぱっぱ指摘 2026-09-25）
   // 全画面ボタン（.ika-egi-fullbtn）も除く：止めると指で押した時に click が起きず、全画面・横画面モードに入れなかった（2026-09-27）
-  const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-fullbtn')) e.preventDefault(); };
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) e.preventDefault(); };
   for (const node of [el.btn, el.dartBtn, el.stage]) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());

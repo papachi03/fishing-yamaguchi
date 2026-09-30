@@ -352,11 +352,6 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-chip" data-feel="sound" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
         <button type="button" class="ika-chip" data-feel="sound" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
       </div>
-      <div class="ika-chips ika-chips--small" id="ika-egi-feel-bgm" role="group" aria-label="${t(lang, T.feel.bgm)}">
-        <span class="ika-egi-feel-name">${t(lang, T.feel.bgm)}</span>
-        <button type="button" class="ika-chip" data-feel="bgm" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
-        <button type="button" class="ika-chip" data-feel="bgm" data-on="0" aria-pressed="true">${t(lang, T.feel.off)}</button>
-      </div>
       <div class="ika-chips ika-chips--small" id="ika-egi-feel-shake" role="group" aria-label="${t(lang, T.feel.shake)}" hidden>
         <span class="ika-egi-feel-name">${t(lang, T.feel.shake)}</span>
         <button type="button" class="ika-chip" data-feel="shake" data-on="1" aria-pressed="false">${t(lang, T.feel.on)}</button>
@@ -422,6 +417,8 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             </div>
             <!-- 全画面ボタン（左上の角。全画面の中では「もどる」に変わる） -->
             <button type="button" class="ika-egi-fullbtn" id="ika-egi-fullbtn" data-full="enter" aria-pressed="false">${t(lang, T.fullBtn)}</button>
+            <!-- BGMのスピーカー（右上の角。設定の中の行はやめた：2026-10-01 ぱっぱ） -->
+            <button type="button" class="ika-egi-bgmbtn" id="ika-egi-bgmbtn" aria-pressed="false" aria-label="${t(lang, T.feel.bgm)}">🔇</button>
             <p class="ika-egi-fullnote" id="ika-egi-fullnote" role="status" hidden>${t(lang, T.fullNote)}</p>
             <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap).split('|').map((w) => `<span>${w}</span>`).join('')}</div>
             <div class="ika-egi-colorpop" id="ika-egi-colorpop" role="dialog" aria-label="${t(lang, T.egi.colorTitle)}" hidden>
