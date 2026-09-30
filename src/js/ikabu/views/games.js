@@ -10,7 +10,7 @@ const TILES = [
   { page: 'egi', no: '01', name: EGI_TEXT.name, desc: EGI_TEXT.tagline, tag: HUB_TEXT.flagship, cls: 'egi' },
   { page: 'sumi', no: '02', name: M3_TEXT.name, desc: pair('3つそろえて消すパズル。時間制の「墨のがれ」も', 'Match three to clear. Includes the timed Ink Escape mode'), tag: HUB_TEXT.daily, cls: 'sumi' },
   { page: 'gacha', no: '03', name: pair('イカ部ガチャ', 'Squid Gacha'), desc: pair('🎫を使って、エギングの動きでカードを引く', 'Spend 🎫 and reel in cards, eging style'), tag: pair('カードを集める', 'Collect cards'), cls: 'gacha' },
-  { page: 'cards', no: '04', name: pair('イカカード', 'Squid Cards'), desc: pair('バインダーでコレクション。対戦は準備中', 'Your binder. Battles coming soon'), tag: pair('準備中あり', 'In progress'), cls: 'cards' },
+  { page: 'cards', no: '04', name: pair('イカカード', 'Squid Cards'), desc: pair('バインダーでコレクション・かけらで交換。対戦は準備中', 'Your binder and shard trades. Battles coming soon'), tag: pair('集めて交換', 'Collect & trade'), cls: 'cards' },
 ];
 
 export const HEAD = {

@@ -9,3 +9,4 @@ const { lang } = boot(render);
 mountTrialNotice(lang);
 mountTicketEarn({ lang });
 mountCerts(null, { lang });
+import('../games/binder-ui.js').then((m) => m.mountBinder(document.getElementById('ika-binder'), { lang })).catch((err) => console.error('binder', err));

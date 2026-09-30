@@ -27,7 +27,8 @@ const VOLUME = 0.05; // 控えめに（最大 1）
 
 // dragSample：本物のドラグ音（Audiostock se_drag.mp3・ガチャと共用）の住所。2026-09-30 ぱっぱ「ドラグの出る音が凄く良いので巻き取る時の音に。しゃくる時にも一瞬『ジッ！』」
 //   読めた時はそれをループで鳴らし（drag）、頭 0.22 秒を「ジッ！」（zip）に使う。読めない・まだ読み込み中は今までの合成音
-const SAMPLE_VOL = 0.55;
+const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25（2026-09-30 ぱっぱ：ジェットの音がかき消される）
+const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
 export function createFeel({ vibrate = true, sound = false, dragSample = null } = {}) {
   const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null };
   function loadSample() {
@@ -67,7 +68,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
     if (!st.sample) { blip({ type: 'noise', f0: 3400, dur: 0.12, vol: 1.2 }); return; }
     const src = ctx.createBufferSource(); src.buffer = st.sample;
     const g = ctx.createGain();
-    g.gain.setValueAtTime(SAMPLE_VOL, t); g.gain.setValueAtTime(SAMPLE_VOL, t + 0.16); g.gain.linearRampToValueAtTime(0.0001, t + 0.22);
+    g.gain.setValueAtTime(ZIP_VOL, t); g.gain.setValueAtTime(ZIP_VOL, t + 0.16); g.gain.linearRampToValueAtTime(0.0001, t + 0.22);
     src.connect(g).connect(ctx.destination);
     src.start(t, 0.02); src.stop(t + 0.24);
   }

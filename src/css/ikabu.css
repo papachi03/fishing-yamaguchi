@@ -2849,3 +2849,48 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-gc-rates li { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
 .ika-gc-rates p { font-size: 13px; line-height: 1.7; margin: 0 0 12px; }
 @media (prefers-reduced-motion: reduce) { .ika-gc-star, .ika-gc-logo, .ika-gc-hook, .ika-gc-card.is-wait .ika-gc-card-in, .ika-gc-card.is-gold .ika-gc-face.is-front, .ika-gc-card.is-rainbowcard::before, .ika-gc-result.is-rainbow { animation: none; } .ika-gc-card-in { transition-duration: 0.2s; } }
+
+/* バインダー（2026-09-30） */
+.ika-bd-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.ika-bd-total { margin: 0; display: flex; align-items: baseline; gap: 10px; font-family: var(--font-maru); }
+.ika-bd-total b { font-size: clamp(22px, 4.5vw, 30px); font-weight: 900; color: var(--ika-sea); }
+.ika-bd-total span { font-size: 13px; color: var(--ika-ink-soft); font-weight: 700; }
+.ika-bd-byrarity { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ika-bd-byrarity li { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 4px; border-radius: 999px; background: var(--ika-mist); font-size: 12.5px; font-weight: 700; }
+.ika-bd-byrarity b { display: inline-block; min-width: 2.4em; padding: 1px 6px; border-radius: 6px; text-align: center; font-family: var(--font-varsity); font-weight: 800; font-size: 14px; background: #2c3e50; color: #fff; }
+.ika-bd-wallet { margin: 8px 0 0; display: flex; gap: 14px; font-weight: 900; font-family: var(--font-maru); color: var(--ika-ink); }
+.ika-bd-controls { display: grid; gap: 8px; margin-top: 16px; }
+.ika-bd-seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.ika-bd-seg button { padding: 6px 11px; border: 2px solid var(--ika-sea); border-radius: 999px; background: var(--ika-white); color: var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; cursor: pointer; }
+.ika-bd-seg button[aria-pressed='true'] { background: var(--ika-sea); color: #fff; }
+.ika-bd-hint { margin: 12px 0 0; font-size: 12.5px; color: var(--ika-ink-soft); }
+.ika-bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 10px; }
+.ika-bd-card { position: relative; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.18); transition: transform 0.12s; }
+.ika-bd-card:hover { transform: translateY(-2px); }
+.ika-bd-card img { display: block; width: 100%; height: auto; }
+.ika-bd-card.is-missing img { filter: brightness(0.35) saturate(0.4); }
+.ika-bd-card[data-tier='sr'] { box-shadow: 0 0 0 2px #d4a017, 0 2px 8px rgba(0,0,0,0.18); }
+.ika-bd-card[data-tier='ssr'] { box-shadow: 0 0 0 2px #ffd76a, 0 0 10px 2px rgba(255,215,106,0.6); }
+.ika-bd-card[data-tier='ur'] { box-shadow: 0 0 0 2px #fff, 0 0 12px 3px rgba(120,200,255,0.8); }
+.ika-bd-card.is-missing { box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.ika-bd-n { position: absolute; right: 4px; bottom: 4px; padding: 1px 6px; border-radius: 999px; background: var(--ika-ink); color: #ffd166; font-style: normal; font-weight: 900; font-size: 12px; }
+.ika-bd-q { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-maru); font-weight: 900; font-size: 34px; color: rgba(255,255,255,0.75); font-style: normal; }
+.ika-bd-no { position: absolute; left: 4px; top: 4px; padding: 0 5px; border-radius: 6px; background: rgba(11,26,42,0.7); color: #fff; font-family: var(--font-varsity); font-size: 11px; }
+.ika-bd-empty { grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--ika-ink-soft); font-weight: 700; }
+.ika-bd-modal { position: fixed; z-index: 80; inset: 0; background: rgba(2,8,20,0.8); display: grid; place-items: center; padding: 16px; }
+.ika-bd-modal[hidden] { display: none; }
+.ika-bd-modal-in { position: relative; width: min(100%, 420px); max-height: 92vh; max-height: 92dvh; overflow: auto; border-radius: 18px; background: var(--ika-white); padding: 18px; }
+.ika-bd-close { position: absolute; right: 8px; top: 8px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--ika-ink); color: #fff; font-size: 20px; cursor: pointer; }
+.ika-bd-big { width: min(70%, 240px); margin: 0 auto; }
+.ika-bd-big img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+.ika-bd-big[data-tier='ssr'] img { box-shadow: 0 0 24px 6px rgba(255,215,106,0.7); }
+.ika-bd-big[data-tier='ur'] img { box-shadow: 0 0 28px 8px rgba(120,200,255,0.8); }
+.ika-bd-info { margin-top: 14px; }
+.ika-bd-info h2 { margin: 6px 0 0; font-family: var(--font-maru); font-size: 20px; }
+.ika-bd-info-top { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 700; color: var(--ika-ink-soft); }
+.ika-bd-rimg { height: 28px; width: auto; }
+.ika-bd-effect { margin: 8px 0 0; font-size: 14px; line-height: 1.7; }
+.ika-bd-nums { margin: 6px 0 0; display: flex; gap: 10px; font-weight: 900; font-family: var(--font-maru); color: var(--ika-sea); }
+.ika-bd-actions { margin: 14px 0 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ika-bd-actions .ika-btn[aria-disabled='true'] { opacity: 0.45; }
+.ika-bd-msg { font-weight: 900; color: var(--ika-orange-deep); font-size: 13px; }
