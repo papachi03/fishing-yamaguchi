@@ -5,7 +5,7 @@
 import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
-import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
+import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
 import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
@@ -29,6 +29,16 @@ const BATTLE_AUDIO = {
   climaxIn: { src: '/assets/ikabu/audio/battle/se_climax.mp3', volume: 0.6 }, // 終盤に切り替わる（114892）
 };
 const KEY_SOUND = 'ikabu.battle.sound';
+const KEY_RECORD = 'ikabu.battle.v1';   // 本番の戦績：{ wins, losses, streak, best, byLevel: { bucho: { wins, losses } } }
+const readRecord = () => ({ wins: 0, losses: 0, streak: 0, best: 0, byLevel: {}, ...(readJSON(KEY_RECORD) ?? {}) });
+function recordResult(level, win) {
+  const r = readRecord();
+  if (win) { r.wins += 1; r.streak += 1; r.best = Math.max(r.best, r.streak); } else { r.losses += 1; r.streak = 0; }
+  r.byLevel[level] = r.byLevel[level] ?? { wins: 0, losses: 0 };
+  r.byLevel[level][win ? 'wins' : 'losses'] += 1;
+  writeJSON(KEY_RECORD, r);
+  return r;
+}
 // 背景（stage_b.webp・9:16）の砂の枠の位置（画像の%）。相手側は奥＝小さく、自陣は手前＝大きく描かれている（2026-10-01 ぱっぱ「この枠に収めないと背景の意味がない」）
 const PADS = {
   'cpu-back': [34.5, 49.5, 64.5].map((cx) => ({ cx, cy: 23, w: 12.5, h: 11.5 })),
@@ -61,7 +71,9 @@ const TUTOR = [
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
 const BACK = assetHref('/assets/ikabu/cards/card_back.webp');
 const TX = {
-  start: ['CPUと対戦（練習）', 'Practice vs CPU'],
+  start: ['CPUと対戦（練習）', 'Practice vs CPU'], startReal: ['部長と対戦（本番）', 'Captain match'],
+  realNote: ['部長デッキと本番の対戦。勝ち🎫2・負け🎫1（1日3戦まで）。戦績に残ります', "A real match against the Captain's deck. Win 🎫2, lose 🎫1 (up to 3 a day). Counts toward your record."],
+  record: (lang, r) => (lang === 'en' ? `Record ${r.wins}W ${r.losses}L · streak ${r.streak} (best ${r.best})` : `戦績 ${r.wins}勝${r.losses}敗 ・ 連勝 ${r.streak}（最高 ${r.best}）`),
   practiceNote: ['初心者練習デッキのCPUと対戦します。練習なので記録と🎫には数えません。', 'Practice against the beginner CPU deck. Practice matches are not recorded and earn no 🎫.'],
   yourTurn: ['あなたの番', 'Your turn'], cpuTurn: ['相手の番', "CPU's turn"],
   firstNoAttack: ['先攻の最初のターンは攻撃できません', 'The first player cannot attack on turn 1'],
@@ -82,14 +94,21 @@ const TX = {
 
 export function mountBattle(root, { lang = 'ja' } = {}) {
   if (!root) return null;
-  root.innerHTML = `<div class="ika-bt-entry"><button type="button" class="ika-gc-imgbtn" data-bt-start><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.start)}" width="964" height="170" /><span>${t(lang, '練習', 'Practice')}</span></button><p class="ika-bt-entry-note">${t(lang, ...TX.practiceNote)}</p></div>`;
+  const rec = readRecord();
+  root.innerHTML = `<div class="ika-bt-entry">
+    <button type="button" class="ika-gc-imgbtn" data-bt-real><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.startReal)}" width="964" height="170" /><span class="is-real">${t(lang, '本番・部長', 'Captain')}</span></button>
+    <p class="ika-bt-entry-note">${t(lang, ...TX.realNote)}<br><b data-bt-record>${TX.record(lang, rec)}</b></p>
+    <button type="button" class="ika-gc-imgbtn" data-bt-start><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.start)}" width="964" height="170" /><span>${t(lang, '練習', 'Practice')}</span></button>
+    <p class="ika-bt-entry-note">${t(lang, ...TX.practiceNote)}</p></div>`;
   root.querySelector('[data-bt-start]').addEventListener('click', () => openBattle({ lang, practice: true }));
+  root.querySelector('[data-bt-real]').addEventListener('click', () => openBattle({ lang, practice: false, level: 'bucho' }));
+  addEventListener('ikabu:battle', () => { const b = root.querySelector('[data-bt-record]'); if (b) b.textContent = TX.record(lang, readRecord()); });
   return {};
 }
 
-export function openBattle({ lang = 'ja', practice = true } = {}) {
+export function openBattle({ lang = 'ja', practice = true, level = practice ? 'practice' : 'bucho' } = {}) {
   const myDeck = activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ
-  const st = newGame({ myDeck, cpuDeck: starterDeck(CARDS, { practice }), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu' });
+  const st = newGame({ myDeck, cpuDeck: cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu' });
   const ov = document.createElement('div');
   ov.className = 'ika-bt';
   ov.innerHTML = `
@@ -173,7 +192,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     }
     const me = st.players.me;
     for (const side of ['me', 'cpu']) { const q = st.players[side]; el.tide[side].innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < q.tide ? 'is-on' : i < q.tideMax ? 'is-max' : ''}"></i>`).join(''); }
-    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}`;
+    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
       return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i></button>`;
@@ -308,8 +327,10 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     const win = st.winner === 'me';
     audio.stopBgm(0.8); audio.se(win ? 'win' : 'lose');
     el.over.hidden = false;
-    el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : ''}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
-    el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice }); });
+    const rec = practice ? null : recordResult(level, win);
+    if (rec) dispatchEvent(new CustomEvent('ikabu:battle', { detail: { level, win } }));
+    el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : `<p class="ika-bd-hint">${t(lang, ...CPU_DECKS[level].name)} ・ ${TX.record(lang, rec)}</p>`}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
+    el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice, level }); });
     el.over.querySelector('[data-close]').addEventListener('click', close);
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'battle', win, counted: !practice } }));
     return true;

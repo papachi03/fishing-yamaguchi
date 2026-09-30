@@ -44,6 +44,20 @@ const PRACTICE = {
   tech: [51, 51, 64, 52, 54, 55, 58, 61, 63, 60, 56],
   trap: [96, 99, 101, 97, 98],
 };
+const BUCHO = {
+  squid: [50, 50, 48, 18, 14, 14, 15, 28, 29, 6, 5, 5, 12, 4],       // 部長アオリ×2・春の大物・テカギ・アオリ×2・アカ・アルゼンチン・NZスルメ・スルメ・ヤリ×2・トビ・ケンサキ
+  tech: [93, 83, 84, 51, 51, 65, 65, 66, 70, 69, 68],                  // 部長の号令（SSR）・強力なフッキング・墨フラッシュ・しゃくり×2・2段×2・3段・朝マズメ・夕マズメ・常夜灯
+  trap: [115, 116, 96, 103, 108],                                      // 干潮・急な雷・根掛かり・バラシ・フグ
+};
+export const CPU_DECKS = {
+  practice: { name: ['初心者練習デッキ', 'Beginner practice'], counted: false },
+  bucho: { name: ['部長デッキ', "Captain's deck"], counted: true },
+};
+export function cpuDeck(cards, level = 'practice') {
+  const src = level === 'bucho' ? BUCHO : level === 'starter' ? STARTER : PRACTICE;
+  const have = new Set(cards.map((c) => c.no));
+  return [...src.squid, ...src.tech, ...src.trap].filter((no) => have.has(no));
+}
 export function starterDeck(cards, { practice = false } = {}) {
   const src = practice ? PRACTICE : STARTER;
   const have = new Set(cards.map((c) => c.no));
@@ -378,6 +392,16 @@ export function cpuNext(st, side = 'cpu') {
       for (const e of enemies) { const D = statOf(st, e, 'def') + defDebuff.n; if (ready.some((r) => statOf(st, r, 'atk') > D)) return { type: 'play', x, target: e }; }
     }
     if (drawAct && !needsTarget(st, x) && p.hand.length <= 4) return { type: 'play', x, target: null };
+  }
+  // 3b. 全体のテクニック（自分全部+／相手全部-）：釣れる相手が増えるなら使う
+  for (const x of techs) {
+    const acts = effectsOf(st, x.no);
+    const allBuff = acts.find((a) => a.do === 'buff' && a.who === 'ownAll' && a.stat === 'atk' && a.n > 0);
+    const allDebuff = acts.find((a) => a.do === 'buff' && a.who === 'enemyAll' && a.stat === 'def' && a.n < 0);
+    if (!ready.length || !enemies.length) continue;
+    const gain = (dAtk, dDef) => ready.filter((r) => enemies.some((e) => !e.shield && statOf(st, e, 'def') + dDef < statOf(st, r, 'atk') + dAtk)).length - ready.filter((r) => enemies.some((e) => !e.shield && statOf(st, e, 'def') < statOf(st, r, 'atk'))).length;
+    if (allBuff && gain(allBuff.n, 0) > 0) return { type: 'play', x, target: null };
+    if (allDebuff && gain(0, allDebuff.n) > 0) return { type: 'play', x, target: null };
   }
   // 4. トラップを伏せる
   const trap = p.hand.find((x) => x.card.kind === 'trap' && canPlay(st, side, x).ok);

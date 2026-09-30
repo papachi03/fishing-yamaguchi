@@ -2877,7 +2877,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-gc-imgbtn.is-soon { opacity: 0.55; filter: grayscale(0.4); cursor: default; }
 .ika-gc-imgbtn.is-soon i, .ika-bt-entry .ika-gc-imgbtn span { position: absolute; right: 4%; top: -6px; padding: 2px 9px; border-radius: 999px; background: #f47321; border: 2px solid #ffd166; font-style: normal; font-weight: 900; font-size: 12px; color: #fff; }
 .ika-bt-entry { margin: 0; display: grid; gap: 6px; justify-items: start; width: 100%; }
-.ika-bt-entry-note { margin: 0; font-size: 12.5px; line-height: 1.6; }
+.ika-bt-entry-note { margin: 0 0 8px; font-size: 12.5px; line-height: 1.6; } .ika-bt-entry-note b { color: #ffd76a; }
+.ika-bt-entry .ika-gc-imgbtn span.is-real { background: #d9432b; }
 .ika-cards-panel .ika-bd-seg button { border-color: rgba(255,215,106,0.55); background: rgba(255,255,255,0.06); color: #ffe9a8; }
 .ika-cards-panel .ika-bd-seg button[aria-pressed='true'] { background: linear-gradient(180deg, #ffd76a, #d4a017); color: #0b1a2a; border-color: #ffd76a; }
 .ika-cards-panel .ika-bd-card.is-missing { opacity: 0.85; }

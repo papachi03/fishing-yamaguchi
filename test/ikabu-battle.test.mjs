@@ -176,3 +176,18 @@ test('潮しゃくり：潮2で攻撃+1（このターン・1体1回）。守り
   endTurn(st);
   assert.equal(statOf(st, a, 'atk'), 4);   // このターンだけ
 });
+
+test('部長デッキは検査に通り、練習デッキより強い（SR入り・SSR1枚）。部長同士でも試合が最後まで進む', async () => {
+  const { cpuDeck } = await import('../src/js/ikabu/games/battle.js');
+  const b = cpuDeck(CARDS, 'bucho');
+  assert.equal(checkDeck(b, CARDS).ok, true, checkDeck(b, CARDS).errors.join(','));
+  const r = (no) => CARDS.find((c) => c.no === no).rarity;
+  assert.ok(b.some((no) => r(no) === 'SR')); assert.equal(b.filter((no) => r(no) === 'SSR').length, 1);
+  const st = newGame({ myDeck: b, cpuDeck: b, cards: CARDS, effects: EFFECTS, seed: 'bucho', first: 'cpu' });
+  let guard = 0;
+  while (!st.winner && guard++ < 400) {
+    const side = st.active; const a = cpuNext(st, side);
+    if (a.type === 'end') endTurn(st); else if (a.type === 'shakuri') shakuri(st, side, a.x); else if (a.type === 'play') play(st, side, a.x, { target: a.target }); else attack(st, side, a.x, a.target);
+  }
+  assert.ok(st.winner);
+});
