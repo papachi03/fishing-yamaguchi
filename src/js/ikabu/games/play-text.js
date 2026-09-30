@@ -803,5 +803,17 @@ export const HUB_TEXT = {
     egiProgress: (lang, have, need, level, max) => (lang === 'en' ? `Guide ${have}/${need} · Lv ${level}/${max}` : `図鑑 ${have}/${need}・レベル ${level}/${max}`),
     since: (lang, day) => (lang === 'en' ? `Earned ${day}` : `${day.replace(/-/g, '/')} 取得`),
     locked: pair('未取得', 'Not yet'),
+    // 認定証の画像（2026-09-30）：名前を入れて保存・シェア
+    make: pair('認定証をつくる', 'Make my certificate'),
+    nameLabel: pair('認定証に入れる名前（ニックネームでOK）', 'Name on the certificate (a nickname is fine)'),
+    namePlaceholder: pair('例：イカ太郎', 'e.g. Squid Taro'),
+    nameNote: pair('名前はこのブラウザにだけ残ります。空のままなら名前なしで作ります。', 'The name stays in this browser only. Leave it blank for a nameless certificate.'),
+    draw: pair('画像にする', 'Make the image'),
+    shareText: {
+      sumi: pair('墨つなぎのバッジを全部集めて「ゴールド認定証」をもらいました！ #山口イカ部 #墨つなぎ', 'Collected every Ink Link badge and earned the gold certificate! #YamaguchiSquidClub'),
+      rush: pair('墨のがれのバッジを全部集めて「ゴールド認定証」をもらいました！ #山口イカ部 #墨のがれ', 'Collected every Ink Escape badge and earned the gold certificate! #YamaguchiSquidClub'),
+      egi: pair('エギングゲームの「ゴールド認定証」をもらいました！ #山口イカ部 #しゃくって抱かせろ', 'Earned the eging gold certificate! #YamaguchiSquidClub'),
+      honor: pair('3つのゴールド認定証をそろえて、山口イカ部の「名誉部員」になりました！ #山口イカ部', 'All three gold certificates: I am now an honorary member of the Yamaguchi Squid Club! #YamaguchiSquidClub'),
+    },
   },
 };

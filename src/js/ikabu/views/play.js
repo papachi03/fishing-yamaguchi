@@ -95,17 +95,27 @@ export const certsHTML = (lang) => {
   const C = HUB_TEXT.certs;
   const card = (id) => `
         <li class="ika-cert ika-cert--${id}" data-cert="${id}">
+          <img class="ika-cert-art" src="${assetHref(`/assets/ikabu/certs/cert_${id}_300.webp`)}" alt="" width="300" height="200" loading="lazy" decoding="async" />
           <span class="ika-cert-seal" aria-hidden="true"><i></i></span>
           <span class="ika-cert-name">${t(lang, C.names[id])}</span>
           <span class="ika-cert-how">${t(lang, C.how[id])}</span>
           <span class="ika-cert-progress" data-cert-progress></span>
           <span class="ika-cert-date" data-cert-date></span>
+          <button type="button" class="ika-btn ika-cert-make" data-cert-make hidden>${t(lang, C.make)}</button>
         </li>`;
   return `
       <section class="ika-certs" id="ika-certs" aria-label="${t(lang, C.title)}">
         <p class="ika-certs-head"><span class="ika-certs-tag">${t(lang, 'GOLD', 'GOLD')}</span>${t(lang, C.title)}</p>
         <p class="ika-certs-lead">${t(lang, C.lead)}</p>
         <ul class="ika-cert-list">${['sumi', 'rush', 'egi', 'honor'].map(card).join('')}</ul>
+        <form class="ika-cert-form" id="ika-cert-form" hidden>
+          <label class="ika-cert-form-label" for="ika-cert-name">${t(lang, C.nameLabel)}</label>
+          <div class="ika-cert-form-row">
+            <input class="ika-cert-input" id="ika-cert-name" type="text" maxlength="16" autocomplete="nickname" placeholder="${t(lang, C.namePlaceholder)}" />
+            <button type="submit" class="ika-btn ika-btn--primary">${t(lang, C.draw)}</button>
+          </div>
+          <p class="ika-cert-form-note">${t(lang, C.nameNote)}</p>
+        </form>
       </section>`;
 };
 
