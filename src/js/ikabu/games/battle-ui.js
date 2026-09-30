@@ -28,6 +28,14 @@ const BATTLE_AUDIO = {
   climaxIn: { src: '/assets/ikabu/audio/battle/se_climax.mp3', volume: 0.6 }, // 終盤に切り替わる（114892）
 };
 const KEY_SOUND = 'ikabu.battle.sound';
+// 背景（stage_b.webp・9:16）の砂の枠の位置（画像の%）。相手側は奥＝小さく、自陣は手前＝大きく描かれている（2026-10-01 ぱっぱ「この枠に収めないと背景の意味がない」）
+const PADS = {
+  'cpu-back': [34.5, 49.5, 64.5].map((cx) => ({ cx, cy: 23, w: 12.5, h: 11.5 })),
+  'cpu-front': [33.5, 50, 66.5].map((cx) => ({ cx, cy: 37.5, w: 14, h: 12.5 })),
+  'me-front': [31.5, 52, 73].map((cx) => ({ cx, cy: 64.5, w: 18.5, h: 14.5 })),
+  'me-back': [31.5, 52, 73].map((cx) => ({ cx, cy: 81, w: 18.5, h: 15 })),
+};
+const cellStyle = (p) => `left:${p.cx - p.w / 2}%;top:${p.cy - p.h / 2}%;width:${p.w}%;height:${p.h}%`;
 // 部長イカの How to（練習デッキの対戦だけ。2026-10-01 ぱっぱ）。状況に合った一言を順に出す
 const TUTOR = [
   { id: 'start', pic: 'wave', when: (st) => st.active === 'me' && st.players.me.front.every((x) => !x),
@@ -84,13 +92,15 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   const ov = document.createElement('div');
   ov.className = 'ika-bt';
   ov.innerHTML = `
-    <div class="ika-bt-stage" style="background-image:url('${assetHref('/assets/ikabu/battle/stage_b.webp')}')">
+    <div class="ika-bt-stage">
+      <div class="ika-bt-board" style="background-image:url('${assetHref('/assets/ikabu/battle/stage_b.webp')}')">
+        <div class="ika-bt-row" data-row="cpu-back"></div>
+        <div class="ika-bt-row" data-row="cpu-front"></div>
+        <div class="ika-bt-row" data-row="me-front"></div>
+        <div class="ika-bt-row" data-row="me-back"></div>
+      </div>
       <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-side-left"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-tide" data-tide="cpu"></div></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
-      <div class="ika-bt-row ika-bt-row--cpuback" data-row="cpu-back"></div>
-      <div class="ika-bt-row ika-bt-row--cpufront" data-row="cpu-front"></div>
       <div class="ika-bt-band"><span class="ika-bt-turn" data-turn></span><span class="ika-bt-msg" data-msg></span></div>
-      <div class="ika-bt-row ika-bt-row--myfront" data-row="me-front"></div>
-      <div class="ika-bt-row ika-bt-row--myback" data-row="me-back"></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide="me"></div><div class="ika-bt-nums" data-nums="me"></div></div>
       <button type="button" class="ika-bt-scale" data-scale aria-label="${t(lang, 'カードの大きさ', 'Card size')}">⚙</button>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
@@ -154,8 +164,8 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   function render() {
     for (const side of ['me', 'cpu']) {
       const p = st.players[side];
-      el.rows[`${side}-front`].innerHTML = p.front.map((x) => cardHTML(x, side, 'front')).join('');
-      el.rows[`${side}-back`].innerHTML = p.back.map((x) => cardHTML(x, side, 'back')).join('');
+      el.rows[`${side}-front`].innerHTML = p.front.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-front`][i])}">${cardHTML(x, side, 'front')}</div>`).join('');
+      el.rows[`${side}-back`].innerHTML = p.back.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-back`][i])}">${cardHTML(x, side, 'back')}</div>`).join('');
       el.egi[side].innerHTML = egiHTML(p.egi);
       const v = view(st, side);
       el.nums[side].innerHTML = `<span>🌊 ${v.tide}/${v.tideMax}</span><span>${t(lang, ...TX.hand)} ${v.hand}</span><span>${t(lang, ...TX.deck)} ${v.deck}</span>`;

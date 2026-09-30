@@ -2931,27 +2931,31 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt [hidden] { display: none !important; }
 .ika-bt-entry { margin: 18px 0 8px; display: grid; gap: 6px; justify-items: start; }
 .ika-bt { position: fixed; z-index: 90; inset: 0; background: #020814; display: grid; place-items: center; font-family: var(--font-maru); color: #fff; user-select: none; -webkit-user-select: none; }
-.ika-bt-stage { position: relative; width: 100vw; width: 100dvw; height: 100vh; height: 100dvh; max-width: calc(100dvh * 9 / 16 + 40px); overflow: hidden; background: #071a33 center / cover no-repeat; }
+.ika-bt-stage { position: relative; width: 100vw; width: 100dvw; height: 100vh; height: 100dvh; max-width: calc(100dvh * 9 / 16 + 40px); overflow: hidden; background: #071a33; }
+/* 盤＝背景画像と同じ 9:16 の層。画面の縦横比が違っても、枠は画像の%で置くのでずれない（cover と同じ切れ方） */
+.ika-bt-board { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: 100%; aspect-ratio: 9 / 16; min-width: 100%; background: center / cover no-repeat; }
+.ika-bt-cell { position: absolute; display: grid; place-items: center; }
+.ika-bt-cell > .ika-bt-slot, .ika-bt-cell > .ika-bt-card { height: 100%; width: auto; aspect-ratio: 2 / 3; }
 /* 盤面の列と行（背景の岩の位置に合わせる：横 36%・50%・64%、縦 相手後列23%・相手前列38%・自分前列64%・自分後列81%） */
-.ika-bt { --bt-w-cpu: 50%; --bt-w-me: 58%; }
-.ika-bt[data-scale='s'] { --bt-w-cpu: 44%; --bt-w-me: 50%; }
-.ika-bt[data-scale='l'] { --bt-w-cpu: 56%; --bt-w-me: 66%; }
-.ika-bt-row { position: absolute; left: 50%; transform: translate(-50%, -50%); width: var(--bt-w-cpu); display: grid; grid-template-columns: repeat(3, 1fr); gap: 3%; }
-.ika-bt-row--myfront, .ika-bt-row--myback { width: var(--bt-w-me); }
-.ika-bt-row--cpuback { top: 22.5%; } .ika-bt-row--cpufront { top: 37%; } .ika-bt-row--myfront { top: 63%; } .ika-bt-row--myback { top: 79%; }
-.ika-bt-slot { aspect-ratio: 2 / 3; border-radius: 6px; border: 2px dashed rgba(255,255,255,0.18); }
+.ika-bt { --bt-scale: 1; }
+.ika-bt[data-scale='s'] { --bt-scale: 0.9; }
+.ika-bt[data-scale='l'] { --bt-scale: 1.15; }
+.ika-bt-cell > .ika-bt-card { transform: scale(var(--bt-scale)); }
+.ika-bt-row { position: absolute; inset: 0; pointer-events: none; }
+.ika-bt-cell { pointer-events: auto; }
+.ika-bt-slot { border-radius: 6px; border: 2px dashed rgba(255,255,255,0.14); }
 .ika-bt-card { position: relative; aspect-ratio: 2 / 3; border-radius: 6px; overflow: visible; cursor: pointer; transition: transform 0.25s; animation: ika-bt-land 0.35s cubic-bezier(0.2, 1.3, 0.4, 1); filter: drop-shadow(0 6px 8px rgba(0,0,0,0.55)); }
 @keyframes ika-bt-land { from { transform: translateY(-24px) scale(1.15); opacity: 0; } }
 .ika-bt-card img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
 .ika-bt-card.is-back img { opacity: 0.85; }
 .ika-bt-card.is-facedown img { filter: brightness(0.8); }
-.ika-bt-card.is-sel { transform: translateY(-8px) scale(1.08); outline: 3px solid #ffd166; outline-offset: 1px; border-radius: 6px; }
+.ika-bt-card.is-sel { transform: translateY(-8px) scale(calc(var(--bt-scale) * 1.08)); outline: 3px solid #ffd166; outline-offset: 1px; border-radius: 6px; }
 .ika-bt-card.is-pick { outline: 3px solid #4dc3ff; outline-offset: 1px; border-radius: 6px; animation: ika-bt-pick 0.6s ease-in-out infinite alternate; }
 @keyframes ika-bt-pick { from { box-shadow: 0 0 0 0 rgba(77,195,255,0.6); } to { box-shadow: 0 0 14px 5px rgba(77,195,255,0.9); } }
 .ika-bt-card.is-attack-up { animation: ika-bt-attack-up 0.5s ease-in-out; }
 .ika-bt-card.is-attack-down { animation: ika-bt-attack-down 0.5s ease-in-out; }
-@keyframes ika-bt-attack-up { 40% { transform: translateY(-46%) scale(1.1); } 100% { transform: none; } }
-@keyframes ika-bt-attack-down { 40% { transform: translateY(46%) scale(1.1); } 100% { transform: none; } }
+@keyframes ika-bt-attack-up { 40% { transform: translateY(-46%) scale(calc(var(--bt-scale) * 1.1)); } 100% { transform: scale(var(--bt-scale)); } }
+@keyframes ika-bt-attack-down { 40% { transform: translateY(46%) scale(calc(var(--bt-scale) * 1.1)); } 100% { transform: scale(var(--bt-scale)); } }
 .ika-bt-atk, .ika-bt-def { position: absolute; bottom: -6px; min-width: 20px; padding: 1px 4px; border-radius: 999px; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; text-align: center; color: #fff; text-shadow: 0 1px 0 #000; }
 .ika-bt-atk { left: -6px; background: #d9432b; } .ika-bt-def { right: -6px; background: #2b6cb0; }
 .ika-bt-state { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: #0b1a2a; color: #ffd166; font-style: normal; font-size: 10px; font-weight: 900; white-space: nowrap; }
@@ -2988,7 +2992,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-sound { position: absolute; z-index: 4; right: 10px; top: max(38px, calc(env(safe-area-inset-top) + 32px)); width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
 .ika-bt-quit { border: 0; background: rgba(255,255,255,0.12); color: #fff; border-radius: 999px; padding: 7px 10px; font-family: inherit; font-weight: 900; font-size: 12px; cursor: pointer; }
 .ika-bt-hand { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; padding: 6px 10px max(8px, env(safe-area-inset-bottom)); overflow-x: auto; background: linear-gradient(0deg, rgba(2,8,20,0.9), rgba(2,8,20,0.4) 80%, transparent); }
-.ika-bt-hcard { position: relative; flex: none; width: 16%; min-width: 58px; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; transition: transform 0.15s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+.ika-bt-hcard { position: relative; flex: none; width: 14%; min-width: 52px; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; transition: transform 0.15s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
 .ika-bt-hcard img { display: block; width: 100%; height: auto; border-radius: 6px; }
 .ika-bt-hcard.is-no { opacity: 0.45; }
 .ika-bt-hcard.is-sel { transform: translateY(-14px) scale(1.08); outline: 3px solid #ffd166; border-radius: 6px; }
