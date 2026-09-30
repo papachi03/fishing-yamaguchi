@@ -18,7 +18,7 @@ const FADE = 0.5;
 
 export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } = {}) {
   const AUDIO = tracks;   // 対戦は別の表（battle-ui.js）を渡す
-  const st = { on: Boolean(on), ctx: null, bgmGain: null, seGain: null, bgm: null, bgmName: null, buffers: new Map(), loading: new Map(), playing: new Map() };
+  const st = { on: Boolean(on), ctx: null, bgmGain: null, seGain: null, bgm: null, bgmName: null, buffers: new Map(), loading: new Map(), playing: new Map(), seq: 0 };
   const hasWindow = typeof window !== 'undefined';
 
   function ac() {
@@ -52,7 +52,7 @@ export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } 
 
   function stopBgm(fade = FADE) {
     const c = st.ctx, s = st.bgm, g = s?.__gain;
-    st.bgm = null; st.bgmName = null;
+    st.bgm = null; st.bgmName = null; st.seq += 1;
     if (!c || !s) return;
     const t = c.currentTime;
     g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + fade);
@@ -64,8 +64,9 @@ export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } 
     if (st.bgmName === name && st.bgm) return;
     stopBgm(xfade);
     st.bgmName = name;
+    const seq = ++st.seq;   // 最新の再生だけ鳴らす（停止→再生の二重を防ぐ）
     const buf = await load(name);
-    if (!buf || st.bgmName !== name || !st.on) return;
+    if (!buf || st.bgmName !== name || !st.on || seq !== st.seq || st.bgm) return;
     const c = ac(); const A = AUDIO[name];
     const s = c.createBufferSource(); s.buffer = buf; s.loop = Boolean(A.loop);
     if (A.loop) { s.loopStart = A.loopStart ?? 0; s.loopEnd = Math.min(A.loopEnd ?? buf.duration, buf.duration); }

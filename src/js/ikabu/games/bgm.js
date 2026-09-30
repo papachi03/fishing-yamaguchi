@@ -18,7 +18,7 @@ const FADE = 0.6;
 const level = (st) => (TRACKS[st.playing]?.volume ?? 0) * (st.ducked ? DUCK : 1);
 
 export function createBgm({ on = false, track = null, href = (p) => p } = {}) {
-  const st = { on: Boolean(on), track, ctx: null, gain: null, src: null, playing: null, ducked: false, buffers: new Map(), loading: new Map() };
+  const st = { on: Boolean(on), track, ctx: null, gain: null, src: null, playing: null, ducked: false, buffers: new Map(), loading: new Map(), seq: 0 };
   const hasWindow = typeof window !== 'undefined';
 
   function ac() {
@@ -63,10 +63,11 @@ export function createBgm({ on = false, track = null, href = (p) => p } = {}) {
     const want = st.on && st.track && !(hasWindow && document.hidden) ? st.track : null;
     if (want === st.playing) return;
     if (st.playing) stopNow(want ? 0.25 : FADE);
-    if (!want) return;
+    if (!want) { st.seq += 1; return; }
     st.playing = want;
+    const seq = ++st.seq;   // 読み込みを待つ間に「停止→再生」されると古い方も鳴って二重になった（2026-10-01 ぱっぱ）→ 最新の1つだけ鳴らす
     const buf = await load(want);
-    if (!buf || st.playing !== want || !st.on) return;   // 読み込み中にオフ・曲替えされた
+    if (!buf || st.playing !== want || !st.on || seq !== st.seq || st.src) return;   // 読み込み中にオフ・曲替え・再生し直しされた
     const c = ac();
     const s = c.createBufferSource();
     s.buffer = buf;
