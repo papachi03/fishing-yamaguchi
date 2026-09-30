@@ -51,7 +51,8 @@ export function openDeck({ lang = 'ja' } = {}) {
       <div class="ika-dk-deck" data-dk-deck></div>
       <h3>${t(lang, ...TX.pool)} <small>${t(lang, ...TX.tapAdd)}</small></h3>
       <p class="ika-dk-note">${t(lang, ...TX.poolNote)}</p>
-      <div class="ika-bd-seg" data-dk-kind>${[['all', t(lang, ...TX.all)], ...KIND_ORDER.map((k) => [k, t(lang, ...KIND_LABEL[k])])].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${String(v === 'all')}">${l}</button>`).join('')}</div>
+      <p class="ika-dk-avail" data-dk-avail></p>
+      <div class="ika-bd-seg" data-dk-kind>${[['all', t(lang, ...TX.all)], ...KIND_ORDER.map((k) => [k, t(lang, ...KIND_LABEL[k])])].map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${String(v === 'all')}">${l}${v === 'all' ? '' : ` <small>${CARDS.filter((c) => c.kind === v && (avail[c.no] ?? 0) > 0).length}</small>`}</button>`).join('')}</div>
       <div class="ika-dk-pool" data-dk-pool></div>
     </div>`;
   document.body.appendChild(ov);
@@ -69,8 +70,12 @@ export function openDeck({ lang = 'ja' } = {}) {
     el.use.disabled = cur === store.active;
     el.use.textContent = cur === store.active ? t(lang, ...TX.using) : t(lang, ...TX.use);
   }
+  function renderAvail() {
+    const parts = KIND_ORDER.map((k) => { const cs = CARDS.filter((c) => c.kind === k && (avail[c.no] ?? 0) > 0); const copies = cs.reduce((s, c) => s + (avail[c.no] ?? 0), 0); const used = deck.filter((n) => byNo.get(n)?.kind === k).length; return `<span><b>${t(lang, ...KIND_LABEL[k])}</b> ${cs.length}${t(lang, '種', ' kinds')}・${copies}${t(lang, '枚', ' copies')}<small>（${t(lang, '入れた', 'in deck')} ${used}）</small></span>`; });
+    $('[data-dk-avail]').innerHTML = parts.join('');
+  }
   function render() {
-    renderSlots();
+    renderSlots(); renderAvail();
     const s = summary(deck, CARDS);
     const bad = (k) => s[k] < DECK_RULE[k][0] || s[k] > DECK_RULE[k][1];
     el.sum.innerHTML = `<b class="${s.total === 30 ? '' : 'is-bad'}">${s.total}<small>/30</small></b>${KIND_ORDER.map((k) => `<span class="${bad(k) ? 'is-bad' : ''}">${t(lang, ...KIND_LABEL[k])} ${s[k]}<small>（${DECK_RULE[k][0]}〜${DECK_RULE[k][1]}）</small></span>`).join('')}`;

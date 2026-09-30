@@ -3050,6 +3050,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-dk-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .ika-dk-btns .ika-btn { padding: 8px 12px; font-size: 13px; } .ika-dk-btns .ika-btn:disabled { opacity: 0.4; }
 .ika-dk-msg { margin: 6px 0 0; min-height: 1.2em; font-size: 12.5px; font-weight: 900; color: #ffd166; }
 .ika-dk-note { margin: 0 0 6px; font-size: 12px; color: #cfe3ea; }
+.ika-dk-avail { margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; font-weight: 900; color: #ffe9a8; } .ika-dk-avail b { color: #ffd76a; } .ika-dk-avail small { color: #cfe3ea; font-weight: 700; }
+.ika-dk .ika-bd-seg button small { font-size: 11px; opacity: 0.85; }
 .ika-dk-deck, .ika-dk-pool { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .ika-dk-card { position: relative; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; }
 .ika-dk-card img { display: block; width: 100%; height: auto; border-radius: 6px; }
