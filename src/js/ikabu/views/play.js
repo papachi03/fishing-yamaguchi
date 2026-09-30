@@ -91,7 +91,7 @@ const hubHTML = (lang) => `
   </section>`;
 
 // ゴールド認定証の欄（2026-09-30）：中身（そろい具合・取った日）は games/certs-ui.js が記録から書き込む
-const certsHTML = (lang) => {
+export const certsHTML = (lang) => {
   const C = HUB_TEXT.certs;
   const card = (id) => `
         <li class="ika-cert ika-cert--${id}" data-cert="${id}">
