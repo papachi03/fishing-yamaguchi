@@ -36,10 +36,19 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
   const view = { sort: 'no', kind: 'all', rarity: 'all', have: 'all', ...(readJSON(KEY_VIEW) ?? {}) };
   if (!SORTS.includes(view.sort)) view.sort = 'no';
   const seg = (name, items, cur) => `<div class="ika-bd-seg" role="group" data-seg="${name}">${items.map(([v, label]) => `<button type="button" data-v="${v}" aria-pressed="${String(v === cur)}">${label}</button>`).join('')}</div>`;
+  if (!document.getElementById('ika-gc-fonts')) {   // ガチャと同じ書体（明朝・デザイン書体）
+    const l = document.createElement('link'); l.id = 'ika-gc-fonts'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@800&family=Shippori+Mincho+B1:wght@700;800&display=swap';
+    document.head.appendChild(l);
+  }
   root.innerHTML = `
     <div class="ika-bd-head">
       <div class="ika-bd-stats" data-bd-stats></div>
-      <div class="ika-bd-links"><a class="ika-btn ika-btn--primary" href="${pageHref('gacha', lang)}">${t(lang, ...TX.gacha)}</a></div>
+      <div class="ika-bd-links">
+        <div id="ika-battle"></div>
+        <a class="ika-gc-imgbtn" href="${pageHref('gacha', lang)}"><img src="${assetHref('/assets/ikabu/gacha/btn_gacha.webp')}" alt="${t(lang, ...TX.gacha)}" width="964" height="170" /></a>
+        <span class="ika-gc-imgbtn is-soon" aria-disabled="true"><img src="${assetHref('/assets/ikabu/gacha/btn_deck.webp')}" alt="${t(lang, 'デッキ編成（準備中）', 'Deck builder (soon)')}" width="964" height="170" /><i>${t(lang, '準備中', 'Soon')}</i></span>
+      </div>
     </div>
     <div class="ika-bd-controls">
       ${seg('sort', SORTS.map((s) => [s, t(lang, ...TX.sort[s])]), view.sort)}
@@ -61,8 +70,8 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
     const p = progress(rec, CARDS);
     const c = counts(CARDS, rec.owned);
     el.stats.innerHTML = `
-      <p class="ika-bd-total"><b>${TX.collected(lang, p.have, p.all)}</b><span>${TX.total(lang, c.total)}</span></p>
-      <ul class="ika-bd-byrarity">${RARITY_ORDER.map((r) => `<li data-rarity="${r}"><b>${r}</b><span>${p.rarity[r]?.have ?? 0}/${p.rarity[r]?.all ?? 0}</span></li>`).join('')}</ul>
+      <p class="ika-bd-total"><b>${p.have}<small>/ ${p.all}</small></b><span>${t(lang, '種類を集めた', 'kinds collected')} ・ ${TX.total(lang, c.total)}</span></p>
+      <ul class="ika-bd-byrarity">${RARITY_ORDER.map((r) => { const h = p.rarity[r]?.have ?? 0, a = p.rarity[r]?.all ?? 1; return `<li data-r="${r}">${rarityImg(r, 'ika-bd-rlogo')}<i class="ika-bd-bar" data-tier="${tierOf(r)}"><b style="width:${Math.round((h / a) * 100)}%"></b></i><span>${h}/${a}</span></li>`; }).join('')}</ul>
       <p class="ika-bd-wallet"><span>🎫 ${readTickets().n}</span><span>🖤 ${t(lang, ...TX.shards)} ${rec.shards}</span></p>`;
   }
   function renderGrid(rec) {

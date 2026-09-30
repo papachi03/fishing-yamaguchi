@@ -68,7 +68,7 @@ const TX = {
 
 export function mountBattle(root, { lang = 'ja' } = {}) {
   if (!root) return null;
-  root.innerHTML = `<div class="ika-bt-entry"><button type="button" class="ika-btn ika-btn--primary" data-bt-start>${t(lang, ...TX.start)}</button><p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p></div>`;
+  root.innerHTML = `<div class="ika-bt-entry"><button type="button" class="ika-gc-imgbtn" data-bt-start><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.start)}" width="964" height="170" /><span>${t(lang, '練習', 'Practice')}</span></button><p class="ika-bt-entry-note">${t(lang, ...TX.practiceNote)}</p></div>`;
   root.querySelector('[data-bt-start]').addEventListener('click', () => openBattle({ lang, practice: true }));
   return {};
 }

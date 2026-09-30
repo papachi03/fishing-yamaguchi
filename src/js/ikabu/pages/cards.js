@@ -9,5 +9,7 @@ const { lang } = boot(render);
 mountTrialNotice(lang);
 mountTicketEarn({ lang });
 mountCerts(null, { lang });
-import('../games/battle-ui.js').then((m) => m.mountBattle(document.getElementById('ika-battle'), { lang })).catch((err) => console.error('battle', err));
-import('../games/binder-ui.js').then((m) => m.mountBinder(document.getElementById('ika-binder'), { lang })).catch((err) => console.error('binder', err));
+// バインダー → 対戦の入口（対戦のボタンはバインダーの中の #ika-battle に置く）
+import('../games/binder-ui.js').then((m) => m.mountBinder(document.getElementById('ika-binder'), { lang }))
+  .then(() => import('../games/battle-ui.js')).then((m) => m.mountBattle(document.getElementById('ika-battle'), { lang }))
+  .catch((err) => console.error('cards', err));
