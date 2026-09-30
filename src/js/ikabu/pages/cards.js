@@ -12,4 +12,5 @@ mountCerts(null, { lang });
 // バインダー → 対戦の入口（対戦のボタンはバインダーの中の #ika-battle に置く）
 import('../games/binder-ui.js').then((m) => m.mountBinder(document.getElementById('ika-binder'), { lang }))
   .then(() => import('../games/battle-ui.js')).then((m) => m.mountBattle(document.getElementById('ika-battle'), { lang }))
+  .then(() => import('../games/deck-ui.js')).then((m) => m.mountDeckButton(document.querySelector('[data-deck-open]'), { lang }))
   .catch((err) => console.error('cards', err));

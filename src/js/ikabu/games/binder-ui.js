@@ -47,7 +47,7 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
       <div class="ika-bd-links">
         <div id="ika-battle"></div>
         <a class="ika-gc-imgbtn" href="${pageHref('gacha', lang)}"><img src="${assetHref('/assets/ikabu/gacha/btn_gacha.webp')}" alt="${t(lang, ...TX.gacha)}" width="964" height="170" /></a>
-        <span class="ika-gc-imgbtn is-soon" aria-disabled="true"><img src="${assetHref('/assets/ikabu/gacha/btn_deck.webp')}" alt="${t(lang, 'デッキ編成（準備中）', 'Deck builder (soon)')}" width="964" height="170" /><i>${t(lang, '準備中', 'Soon')}</i></span>
+        <button type="button" class="ika-gc-imgbtn" data-deck-open><img src="${assetHref('/assets/ikabu/gacha/btn_deck.webp')}" alt="${t(lang, 'デッキ編成', 'Deck builder')}" width="964" height="170" /></button>
       </div>
     </div>
     <div class="ika-bd-controls">

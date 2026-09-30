@@ -39,23 +39,23 @@ const cellStyle = (p) => `left:${p.cx - p.w / 2}%;top:${p.cy - p.h / 2}%;width:$
 // 部長イカの How to（練習デッキの対戦だけ。2026-10-01 ぱっぱ）。状況に合った一言を順に出す
 const TUTOR = [
   { id: 'start', pic: 'wave', when: (st) => st.active === 'me' && st.players.me.front.every((x) => !x),
-    ja: 'ようこそ、イカ部カードバトルへ！ まずは手札のイカをタップして「前列に出す」。左上の数字が「潮」（コスト）で、ターンごとに1ずつ増えるよ', en: 'Welcome! Tap a squid in your hand and play it to the front row. The number on the card is its tide cost; you gain 1 tide per turn.' },
+    ja: 'ようこそ、イカ部カードバトルへ！\nまずは手札のイカをタップして\n「前列に出す」。\n左上の数字が「潮」（コスト）。\nターンごとに1ずつ増えるよ', en: 'Welcome! Tap a squid in your hand and play it to the front row. The number on the card is its tide cost; you gain 1 tide per turn.' },
   { id: 'end', pic: 'point', when: (st) => st.active === 'me' && st.players.me.summoned,
-    ja: '出したターンのイカは攻撃できない。右の丸い「ターン終了」で相手の番へ。手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
+    ja: '出したターンのイカは攻撃できない。\n右の丸い「ターン終了」で\n相手の番へ。\n手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
   { id: 'attack', pic: 'point', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
-    ja: '攻撃しよう！ 自分のイカをタップ→相手のイカをタップ。赤い数字（攻撃）が相手の青い数字（防御）より大きければ釣れる。同じなら「バラシ」、小さいと弾かれて次のターン休みだよ', en: 'Attack! Tap your squid, then an enemy squid. Red (ATK) higher than their blue (DEF) catches it. Equal is a miss; lower bounces you and the squid rests next turn.' },
+    ja: '攻撃しよう！\n自分のイカをタップ→相手のイカをタップ。\n赤い数字（攻撃）が相手の\n青い数字（防御）より大きければ釣れる。\n同じなら「バラシ」、\n小さいと弾かれて次のターン休みだよ', en: 'Attack! Tap your squid, then an enemy squid. Red (ATK) higher than their blue (DEF) catches it. Equal is a miss; lower bounces you and the squid rests next turn.' },
   { id: 'direct', pic: 'yatta', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && !st.players.cpu.front.some(Boolean),
-    ja: '相手の前列が空だ！ 自分のイカをタップして「ダイレクトアタック」。相手のエギ（左上のオレンジ）を1個奪えるよ。5個ぜんぶ奪えば勝ち！', en: "The enemy front row is empty! Tap your squid and hit Direct Attack to take one of their egi. Take all five to win!" },
+    ja: '相手の前列が空だ！\n自分のイカをタップして\n「ダイレクトアタック」。\n相手のエギを1個奪えるよ。\n5個ぜんぶ奪えば勝ち！', en: "The enemy front row is empty! Tap your squid and hit Direct Attack to take one of their egi. Take all five to win!" },
   { id: 'trap', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'trap' && canPlay(st, 'me', x).ok),
-    ja: 'トラップは後列に「伏せる」。相手が攻撃した時などに自動で開いて、1回使ったら捨て札へ。伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
+    ja: 'トラップは後列に「伏せる」。\n相手が攻撃した時などに自動で開いて、\n1回使ったら捨て札へ。\n伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
   { id: 'tech', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'tech' && canPlay(st, 'me', x).ok),
-    ja: 'テクニックはその場で効く（攻撃+2など）。同じマークのイカが前列にいると潮1安くなるよ。攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
+    ja: 'テクニックはその場で効く\n（攻撃+2など）。\n同じマークのイカが前列にいると\n潮1安くなるよ。\n攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
   { id: 'shakuri', pic: 'point', when: (st) => st.active === 'me' && st.players.me.tide >= SHAKURI_COST && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
-    ja: '潮が余っていたら「潮しゃくり」！ 自分のイカをタップして、🌊2で攻撃+1（1体1回）。あと1足りない時の一押しに。それと、弾かれた相手は防御が1下がる（ずっと）から、何度も掛ければ抜けるよ', en: 'Spare tide? Tap your squid and use Tide Jerk: 2 tide for +1 ATK (once per squid). Also, a defender that bounces you loses 1 DEF permanently, so keep pushing.' },
+    ja: '潮が余っていたら「潮しゃくり」！\n自分のイカをタップして、\n🌊2で攻撃+1（1体1回）。\nあと1足りない時の一押しに', en: 'Spare tide? Tap your squid and use Tide Jerk: 2 tide for +1 ATK (once per squid). Also, a defender that bounces you loses 1 DEF permanently, so keep pushing.' },
   { id: 'wear', pic: 'wink', when: (st) => st.players.cpu.front.some((x) => x && x.buffs.some((b) => b.stat === 'def' && b.n < 0 && b.expires === Infinity)),
-    ja: '弾かれた！ でも無駄じゃない。弾いた相手は「守りの疲れ」で防御が1下がった（ずっと）。同じ相手をもう一度狙えば抜けるよ', en: "Bounced! Not wasted though: the defender is worn down and loses 1 DEF permanently. Hit it again and you'll break through." },
+    ja: '弾かれた！ でも無駄じゃない。\n弾いた相手は「守りの疲れ」で\n防御が1下がった（ずっと）。\n同じ相手をもう一度狙えば抜けるよ', en: "Bounced! Not wasted though: the defender is worn down and loses 1 DEF permanently. Hit it again and you'll break through." },
   { id: 'lost', pic: 'sad', when: (st) => st.players.me.egi < 5,
-    ja: 'エギを1個取られた…でも取られた側は1枚引ける。手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
+    ja: 'エギを1個取られた…\nでも取られた側は1枚引ける。\n手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
 ];
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
 const BACK = assetHref('/assets/ikabu/cards/card_back.webp');
