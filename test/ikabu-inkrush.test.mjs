@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRush, rushSwap, rushFlash, rushTick, rushHint, inked, openBottom, CAP, START, HOLE_RATE, CELL_HOLD, ROW_FIRST, PACE, inflowAt, panicOf } from '../src/js/ikabu/games/inkrush.js';
 import { SIZE, INK_NEED, findMatches, swapWorks } from '../src/js/ikabu/games/match3.js';
-import { recordRush, emptyM3, mergeM3 } from '../src/js/ikabu/games/records.js';
+import { recordRush, emptyM3, mergeM3, RUSH_BADGES, backfillRush } from '../src/js/ikabu/games/records.js';
+import { readFileSync } from 'node:fs';
 
 const N = SIZE * SIZE;
 const tickTo = (g, sec) => { while (!g.over && g.rush.t < sec - 1e-9) rushTick(g, Math.min(0.5, sec - g.rush.t)); };
@@ -90,7 +91,7 @@ test('水位が CAP で飲み込まれて終わる。ヒントどおりなら 15
 
 test('記録：しのいだ秒のベストと今日の盤面のベスト。控えの統合でも残る', () => {
   const g = playHint('rec');
-  let rec = recordRush(emptyM3(), g, { day: '2026-09-29' });
+  let { rec } = recordRush(emptyM3(), g, { day: '2026-09-29' });
   assert.equal(rec.rush.best, Math.floor(g.rush.t));
   const m = mergeM3(rec, { ...emptyM3(), rush: { best: 999, bestScore: 1, played: 3, daily: { day: '2026-09-28', turns: 5 } } });
   assert.equal(m.rush.best, 999);
@@ -171,4 +172,28 @@ test('離したマークが墨ダマなら、いちばん多いマークが全�
   // ふつうのマークを離しても発動しない（そろわなければ何も起きない）
   const g3 = createRush({ seed: 'nomatch' });
   assert.equal(rushDrop(g3, 0).steps.length, 0);
+});
+
+test('墨のがれのバッジ：時間・点数・発動で取れ、2回目は新しく出ない。控えの統合で早い日付が残る', () => {
+  const g = { score: 13500, rush: { t: 155, flushed: 420, fired: 1 } };
+  const { rec, fresh } = recordRush(emptyM3(), g, { today: '2026-09-30' });
+  assert.deepEqual(fresh, ['r_join', 'r_30s', 'r_fire', 'r_60s', 'r_5k', 'r_120s', 'r_10k', 'r_flush', 'r_150s', 'r_13k']);
+  assert.equal(recordRush(rec, g, { today: '2026-10-01' }).fresh.length, 0);
+  const m = mergeM3(rec, { ...emptyM3(), rush: { best: 1, bestScore: 1, played: 1, daily: null, badges: { r_join: '2026-09-29', r_18k: '2026-09-29' } } });
+  assert.equal(m.rush.badges.r_join, '2026-09-29');
+  assert.equal(m.rush.badges.r_18k, '2026-09-29');
+  assert.equal(m.rush.badges.r_13k, '2026-09-30');
+});
+
+test('墨のがれのバッジは文言がそろっている', () => {
+  const src = readFileSync(new URL('../src/js/ikabu/games/play-text.js', import.meta.url), 'utf8');
+  for (const b of RUSH_BADGES) assert.ok(src.includes(b.id + ': { name:'), b.id);
+});
+
+test('バッジ以前の記録（2分35秒・13,200点）からも時間と点のバッジが付き、2回目は変えない', () => {
+  const rec = backfillRush({ ...emptyM3(), rush: { best: 155, bestScore: 13200, played: 4, daily: null } }, { today: '2026-09-30' });
+  assert.deepEqual(Object.keys(rec.rush.badges), ['r_join', 'r_30s', 'r_60s', 'r_5k', 'r_120s', 'r_10k', 'r_150s', 'r_13k']);
+  rec.rush.badges.r_join = '2026-09-29';
+  assert.equal(backfillRush(rec).rush.badges.r_join, '2026-09-29');
+  assert.equal(backfillRush(emptyM3()).rush, null);
 });

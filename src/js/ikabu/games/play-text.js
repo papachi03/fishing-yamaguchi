@@ -756,6 +756,21 @@ export const M3_TEXT = {
     score7k: { name: pair('部長への道', 'Road to captain'), how: pair('7,000点', '7,000 points') },
     score9k: { name: pair('伝説の部長', 'Legendary captain'), how: pair('9,000点', '9,000 points') },
   },
+  // 墨のがれのバッジ（2026-09-30。records.js の RUSH_BADGES と同じ並び）
+  rushBadges: {
+    r_join: { name: pair('避難訓練', 'Evacuation drill'), how: pair('墨のがれを1回遊ぶ', 'Play Ink Escape once') },
+    r_30s: { name: pair('しのいだ！', 'Held on!'), how: pair('30秒しのぐ', 'Last 30 seconds') },
+    r_fire: { name: pair('切り札', 'Trump card'), how: pair('墨ダマかレアイカを発動', 'Fire an Ink Ball or rare squid') },
+    r_60s: { name: pair('墨よけ部員', 'Ink dodger'), how: pair('1分しのぐ', 'Last 1 minute') },
+    r_5k: { name: pair('5千点スイマー', '5K swimmer'), how: pair('5,000点', '5,000 points') },
+    r_120s: { name: pair('粘りの部員', 'Stubborn member'), how: pair('2分しのぐ', 'Last 2 minutes') },
+    r_10k: { name: pair('1万点の壁', 'The 10K wall'), how: pair('10,000点', '10,000 points') },
+    r_flush: { name: pair('排水の達人', 'Drain master'), how: pair('1回で墨を400流す', 'Flush 400 ink in one run') },
+    r_150s: { name: pair('墨の中の主', 'Lord of the ink'), how: pair('2分30秒しのぐ', 'Last 2:30') },
+    r_13k: { name: pair('墨のがれエース', 'Ink Escape ace'), how: pair('13,000点', '13,000 points') },
+    r_210s: { name: pair('伝説の脱出王', 'Legendary escapist'), how: pair('3分30秒しのぐ', 'Last 3:30') },
+    r_18k: { name: pair('伝説の逃げ足', 'Legendary getaway'), how: pair('18,000点', '18,000 points') },
+  },
   a11y: {
     board: pair('墨つなぎの盤面。矢印キーで移動、Enterで選択と入れ替え、Escで取り消し', 'Ink Link board. Arrow keys to move, Enter to select and swap, Escape to cancel'),
     cell: (lang, r, c, name) => (lang === 'en' ? `Row ${r + 1}, column ${c + 1}: ${name}` : `${r + 1}行${c + 1}列：${name}`),

@@ -160,6 +160,7 @@ export function rushDrop(g, at) {
   if (g.over) return { ok: false, steps: [] };
   const v = at == null ? null : g.board[at];
   const first = fireable(v) ? { kind: v === BALL ? 'ball' : 'blast', cells: [at], fx: [] } : null;   // 範囲は cascade の expand が広げる
+  if (first) g.rush.fired = (g.rush.fired ?? 0) + 1;   // バッジ「切り札」用（2026-09-30）
   const r = cascade(g, first, at == null ? [] : [at]);
   return afterMove(g, r);
 }

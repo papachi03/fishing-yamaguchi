@@ -106,16 +106,46 @@ export function storageWorks() {
 /* ---------- 墨つなぎ ---------- */
 
 export const emptyM3 = () => ({ best: 0, played: 0, goals: 0, badges: {}, daily: null, rush: null });
-// 墨のがれの記録（2026-09-29）：しのいだ手数のベストと、今日の盤面のベスト
-export function recordRush(rec, g, { day = null } = {}) {
+// 墨のがれのバッジ（2026-09-30 ぱっぱ「慣れると2分半・13,000点はいける。墨のがれは別枠の実績に」）。
+//   ぱっぱの腕前（2分30秒・13,000点・流した墨421）が上から3〜4段目に来るように並べた。やさしい→難しいの順
+export const RUSH_BADGES = [
+  { id: 'r_join', check: () => true },                              // 避難訓練：1回遊ぶ
+  { id: 'r_30s', check: (g) => (g.rush?.t ?? 0) >= 30 },            // しのいだ！：30秒
+  { id: 'r_fire', check: (g) => (g.rush?.fired ?? 0) >= 1 },        // 切り札：墨ダマかレアイカを発動
+  { id: 'r_60s', check: (g) => (g.rush?.t ?? 0) >= 60 },            // 墨よけ部員：1分
+  { id: 'r_5k', check: (g) => g.score >= 5000 },                    // 5千点スイマー
+  { id: 'r_120s', check: (g) => (g.rush?.t ?? 0) >= 120 },          // 粘りの部員：2分
+  { id: 'r_10k', check: (g) => g.score >= 10000 },                  // 1万点の壁
+  { id: 'r_flush', check: (g) => (g.rush?.flushed ?? 0) >= 400 },   // 排水の達人：1回で400マス流す
+  { id: 'r_150s', check: (g) => (g.rush?.t ?? 0) >= 150 },          // 墨の中の主：2分30秒
+  { id: 'r_13k', check: (g) => g.score >= 13000 },                  // 墨のがれエース：13,000点
+  { id: 'r_210s', check: (g) => (g.rush?.t ?? 0) >= 210 },          // 伝説の脱出王：3分30秒
+  { id: 'r_18k', check: (g) => g.score >= 18000 },                  // 伝説の逃げ足：18,000点
+];
+export const rushBadgesFor = (g) => RUSH_BADGES.filter((b) => b.check(g)).map((b) => b.id);
+// バッジができる前の記録（ベストの時間と、その時の点）からも取れた分を付ける（2026-09-30。ぱっぱは既に2分半・13,000点に届いている）
+export function backfillRush(rec, { today = new Date().toISOString().slice(0, 10) } = {}) {
+  const x = rec?.rush;
+  if (!x || x.badges) return rec;
+  x.badges = {};
+  const g = { score: x.bestScore ?? 0, rush: { t: x.best ?? 0, flushed: 0, fired: 0 } };
+  for (const id of rushBadgesFor(g)) x.badges[id] = today;
+  return rec;
+}
+
+// 墨のがれの記録（2026-09-29）：しのいだ時間のベストと、今日の盤面のベスト。新しく取れたバッジの id も返す（2026-09-30）
+export function recordRush(rec, g, { day = null, today = new Date().toISOString().slice(0, 10) } = {}) {
   const r = rec ?? emptyM3();
   const turns = Math.floor(g.rush?.t ?? 0);   // しのいだ秒数（第3版・時間制）
   const x = r.rush ?? { best: 0, bestScore: 0, played: 0, daily: null };
   x.played += 1;
   if (turns > x.best || (turns === x.best && g.score > x.bestScore)) { x.best = turns; x.bestScore = g.score; }
   if (day) x.daily = { day, turns: Math.max(x.daily?.day === day ? x.daily.turns : 0, turns) };
+  x.badges = x.badges ?? {};
+  const fresh = [];
+  for (const id of rushBadgesFor(g)) if (!x.badges[id]) { x.badges[id] = today; fresh.push(id); }
   r.rush = x;
-  return r;
+  return { rec: r, fresh };
 }
 
 // 1戦の結果を記録に足す。新しく取れたバッジの id を返す
@@ -270,7 +300,9 @@ export function mergeM3(a, b) {
     : x.daily.day === b.daily.day ? { day: x.daily.day, score: Math.max(x.daily.score, b.daily.score) }
     : x.daily.day > b.daily.day ? x.daily : b.daily;
   const rx = x.rush, rb = b.rush;
-  const rush = !rx ? rb ?? null : !rb ? rx : { best: Math.max(rx.best ?? 0, rb.best ?? 0), bestScore: Math.max(rx.bestScore ?? 0, rb.bestScore ?? 0), played: Math.max(rx.played ?? 0, rb.played ?? 0),
+  const rbadges = { ...(rb?.badges ?? {}) };
+  for (const [id, d] of Object.entries(rx?.badges ?? {})) rbadges[id] = earlier(d, rbadges[id]);
+  const rush = !rx ? rb ?? null : !rb ? rx : { badges: rbadges, best: Math.max(rx.best ?? 0, rb.best ?? 0), bestScore: Math.max(rx.bestScore ?? 0, rb.bestScore ?? 0), played: Math.max(rx.played ?? 0, rb.played ?? 0),
     daily: !rx.daily ? rb.daily ?? null : !rb.daily ? rx.daily : rx.daily.day === rb.daily.day ? { day: rx.daily.day, turns: Math.max(rx.daily.turns, rb.daily.turns) } : rx.daily.day > rb.daily.day ? rx.daily : rb.daily };
   return { best: Math.max(x.best ?? 0, b.best ?? 0), played: Math.max(x.played ?? 0, b.played ?? 0), goals: Math.max(x.goals ?? 0, b.goals ?? 0), badges, daily, rush };
 }

@@ -10,7 +10,7 @@ import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
-import { recordM3, recordRush, emptyM3, KEY_M3, readRecord, writeRecord } from './records.js';
+import { recordM3, recordRush, backfillRush, emptyM3, KEY_M3, readRecord, writeRecord } from './records.js';
 import { t, assetHref } from '../i18n.js';
 import { openShareView, shareButtonHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
 
@@ -26,7 +26,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   const el = {
     board: q('ika-m3-board'), score: q('ika-m3-score'), moves: q('ika-m3-moves'), best: q('ika-m3-best'), goalFill: q('ika-m3-goal-fill'), goalLabel: q('ika-m3-goal-label'), stars: q('ika-m3-stars'),
     inkFill: q('ika-m3-ink-fill'), ink: q('ika-m3-ink'), flash: q('ika-m3-flash'), hint: q('ika-m3-hint'), msg: q('ika-m3-msg'),
-    callout: q('ika-m3-callout'), card: q('ika-m3-card'), mode: q('ika-m3-mode'), day: q('ika-m3-day'), badges: q('ika-m3-badges'), wrap: q('ika-m3-wrap'),
+    callout: q('ika-m3-callout'), card: q('ika-m3-card'), mode: q('ika-m3-mode'), day: q('ika-m3-day'), badges: q('ika-m3-badges'), rbadges: q('ika-m3-rbadges'), wrap: q('ika-m3-wrap'),
     rush: q('ika-m3-rush'), squid: q('ika-m3-rush-squid'), face: q('ika-m3-rush-face'), say: q('ika-m3-rush-say'), pool: q('ika-m3-rush-pool'), next: q('ika-m3-rush-next'), level: q('ika-m3-rush-level'), movesLabel: q('ika-m3-moves-label'), goal: q('ika-m3-goal'),
   };
   const cells = [...el.board.querySelectorAll('.ika-m3-cell')];
@@ -57,7 +57,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   fxLayer.setAttribute('aria-hidden', 'true');
   el.wrap.append(fxLayer);
 
-  let rec = { ...emptyM3(), ...(readRecord(KEY_M3).value ?? {}) };   // 2026-09-27：控えから戻せる読み書き
+  let rec = backfillRush({ ...emptyM3(), ...(readRecord(KEY_M3).value ?? {}) });   // 2026-09-30：墨のがれのバッジを前の記録からも   // 2026-09-27：控えから戻せる読み書き
   let g = null;
   let mode = 'daily';
   let shown = [];          // 画面に出ている盤面
@@ -309,6 +309,11 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function syncBadges() {
     el.badges.querySelectorAll('.ika-m3-badge').forEach((li) => {
       const d = rec.badges[li.dataset.badge];
+      li.classList.toggle('is-earned', Boolean(d));
+      li.querySelector('[data-badge-date]').textContent = d ?? '';
+    });
+    el.rbadges?.querySelectorAll('.ika-m3-badge').forEach((li) => {
+      const d = rec.rush?.badges?.[li.dataset.badge];
       li.classList.toggle('is-earned', Boolean(d));
       li.querySelector('[data-badge-date]').textContent = d ?? '';
     });
@@ -657,8 +662,10 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     el.card.querySelector('[data-again]')?.focus({ preventScroll: true });
   }
   function finishRush() {
-    rec = recordRush(rec, g, { day: mode === 'rush' ? utcDay() : null });
+    const { rec: r, fresh } = recordRush(rec, g, { day: mode === 'rush' ? utcDay() : null });
+    rec = r;
     writeRecord(KEY_M3, rec);
+    syncBadges();
     syncHud();
     const R = TX.rush;
     stopRushClock();
@@ -671,6 +678,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-m3-card-title">${t(lang, R.overTitle)} <small>${t(lang, R.overSub)}</small></p>
       <p class="ika-m3-card-score"><b>${fmtTime(turns)}</b><span class="ika-tag ${turns >= best ? 'ika-tag--orange' : ''}">${t(lang, R.time)}${turns >= best && turns > 0 ? ' ★' : ''}</span></p>
       <dl class="ika-m3-card-rows"><div><dt>${t(lang, R.flushed)}</dt><dd>${Math.round(g.rush.flushed)}</dd></div><div><dt>${t(lang, TX.hud.score)}</dt><dd>${g.score.toLocaleString()}</dd></div><div><dt>${t(lang, R.bestTurns)}</dt><dd>${fmtTime(best)}</dd></div></dl>
+      ${fresh.length ? `<p class="ika-m3-card-badges"><span>${t(lang, TX.result.newBadge)}</span>${fresh.map((id) => `<b>★ ${t(lang, TX.rushBadges[id].name)}</b>`).join('')}</p>` : ''}
       <div class="ika-m3-card-actions">
         <button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, mode === 'rush' ? R.again : TX.btn.restart)}</button>
         <button type="button" class="ika-btn" data-rushfree>${t(lang, R.free)}</button>

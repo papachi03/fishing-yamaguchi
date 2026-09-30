@@ -463,6 +463,15 @@ export const m3HTML = (lang) => {
           <span class="ika-m3-badge-date" data-badge-date></span>
         </li>`).join('');
   const TILE_BG = ['#327de0', '#f87735', '#16bea1', '#ffcf30', '#b066d4'];
+  // 墨のがれのバッジ（2026-09-30）：墨つなぎとは別の一覧
+  const RUSH_TILE = { r_join: 2, r_30s: 0, r_fire: RARE, r_60s: 1, r_5k: 3, r_120s: 4, r_10k: 3, r_flush: 2, r_150s: 1, r_13k: 4, r_210s: RARE, r_18k: RARE };
+  const rushBadges = Object.entries(T.rushBadges).map(([id, b]) => `
+        <li class="ika-m3-badge" data-badge="${id}">
+          <span class="ika-m3-badge-mark" aria-hidden="true">${tileImg(RUSH_TILE[id], { href: assetHref, size: 24 })}</span>
+          <span class="ika-m3-badge-name">${t(lang, b.name)}</span>
+          <span class="ika-m3-badge-how">${t(lang, b.how)}</span>
+          <span class="ika-m3-badge-date" data-badge-date></span>
+        </li>`).join('');
   const legend = MARKS.map((m, i) => `<li style="--legend:${TILE_BG[i]}">${tileImg(i, { href: assetHref, size: 26 })}<span>${t(lang, m.name)}</span></li>`).join('') + `<li style="--legend:#102332">${tileImg(RARE, { href: assetHref, size: 26 })}<span>${t(lang, RARE_NAME)}</span></li>`;
   return `
   <section class="ika-section ika-section--tint ika-game ika-game--sumi" id="sumi" aria-labelledby="sumi-title">
@@ -544,8 +553,10 @@ export const m3HTML = (lang) => {
         </div>
 
         <aside class="ika-m3-side" aria-label="${t(lang, 'バッジ', 'Badges')}">
-          <p class="ika-egi-side-head">${t(lang, 'バッジ', 'Badges')}</p>
+          <p class="ika-egi-side-head">${t(lang, '墨つなぎのバッジ', 'Ink Link badges')}</p>
           <ul class="ika-m3-badges" id="ika-m3-badges">${badges}</ul>
+          <p class="ika-egi-side-head">${t(lang, '墨のがれのバッジ', 'Ink Escape badges')}</p>
+          <ul class="ika-m3-badges" id="ika-m3-rbadges">${rushBadges}</ul>
           <p class="ika-egi-side-head">${t(lang, 'マーク', 'Marks')}</p>
           <ul class="ika-m3-legend">${legend}</ul>
         </aside>
