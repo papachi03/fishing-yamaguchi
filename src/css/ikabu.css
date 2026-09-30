@@ -3054,6 +3054,11 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-dk .ika-bd-seg button small { font-size: 11px; opacity: 0.85; }
 .ika-dk-deck, .ika-dk-pool { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
 .ika-dk-poolcell { position: relative; }
+.ika-dk-cost { position: absolute; left: -3px; top: -3px; width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(180deg, #bfefff, #1e90ff); color: #0b1a2a; font-style: normal; font-weight: 900; font-size: 12px; display: grid; place-items: center; box-shadow: 0 1px 0 #0b1a2a; }
+.ika-dk-info { position: absolute; right: -3px; top: -3px; width: 20px; height: 20px; border: 2px solid #fff; border-radius: 50%; background: #16233a; color: #ffd166; font-family: Georgia, serif; font-style: italic; font-weight: 900; font-size: 12px; line-height: 1; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.ika-dk .ika-bd-modal { z-index: 90; }
+.ika-dk .ika-bd-modal-in { color: var(--ika-ink); font-family: var(--font-text); }
+.ika-dk .ika-bd-info h2 { color: var(--ika-ink); }
 .ika-dk-poolcell .ika-dk-card { width: 100%; }
 .ika-dk-plus { position: absolute; left: -4px; top: -4px; min-width: 28px; height: 22px; padding: 0 6px; border: 2px solid #fff; border-radius: 999px; background: #138c96; color: #fff; font-weight: 900; font-size: 12px; line-height: 1; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 .ika-dk-poolcell .ika-dk-card:not(.is-none):not(.is-in) { opacity: 0.8; }
