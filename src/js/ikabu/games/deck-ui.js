@@ -6,7 +6,7 @@ import CARDS from './cards-data.json';
 import { readCards } from './gacha.js';
 import { readJSON, writeJSON } from './records.js';
 import { starterDeck, DECK_RULE } from './battle.js';
-import { KEY_DECK, availableCopies, addCard, removeCard, summary } from './deck.js';
+import { KEY_DECK, DECK_SLOTS, normalizeStore, availableCopies, addCard, removeCard, summary } from './deck.js';
 import { KIND_ORDER, KIND_LABEL } from './binder.js';
 import { tierOf } from './gacha-show.js';
 
@@ -14,7 +14,7 @@ const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStar
 const TX = {
   title: ['デッキ編成', 'Deck builder'],
   save: ['保存', 'Save'], reset: ['スターターに戻す', 'Reset to starter'], close: ['閉じる', 'Close'],
-  saved: ['保存しました。次の対戦から使います', 'Saved. Used from the next battle'],
+  saved: ['保存しました', 'Saved'], use: ['このデッキを使う', 'Use this deck'], using: ['使用中', 'In use'], unsaved: ['保存していない変更があります', 'Unsaved changes'],
   deck: ['いまのデッキ', 'Your deck'], pool: ['使えるカード', 'Available cards'],
   poolNote: ['スターターの30枚は全員が持っています。ガチャで引いた分も使えます（同じカードは2枚まで）', 'Everyone has the 30 starter cards. Cards from the gacha can be added too (max 2 copies).'],
   tapRemove: ['タップで1枚外す', 'Tap to remove one'], tapAdd: ['タップで1枚入れる', 'Tap to add one'],
@@ -31,7 +31,9 @@ export function openDeck({ lang = 'ja' } = {}) {
   const starter = starterDeck(CARDS);
   const owned = readCards().owned ?? {};
   const avail = availableCopies(owned, starter);
-  let deck = (readJSON(KEY_DECK)?.nos ?? starter).slice();
+  let store = normalizeStore(readJSON(KEY_DECK), starter);
+  let cur = store.active;
+  let deck = store.slots[cur].nos.slice();
   let kind = 'all';
   const ov = document.createElement('div');
   ov.className = 'ika-dk';
@@ -39,9 +41,10 @@ export function openDeck({ lang = 'ja' } = {}) {
     <div class="ika-dk-in">
       <div class="ika-dk-head">
         <h2>${t(lang, ...TX.title)}</h2>
+        <div class="ika-dk-slots" data-dk-slots></div>
         <div class="ika-dk-sum" data-dk-sum></div>
         <p class="ika-dk-errors" data-dk-errors></p>
-        <div class="ika-dk-btns"><button type="button" class="ika-btn ika-btn--primary" data-dk-save>${t(lang, ...TX.save)}</button><button type="button" class="ika-btn" data-dk-reset>${t(lang, ...TX.reset)}</button><button type="button" class="ika-btn" data-dk-close>${t(lang, ...TX.close)}</button></div>
+        <div class="ika-dk-btns"><button type="button" class="ika-btn ika-btn--primary" data-dk-save>${t(lang, ...TX.save)}</button><button type="button" class="ika-btn" data-dk-use>${t(lang, ...TX.use)}</button><button type="button" class="ika-btn" data-dk-reset>${t(lang, ...TX.reset)}</button><button type="button" class="ika-btn" data-dk-close>${t(lang, ...TX.close)}</button></div>
         <p class="ika-dk-msg" data-dk-msg role="status"></p>
       </div>
       <h3>${t(lang, ...TX.deck)} <small>${t(lang, ...TX.tapRemove)}</small></h3>
@@ -54,13 +57,20 @@ export function openDeck({ lang = 'ja' } = {}) {
   document.body.appendChild(ov);
   document.documentElement.classList.add('is-deck');
   const $ = (s) => ov.querySelector(s);
-  const el = { sum: $('[data-dk-sum]'), errors: $('[data-dk-errors]'), deck: $('[data-dk-deck]'), pool: $('[data-dk-pool]'), msg: $('[data-dk-msg]'), save: $('[data-dk-save]') };
+  const el = { slots: $('[data-dk-slots]'), use: $('[data-dk-use]'), sum: $('[data-dk-sum]'), errors: $('[data-dk-errors]'), deck: $('[data-dk-deck]'), pool: $('[data-dk-pool]'), msg: $('[data-dk-msg]'), save: $('[data-dk-save]') };
   let msgTimer = 0;
   const say = (text, ok = false) => { el.msg.textContent = text; el.msg.classList.toggle('is-ok', ok); clearTimeout(msgTimer); msgTimer = setTimeout(() => { el.msg.textContent = ''; }, 2400); };
   const byNo = new Map(CARDS.map((c) => [c.no, c]));
   const count = (no) => deck.filter((n) => n === no).length;
 
+  const dirty = () => JSON.stringify(deck) !== JSON.stringify(store.slots[cur].nos);
+  function renderSlots() {
+    el.slots.innerHTML = store.slots.map((s, i) => `<button type="button" data-slot="${i}" aria-pressed="${String(i === cur)}">${esc(s.name)}${i === store.active ? `<i>${t(lang, ...TX.using)}</i>` : ''}</button>`).join('');
+    el.use.disabled = cur === store.active;
+    el.use.textContent = cur === store.active ? t(lang, ...TX.using) : t(lang, ...TX.use);
+  }
   function render() {
+    renderSlots();
     const s = summary(deck, CARDS);
     const bad = (k) => s[k] < DECK_RULE[k][0] || s[k] > DECK_RULE[k][1];
     el.sum.innerHTML = `<b class="${s.total === 30 ? '' : 'is-bad'}">${s.total}<small>/30</small></b>${KIND_ORDER.map((k) => `<span class="${bad(k) ? 'is-bad' : ''}">${t(lang, ...KIND_LABEL[k])} ${s[k]}<small>（${DECK_RULE[k][0]}〜${DECK_RULE[k][1]}）</small></span>`).join('')}`;
@@ -77,7 +87,10 @@ export function openDeck({ lang = 'ja' } = {}) {
   el.pool.addEventListener('click', (e) => { const b = e.target.closest('[data-no]'); if (!b) return; const r = addCard(deck, Number(b.dataset.no), avail, CARDS); if (!r.ok) { say(t(lang, ...TX.why[r.why])); return; } deck = r.deck; render(); });
   $('[data-dk-kind]').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return; kind = b.dataset.v; $('[data-dk-kind]').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); render(); });
   $('[data-dk-reset]').addEventListener('click', () => { deck = starter.slice(); render(); });
-  el.save.addEventListener('click', () => { const s = summary(deck, CARDS); if (!s.check.ok) return; writeJSON(KEY_DECK, { nos: deck }); say(t(lang, ...TX.saved), true); });
+  const persist = () => writeJSON(KEY_DECK, store);
+  el.save.addEventListener('click', () => { const s = summary(deck, CARDS); if (!s.check.ok) return; store.slots[cur].nos = deck.slice(); persist(); say(t(lang, ...TX.saved), true); render(); });
+  el.use.addEventListener('click', () => { if (dirty() && !summary(deck, CARDS).check.ok) { say(t(lang, ...TX.unsaved)); return; } if (dirty()) { store.slots[cur].nos = deck.slice(); } store.active = cur; persist(); say(t(lang, ...TX.saved), true); render(); });
+  el.slots.addEventListener('click', (e) => { const b = e.target.closest('[data-slot]'); if (!b) return; if (dirty()) { say(t(lang, ...TX.unsaved)); if (!confirm(t(lang, '保存していない変更を捨てて切り替えますか？', 'Discard unsaved changes and switch?'))) return; } cur = Number(b.dataset.slot); deck = store.slots[cur].nos.slice(); render(); });
   const close = () => { ov.remove(); document.documentElement.classList.remove('is-deck'); };
   $('[data-dk-close]').addEventListener('click', close);
   render();

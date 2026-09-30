@@ -36,3 +36,13 @@ test('まとめ：スターターは検査に通る', () => {
   assert.equal(s.total, 30); assert.equal(s.check.ok, true);
   assert.ok(s.squid >= 12 && s.tech >= 9 && s.trap >= 4);
 });
+
+test('デッキは3つまで保存。古い形 { nos } はデッキ1に引き継ぐ。使うデッキが検査に通らなければスターター', async () => {
+  const { normalizeStore, activeDeck } = await import('../src/js/ikabu/games/deck.js');
+  const old = normalizeStore({ nos: [1, 2, 3] }, STARTER);
+  assert.equal(old.slots.length, 3); assert.deepEqual(old.slots[0].nos, [1, 2, 3]); assert.deepEqual(old.slots[1].nos, STARTER); assert.equal(old.active, 0);
+  assert.deepEqual(activeDeck({ nos: [1, 2, 3] }, STARTER, CARDS), STARTER);   // 3枚では検査に通らない
+  const st = normalizeStore({ slots: [{ nos: STARTER, name: 'A' }, { nos: STARTER }], active: 1 }, STARTER);
+  assert.equal(st.slots[0].name, 'A'); assert.equal(st.slots[1].name, 'デッキ2'); assert.equal(st.active, 1);
+  assert.deepEqual(activeDeck(st, STARTER, CARDS), STARTER);
+});

@@ -7,6 +7,7 @@ import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
 import { newGame, play, attack, endTurn, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
+import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
 import { tierOf } from './gacha-show.js';
 
@@ -87,7 +88,7 @@ export function mountBattle(root, { lang = 'ja' } = {}) {
 }
 
 export function openBattle({ lang = 'ja', practice = true } = {}) {
-  const myDeck = readJSON('ikabu.deck.v1')?.nos ?? starterDeck(CARDS);
+  const myDeck = activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ
   const st = newGame({ myDeck, cpuDeck: starterDeck(CARDS, { practice }), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu' });
   const ov = document.createElement('div');
   ov.className = 'ika-bt';

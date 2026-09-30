@@ -4,6 +4,26 @@
 import { DECK_RULE, DECK_SIZE, checkDeck } from './battle.js';
 
 export const KEY_DECK = 'ikabu.deck.v1';
+export const DECK_SLOTS = 3;   // 3つまで保存（2026-10-01 ぱっぱ）
+
+// 保存の形：{ slots: [{ nos, name } ×3], active: 0〜2 }。古い形 { nos } はデッキ1に引き継ぐ
+export function normalizeStore(raw, starter) {
+  const slots = Array.from({ length: DECK_SLOTS }, (_, i) => ({ nos: null, name: `デッキ${i + 1}` }));
+  let active = 0;
+  if (raw && Array.isArray(raw.slots)) {
+    raw.slots.slice(0, DECK_SLOTS).forEach((s, i) => { if (s && Array.isArray(s.nos)) slots[i].nos = s.nos.slice(); if (s?.name) slots[i].name = String(s.name).slice(0, 12); });
+    active = Number.isInteger(raw.active) && raw.active >= 0 && raw.active < DECK_SLOTS ? raw.active : 0;
+  } else if (raw && Array.isArray(raw.nos)) {
+    slots[0].nos = raw.nos.slice();
+  }
+  return { slots: slots.map((s) => ({ ...s, nos: s.nos ?? starter.slice() })), active };
+}
+// 対戦に使うデッキ（active が検査に通らなければスターター）
+export function activeDeck(raw, starter, cards) {
+  const st = normalizeStore(raw, starter);
+  const nos = st.slots[st.active].nos;
+  return checkDeck(nos, cards).ok ? nos : starter.slice();
+}
 
 // 番号ごとに「何枚まで入れられるか」（所持＋スターター、上限2）
 export function availableCopies(owned = {}, starter = []) {
