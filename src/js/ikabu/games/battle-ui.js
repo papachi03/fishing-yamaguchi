@@ -21,7 +21,11 @@ const BATTLE_AUDIO = {
   swing: { src: '/assets/ikabu/audio/gacha/se_splash.mp3', volume: 0.5 },    // 攻撃の突進（水しぶき）
   hit: { src: '/assets/ikabu/audio/gacha/se_don.mp3', volume: 0.7 },         // 釣った・ダイレクト（ドン）
   trap: { src: '/assets/ikabu/audio/gacha/se_thunder.mp3', volume: 0.5 },    // トラップが開く（稲妻）
-  lose: { src: '/assets/ikabu/audio/gacha/se_drag.mp3', volume: 0.35 },      // 負け（仮：ドラグが出ていく音の頭2秒）。負けジングルが来たら差し替え
+  lose: { src: '/assets/ikabu/audio/battle/jingle_lose.mp3', volume: 0.7 },   // 負け（Audiostock 1111485）
+  bounce: { src: '/assets/ikabu/audio/battle/se_bounce.mp3', volume: 0.7 },  // 弾かれた（191769）
+  tie: { src: '/assets/ikabu/audio/battle/se_tie.mp3', volume: 0.7 },        // バラシ（1436575）
+  egilost: { src: '/assets/ikabu/audio/battle/se_egilost.mp3', volume: 0.7 }, // エギを奪われる（1023078）
+  climaxIn: { src: '/assets/ikabu/audio/battle/se_climax.mp3', volume: 0.6 }, // 終盤に切り替わる（114892）
 };
 const KEY_SOUND = 'ikabu.battle.sound';
 // 部長イカの How to（練習デッキの対戦だけ。2026-10-01 ぱっぱ）。状況に合った一言を順に出す
@@ -105,6 +109,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   soundBtn.addEventListener('click', () => { audio.setOn(!audio.on); writeJSON(KEY_SOUND, audio.on); syncSound(); if (audio.on) { audio.unlock(); audio.bgm(climax() ? 'climax' : 'battle'); } });
   syncSound();
   const climax = () => st.players.me.egi <= 2 || st.players.cpu.egi <= 2 || st.turn >= 8;
+  let climaxOn = false;
   audio.unlock(); audio.bgm('battle');
   // 部長イカの How to（練習だけ）
   const tutorEl = $('[data-tutor]'); const tutorShown = new Set(); let tutorOpen = false;
@@ -161,7 +166,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
       list.forEach((e) => ov.querySelector(`.ika-bt-card[data-uid="${e.uid}"]`)?.classList.add('is-pick'));
     }
     // 案内
-    if (!st.winner && climax()) audio.bgm('climax', { xfade: 2 });
+    if (!st.winner && climax() && !climaxOn) { climaxOn = true; audio.se('climaxIn'); audio.bgm('climax', { xfade: 2 }); }
     el.msg.textContent = sel?.kind === 'target' ? t(lang, ...TX.pickTarget) : sel?.kind === 'attacker' ? (enemies.length ? t(lang, ...TX.pickEnemy) : '') : st.active === 'me' && st.players.me.noAttack ? t(lang, ...TX.firstNoAttack) : '';
     flushLog();
     if (!busy) tutor();
@@ -267,12 +272,15 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
   function seForResult(r) {
     if (!r?.ok) return;
     if (r.result === 'trapped') audio.se('trap');
-    else if (r.result === 'catch' || r.result === 'direct') audio.se('hit');
+    else if (r.result === 'catch') audio.se('hit');
+    else if (r.result === 'direct') { audio.se('hit'); setTimeout(() => audio.se('egilost'), 250); }
+    else if (r.result === 'blocked') audio.se('bounce');
+    else if (r.result === 'tie') audio.se('tie');
   }
   function checkOver() {
     if (!st.winner) return false;
     const win = st.winner === 'me';
-    audio.stopBgm(0.8); if (win) audio.se('win'); else audio.se('lose').then((h) => setTimeout(() => h.stop(0.6), 2000));
+    audio.stopBgm(0.8); audio.se(win ? 'win' : 'lose');
     el.over.hidden = false;
     el.over.innerHTML = `<div class="ika-bt-over-in"><p class="ika-bt-over-title ${win ? 'is-win' : 'is-lose'}">${t(lang, ...(win ? TX.win : TX.lose))}</p>${practice ? `<p class="ika-bd-hint">${t(lang, ...TX.practiceNote)}</p>` : ''}<div><button type="button" class="ika-btn ika-btn--primary" data-again>${t(lang, ...TX.again)}</button><button type="button" class="ika-btn" data-close>${t(lang, ...TX.close)}</button></div></div>`;
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice }); });

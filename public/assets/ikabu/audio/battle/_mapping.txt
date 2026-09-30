@@ -1,1 +1,6 @@
 audiostock_86963 → se_endturn（ターン終了）
+audiostock_1111485 → jingle_lose（負け）
+audiostock_191769 → se_bounce（弾かれた）
+audiostock_1436575 → se_tie（バラシ）
+audiostock_1023078 → se_egilost（エギを奪われる）
+audiostock_114892 → se_climax（終盤に切り替わる）
