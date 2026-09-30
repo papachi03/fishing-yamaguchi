@@ -244,6 +244,14 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const stats = c.kind === 'squid' ? `<p class="ika-bt-sheet-stats"><span class="is-atk">${t(lang, ...TX.atk)} ${c.atk}${onField && statOf(st, x, 'atk') !== c.atk ? `<b>→${statOf(st, x, 'atk')}</b>` : ''}</span><span class="is-def">${t(lang, ...TX.def)} ${c.def}${onField && statOf(st, x, 'def') !== c.def ? `<b>→${statOf(st, x, 'def')}</b>` : ''}</span></p>` : '';
     return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
   }
+  const bigModal = document.createElement('div'); bigModal.className = 'ika-bd-modal ika-bt-big'; bigModal.hidden = true;
+  bigModal.innerHTML = `<div class="ika-bd-modal-in" role="dialog" aria-modal="true"><button type="button" class="ika-bd-close" data-close aria-label="${t(lang, ...TX.close)}">×</button><div data-body></div></div>`;
+  ov.appendChild(bigModal);
+  bigModal.addEventListener('click', (e) => { if (e.target === bigModal || e.target.closest('[data-close]')) bigModal.hidden = true; });
+  function showBig(x) {
+    bigModal.querySelector('[data-body]').innerHTML = `<div class="ika-bd-big" data-tier="${tierOf(x.card.rarity)}"><img src="${assetHref(`/assets/ikabu/cards/card_${String(x.no).padStart(3, '0')}.webp`)}" alt="${esc(x.card.name)}" width="600" height="900" decoding="async" /></div><div class="ika-bd-info">${cardInfoHTML(x, false)}</div>`;
+    bigModal.hidden = false;
+  }
   function showInfo(x) {
     el.sheet.hidden = false;
     const canJ = st.players.me.front.includes(x) && canShakuri(st, 'me', x).ok;
@@ -318,9 +326,10 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       const picked = new Set();
       el.sheet.hidden = false;
       const draw = () => {
-        el.sheet.innerHTML = `<div class="ika-bt-sheet-in ika-bt-discard"><p class="ika-bt-sheet-name">${TX.pickDiscard(lang, n)}</p><div class="ika-bt-discard-list">${st.players.me.hand.map((x) => `<button type="button" class="ika-bt-dcard${picked.has(x.uid) ? ' is-on' : ''}" data-d="${x.uid}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" /></button>`).join('')}</div><div><button type="button" class="ika-btn ika-btn--primary" data-go ${picked.size === n ? '' : 'disabled'}>${t(lang, ...TX.discardGo)}（${picked.size}/${n}）</button><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
+        el.sheet.innerHTML = `<div class="ika-bt-sheet-in ika-bt-discard"><p class="ika-bt-sheet-name">${TX.pickDiscard(lang, n)}</p><div class="ika-bt-discard-list">${st.players.me.hand.map((x) => `<div class="ika-bt-dcell"><button type="button" class="ika-bt-dcard${picked.has(x.uid) ? ' is-on' : ''}" data-d="${x.uid}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" /></button><button type="button" class="ika-dk-info" data-big="${x.uid}" aria-label="${t(lang, '詳しく', 'Details')}">i</button></div>`).join('')}</div><div><button type="button" class="ika-btn ika-btn--primary" data-go ${picked.size === n ? '' : 'disabled'}>${t(lang, ...TX.discardGo)}（${picked.size}/${n}）</button><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
         el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; resolve(null); });
         el.sheet.querySelector('[data-go]').addEventListener('click', () => { el.sheet.hidden = true; resolve(st.players.me.hand.filter((x) => picked.has(x.uid))); });
+        el.sheet.querySelectorAll('[data-big]').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); const x = findInst(b.dataset.big); if (x) showBig(x); }));
         el.sheet.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { const uid = Number(b.dataset.d); if (picked.has(uid)) picked.delete(uid); else if (picked.size < n) picked.add(uid); draw(); }));
       };
       draw();
