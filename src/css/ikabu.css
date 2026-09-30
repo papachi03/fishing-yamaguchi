@@ -1338,6 +1338,14 @@
 @keyframes ika-tickets-pop { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; } }
 .ika-tickets-lead { margin: 8px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--ika-ink-soft); }
 .ika-tickets-how { margin: 4px 0 0; font-size: 11.5px; line-height: 1.7; color: var(--ika-ink-soft); }
+.ika-tickets-code { margin-top: 10px; }
+.ika-tickets-form { padding: 12px 14px; border: 2px solid var(--ika-sea-line); border-radius: 12px; background: var(--ika-white); }
+.ika-tickets-form[hidden] { display: none; }
+.ika-tickets-form-label { display: block; font-family: var(--font-maru); font-weight: 900; font-size: 13px; }
+.ika-tickets-form-row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.ika-tickets-input { flex: 1 1 180px; min-width: 0; padding: 8px 10px; border: 2px solid var(--ika-sea-line); border-radius: 8px; font-family: var(--font-varsity), monospace; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
+.ika-tickets-msg { margin: 8px 0 0; min-height: 1.2em; font-size: 12.5px; font-weight: 700; color: #b23a2a; }
+.ika-tickets-msg.is-ok { color: var(--ika-sea); }
 /* ゴールド認定証（2026-09-30）。未取得は点線・薄く、取得は金縁、名誉部員証は虹の縁 */
 .ika-certs { margin-top: 22px; padding: 18px 20px 20px; border: 3px solid var(--ika-sea); border-radius: 14px; background: var(--ika-white); }
 .ika-certs-head { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--font-maru); font-weight: 900; font-size: 16px; }

@@ -61,6 +61,7 @@ export function earnCert(rec, certId, { day }) {
 export function earnCode(rec, codeId, amount, { day }) {
   const r = roll(rec, day);
   if (r.codes[codeId]) return { rec: r, got: 0, why: [] };
+  if (r.n >= CAP) return { rec: r, got: 0, why: [] };   // いっぱいの時はコードを消費しない（使ってから入れ直せる）
   r.codes[codeId] = day;
   const got = add(r, amount);
   return { rec: r, got, why: got ? ['code'] : [] };

@@ -1,0 +1,14 @@
+[
+ {
+  "id": "test-sample",
+  "h": "12575f5762060d2ae85e5fa21dd42ee07135401b8b8b8ee394589702342e70df",
+  "n": 5
+ },
+ {
+  "id": "stamp1010",
+  "h": "83cbffa5db70d63bc3c2fe84544e3f0a36e984a034cafeeb2ef0c7e136521f1b",
+  "n": 10,
+  "from": "2026-10-10",
+  "until": "2026-10-31"
+ }
+]

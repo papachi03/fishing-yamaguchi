@@ -104,7 +104,18 @@ export const ticketsHTML = (lang) => {
         </div>
         <p class="ika-tickets-lead">${t(lang, T.lead)}</p>
         <p class="ika-tickets-how">${t(lang, T.how)}</p>
-        <div class="ika-tickets-code" id="ika-tickets-code"></div>
+        <div class="ika-tickets-code" id="ika-tickets-code">
+          <button type="button" class="ika-btn" data-code-open>${t(lang, T.code)}</button>
+          <form class="ika-tickets-form" data-code-form hidden>
+            <label class="ika-tickets-form-label" for="ika-tickets-input">${t(lang, T.codeLabel)}</label>
+            <div class="ika-tickets-form-row">
+              <input class="ika-tickets-input" id="ika-tickets-input" type="text" inputmode="latin" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="IKABU-XXXX-XXXX" />
+              <button type="submit" class="ika-btn ika-btn--primary">${t(lang, T.codeSubmit)}</button>
+              <button type="button" class="ika-btn" data-code-cancel>${t(lang, T.codeCancel)}</button>
+            </div>
+            <p class="ika-tickets-msg" data-code-msg role="status" aria-live="polite"></p>
+          </form>
+        </div>
       </section>`;
 };
 

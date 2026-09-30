@@ -794,6 +794,18 @@ export const HUB_TEXT = {
     },
     how: pair('1戦遊ぶ +1（1日5回まで）／今日はじめの1戦 +1／墨つなぎで今日の目標 +1／墨のがれで60秒 +1／認定証 +10', '+1 per game (5 a day) · +1 first game of the day · +1 daily goal in Ink Link · +1 for 60 s in Ink Escape · +10 per certificate'),
     code: pair('コードを入れる', 'Enter a code'),
+    codeLabel: pair('配布コード（例：IKABU-XXXX-XXXX）', 'Code (e.g. IKABU-XXXX-XXXX)'),
+    codeSubmit: pair('もらう', 'Redeem'),
+    codeCancel: pair('やめる', 'Cancel'),
+    codeMsg: {
+      ok: (lang, n) => (lang === 'en' ? `🎫 +${n}! Enjoy.` : `🎫 ${n}枚もらいました！`),
+      bad: pair('そのコードは見つかりません。文字を確かめてもう一度', 'Code not found. Check the letters and try again'),
+      notyet: pair('このコードはまだ使えません（開始日の前です）', 'This code is not active yet'),
+      expired: pair('このコードは期限が切れています', 'This code has expired'),
+      used: pair('このコードはもう使っています', 'You have already used this code'),
+      full: pair('チケットがいっぱいです（300枚）。使ってからもう一度', 'Wallet full (300). Spend some first'),
+      wait: (lang, sec) => (lang === 'en' ? `Too many misses. Wait ${sec} s` : `外れが続いたので ${sec} 秒お待ちください`),
+    },
   },
   // ゴールド認定証（2026-09-30）：3つのゲームの実績を全部そろえた人に
   certs: {
