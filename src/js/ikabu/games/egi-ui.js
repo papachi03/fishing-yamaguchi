@@ -1444,7 +1444,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       ${s.gedo.length ? `<p class="ika-egi-card-note">${t(lang, TX.gedo.title)}: ${s.gedo.map((g) => `${TX.gedo.icon[g.id] ?? ''}${esc(t(lang, TX.gedo.names[g.id]))}`).join('、')}</p>` : ''}
       ${counted ? `<p class="ika-egi-card-note ika-egi-over-level">${t(lang, TX.level.title)} Lv${levelOf(rec.points).level}${levelOf(rec.points).to == null ? '' : `・${TX.level.next(lang, levelOf(rec.points).need)}`}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
-      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${solo ? '' : shareButtonHTML(lang)}</div>`;
+      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${solo ? '' : shareButtonHTML(lang)}<a class="ika-btn ika-egi-card-btn" href="${solo ? pageHref('games', lang) : '#main'}">${t(lang, TX.btn.quit)}</a></div>`;   // 「やめる」（2026-09-30 ぱっぱ：もう一度しか無いとやめられず戸惑う）
     lastShare = { kind: 'trip', catches: catches.slice() };
     if (counted) levelCheck(lvBefore);
     el.card.className = 'ika-egi-card ika-egi-card--over';

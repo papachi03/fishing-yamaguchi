@@ -252,6 +252,7 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
     // 竿：振りかぶり中はゆっくり後ろへ
     if (V.charging) V.rodAng = Math.min(S.rod.back, V.rodAng + dt * 0.09);
     const { tip, bend } = rodGeom();
+    if (V.egi.mode === 'rest') { V.egi.x = tip.x + 6; V.egi.y = tip.y + 95; }   // 投げる前：竿先からぶら下がる（振りかぶりに合わせて動く）
     const rodD = `M${f1(S.grip.x)},${f1(S.grip.y)} Q${f1(bend.x)},${f1(bend.y)} ${f1(tip.x)},${f1(tip.y)}`;
     sc.rodO.setAttribute('d', rodD); sc.rod.setAttribute('d', rodD);
     // エギ
@@ -267,11 +268,11 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
     }
     const jx = V.jig ? Math.sin(now / 40) * 8 * V.jig : 0;
     const jy = V.jig ? Math.cos(now / 55) * 6 * V.jig : 0;
-    const rot = V.egi.mode === 'fly' ? -20 : V.egi.mode === 'sink' ? 25 : 0;
+    const rot = V.egi.mode === 'fly' ? -20 : V.egi.mode === 'sink' ? 25 : V.egi.mode === 'rest' ? 80 : 0;   // ぶら下がりは頭を上に
     sc.egi.setAttribute('transform', `translate(${f1(V.egi.x + jx)} ${f1(V.egi.y + jy)}) rotate(${rot})`);
     // 糸：竿先 → エギ
     const L = Math.hypot(V.egi.x - tip.x, V.egi.y - tip.y);
-    const sag = V.rodPull > 0 || V.flight ? 0 : L * 0.12;
+    const sag = V.rodPull > 0 || V.flight || V.egi.mode === 'rest' ? 0 : L * 0.12;
     sc.line.setAttribute('d', `M${f1(tip.x)},${f1(tip.y)} Q${f1((tip.x + V.egi.x) / 2)},${f1((tip.y + V.egi.y) / 2 + sag)} ${f1(V.egi.x + jx)},${f1(V.egi.y + jy)}`);
     // 泳ぐイカ
     for (let i = 0; i < V.fish.length; i++) {

@@ -388,6 +388,7 @@ export const EGI_TEXT = {
     fight: pair('押している間だけ巻く', 'Hold to reel'),
     result: pair('次の一投へ', 'Next cast'),
     over: pair('もう一度釣行する', 'Fish again'),
+    quit: pair('やめる（TOPへ）', 'Quit (to TOP)'),
   },
   hud: {
     casts: pair('残り投数', 'Casts left'),
@@ -790,7 +791,8 @@ export const HUB_TEXT = {
     left: (lang, n, full) => (full ? (lang === 'en' ? 'Wallet full (300)' : 'いっぱい（300枚）') : lang === 'en' ? `${n} more today` : `今日あと ${n} 枚もらえる`),
     pop: (lang, got, why) => {
       const w = why.includes('cert') ? (lang === 'en' ? 'certificate' : '認定証') : why.includes('sumiGoal') ? (lang === 'en' ? 'goal reached' : '今日の目標') : why.includes('rush60') ? (lang === 'en' ? '60 s survived' : '60秒しのいだ') : why.includes('first') ? (lang === 'en' ? 'first game today' : '今日はじめの1戦') : '';
-      return `🎫 +${got}${w ? `　${w}` : ''}`;
+      // 2026-09-30 ぱっぱ：ゲームの後に「チケット〇枚ゲット！」と分かる知らせを
+      return lang === 'en' ? `🎫 You got ${got} ticket${got > 1 ? 's' : ''}!${w ? `  (${w})` : ''}` : `🎫 チケット ${got}枚ゲット！${w ? `（${w}）` : ''}`;
     },
     how: pair('1戦遊ぶ +1（1日5回まで）／今日はじめの1戦 +1／墨つなぎで今日の目標 +1／墨のがれで60秒 +1／認定証 +10', '+1 per game (5 a day) · +1 first game of the day · +1 daily goal in Ink Link · +1 for 60 s in Ink Escape · +10 per certificate'),
     code: pair('コードを入れる', 'Enter a code'),
