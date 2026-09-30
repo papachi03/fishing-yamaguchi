@@ -64,11 +64,22 @@ export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = 
   const byNo = new Map(cards.map((c) => [c.no, c]));
   const rnd = seeded(`battle:${seed}`);
   const st = { turn: 0, active: first, first, players: { me: player(myDeck, byNo, rnd), cpu: player(cpuDeck, byNo, rnd) }, effects, byNo, log: [], winner: null, rnd, pending: null };
-  for (const side of ['me', 'cpu']) for (let i = 0; i < START_HAND; i++) draw(st, side);
+  for (const side of ['me', 'cpu']) dealStart(st, side, rnd);
   startTurn(st);
   return st;
 }
 const P = (st, side) => st.players[side];
+// 最初の手札：潮2以下で出せるイカが1枚も無ければ配り直す（最大10回）。2026-10-01 ぱっぱ「前列に出せないと詰む」
+export const MULLIGAN_MAX_COST = 2;
+function dealStart(st, side, rnd) {
+  const p = P(st, side);
+  for (let tries = 0; tries < 10; tries++) {
+    for (let i = 0; i < START_HAND; i++) draw(st, side);
+    if (p.hand.some((x) => x.card.kind === 'squid' && x.card.cost <= MULLIGAN_MAX_COST)) return;
+    p.deck.push(...p.hand.splice(0));   // 戻して混ぜ直す
+    for (let i = p.deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p.deck[i], p.deck[j]] = [p.deck[j], p.deck[i]]; }
+  }
+}
 export const effectsOf = (st, no) => st.effects[String(no)] ?? [];
 const passive = (st, x, name) => effectsOf(st, x.no).some((e) => e.when === 'passive' && e.do === name);
 const say = (st, text) => { st.log.push({ turn: st.turn, side: st.active, text }); if (st.log.length > 200) st.log.shift(); };

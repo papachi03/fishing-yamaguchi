@@ -27,6 +27,16 @@ test('スターターデッキは検査に通り、練習デッキはNだけ', (
   assert.equal(checkDeck([...d.slice(0, 29), 120, 120], CARDS).ok, false);   // 31枚・UR2枚
 });
 
+test('最初の手札には潮2以下で出せるイカが必ず1枚ある（無ければ配り直し）', () => {
+  for (let i = 0; i < 40; i++) {
+    const st = mk({ seed: `m${i}` });
+    for (const side of ['me', 'cpu']) {
+      const hand = side === 'me' ? st.players.me.hand.slice(0, 5) : st.players.cpu.hand;   // 先攻の6枚目は引いた分
+      assert.ok(hand.some((x) => x.card.kind === 'squid' && x.card.cost <= 2), `${side} seed m${i}`);
+    }
+  }
+});
+
 test('最初：手札5枚→先攻は1枚引いて6枚、潮1。先攻の最初のターンは攻撃できない', () => {
   const st = mk();
   assert.equal(st.turn, 1); assert.equal(st.active, 'me');
