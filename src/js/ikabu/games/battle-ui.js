@@ -16,6 +16,7 @@ const BATTLE_AUDIO = {
   battle: { src: '/assets/ikabu/audio/battle/bgm_battle.mp3', loop: true, loopStart: 9, loopEnd: 66, volume: 0.18 },
   climax: { src: '/assets/ikabu/audio/battle/bgm_climax.mp3', loop: true, loopStart: 6, loopEnd: 156, volume: 0.2 },
   win: { src: '/assets/ikabu/audio/battle/jingle_win.mp3', volume: 0.6 },
+  endturn: { src: '/assets/ikabu/audio/battle/se_endturn.mp3', volume: 0.7 },   // ターン終了（Audiostock 86963・ぱっぱ 2026-10-01）
   place: { src: '/assets/ikabu/audio/gacha/se_flip.mp3', volume: 0.7 },      // カードを出す・伏せる・使う（めくり音）
   swing: { src: '/assets/ikabu/audio/gacha/se_splash.mp3', volume: 0.5 },    // 攻撃の突進（水しぶき）
   hit: { src: '/assets/ikabu/audio/gacha/se_don.mp3', volume: 0.7 },         // 釣った・ダイレクト（ドン）
@@ -246,7 +247,7 @@ export function openBattle({ lang = 'ja', practice = true } = {}) {
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
     render(); checkOver();
   }
-  el.end.addEventListener('click', async () => { if (busy || st.active !== 'me') return; sel = null; el.sheet.hidden = true; endTurn(st); render(); if (!checkOver()) await cpuTurn(); });
+  el.end.addEventListener('click', async () => { if (busy || st.active !== 'me') return; audio.se('endturn'); sel = null; el.sheet.hidden = true; endTurn(st); render(); if (!checkOver()) await cpuTurn(); });
   $('[data-quit]').addEventListener('click', close);
   function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); }
 
