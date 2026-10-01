@@ -27,6 +27,11 @@ export const ALLOWED_ORIGINS = [
   'http://localhost:5174', // .claude/launch.json の「yfj-reports-site」はこのポートで動く
   'http://127.0.0.1:5174',
   'http://localhost:4173',
+  // 山口イカ部「写真部」の投稿フォーム（2026-10-01）：テストプレイ版・確認用URL・手元の開発
+  'https://ikabu-trial.hoodhomies.workers.dev',
+  'https://ikabu-preview.hoodhomies.workers.dev',
+  'http://localhost:5180',
+  'http://127.0.0.1:5180',
 ];
 
 // Discordで知らせるときのメンション先は、Workerのsecret `NOTIFY_MENTION_USER_ID` から読む（Task 4）。

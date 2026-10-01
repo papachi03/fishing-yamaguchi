@@ -104,6 +104,7 @@ export const ticketsHTML = (lang) => {
         </div>
         <p class="ika-tickets-lead">${t(lang, T.lead)}</p>
         <p class="ika-tickets-how">${t(lang, T.how)}</p>
+        <p class="ika-tickets-how"><a class="ika-tickets-photolink" href="${pageHref('gallery', lang)}#ika-photo-post">${t(lang, T.photoLink)}</a></p>
         <div class="ika-tickets-code" id="ika-tickets-code">
           <button type="button" class="ika-btn" data-code-open>${t(lang, T.code)}</button>
           <form class="ika-tickets-form" data-code-form hidden>

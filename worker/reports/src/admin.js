@@ -6,6 +6,7 @@ import { listPosts, getPost, putPost, removePost, rebuildIndex, getPhoto, isId }
 import { placeById } from '../../../src/js/data/spot-list.js';
 import { sendMorningDraft } from './morning.js';
 import { FISH, WIND_FEEL, nameOf } from '../../../src/js/data/report-options.js';
+import { handleIkabuAdmin } from './ikabu.js';
 
 // 管理ページに出す件数。1ページに全部出す代わりの上限（ページ送りは作らない）
 const LIST_LIMIT = 200;
@@ -13,7 +14,7 @@ const LIST_LIMIT = 200;
 const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
-function html(body, status = 200) {
+export function html(body, status = 200) {
   return new Response(
     `<!doctype html><html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -62,7 +63,7 @@ ${photo}`;
 
 const listPage = (posts, truncated) =>
   html(`<h1>現地の声 管理（${posts.length}件）</h1>
-<form class="tools" method="post" action="/admin/morning"><button type="submit">今の堤防判定をDiscordへ送る</button><small>今の時刻の予報で下書きを送ります（見出しは時刻に合わせて朝・昼・夜）</small></form>
+<form class="tools" method="post" action="/admin/morning"><button type="submit">今の堤防判定をDiscordへ送る</button><small>今の時刻の予報で下書きを送ります（見出しは時刻に合わせて朝・昼・夜）</small><small><a href="/admin/ikabu">写真部（山口イカ部）の投稿の管理 →</a></small></form>
 ${posts.length ? '' : '<p>投稿はまだありません。</p>'}
 ${truncated ? `<p class="msg">新しい${LIST_LIMIT}件だけを表示しています。これより古い投稿はこの画面には出ません。</p>` : ''}
 ${posts
@@ -82,7 +83,7 @@ ${p.hidden ? `<form method="post" action="/admin/posts/${p.id}/restore"><button 
 // どれも攻撃者のページからの送信では同一オリジンにならないのでCSRFの守りは崩れない。
 // （Refererを使えるようにするため、管理ページの referrer-policy は no-referrer ではなく same-origin。
 //   よそのサイトには送られないので、投稿の中身が外に漏れることはない）
-const sameOrigin = (request, url) => {
+export const sameOrigin = (request, url) => {
   const origin = request.headers.get('origin');
   if (origin) return origin === url.origin;
   const site = request.headers.get('sec-fetch-site');
@@ -92,7 +93,7 @@ const sameOrigin = (request, url) => {
   return false; // 手がかりが何も無い＝判断できないので通さない
 };
 // 弾いたときに手がかりを残す（次に同じことが起きたら wrangler tail で見られるように）
-const logRefusal = (request, path) =>
+export const logRefusal = (request, path) =>
   console.warn(
     'admin refused',
     path,
@@ -100,8 +101,8 @@ const logRefusal = (request, path) =>
     'sec-fetch-site=', request.headers.get('sec-fetch-site'),
     'referer=', request.headers.get('referer') ? 'あり' : 'なし'
   );
-const forbidden = () => html('<h1>操作できません</h1><p>もう一度、管理ページから入り直してください。</p>', 403);
-const missing = () => html('<h1>見つかりませんでした</h1><p>管理ページに戻ってお試しください。</p>', 404);
+export const forbidden = () => html('<h1>操作できません</h1><p>もう一度、管理ページから入り直してください。</p>', 403);
+export const missing = () => html('<h1>見つかりませんでした</h1><p>管理ページに戻ってお試しください。</p>', 404);
 // 303にも noindex を付ける（リダイレクトそのものが検索結果に拾われないように）
 const seeAdmin = (extra = {}) =>
   new Response(null, { status: 303, headers: { location: '/admin', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', ...extra } });
@@ -114,6 +115,8 @@ async function deletePost(env, id) {
 export async function handleAdmin(request, env, url) {
   const path = url.pathname;
   if (path !== '/admin' && !path.startsWith('/admin/')) return null;
+  // 写真部（山口イカ部）の管理は ikabu.js（2026-10-01）
+  if (path === '/admin/ikabu' || path.startsWith('/admin/ikabu/')) return handleIkabuAdmin(request, env, url);
   const method = request.method;
 
   if (path === '/admin' && method === 'GET') {

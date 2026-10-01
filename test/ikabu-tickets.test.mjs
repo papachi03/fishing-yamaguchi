@@ -63,3 +63,14 @@ test('今日あと何枚：何もしていない日は 5+1+1+1=8、1戦遊ぶと
   assert.equal(todayLeft(r, { day: D }), 8);
   assert.equal(todayLeft(earnPlay(r, { day: D }).rec, { day: D }), 6);
 });
+
+test('写真部に投稿すると1枚。同じ日の2回目は0枚、日付が変わるとまた1枚（2026-10-01）', async () => {
+  const { earnPhoto } = await import('../src/js/ikabu/games/tickets.js');
+  let r = emptyTickets();
+  const a = earnPhoto(r, { day: D });
+  assert.equal(a.got, 1); assert.deepEqual(a.why, ['photo']);
+  const b = earnPhoto(a.rec, { day: D });
+  assert.equal(b.got, 0); assert.equal(b.rec.n, 1);
+  const c = earnPhoto(b.rec, { day: '2026-10-01' });
+  assert.equal(c.got, 1); assert.equal(c.rec.n, 2);
+});

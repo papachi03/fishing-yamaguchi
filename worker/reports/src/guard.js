@@ -75,6 +75,9 @@ async function allowInWindow(env, prefix, hash, perHour, perDay, now) {
 /** 投稿は1時間3件・1日10件 */
 export const allowPost = (env, hash, now = Date.now()) => allowInWindow(env, 'rl', hash, LIMITS.perHour, LIMITS.perDay, now);
 
+/** 写真部の投稿も同じ枠の大きさ（現地の声とは別に数える） */
+export const allowIkabuPost = (env, hash, now = Date.now()) => allowInWindow(env, 'rli', hash, LIMITS.perHour, LIMITS.perDay, now);
+
 /** 通報は1時間10件・1日30件（通報3件で投稿が消えるので、ここも数を絞る） */
 export const allowReport = (env, hash, now = Date.now()) =>
   allowInWindow(env, 'rr', hash, LIMITS.reportPerHour, LIMITS.reportPerDay, now);

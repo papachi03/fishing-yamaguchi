@@ -60,6 +60,14 @@ export function earnBattle(rec, { day, win }) {
   const got = add(r, win ? BATTLE_WIN : BATTLE_LOSE);
   return { rec: r, got, why: got ? [win ? 'battleWin' : 'battleLose'] : [] };
 }
+// 写真部に投稿した（1日1回・1枚。2026-10-01 ぱっぱ：投稿が届いた時点で付ける）
+export function earnPhoto(rec, { day }) {
+  const r = roll(rec, day);
+  if (r.today.photo) return { rec: r, got: 0, why: [] };
+  r.today.photo = 1;
+  const got = add(r, 1);
+  return { rec: r, got, why: got ? ['photo'] : [] };
+}
 // 認定証を取った（認定証ごとに1回・10枚）
 export function earnCert(rec, certId, { day }) {
   const r = roll(rec, day);

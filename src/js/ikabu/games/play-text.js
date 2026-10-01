@@ -787,14 +787,15 @@ export const HUB_TEXT = {
   // チケット🎫（2026-09-30）：遊ぶか配布コードで手に入れる。お金は使わない
   tickets: {
     title: pair('チケット', 'Tickets'),
-    lead: pair('遊ぶともらえる🎫。ためてガチャでカードを引く（準備中）。', 'Play to earn 🎫. Spend them on the card gacha (coming soon).'),
+    lead: pair('遊ぶともらえる🎫。ためてガチャでカードを引く。', 'Play to earn 🎫. Spend them on the card gacha.'),
     left: (lang, n, full) => (full ? (lang === 'en' ? 'Wallet full (300)' : 'いっぱい（300枚）') : lang === 'en' ? `${n} more today` : `今日あと ${n} 枚もらえる`),
     pop: (lang, got, why) => {
-      const w = why.includes('cert') ? (lang === 'en' ? 'certificate' : '認定証') : why.includes('sumiGoal') ? (lang === 'en' ? 'goal reached' : '今日の目標') : why.includes('rush60') ? (lang === 'en' ? '60 s survived' : '60秒しのいだ') : why.includes('battleWin') ? (lang === 'en' ? 'battle won' : '対戦に勝った') : why.includes('battleLose') ? (lang === 'en' ? 'battle played' : '対戦した') : why.includes('first') ? (lang === 'en' ? 'first game today' : '今日はじめの1戦') : '';
+      const w = why.includes('cert') ? (lang === 'en' ? 'certificate' : '認定証') : why.includes('sumiGoal') ? (lang === 'en' ? 'goal reached' : '今日の目標') : why.includes('rush60') ? (lang === 'en' ? '60 s survived' : '60秒しのいだ') : why.includes('battleWin') ? (lang === 'en' ? 'battle won' : '対戦に勝った') : why.includes('battleLose') ? (lang === 'en' ? 'battle played' : '対戦した') : why.includes('photo') ? (lang === 'en' ? 'photo posted' : '写真を投稿') : why.includes('first') ? (lang === 'en' ? 'first game today' : '今日はじめの1戦') : '';
       // 2026-09-30 ぱっぱ：ゲームの後に「チケット〇枚ゲット！」と分かる知らせを
       return lang === 'en' ? `🎫 You got ${got} ticket${got > 1 ? 's' : ''}!${w ? `  (${w})` : ''}` : `🎫 チケット ${got}枚ゲット！${w ? `（${w}）` : ''}`;
     },
-    how: pair('1戦遊ぶ +1（1日5回まで）／今日はじめの1戦 +1／墨つなぎで今日の目標 +1／墨のがれで60秒 +1／認定証 +10', '+1 per game (5 a day) · +1 first game of the day · +1 daily goal in Ink Link · +1 for 60 s in Ink Escape · +10 per certificate'),
+    how: pair('1戦遊ぶ +1（1日5回まで）／今日はじめの1戦 +1／墨つなぎで今日の目標 +1／墨のがれで60秒 +1／認定証 +10／写真部に投稿 +1（1日1回）', '+1 per game (5 a day) · +1 first game of the day · +1 daily goal in Ink Link · +1 for 60 s in Ink Escape · +10 per certificate · +1 for a gallery post (once a day)'),
+    photoLink: pair('📷 写真部に写真を投稿して🎫1枚 →', '📷 Post a photo in the gallery for 🎫 +1 →'),
     code: pair('コードを入れる', 'Enter a code'),
     codeLabel: pair('配布コード（例：IKABU-XXXX-XXXX）', 'Code (e.g. IKABU-XXXX-XXXX)'),
     codeSubmit: pair('もらう', 'Redeem'),

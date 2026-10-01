@@ -12,11 +12,14 @@ const ZERO_WIDTH = String.fromCharCode(0x200b);
 // 投稿の本文をそのまま並べると、通知自身の行（「削除する →」など）を真似できてしまう。
 // コードブロックに入れて地の文と分ける。囲いを壊されないよう、本文のバッククォートは
 // 幅ゼロの文字ではさんで隣り合わせないようにする（3つ並ばなければ囲いは閉じない）
-function quoted(text) {
+export function quoted(text) {
   const safe = String(text).split(FENCE[0]).join(FENCE[0] + ZERO_WIDTH);
   return [FENCE, safe, FENCE].join(NL);
 }
 
+export async function sendDiscord(env, lines, { mention = false } = {}) {
+  return send(env, lines, { mention });
+}
 async function send(env, lines, { mention = false } = {}) {
   if (!env.DISCORD_WEBHOOK_URL) return false;
   // メンション先は個人のDiscordユーザーIDなので、コードに書かずWorkerのsecretから読む。

@@ -12,9 +12,10 @@ export const jstDate = (d) => new Date(d.getTime() + 9 * 3600 * 1000).toISOStrin
 
 const fail = (error) => ({ ok: false, error });
 
-export function validatePost(f, now = new Date()) {
+/** お名前の検査（現地の声・写真部で共通）。戻り：{ ok, name } か { ok:false, error } */
+export function cleanName(raw) {
   // 空白（改行やタブも含む）は1つに畳んでから数える。複数行の名前を作らせないため
-  const name = String(f.name ?? '').normalize('NFKC').replace(CONTROL, '').replace(/\s+/g, ' ').trim();
+  const name = String(raw ?? '').normalize('NFKC').replace(CONTROL, '').replace(/\s+/g, ' ').trim();
   if (!name) return fail('お名前を入れてください。');
   if ([...name].length > LIMITS.name) return fail(`お名前は${LIMITS.name}文字までです。`);
   // ゼロ幅文字などの書式文字をはさんで予約語をすり抜けるのを防ぐため、比べる前に全部落とす
@@ -22,6 +23,13 @@ export function validatePost(f, now = new Date()) {
   if (RESERVED_WORDS.some((w) => key.includes(w))) {
     return fail('そのお名前は使えません。別のお名前にしてください。');
   }
+  return { ok: true, name };
+}
+
+export function validatePost(f, now = new Date()) {
+  const n = cleanName(f.name);
+  if (!n.ok) return n;
+  const name = n.name;
 
   const place = placeById(String(f.spotId ?? ''));
   if (!place) return fail('場所を選んでください。');

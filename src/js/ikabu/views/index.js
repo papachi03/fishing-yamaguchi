@@ -28,7 +28,7 @@ const ENTRY = {
   },
   gallery: {
     title: pair('イカのある風景。', 'Life, with a little squid.'),
-    desc: pair('海、生きもの、食卓。出典とともに眺める、イカのアルバム。', 'Sea, wildlife and food: an album with a story and a credit for every picture.'),
+    desc: pair('海、生きもの、食卓。部員の写真も募集中（投稿すると🎫1枚）。', 'Sea, wildlife and food. Members can post their own photos too (🎫 +1).'),
   },
   play: {
     title: pair('同じイカで、世界と一戦。', 'One board. A world of players.'),

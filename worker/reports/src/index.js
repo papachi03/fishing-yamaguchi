@@ -11,8 +11,9 @@
  *   GET  /photo/<id>                  写真
  *   POST /posts/<id>/report           通報                       … Task 4
  *   /admin…                           管理ページ                 … Task 5
+ *   /ikabu/photos, /ikabu/photo/<id>  山口イカ部「写真部」の投稿（ikabu.js・2026-10-01）
  */
-import { LIMITS, ALLOWED_ORIGINS } from './config.js';
+import { LIMITS } from './config.js';
 import { validatePost, validatePhoto } from './validate.js';
 import { ipHashOf, verifyTurnstile, allowPost, allowReport } from './guard.js';
 import { newId, isId, getPost, putPost, putPhoto, getPhoto, toPublic, rebuildIndex, getIndex, listPosts, byNewest } from './store.js';
@@ -23,29 +24,9 @@ import { requireSignSecret } from './auth.js';
 import { notifyNewPost, notifyHidden } from './notify.js';
 import { handleAdmin } from './admin.js';
 import { sendMorningDraft } from './morning.js';
-
-// vary は許可・不許可にかかわらず必ず付ける。付け忘れると、CORSヘッダーの無い応答が
-// 途中のキャッシュに載り、あとから許可originの人に配られてしまう（/posts は30秒キャッシュ）
-function corsHeaders(request) {
-  const origin = request.headers.get('origin');
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? { 'access-control-allow-origin': origin } : {};
-  return { vary: 'Origin', ...allowed };
-}
-
-// ブラウザからのCORSは「読ませない」だけで、送りつけること自体は止められない。
-// 本物の通報は必ず釣りサイトのページから別オリジンのここへ飛んでくるので、ブラウザが必ず Origin を付ける。
-// 逆にOriginが無い送信（curlなど）は、ページを通っていない＝受け取らない
-const fromAllowedSite = (request) => ALLOWED_ORIGINS.includes(request.headers.get('origin'));
-
-export function json(obj, status, request, extra = {}) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8', ...corsHeaders(request), ...extra },
-  });
-}
-
-// 訪問者に見えるので日本語で、CORSヘッダーも付ける（Task 4の通報はブラウザからここに届く）
-export const notFound = (request) => json({ ok: false, error: '見つかりませんでした。' }, 404, request);
+import { handleIkabu } from './ikabu.js';
+import { corsHeaders, fromAllowedSite, json, notFound } from './http.js';
+export { json, notFound };
 
 export default {
   async fetch(request, env, ctx) {
@@ -70,6 +51,9 @@ export default {
 
       const photo = path.match(/^[/]photo[/]([^/]+)$/);
       if (photo && request.method === 'GET') return await handlePhoto(photo[1], request, env);
+
+      const ikabu = await handleIkabu(request, env, ctx, url);
+      if (ikabu) return ikabu;
 
       return notFound(request);
     } catch (err) {

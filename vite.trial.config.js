@@ -28,6 +28,9 @@ export default defineConfig(async (env) => {
           'ikabu-en-gacha': resolve(__dirname, 'ikabu/en/gacha.html'),
           'ikabu-cards': resolve(__dirname, 'ikabu/cards.html'),
           'ikabu-en-cards': resolve(__dirname, 'ikabu/en/cards.html'),
+          // 2026-10-01 写真部（投稿フォーム・🎫1枚）
+          'ikabu-gallery': resolve(__dirname, 'ikabu/gallery.html'),
+          'ikabu-en-gallery': resolve(__dirname, 'ikabu/en/gallery.html'),
         },
       },
     },

@@ -17,6 +17,23 @@ const env = {
 };
 const PORT = 8787;
 
+// 手元だけの仕掛け：この環境から Cloudflare の siteverify に届かないことがある（2026-10-01 写真部の通し確認で発覚）。
+// テスト用の鍵（上の 1x000…AA）は本物に問い合わせても必ず「成功」なので、届かないときは同じ答えを返す。
+// 本番の Worker には無い（src/ は触らない）
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const url = typeof input === 'string' ? input : input.url;
+  if (url.includes('challenges.cloudflare.com/turnstile/v0/siteverify')) {
+    try {
+      return await realFetch(input, init);
+    } catch (err) {
+      console.warn('siteverify に届かないので、テスト用の鍵と同じ「成功」を返す:', String(err));
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+  }
+  return realFetch(input, init);
+};
+
 http
   .createServer(async (req, res) => {
     const chunks = [];

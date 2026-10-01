@@ -1,25 +1,34 @@
-// イカ部「gallery」の入口。写真はビルド時に書き込み済み。ここでは絞り込みと <dialog> の拡大表示
+// イカ部「gallery」の入口。写真はビルド時に書き込み済み。ここでは絞り込みと <dialog> の拡大表示。
+// 2026-10-01：投稿フォーム（Worker へ送る・🎫1枚）と、掲載済みの投稿の一覧を足した
 import { boot } from '../boot.js';
-import { render, lightboxCaptionHTML } from '../views/gallery.js';
+import { render, lightboxCaptionHTML, ugcTileHTML, ugcCaptionHTML, POST_TEXT } from '../views/gallery.js';
 import { photos, photoById } from '../data.js';
 import { t, assetHref } from '../i18n.js';
+import { mountTicketEarn } from '../games/tickets-ui.js';
+import { photoPostEnabled, TURNSTILE_SITE_KEY, fetchIkabuPhotos, submitIkabuPhoto, ikabuPhotoUrl } from '../api/photos.js';
+import { resizeToJpeg } from '../../lib/resize-image.js';
 
 const { lang } = boot(render);
+mountTicketEarn({ lang });   // 投稿が届いたら「🎫 チケット1枚ゲット！」
 
 const filterBox = document.getElementById('ika-gallery-filter');
 const grid = document.getElementById('ika-gallery');
+const ugcGrid = document.getElementById('ika-ugc');
+const ugcStatus = document.getElementById('ika-ugc-status');
 const count = document.getElementById('ika-gallery-count');
 let cat = 'all';
+const ugc = new Map();   // id → 投稿（拡大表示の説明に使う）
 
-/* ---------- 絞り込み ---------- */
+/* ---------- 絞り込み（参考アルバムと部員の投稿の両方に効く） ---------- */
 
-const visibleIds = () => [...grid.querySelectorAll('.ika-photo:not([hidden])')].map((f) => f.dataset.id);
+const grids = () => [ugcGrid, grid].filter(Boolean);
+const visibleIds = () => grids().flatMap((g) => [...g.querySelectorAll('.ika-photo:not([hidden])')].map((f) => f.dataset.id));
 
 function applyFilter(next) {
   cat = next;
   filterBox.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === cat)));
-  grid.querySelectorAll('.ika-photo').forEach((f) => (f.hidden = !(cat === 'all' || f.dataset.cat === cat)));
-  if (count) count.textContent = String(visibleIds().length);
+  grids().forEach((g) => g.querySelectorAll('.ika-photo').forEach((f) => (f.hidden = !(cat === 'all' || f.dataset.cat === cat))));
+  if (count) count.textContent = String([...grid.querySelectorAll('.ika-photo:not([hidden])')].length);
 }
 
 filterBox?.addEventListener('click', (e) => {
@@ -38,11 +47,18 @@ let opener = null;
 
 function show(id) {
   const p = photoById(id);
-  if (!p) return;
+  const u = ugc.get(id);
+  if (!p && !u) return;
   currentId = id;
-  img.src = assetHref(p.file);
-  img.alt = t(lang, p.caption);
-  cap.innerHTML = lightboxCaptionHTML(lang, p);
+  if (p) {
+    img.src = assetHref(p.file);
+    img.alt = t(lang, p.caption);
+    cap.innerHTML = lightboxCaptionHTML(lang, p);
+  } else {
+    img.src = ikabuPhotoUrl(u.id);
+    img.alt = u.comment || u.name;
+    cap.innerHTML = ugcCaptionHTML(lang, u);
+  }
   const ids = visibleIds();
   pos.textContent = `${ids.indexOf(id) + 1} / ${ids.length}`;
 }
@@ -54,13 +70,15 @@ function step(dir) {
   show(ids[(i + dir + ids.length) % ids.length]);
 }
 
-grid?.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-open]');
-  if (!btn || !dlg?.showModal) return;
-  opener = btn;
-  show(btn.dataset.open);
-  dlg.showModal();
-});
+for (const g of grids()) {
+  g.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-open]');
+    if (!btn || !dlg?.showModal) return;
+    opener = btn;
+    show(btn.dataset.open);
+    dlg.showModal();
+  });
+}
 
 document.getElementById('ika-lightbox-close')?.addEventListener('click', () => dlg.close());
 document.getElementById('ika-lightbox-prev')?.addEventListener('click', () => step(-1));
@@ -83,4 +101,94 @@ const wanted = new URLSearchParams(location.search).get('photo');
 if (wanted && photos.some((p) => p.id === wanted) && dlg?.showModal) {
   show(wanted);
   dlg.showModal();
+}
+
+/* ---------- 部員の投稿の一覧（掲載済みだけ。Worker から読む） ---------- */
+
+async function loadUgc() {
+  if (!ugcGrid || !ugcStatus) return;
+  if (!photoPostEnabled) { ugcStatus.textContent = t(lang, POST_TEXT.ugcEmpty); return; }
+  try {
+    const posts = await fetchIkabuPhotos();
+    ugc.clear();
+    for (const p of posts) ugc.set(p.id, p);
+    ugcGrid.innerHTML = posts.map((p) => ugcTileHTML(lang, p, ikabuPhotoUrl(p.id))).join('');
+    ugcStatus.textContent = posts.length ? '' : t(lang, POST_TEXT.ugcEmpty);
+    ugcStatus.hidden = posts.length > 0;
+    applyFilter(cat);
+  } catch {
+    ugcStatus.textContent = t(lang, POST_TEXT.ugcError);
+  }
+}
+loadUgc();
+
+/* ---------- 投稿フォーム ---------- */
+
+const form = document.getElementById('ika-photopost-form');
+const msg = document.getElementById('ika-pp-msg');
+const submitBtn = document.getElementById('ika-pp-submit');
+const off = document.getElementById('ika-pp-off');
+let widgetId = null;
+
+function say(text, isError = false) {
+  if (!msg) return;
+  msg.textContent = text;
+  msg.classList.toggle('is-error', isError);
+}
+// ロボット除け（Turnstile）。受付が準備中のときは Cloudflare のスクリプトを読み込まない
+function loadTurnstile() {
+  const s = document.createElement('script');
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  s.async = true;
+  document.head.append(s);
+}
+function mountTurnstile(tries = 0) {
+  if (window.turnstile) {
+    widgetId = window.turnstile.render('#ika-pp-ts', { sitekey: TURNSTILE_SITE_KEY, theme: 'light' });
+  } else if (tries < 50) {
+    setTimeout(() => mountTurnstile(tries + 1), 200);
+  }
+}
+
+form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!form.reportValidity()) return;
+  const token = widgetId !== null && window.turnstile ? window.turnstile.getResponse(widgetId) : '';
+  if (!token) return say(t(lang, 'ロボットでないことの確認が終わるまで、少しお待ちください。', 'Please wait for the robot check to finish.'), true);
+
+  submitBtn.disabled = true;
+  say(t(lang, '送信しています…', 'Sending…'));
+  try {
+    const data = new FormData(form);
+    data.delete('photo');
+    const file = document.getElementById('ika-pp-photo').files[0];
+    if (!file) return say(t(lang, '写真を選んでください。', 'Please choose a photo.'), true);
+    let blob;
+    try {
+      blob = await resizeToJpeg(file);   // 縮小して、撮影情報（位置など）を落とす
+    } catch {
+      return say(t(lang, 'この写真は読み込めませんでした。別の写真でお試しください。', 'Could not read this photo. Please try another.'), true);
+    }
+    data.set('photo', blob, 'photo.jpg');
+    data.set('cf-turnstile-response', token);
+
+    const result = await submitIkabuPhoto(data);
+    if (!result.ok) return say(result.error, true);
+
+    form.reset();
+    // 🎫は「投稿が届いた時点」で付ける（2026-10-01 ぱっぱ）。付与は tickets-ui（1日1枚）
+    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'photo', counted: true } }));
+    say(t(lang, '投稿しました。ありがとうございます！ 部長が確認してから写真部に並びます。', 'Posted. Thank you! It will appear once the club captain has checked it.'));
+  } finally {
+    submitBtn.disabled = false;
+    if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);   // トークンは1回しか使えない
+  }
+});
+
+if (photoPostEnabled) {
+  loadTurnstile();
+  mountTurnstile();
+} else if (form) {
+  form.hidden = true;
+  if (off) off.hidden = false;
 }

@@ -22,26 +22,31 @@ export function requireSignSecret(env) {
   if (!env.SIGN_SECRET) throw new Error('SIGN_SECRET missing');
 }
 
-const DELETE_TOKEN_DAYS = 7;
+const TOKEN_DAYS = 7;
 
-// 投稿IDと期限の両方に署名するので、どちらを書き換えても署名が合わなくなる
-const deleteMessage = (postId, exp) => `del:${postId}.${exp}`;
+// 用途・投稿ID・期限の全部に署名するので、どれを書き換えても署名が合わなくなる。
+// 用途（del＝現地の声の削除リンク、ika＝写真部の掲載確認リンク）を入れるので、片方のリンクをもう片方に流用できない
+const tokenMessage = (purpose, postId, exp) => `${purpose}:${postId}.${exp}`;
 
-/** Discordの通知に付ける削除リンク用。形は <postId>.<期限の秒>.<署名> */
-export async function makeDeleteToken(env, postId, now = Date.now()) {
+/** Discordの通知に付けるリンク用。形は <postId>.<期限の秒>.<署名> */
+export async function makeToken(env, purpose, postId, now = Date.now()) {
   requireSignSecret(env);
-  const exp = Math.floor(now / 1000) + DELETE_TOKEN_DAYS * 86400;
-  return `${postId}.${exp}.${await hmacHex(deleteMessage(postId, exp), env.SIGN_SECRET)}`;
+  const exp = Math.floor(now / 1000) + TOKEN_DAYS * 86400;
+  return `${postId}.${exp}.${await hmacHex(tokenMessage(purpose, postId, exp), env.SIGN_SECRET)}`;
 }
 
-export async function readDeleteToken(env, token, now = Date.now()) {
+export async function readToken(env, purpose, token, now = Date.now()) {
   requireSignSecret(env);
   const parts = String(token ?? '').split('.');
   if (parts.length !== 3) return null;
   const [postId, exp, sig] = parts;
   if (!/^[0-9]+$/.test(exp) || Number(exp) < Math.floor(now / 1000)) return null;
-  return safeEqual(sig, await hmacHex(deleteMessage(postId, exp), env.SIGN_SECRET)) ? postId : null;
+  return safeEqual(sig, await hmacHex(tokenMessage(purpose, postId, exp), env.SIGN_SECRET)) ? postId : null;
 }
+
+// 現地の声の削除リンク（これまでの名前のまま）
+export const makeDeleteToken = (env, postId, now = Date.now()) => makeToken(env, 'del', postId, now);
+export const readDeleteToken = (env, token, now = Date.now()) => readToken(env, 'del', token, now);
 
 // ここから下は管理ページ（Task 5）の合言葉とCookie
 const ADMIN_COOKIE = 'yfj_admin';
