@@ -74,3 +74,13 @@ test('写真部に投稿すると1枚。同じ日の2回目は0枚、日付が�
   const c = earnPhoto(b.rec, { day: '2026-10-01' });
   assert.equal(c.got, 1); assert.equal(c.rec.n, 2);
 });
+
+test('友だち紹介：1回2枚、5回まで（通算）。日付が変わっても回数は戻らない（2026-10-01 キャンペーン）', async () => {
+  const { earnInvite, inviteLeft, INVITE_MAX } = await import('../src/js/ikabu/games/tickets.js');
+  let r = emptyTickets();
+  assert.equal(inviteLeft(r), INVITE_MAX);
+  for (let i = 0; i < 5; i++) { const a = earnInvite(r, { day: D }); assert.equal(a.got, 2); assert.deepEqual(a.why, ['invite']); r = a.rec; }
+  assert.equal(r.n, 10); assert.equal(inviteLeft(r), 0);
+  const more = earnInvite(r, { day: '2026-10-02' });
+  assert.equal(more.got, 0); assert.equal(more.rec.n, 10);
+});

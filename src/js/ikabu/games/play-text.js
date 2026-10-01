@@ -790,7 +790,7 @@ export const HUB_TEXT = {
     lead: pair('遊ぶともらえる🎫。ためてガチャでカードを引く。', 'Play to earn 🎫. Spend them on the card gacha.'),
     left: (lang, n, full) => (full ? (lang === 'en' ? 'Wallet full (300)' : 'いっぱい（300枚）') : lang === 'en' ? `${n} more today` : `今日あと ${n} 枚もらえる`),
     pop: (lang, got, why) => {
-      const w = why.includes('cert') ? (lang === 'en' ? 'certificate' : '認定証') : why.includes('sumiGoal') ? (lang === 'en' ? 'goal reached' : '今日の目標') : why.includes('rush60') ? (lang === 'en' ? '60 s survived' : '60秒しのいだ') : why.includes('battleWin') ? (lang === 'en' ? 'battle won' : '対戦に勝った') : why.includes('battleLose') ? (lang === 'en' ? 'battle played' : '対戦した') : why.includes('photo') ? (lang === 'en' ? 'photo posted' : '写真を投稿') : why.includes('first') ? (lang === 'en' ? 'first game today' : '今日はじめの1戦') : '';
+      const w = why.includes('cert') ? (lang === 'en' ? 'certificate' : '認定証') : why.includes('sumiGoal') ? (lang === 'en' ? 'goal reached' : '今日の目標') : why.includes('rush60') ? (lang === 'en' ? '60 s survived' : '60秒しのいだ') : why.includes('battleWin') ? (lang === 'en' ? 'battle won' : '対戦に勝った') : why.includes('battleLose') ? (lang === 'en' ? 'battle played' : '対戦した') : why.includes('photo') ? (lang === 'en' ? 'photo posted' : '写真を投稿') : why.includes('invite') ? (lang === 'en' ? 'friend invited' : '友だちを紹介') : why.includes('first') ? (lang === 'en' ? 'first game today' : '今日はじめの1戦') : '';
       // 2026-09-30 ぱっぱ：ゲームの後に「チケット〇枚ゲット！」と分かる知らせを
       return lang === 'en' ? `🎫 You got ${got} ticket${got > 1 ? 's' : ''}!${w ? `  (${w})` : ''}` : `🎫 チケット ${got}枚ゲット！${w ? `（${w}）` : ''}`;
     },
