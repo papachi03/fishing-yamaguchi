@@ -3175,7 +3175,11 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bd-share-msg { margin: 0; min-height: 1.2em; font-size: 12.5px; font-weight: 700; color: #ffd166; }
 
 /* ===== ガチャ限定フェス・シークレット（2026-10-01） ===== */
-.ika-gc-pools { display: grid; gap: 10px; width: min(92%, 420px); margin: 0 0 6px; }
+/* バナーはロゴ（上 6.5%）にかぶらない大きさに（2026-10-01 ぱっぱ：大きすぎてロゴが潰れた）。開催中はロゴも少し小さく */
+.ika-gc-pools { display: grid; gap: 8px; width: min(66%, 280px); margin: 0 0 4px; }
+.ika-gc.is-fes-on .ika-gc-logo { width: min(58%, 300px); top: 5%; }
+.ika-gc.is-fes-on .ika-gc-lobby { gap: 8px; }
+.ika-gc.is-fes-on .ika-gc-pulls { gap: 8px; width: min(84%, 360px); }
 .ika-gc-pools[hidden] { display: none; }
 .ika-gc-pool { position: relative; display: block; width: 100%; padding: 0; border: 3px solid transparent; border-radius: 14px; background: none; cursor: pointer; overflow: hidden; opacity: 0.72; transform: scale(0.97); transition: opacity 0.15s, transform 0.15s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
 .ika-gc-pool img { display: block; width: 100%; height: auto; pointer-events: none; }

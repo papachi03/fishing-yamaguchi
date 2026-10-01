@@ -232,6 +232,7 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
     const box = $('[data-gc-pools]');
     if (!fes) { box.hidden = true; return; }
     box.hidden = false;
+    el.gc.classList.add('is-fes-on');   // ロゴを少し小さく（バナーの分の場所を空ける）
     box.innerHTML = `
       <button type="button" class="ika-gc-pool" data-gc-pool="normal" aria-pressed="${String(banner === 'normal')}"><img src="${assetHref(NORMAL_BANNER)}" alt="${t(lang, '通常ガチャ', 'Standard gacha')}" width="1080" height="420" decoding="async" /></button>
       <button type="button" class="ika-gc-pool" data-gc-pool="${esc(fes.id)}" aria-pressed="${String(banner === fes.id)}"><img src="${assetHref(fes.banner)}" alt="${esc(t(lang, fes.name))}" width="1080" height="420" decoding="async" /><span class="ika-gc-pool-period">${t(lang, '開催中', 'Now on')} ${fesPeriod(fes, lang)}</span></button>`;
