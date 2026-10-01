@@ -313,7 +313,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 絵は先（網・鉤）だけ。柄は釣り人の手元（SCENE.grip）から先まで線で描き、伸び縮みする（10/2 ぱっぱ：本物は手元を動かさず、伸縮する棒が伸びて取り、縮みながら回収）
   const TOOL = {
     net: { w: 98, h: 150, headX: 0.625, headY: 0.513, src: assetHref('/assets/ikabu/tools/tamo_head.webp') },
-    gaff: { w: 148, h: 150, headX: 0.678, headY: 0.5, src: assetHref('/assets/ikabu/tools/gaff_head.webp') },
+    gaff: { w: 74, h: 75, headX: 0.678, headY: 0.5, src: assetHref('/assets/ikabu/tools/gaff_head.webp') },   // 鉤は半分の大きさ（10/2 ぱっぱ「フックが大きい」）
   };
   // 先（網の中心・鉤）を (tx, ty) に置く。絵は手元→先の向きに回し、柄の線は手元から絵の付け根まで
   function drawTool(kind, tx, ty, alpha) {
