@@ -26,7 +26,7 @@ import { newId, isId, byNewest } from './store.js';
 import { stripJpegMeta } from '../../../src/js/lib/strip-jpeg-meta.js';
 import { requireSignSecret, makeToken, readToken, isAdmin } from './auth.js';
 import { sendDiscord, quoted } from './notify.js';
-import { html, sameOrigin, logRefusal, forbidden, missing } from './admin.js';
+import { html, sameOrigin, logRefusal, forbidden, missing, loginPage } from './admin.js';
 
 export const IKABU = {
   cats: { catch: '部員の釣果', sea: '山口の海', life: 'イカの姿', food: '食卓' },
@@ -225,8 +225,8 @@ ${post.approved ? '' : `<form method="post" action="/admin/ikabu/review"><input 
     return badLink();
   }
 
-  // ここから下は合言葉が必要
-  if (!(await isAdmin(request, env))) return forbidden();
+  // ここから下は合言葉が必要。一覧を直接開いた時は「操作できません」でなく合言葉の画面を出す（入ったらここへ戻る）
+  if (!(await isAdmin(request, env))) return path === '/admin/ikabu' && method === 'GET' ? loginPage('', 200, '/admin/ikabu') : forbidden();
 
   if (path === '/admin/ikabu' && method === 'GET') {
     const posts = await listPosts(env);

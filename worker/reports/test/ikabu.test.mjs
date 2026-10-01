@@ -137,8 +137,17 @@ test('管理ページ：掲載待ちが上に出る。掲載→取り下げ→�
     const text = await page.text();
     assert.match(text, /掲載待ち 1件/);
     assert.match(text, /掲載する/);
-    // 合言葉なしは入れない
-    assert.equal((await get('/admin/ikabu', env)).status, 403);
+    // 合言葉なしは合言葉の画面（入ったら写真部の管理へ戻る）。2026-10-01 ぱっぱのiPhoneで「操作できません」になった
+    const login = await get('/admin/ikabu', env);
+    assert.equal(login.status, 200);
+    assert.match(await login.text(), /name="next" value="\/admin\/ikabu"/);
+    const lf = new FormData();
+    lf.set('passphrase', 'aikotoba-test'); lf.set('next', '/admin/ikabu');
+    const back = await worker.fetch(new Request(`${BASE}/admin/login`, { method: 'POST', headers: { origin: BASE }, body: lf }), env, ctx);
+    assert.equal(back.status, 303); assert.equal(back.headers.get('location'), '/admin/ikabu');
+    const evil = new FormData();
+    evil.set('passphrase', 'aikotoba-test'); evil.set('next', 'https://evil.example');
+    assert.equal((await worker.fetch(new Request(`${BASE}/admin/login`, { method: 'POST', headers: { origin: BASE, 'cf-connecting-ip': '203.0.113.77' }, body: evil }), env, ctx)).headers.get('location'), '/admin');
 
     const act = (kind) =>
       worker.fetch(new Request(`${BASE}/admin/ikabu/posts/${post.id}/${kind}`, { method: 'POST', headers: { cookie, origin: BASE } }), env, ctx);

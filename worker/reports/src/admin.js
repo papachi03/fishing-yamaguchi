@@ -44,11 +44,13 @@ export function html(body, status = 200) {
   );
 }
 
-const loginPage = (message = '', status = 200) =>
+// next：入ったあとに戻る場所（写真部の管理 /admin/ikabu を直接開いた時のため。2026-10-01 ぱっぱのiPhoneで「操作できません」になった）
+export const NEXT_PAGES = ['/admin', '/admin/ikabu'];
+export const loginPage = (message = '', status = 200, next = '/admin') =>
   html(
     `<h1>現地の声 管理</h1>${message ? `<p class="msg">${esc(message)}</p>` : ''}
 <form method="post" action="/admin/login"><p><label>合言葉<br><input type="password" name="passphrase" autocomplete="current-password" required></label></p>
-<button type="submit">入る</button></form>`,
+<input type="hidden" name="next" value="${esc(NEXT_PAGES.includes(next) ? next : '/admin')}"><button type="submit">入る</button></form>`,
     status
   );
 
@@ -104,8 +106,8 @@ export const logRefusal = (request, path) =>
 export const forbidden = () => html('<h1>操作できません</h1><p>もう一度、管理ページから入り直してください。</p>', 403);
 export const missing = () => html('<h1>見つかりませんでした</h1><p>管理ページに戻ってお試しください。</p>', 404);
 // 303にも noindex を付ける（リダイレクトそのものが検索結果に拾われないように）
-const seeAdmin = (extra = {}) =>
-  new Response(null, { status: 303, headers: { location: '/admin', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', ...extra } });
+const seeAdmin = (extra = {}, to = '/admin') =>
+  new Response(null, { status: 303, headers: { location: NEXT_PAGES.includes(to) ? to : '/admin', 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow', ...extra } });
 
 async function deletePost(env, id) {
   await removePost(env, id);
@@ -133,8 +135,9 @@ export async function handleAdmin(request, env, url) {
       return loginPage('試行回数が多すぎます。1時間ほどおいてからお試しください。', 429);
     }
     const form = await request.formData();
-    if (!(await checkPassphrase(env, form.get('passphrase')))) return loginPage('合言葉が違います。', 401);
-    return seeAdmin({ 'set-cookie': await makeAdminCookie(env) });
+    const next = String(form.get('next') ?? '/admin');
+    if (!(await checkPassphrase(env, form.get('passphrase')))) return loginPage('合言葉が違います。', 401, next);
+    return seeAdmin({ 'set-cookie': await makeAdminCookie(env) }, next);
   }
 
   // Discordの削除リンク（合言葉なしで使える。トークンそのものが鍵）。
