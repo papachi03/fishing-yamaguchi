@@ -25,7 +25,7 @@ export function html(body, status = 200) {
   h1{font-size:20px} .post{background:#fff;border-radius:12px;padding:16px;margin:0 0 14px;box-shadow:0 1px 8px rgba(0,0,0,.06)}
   .post.hidden{border-left:6px solid #c2571f} .meta{font-size:13px;color:#4c5058} .tag{display:inline-block;background:#c2571f;color:#fff;border-radius:999px;padding:0 10px;font-size:12px}
   img{max-width:100%;border-radius:8px;margin-top:8px} p{margin:6px 0;white-space:pre-wrap;word-break:break-word}
-  form{display:inline} button{font:inherit;padding:9px 18px;border-radius:999px;border:1px solid #20232a;background:#fff;cursor:pointer;margin:8px 8px 0 0}
+  form{display:inline} button{font:inherit;color:#20232a;-webkit-appearance:none;appearance:none;padding:9px 18px;border-radius:999px;border:1px solid #20232a;background:#fff;cursor:pointer;margin:8px 8px 0 0}
   button.danger{background:#c2571f;border-color:#c2571f;color:#fff} input{font:inherit;padding:10px;width:100%;max-width:320px;box-sizing:border-box}
   .msg{color:#c2571f}
   .tools{display:block;margin:0 0 20px;padding:0 0 18px;border-bottom:1px solid rgba(32,35,42,.15)} .tools button{margin:0}
