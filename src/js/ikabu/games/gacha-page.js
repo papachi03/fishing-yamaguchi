@@ -181,7 +181,8 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   const demo = devOk ? new URLSearchParams(location.search).get('demo') : null;
   // 限定フェス（2026-10-01）。確認用：?fes=<フェスID>（期間外でも開く）・?tod=morning|day|evening|night（時間帯を決め打ち）。DEV と試遊版だけ
   const q = new URLSearchParams(location.search);
-  const fes = activeFes(new Date(), { force: devOk ? q.get('fes') : null });
+  // テストプレイ版ではフェスを日付で出さない（チケットは正式版で消えるので、フェスは本格始動の時にいきなり出す。2026-10-01 ぱっぱ）。確認は ?fes= だけ
+  const fes = activeFes(new Date(), { force: devOk ? q.get('fes') : null, auto: !IS_TRIAL });
   const todNow = () => (devOk && q.get('tod')) || todOf(jst().hour);
   let banner = 'normal';
   document.documentElement.classList.add('is-gacha');

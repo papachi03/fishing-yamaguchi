@@ -66,8 +66,10 @@ export function todOf(hour) {
 export const fesById = (id) => FES.find((f) => f.id === id) ?? null;
 export const isFesActive = (f, date) => Boolean(f) && f.from <= date && date <= f.until;
 // いま開催中のフェス（無ければ null）。force＝確認用（DEV・試遊版だけ）
-export function activeFes(now = new Date(), { force = null } = {}) {
+// auto=false：日付では開かない（テストプレイ版。フェスは本格始動の時にいきなり出す＝2026-10-01 ぱっぱ）
+export function activeFes(now = new Date(), { force = null, auto = true } = {}) {
   if (force) return fesById(force);
+  if (!auto) return null;
   const { date } = jst(now);
   return FES.find((f) => isFesActive(f, date)) ?? null;
 }

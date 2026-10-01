@@ -25,6 +25,9 @@ test('フェスは日本時間の日付で開催中か決まる（10/10〜11/30�
   assert.equal(activeFes(at('2026-11-30T14:00:00Z'))?.id, 'autumn2026'); // JST 11/30 23:00
   assert.equal(activeFes(at('2026-11-30T15:00:00Z')), null);          // JST 12/1
   assert.equal(activeFes(at('2026-10-01T03:00:00Z'), { force: 'autumn2026' })?.id, 'autumn2026');
+  // テストプレイ版（auto:false）は期間中でも出ない。確認用の force だけは開く
+  assert.equal(activeFes(at('2026-10-20T03:00:00Z'), { auto: false }), null);
+  assert.equal(activeFes(at('2026-10-20T03:00:00Z'), { auto: false, force: 'autumn2026' })?.id, 'autumn2026');
   assert.equal(FES.length, 4);
   // 冬・春・初夏は期間が重ならず、秋の後に続く
   for (let i = 1; i < FES.length; i++) assert.ok(FES[i].from > FES[i - 1].until, FES[i].id);
