@@ -2817,9 +2817,9 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* 親に filter を掛けるとカードの表裏（preserve-3d）が潰れる → 虹の色回しは墨の画像にだけ掛ける */
 .ika-gc-result.is-rainbow .ika-gc-rink[data-kind='rainbow'].is-on { animation: ika-gc-rink 1.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards, ika-gc-hue 3s linear 1.5s infinite; }
 @keyframes ika-gc-hue { from { filter: hue-rotate(0); } to { filter: hue-rotate(360deg); } }
-.ika-gc-banner { position: absolute; z-index: 6; top: 9%; left: 50%; transform: translate(-50%, 0) scale(0.5); font-family: var(--font-varsity); font-weight: 800; font-size: 64px; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 2px #0b1a2a; paint-order: stroke fill; text-shadow: 0 6px 0 #0b1a2a; opacity: 0; pointer-events: none; }
+.ika-gc-banner { position: absolute; z-index: 6; top: 9%; left: 0; width: 100%; display: flex; justify-content: center; pointer-events: none; transform: scale(0.5); font-family: var(--font-varsity); font-weight: 800; font-size: 64px; letter-spacing: 0.06em; color: #fff; -webkit-text-stroke: 2px #0b1a2a; paint-order: stroke fill; text-shadow: 0 6px 0 #0b1a2a; opacity: 0; pointer-events: none; }
 .ika-gc-banner.is-on { animation: ika-gc-banner 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
-@keyframes ika-gc-banner { to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes ika-gc-banner { to { opacity: 1; transform: scale(1); } }
 .ika-gc-banner.is-gold { color: #ffd76a; }
 .ika-gc-banner.is-rainbow { background: linear-gradient(90deg, #ff4d4d, #ffe94d, #6bff6b, #4dc3ff, #b36bff); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 0; text-shadow: none; filter: drop-shadow(0 6px 0 #0b1a2a); }
 .ika-gc-banner.is-big { font-size: 96px; }
@@ -2843,11 +2843,13 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-gc-after { position: relative; z-index: 6; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: min(100%, 380px); }
 .ika-gc-after .ika-gc-imgbtn[aria-disabled='true'] { opacity: 0.45; filter: grayscale(0.6); }
 .ika-gc-rimg { height: 34px; width: auto; filter: drop-shadow(0 2px 0 #0b1a2a); }
-.ika-gc-banner img { height: clamp(70px, 18vw, 110px); width: auto; filter: drop-shadow(0 6px 0 rgba(11,26,42,0.6)); }
+.ika-gc-banner img { height: clamp(70px, 18vw, 110px); width: auto; filter: drop-shadow(0 6px 0 rgba(11,26,42,0.6)); display: block; }
+/* 読み込み前から幅が決まるように縦横比を持たせる（2026-10-01 ぱっぱ：10連で帯が右寄りに出てガクッと中央に動いた）。値は rarity_*.webp の実寸 */
+.ika-gc-banner img[alt='N'] { aspect-ratio: 195 / 151; } .ika-gc-banner img[alt='R'] { aspect-ratio: 205 / 165; } .ika-gc-banner img[alt='SR'] { aspect-ratio: 542 / 173; } .ika-gc-banner img[alt='SSR'] { aspect-ratio: 689 / 178; } .ika-gc-banner img[alt='UR'] { aspect-ratio: 677 / 199; }
 .ika-gc-banner.is-big img { height: clamp(90px, 24vw, 140px); }
 .ika-gc-banner.is-small { animation: ika-gc-banner-soft 0.4s ease-out forwards; }
 .ika-gc-banner.is-small img { height: clamp(48px, 12vw, 72px); filter: drop-shadow(0 3px 0 rgba(11,26,42,0.5)); }
-@keyframes ika-gc-banner-soft { from { opacity: 0; transform: translate(-50%, 6px) scale(0.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes ika-gc-banner-soft { from { opacity: 0; transform: translateY(6px) scale(0.9); } to { opacity: 1; transform: scale(1); } }
 .ika-btn--orange { background: var(--ika-orange); color: var(--ika-ink); }
 /* 確率の窓 */
 .ika-gc-rates { position: absolute; z-index: 30; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(90%, 360px); padding: 18px; border-radius: 16px; background: #fff; color: var(--ika-ink); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }

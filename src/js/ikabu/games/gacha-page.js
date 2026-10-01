@@ -615,6 +615,8 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   }
 
   audio.preload(['lobby']);
+  // 上の帯のレア度画像を先に読み込む（読み込み待ちで帯が横にずれないように。2026-10-01）
+  for (const t of ['n', 'r', 'sr', 'ssr', 'ur']) { const im = new Image(); im.src = assetHref(`/assets/ikabu/gacha/rarity_${t}.webp`); }
   if (audio.on) el.gc.addEventListener('pointerdown', () => { audio.unlock(); if (phase === 'lobby') audio.bgm('lobby'); }, { once: true });
   return { startPull, resetToLobby };
 }
