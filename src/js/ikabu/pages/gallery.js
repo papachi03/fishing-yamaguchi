@@ -3,7 +3,7 @@
 import { boot } from '../boot.js';
 import { render, lightboxCaptionHTML, ugcTileHTML, ugcCaptionHTML, POST_TEXT } from '../views/gallery.js';
 import { photos, photoById } from '../data.js';
-import { t, assetHref } from '../i18n.js';
+import { t, pair, assetHref } from '../i18n.js';
 import { mountTicketEarn } from '../games/tickets-ui.js';
 import { photoPostEnabled, TURNSTILE_SITE_KEY, fetchIkabuPhotos, submitIkabuPhoto, ikabuPhotoUrl } from '../api/photos.js';
 import { resizeToFit } from '../../lib/resize-image.js';
@@ -160,7 +160,7 @@ form?.addEventListener('submit', async (e) => {
   if (!token) return say(t(lang, 'ロボットでないことの確認が終わるまで、少しお待ちください。', 'Please wait for the robot check to finish.'), true);
 
   submitBtn.disabled = true;
-  say(t(lang, '送信しています…', 'Sending…'));
+  say(t(lang, '写真を軽くしています…', 'Preparing the photo…'));
   try {
     const file = document.getElementById('ika-pp-photo').files[0];
     if (!file) return say(t(lang, '写真を選んでください。', 'Please choose a photo.'), true);
@@ -183,14 +183,20 @@ form?.addEventListener('submit', async (e) => {
     data.set('cid', cid);
     data.set('photo', new File([await blob.arrayBuffer()], 'photo.jpg', { type: 'image/jpeg' }));
 
-    const result = await submitIkabuPhoto(data, { size: blob.size, side: fit.side, src: file.type || '?', srcSize: file.size });
+    const STAGE = {
+      sending: pair('送信しています…', 'Sending…'),
+      checking: pair('届いたか確かめています…（そのままお待ちください）', 'Checking it arrived… (please wait)'),
+      retry: pair('もう一度送っています…', 'Sending again…'),
+    };
+    const result = await submitIkabuPhoto(data, { size: blob.size, side: fit.side, src: file.type || '?', srcSize: file.size }, (st) => say(t(lang, STAGE[st] ?? STAGE.sending)));
     if (!result.ok) return say(result.error, true);
 
     form.reset();
     cid = null;
     // 🎫は「投稿が届いた時点」で付ける（2026-10-01 ぱっぱ）。付与は tickets-ui（1日1枚）
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'photo', counted: true } }));
-    say(t(lang, '投稿しました。ありがとうございます！ 部長が確認してから写真部に並びます。', 'Posted. Thank you! It will appear once the club captain has checked it.'));
+    say(t(lang, '✅ 投稿しました。ありがとうございます！ 部長が確認してから「部員の投稿」に並びます。', '✅ Posted. Thank you! It will appear under “Member posts” once the club captain has checked it.'));
+    msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } finally {
     submitBtn.disabled = false;
     if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);   // トークンは1回しか使えない

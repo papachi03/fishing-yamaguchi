@@ -56,8 +56,10 @@ export async function checkArrived(cid, waitMs = 0) {
   }
 }
 
-export async function submitIkabuPhoto(formData, info = {}) {
+// onStage(段階)：'sending'（送っている）・'checking'（届いたか確かめている）・'retry'（送り直している）。画面の案内に使う
+export async function submitIkabuPhoto(formData, info = {}, onStage = () => {}) {
   const t0 = Date.now();
+  onStage('sending');
   const cid = String(formData.get('cid') ?? '');
   const done = (data, status) => (data?.ok ? data : { ok: false, error: data?.error || `送信できませんでした（${status}）。時間をおいてもう一度お試しください。` });
   try {
@@ -65,17 +67,21 @@ export async function submitIkabuPhoto(formData, info = {}) {
     return done(await res.json().catch(() => null), res.status);
   } catch (first) {
     // ①「失敗」と出ても届いていることがある → 少し待って Worker に聞く（Worker 側の処理は3秒ほどかかる）
+    onStage('checking');
     if (cid) { const a = await checkArrived(cid, 3500); if (a) return a; }
+    onStage('retry');
     // ② 本当に届いていない → XMLHttpRequest で送り直す（同じ受付番号なので、万一両方届いても1件）
     try {
       const r = await xhrPost(`${API}/ikabu/photos`, formData);
       if (r.status > 0) return done(parse(r.text), r.status);
     } catch { /* 下で確かめる */ }
+    onStage('checking');
     if (cid) { const a = await checkArrived(cid, 3500); if (a) return a; }
     const e = first;
     const why = `${e?.name ?? 'Error'}: ${e?.message ?? e}`;
     const q = new URLSearchParams({ why, ms: String(Date.now() - t0), ...Object.fromEntries(Object.entries(info).map(([k, v]) => [k, String(v)])) });
     call(`/ikabu/diag?${q}`, {}, 8000).catch(() => {});
-    return { ok: false, error: `通信できませんでした。電波の良い場所でもう一度お試しください。（${why}）` };
+    // 技術的な理由は Worker の記録にだけ残し、画面には出さない（投稿する人を混乱させない。2026-10-01 ぱっぱ）
+    return { ok: false, error: '送れませんでした。電波の良い場所で、もう一度「投稿する」を押してください。同じ写真を送り直しても二重にはなりません。', why };
   }
 }
