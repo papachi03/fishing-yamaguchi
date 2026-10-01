@@ -164,7 +164,7 @@ export const RATTLE = { activeMore: 0.5, activeNew: 0.25, calmLess: 0.4, stale: 
 //   ロッド 硬め … アタリが取りにくい（竿先の振れ 0.7）／しゃくりが大きく動く（1.3）／巻き取りが強い（1.2）／張りの上がりはふつう（1.0）
 //        柔らかめ … 穂先が敏感でアタリが出る（1.4）／しゃくりの反動が小さい（0.8）／取り込みが大変（0.85）／竿が張りを吸収（0.8）
 //   ドラグ 締め（取り込み優先）… 寄せは速い（1.25）が、ジェットで張りが一気に上がる（1.5）。しゃくり音は短く「ジッ」（0.1秒）
-//        ゆるめ（駆け引き優先）… 寄せはゆるやか（0.7）、ジェットの張りはやわらかい（0.6）、ゆるめた時にすっぽ抜けやすい（0.75）。音は「ジーーー」（0.8秒）
+//        ゆるめ（駆け引き優先）… 寄せはゆるやか（0.7）、ジェットの張りはやわらかい（0.6）、ゆるめた時にすっぽ抜けやすい（0.75）。音は「ジー」（0.42秒）
 //   ジェットの音は変えない（ぱっぱ）。差は抵抗値（張り）につける。初心者練習（easy）には効かせない
 export const RODS = ['stiff', 'soft'];
 export const DRAGS = ['tight', 'normal', 'loose'];
@@ -176,7 +176,7 @@ export const TACKLE = {
   drag: {
     tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65 },
     normal: { reel: 1, jetTension: 1, jet: 1, slack: 1, zip: 0.3, jerkDur: 1 },
-    loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.8, jerkDur: 1.7 },
+    loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.42, jerkDur: 1.7 },   // 音は 0.8→0.42（10/1 ぱっぱ「鳴りが長い」）
   },
 };
 export const DEFAULT_TACKLE = { rod: 'stiff', drag: 'normal' };
