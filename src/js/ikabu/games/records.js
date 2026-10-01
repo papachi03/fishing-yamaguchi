@@ -253,15 +253,20 @@ const check = (str) => {
   return h.toString(36).padStart(4, '0');
 };
 
-export function exportCode({ egi = null, sumi = null } = {}, { date = new Date() } = {}) {
-  const body = b64enc(JSON.stringify({ v: 1, at: dayOf(date), egi, sumi }));
-  return `IKABU1-${check(body)}-${body}`;
+// trial：テストプレイ版は専用の頭「IKABUT1-」。正式版の「IKABU1-」とは互いに読めない（10/2 ぱっぱ：テストプレイ内での引き継ぎは良いが、正式版とは区別する）
+//   検査の値にも trial を混ぜる（頭だけ書き換えても通らない）
+export function exportCode({ egi = null, sumi = null } = {}, { date = new Date(), trial = false } = {}) {
+  const body = b64enc(JSON.stringify({ v: 1, at: dayOf(date), egi, sumi, ...(trial ? { trial: true } : {}) }));
+  return `${trial ? 'IKABUT1' : 'IKABU1'}-${check((trial ? 'T' : '') + body)}-${body}`;
 }
 
-export function importCode(text) {
-  const m = String(text ?? '').replace(/\s+/g, '').match(/^IKABU1-([0-9a-z]{4})-([A-Za-z0-9_-]+)$/);
+// 読めない時の理由：format（形がちがう）／check（途中で切れた）／version／other（テストプレイと正式版を取り違えた）
+export function importCode(text, { trial = false } = {}) {
+  const m = String(text ?? '').replace(/\s+/g, '').match(/^(IKABUT?1)-([0-9a-z]{4})-([A-Za-z0-9_-]+)$/);
   if (!m) throw new Error('format');
-  if (check(m[2]) !== m[1]) throw new Error('check');
+  if ((m[1] === 'IKABUT1') !== trial) throw new Error('other');
+  m.splice(1, 1);
+  if (check((trial ? 'T' : '') + m[2]) !== m[1]) throw new Error('check');
   const data = JSON.parse(b64dec(m[2]));
   if (data?.v !== 1) throw new Error('version');
   return { egi: data.egi ?? null, sumi: data.sumi ?? null, at: data.at ?? null };

@@ -9,8 +9,8 @@ export function trialNoticeHTML(lang) {
   if (!IS_TRIAL) return '';
   return `<div class="wrap"><p class="ika-trial-note" role="note">🧪 ${t(
     lang,
-    'いまはテストプレイ版です。記録・実績（バッジ）・部員レベル・図鑑などは、正式版の公開のときにリセットされます。',
-    'This is a test-play version. Records, badges, member levels and the field guide will be reset when the official version launches.'
+    'いまはテストプレイ版です。記録・図鑑・部員レベル・🎫チケット・カードなどは、正式版の公開のときにすべてリセットされ、正式版には引き継げません（引き継ぎコードはテストプレイ版の中だけで使えます）。正式版はみんな一斉にスタートです。',
+    'This is a test-play version. Records, the field guide, member levels, tickets and cards will all be reset when the official version launches and cannot be carried over (backup codes work only inside the test-play version). Everyone starts together.'
   )}</p></div>`;
 }
 

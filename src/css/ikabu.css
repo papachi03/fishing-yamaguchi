@@ -3272,3 +3272,4 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .is-egi-full .ika-egi-ang img { width: 58px; height: 64px; }
 .is-egi-full .ika-egi-ang b { font-size: 12px; }
 .is-egi-full .ika-egi-ang .ika-chip { min-height: 30px; padding: 2px 10px; font-size: 12px; }
+.ika-egi-backup[hidden] { display: none; }

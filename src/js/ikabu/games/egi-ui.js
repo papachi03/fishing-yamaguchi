@@ -29,6 +29,7 @@ import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMA
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
 import { ANGLERS, ANGLER_BASE_H, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler } from './anglers.js';
 import { readTickets, writeTickets } from './tickets.js';
+import { IS_TRIAL } from '../views/trial-notice.js';
 import { utcDay } from './rng.js';
 import { recommendedSizes } from './egi-advice.js';
 import { recordGedo } from './records.js';
@@ -1696,24 +1697,30 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const backupBox = document.getElementById('ika-egi-backup');
   const backupCode = document.getElementById('ika-egi-backup-code');
   const backupMsg = document.getElementById('ika-egi-backup-msg');
+  // テストプレイ版は専用のコード（IKABUT1-）。テストプレイ内では引き継げるが、正式版とは区別する（10/2 ぱっぱ）
+  //   ※ backupCode を作った後に置く（前に置くと試遊版でだけページ全体が止まった：10/2）
+  if (IS_TRIAL && backupBox) {
+    backupCode?.setAttribute('placeholder', (backupCode.getAttribute('placeholder') ?? '').replace('IKABU1-', 'IKABUT1-'));
+    backupBox.querySelector('summary')?.insertAdjacentHTML('afterend', `<p class="ika-egi-cue-note ika-egi-backup-trial">🧪 ${t(lang, TX.backup.trialLead)}</p>`);
+  }
   const backupSay = (text) => { if (backupMsg) backupMsg.textContent = t(lang, text); };
   backupBox?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-backup]');
     if (!b) return;
     const act = b.dataset.backup;
     if (act === 'export') {
-      backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value });
+      backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value }, { trial: IS_TRIAL });
       backupCode.select();
       backupSay(TX.backup.exported);
     } else if (act === 'copy') {
-      if (!backupCode.value) backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value });
+      if (!backupCode.value) backupCode.value = exportCode({ egi: rec, sumi: readRecord(KEY_M3).value }, { trial: IS_TRIAL });
       backupCode.select();
       (navigator.clipboard?.writeText(backupCode.value) ?? Promise.reject()).then(() => backupSay(TX.backup.copied), () => { document.execCommand?.('copy'); backupSay(TX.backup.copied); });
     } else if (act === 'import') {
       const text = backupCode.value.trim();
       if (!text) { backupSay(TX.backup.empty); return; }
       let data;
-      try { data = importCode(text); } catch { backupSay(TX.backup.bad); return; }
+      try { data = importCode(text, { trial: IS_TRIAL }); } catch (err) { backupSay(err?.message === 'other' ? (IS_TRIAL ? TX.backup.officialCode : TX.backup.trialCode) : TX.backup.bad); return; }
       rec = mergeEgi(rec, data.egi);
       saveRec();
       if (data.sumi) writeRecord(KEY_M3, mergeM3(readRecord(KEY_M3).value, data.sumi));

@@ -104,3 +104,16 @@ test('読み込み（合わせる）で記録が減ることはない：多い�
   assert.equal(s.played, 40);
   assert.deepEqual(s.badges, { join: '2026-09-20', star1: '2026-09-27' });
 });
+
+test('テストプレイ版のコード（IKABUT1-）は正式版では読めず、正式版のコードはテストプレイ版で読めない。テストプレイ内では読める（10/2）', () => {
+  const egi = { best: 500, sessions: 1, species: {}, bestOne: null, points: 3, gedo: {} };
+  const t = exportCode({ egi }, { trial: true });
+  const o = exportCode({ egi });
+  assert.ok(t.startsWith('IKABUT1-'));
+  assert.ok(o.startsWith('IKABU1-'));
+  assert.equal(importCode(t, { trial: true }).egi.best, 500);
+  assert.throws(() => importCode(t), /other/);
+  assert.throws(() => importCode(o, { trial: true }), /other/);
+  // 頭だけ書き換えても通らない
+  assert.throws(() => importCode(t.replace('IKABUT1-', 'IKABU1-')), /check/);
+});
