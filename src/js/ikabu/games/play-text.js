@@ -145,9 +145,10 @@ export const EGI_TEXT = {
   },
   tackle: {
     rod: pair('ロッド', 'Rod'),
-    rods: { stiff: pair('硬め', 'Stiff'), soft: pair('柔らかめ', 'Soft') },
+    rods: { stiff: pair('硬め', 'Stiff'), medium: pair('ふつう', 'Medium'), soft: pair('柔らかめ', 'Soft') },
     rodNote: {
       stiff: pair('アタリは取りにくいが、しゃくりが大きく動き、掛けてからの巻きが強い', 'Bites are harder to read, but jerks are bigger and it reels hard once hooked'),
+      medium: pair('どちらでもない、ふつうの調子', 'The usual middle action'),
       soft: pair('穂先が敏感でアタリが出る。しゃくりは小さく、寄せるのに時間がかかる', 'A sensitive tip shows bites. Jerks are small and it takes longer to bring in'),
     },
     drag: pair('ドラグ', 'Drag'),

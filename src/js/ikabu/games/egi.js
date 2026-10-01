@@ -167,11 +167,12 @@ export const RATTLE = { activeMore: 0.5, activeNew: 0.25, calmLess: 0.4, stale: 
 //   ドラグ 締め（取り込み優先）… 寄せは速い（1.25）が、ジェットで張りが一気に上がる（1.5）。しゃくり音は短く「ジッ」（0.1秒）
 //        ゆるめ（駆け引き優先）… 寄せはゆるやか（0.7）、ジェットの張りはやわらかい（0.6）、ゆるめた時にすっぽ抜けやすい（0.75）。音は「ジー」（0.42秒）
 //   ジェットの音は変えない（ぱっぱ）。差は抵抗値（張り）につける。初心者練習（easy）には効かせない
-export const RODS = ['stiff', 'soft'];
+export const RODS = ['stiff', 'medium', 'soft'];   // 10/2 ぱっぱ：硬め・ふつう・柔らかめの3種に
 export const DRAGS = ['tight', 'normal', 'loose'];
 export const TACKLE = {
   rod: {
     stiff: { signal: 0.6, jerk: 1.45, reel: 1.3, tension: 1.0 },   // 張りの上がりは今までどおり（1.15 にすると巻き0.8秒・ゆるめ0.6秒の基本の手で身切れした）
+    medium: { signal: 1, jerk: 1, reel: 1, tension: 0.9 },        // ふつう（真ん中）
     soft: { signal: 1.6, jerk: 0.7, reel: 0.75, tension: 0.75 },   // 10/1 深夜「差が分からない」→ 幅を広げた
   },
   drag: {
@@ -180,7 +181,7 @@ export const TACKLE = {
     loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.42, jerkDur: 1.7 },   // 音は 0.8→0.42（10/1 ぱっぱ「鳴りが長い」）
   },
 };
-export const DEFAULT_TACKLE = { rod: 'stiff', drag: 'normal' };
+export const DEFAULT_TACKLE = { rod: 'medium', drag: 'normal' };
 export function normalizeTackle(t = {}) {
   return { rod: RODS.includes(t.rod) ? t.rod : DEFAULT_TACKLE.rod, drag: DRAGS.includes(t.drag) ? t.drag : DEFAULT_TACKLE.drag };
 }

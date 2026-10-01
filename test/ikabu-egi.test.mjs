@@ -733,7 +733,7 @@ test('タックルは投げる前だけ替えられる。知らない値は既�
   cast(s);
   assert.equal(setTackle(s, { rod: 'stiff' }), false);
   assert.deepEqual(s.tackle, { rod: 'soft', drag: 'loose' });
-  assert.deepEqual(normalizeTackle({ rod: 'x', drag: 'y' }), { rod: 'stiff', drag: 'normal' });
+  assert.deepEqual(normalizeTackle({ rod: 'x', drag: 'y' }), { rod: 'medium', drag: 'normal' });
   assert.ok(TACKLE.drag.tight.reel > TACKLE.drag.loose.reel);
 });
 test('取り込み方は重さで決まる：〜500g ぶっこ抜き、500g〜1.5kg タモ、1.5kg〜 ギャフ', () => {
