@@ -197,3 +197,17 @@ test('受付番号（cid）：同じ番号で2回届いても1件。status で�
     assert.equal((await get('/ikabu/photos/status?cid=x', env)).status, 400);
   });
 });
+
+test('写真は文字（base64）でも受ける（iPhone の Safari がファイル付きの送信を落とす件の対策・2026-10-01）', async () => {
+  const env = makeEnv();
+  await run(async () => {
+    const b64 = Buffer.from(jpegBytes({ exif: true })).toString('base64');
+    const res = await worker.fetch(postForm({ ...valid, photo_b64: b64 }, { photo: null }), env, ctx);
+    assert.equal(res.status, 201);
+    const stored = [...env.REPORTS_KV._store.entries()].find(([k]) => k.startsWith('ikabu/photo/'));
+    assert.ok(stored);
+    assert.equal(new TextDecoder().decode(stored[1]).includes('Exif'), false, '文字で来てもExifは落とす');
+    const bad = await worker.fetch(postForm({ ...valid, photo_b64: '%%%not-base64' }, { photo: null, ip: '203.0.113.50' }), env, ctx);
+    assert.equal(bad.status, 400);
+  });
+});

@@ -142,10 +142,24 @@ async function handleCreate(request, env, ctx) {
   if (!(await verifyTurnstile(form.get('cf-turnstile-response'), request, env))) {
     return json({ ok: false, error: 'ロボットでないことの確認に失敗しました。ページを読み込み直して、もう一度お試しください。' }, 403, request);
   }
+  // 写真は「ファイル」か「文字（base64）」のどちらかで受ける。
+  // 2026-10-01 ぱっぱの iPhone（Safari）で、ファイルを入れた送信だけが届かず（Load failed）、同じ大きさの文字は届いた → サイトは文字で送る
   const file = form.get('photo');
-  if (!file || typeof file === 'string' || file.size === 0) return json({ ok: false, error: '写真を選んでください。' }, 400, request);
-  if (file.size > LIMITS.photoBytes) return json({ ok: false, error: '写真が大きすぎます（3MBまで）。' }, 400, request);
-  const bytes = stripJpegMeta(new Uint8Array(await file.arrayBuffer()));
+  const b64 = form.get('photo_b64');
+  let raw = null;
+  if (file && typeof file !== 'string' && file.size > 0) {
+    if (file.size > LIMITS.photoBytes) return json({ ok: false, error: '写真が大きすぎます（3MBまで）。' }, 400, request);
+    raw = new Uint8Array(await file.arrayBuffer());
+  } else if (typeof b64 === 'string' && b64.length > 0) {
+    if (b64.length > LIMITS.photoBytes * 1.4) return json({ ok: false, error: '写真が大きすぎます（3MBまで）。' }, 400, request);
+    try {
+      raw = Uint8Array.from(atob(b64.replace(/^data:[^,]*,/, '')), (c) => c.charCodeAt(0));
+    } catch {
+      return json({ ok: false, error: '写真のデータが読めませんでした。もう一度お試しください。' }, 400, request);
+    }
+  }
+  if (!raw || raw.length === 0) return json({ ok: false, error: '写真を選んでください。' }, 400, request);
+  const bytes = stripJpegMeta(raw);
   const pv = validatePhoto(bytes);
   if (!pv.ok) return json({ ok: false, error: pv.error }, 400, request);
 

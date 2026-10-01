@@ -81,6 +81,12 @@ export async function submitIkabuPhoto(formData, info = {}, onStage = () => {}) 
     const why = `${e?.name ?? 'Error'}: ${e?.message ?? e}`;
     const q = new URLSearchParams({ why, ms: String(Date.now() - t0), ...Object.fromEntries(Object.entries(info).map(([k, v]) => [k, String(v)])) });
     call(`/ikabu/diag?${q}`, {}, 8000).catch(() => {});
+    // 大きさの切り分け（2026-10-01）：小さい POST なら届くのかを Worker の記録に残す（1KB・60KB・200KB）。届いた物だけ記録に出る
+    for (const kb of [1, 60, 200]) {
+      const body = new FormData();
+      body.set('probe', 'x'.repeat(kb * 1024));
+      call(`/ikabu/diag?probe=${kb}kb`, { method: 'POST', body }, 15000).catch(() => {});
+    }
     // 技術的な理由は Worker の記録にだけ残し、画面には出さない（投稿する人を混乱させない。2026-10-01 ぱっぱ）
     return { ok: false, error: '送れませんでした。電波の良い場所で、もう一度「投稿する」を押してください。同じ写真を送り直しても二重にはなりません。', why };
   }

@@ -129,6 +129,7 @@ const msg = document.getElementById('ika-pp-msg');
 const submitBtn = document.getElementById('ika-pp-submit');
 const off = document.getElementById('ika-pp-off');
 let widgetId = null;
+const toBase64 = (blob) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, '')); r.onerror = reject; r.readAsDataURL(blob); });
 // 受付番号：この入力内容の分。送り直しても同じ番号なので Worker で1件にまとまる。成功したら新しくする
 let cid = null;
 const newCid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`).replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
@@ -166,7 +167,7 @@ form?.addEventListener('submit', async (e) => {
     if (!file) return say(t(lang, '写真を選んでください。', 'Please choose a photo.'), true);
     let blob, fit;
     try {
-      fit = await resizeToFit(file);   // 300KB 目安まで縮小し、撮影情報（位置など）を落とす（2026-10-01 iPhoneの送信失敗の対策）
+      fit = await resizeToFit(file, 220 * 1024);   // 220KB 目安（文字にすると約300KB）まで縮小し、撮影情報（位置など）を落とす
       blob = fit.blob;
     } catch {
       return say(t(lang, 'この写真は読み込めませんでした。別の写真でお試しください。', 'Could not read this photo. Please try another.'), true);
@@ -181,7 +182,8 @@ form?.addEventListener('submit', async (e) => {
     data.set('cf-turnstile-response', token);
     cid = cid ?? newCid();
     data.set('cid', cid);
-    data.set('photo', new File([await blob.arrayBuffer()], 'photo.jpg', { type: 'image/jpeg' }));
+    // 写真はファイルでなく文字（base64）で送る：iPhone の Safari はファイル付きの送信を落とすことがある（2026-10-01 実測。同じ大きさの文字は届く）
+    data.set('photo_b64', await toBase64(blob));
 
     const STAGE = {
       sending: pair('送信しています…', 'Sending…'),
