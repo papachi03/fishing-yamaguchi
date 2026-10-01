@@ -30,14 +30,33 @@ export async function fetchIkabuPhotos(limit = 60) {
 // 投稿（写真は送る前に縮小して撮影情報を落としてある）。戻り：{ ok, post, pending } か { ok:false, error }
 //   2026-10-01 ぱっぱのiPhoneで「通信できませんでした」：送信が Worker に届いていなかった（見張りで確認）。
 //   原因を見るため、失敗したら理由を画面に小さく出し、Worker に「どこで止まったか」の知らせ（/ikabu/diag・404で返るが記録に残る）を送る
+// fetch がすぐ「Load failed」になる iPhone 向けの予備の送り方（昔からある XMLHttpRequest）
+function xhrPost(url, formData, timeoutMs = 60000) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', url);
+    x.timeout = timeoutMs;
+    x.onload = () => resolve({ status: x.status, text: x.responseText });
+    x.onerror = () => reject(new Error('xhr error'));
+    x.ontimeout = () => reject(new Error('xhr timeout'));
+    x.send(formData);
+  });
+}
+const parse = (text) => { try { return JSON.parse(text); } catch { return null; } };
+
 export async function submitIkabuPhoto(formData, info = {}) {
   const t0 = Date.now();
+  const done = (data, status) => (data?.ok ? data : { ok: false, error: data?.error || `送信できませんでした（${status}）。時間をおいてもう一度お試しください。` });
   try {
     const res = await call('/ikabu/photos', { method: 'POST', body: formData }, 60000);
-    const data = await res.json().catch(() => null);
-    if (data?.ok) return data;
-    return { ok: false, error: data?.error || `送信できませんでした（${res.status}）。時間をおいてもう一度お試しください。` };
-  } catch (e) {
+    return done(await res.json().catch(() => null), res.status);
+  } catch (first) {
+    // 1回目が届かなかった（Worker に記録が無い）＝もう一度送っても二重にはならない。XMLHttpRequest で送り直す
+    try {
+      const r = await xhrPost(`${API}/ikabu/photos`, formData);
+      if (r.status > 0) return done(parse(r.text), r.status);
+    } catch { /* 下で理由を残す */ }
+    const e = first;
     const why = `${e?.name ?? 'Error'}: ${e?.message ?? e}`;
     const q = new URLSearchParams({ why, ms: String(Date.now() - t0), ...Object.fromEntries(Object.entries(info).map(([k, v]) => [k, String(v)])) });
     call(`/ikabu/diag?${q}`, {}, 8000).catch(() => {});

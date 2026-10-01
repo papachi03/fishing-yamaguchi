@@ -39,3 +39,17 @@ export async function resizeToJpeg(file, maxSide = 1600, quality = 0.82) {
   const clean = stripJpegMeta(new Uint8Array(await blob.arrayBuffer()));
   return new Blob([clean], { type: 'image/jpeg' });
 }
+
+// 決めた大きさ（バイト）に収まるまで、辺の長さと画質を段階的に下げる（2026-10-01 写真部）。
+// ぱっぱのiPhoneで 610KB の送信が「Load failed」になった → 写真部は 300KB 目安まで軽くする。
+// 戻り：{ blob, side, quality }。どの段でも収まらなければ最後の段（いちばん軽い）を返す
+export const FIT_STEPS = [[1600, 0.8], [1280, 0.75], [1080, 0.7], [900, 0.65], [720, 0.6]];
+export async function resizeToFit(file, maxBytes = 300 * 1024, steps = FIT_STEPS) {
+  let last = null;
+  for (const [side, quality] of steps) {
+    const blob = await resizeToJpeg(file, side, quality);
+    last = { blob, side, quality };
+    if (blob.size <= maxBytes) return last;
+  }
+  return last;
+}

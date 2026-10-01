@@ -6,7 +6,7 @@ import { photos, photoById } from '../data.js';
 import { t, assetHref } from '../i18n.js';
 import { mountTicketEarn } from '../games/tickets-ui.js';
 import { photoPostEnabled, TURNSTILE_SITE_KEY, fetchIkabuPhotos, submitIkabuPhoto, ikabuPhotoUrl } from '../api/photos.js';
-import { resizeToJpeg } from '../../lib/resize-image.js';
+import { resizeToFit } from '../../lib/resize-image.js';
 
 const { lang } = boot(render);
 mountTicketEarn({ lang });   // 投稿が届いたら「🎫 チケット1枚ゲット！」
@@ -161,9 +161,10 @@ form?.addEventListener('submit', async (e) => {
   try {
     const file = document.getElementById('ika-pp-photo').files[0];
     if (!file) return say(t(lang, '写真を選んでください。', 'Please choose a photo.'), true);
-    let blob;
+    let blob, fit;
     try {
-      blob = await resizeToJpeg(file);   // 縮小して、撮影情報（位置など）を落とす
+      fit = await resizeToFit(file);   // 300KB 目安まで縮小し、撮影情報（位置など）を落とす（2026-10-01 iPhoneの送信失敗の対策）
+      blob = fit.blob;
     } catch {
       return say(t(lang, 'この写真は読み込めませんでした。別の写真でお試しください。', 'Could not read this photo. Please try another.'), true);
     }
@@ -177,7 +178,7 @@ form?.addEventListener('submit', async (e) => {
     data.set('cf-turnstile-response', token);
     data.set('photo', new File([await blob.arrayBuffer()], 'photo.jpg', { type: 'image/jpeg' }));
 
-    const result = await submitIkabuPhoto(data, { size: blob.size, src: file.type || '?', srcSize: file.size });
+    const result = await submitIkabuPhoto(data, { size: blob.size, side: fit.side, src: file.type || '?', srcSize: file.size });
     if (!result.ok) return say(result.error, true);
 
     form.reset();
