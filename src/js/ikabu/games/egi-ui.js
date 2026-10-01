@@ -1014,7 +1014,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkAt = now;
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
-          feel.fire('zip', { len: dragNow().zip });   // しゃくりで「ジッ！」。長さはドラグしだい（締め＝短く、ゆるめ＝ジーーー。2026-10-01 ぱっぱ）
+          // しゃくりで「ジッ！」。長さはドラグしだい（締め＝短く、ゆるめ＝ジーーー。2026-10-01 ぱっぱ）。
+          // 2段しゃくりの「遅れて上がる」知らせ（delayed）では鳴らさない（2回のタップで2回鳴った後にもう1回鳴り「ジー！ジッ…ジー！」と3回になっていた。2026-10-01 ぱっぱ指摘）
+          if (!e.delayed) feel.fire('zip', { len: dragNow().zip });
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
           else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.slackN === 1) callout(t(lang, TX.cue.slack)); }   // 何回目の連打かに関係なく、スラックジャークに入った1回目で出す
           else if (e.double) callout(t(lang, TX.cue.double));
