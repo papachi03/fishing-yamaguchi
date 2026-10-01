@@ -28,13 +28,19 @@ export async function fetchIkabuPhotos(limit = 60) {
 }
 
 // 投稿（写真は送る前に縮小して撮影情報を落としてある）。戻り：{ ok, post, pending } か { ok:false, error }
-export async function submitIkabuPhoto(formData) {
+//   2026-10-01 ぱっぱのiPhoneで「通信できませんでした」：送信が Worker に届いていなかった（見張りで確認）。
+//   原因を見るため、失敗したら理由を画面に小さく出し、Worker に「どこで止まったか」の知らせ（/ikabu/diag・404で返るが記録に残る）を送る
+export async function submitIkabuPhoto(formData, info = {}) {
+  const t0 = Date.now();
   try {
     const res = await call('/ikabu/photos', { method: 'POST', body: formData }, 60000);
     const data = await res.json().catch(() => null);
     if (data?.ok) return data;
-    return { ok: false, error: data?.error || '送信できませんでした。時間をおいてもう一度お試しください。' };
-  } catch {
-    return { ok: false, error: '通信できませんでした。電波の良い場所でもう一度お試しください。' };
+    return { ok: false, error: data?.error || `送信できませんでした（${res.status}）。時間をおいてもう一度お試しください。` };
+  } catch (e) {
+    const why = `${e?.name ?? 'Error'}: ${e?.message ?? e}`;
+    const q = new URLSearchParams({ why, ms: String(Date.now() - t0), ...Object.fromEntries(Object.entries(info).map(([k, v]) => [k, String(v)])) });
+    call(`/ikabu/diag?${q}`, {}, 8000).catch(() => {});
+    return { ok: false, error: `通信できませんでした。電波の良い場所でもう一度お試しください。（${why}）` };
   }
 }

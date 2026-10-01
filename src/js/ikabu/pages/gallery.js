@@ -159,8 +159,6 @@ form?.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
   say(t(lang, '送信しています…', 'Sending…'));
   try {
-    const data = new FormData(form);
-    data.delete('photo');
     const file = document.getElementById('ika-pp-photo').files[0];
     if (!file) return say(t(lang, '写真を選んでください。', 'Please choose a photo.'), true);
     let blob;
@@ -169,10 +167,17 @@ form?.addEventListener('submit', async (e) => {
     } catch {
       return say(t(lang, 'この写真は読み込めませんでした。別の写真でお試しください。', 'Could not read this photo. Please try another.'), true);
     }
-    data.set('photo', blob, 'photo.jpg');
+    // 送る中身は1つずつ組み立てる。new FormData(form) だと、iPhoneで選んだ元の写真（HEIC など）まで一度
+    // 抱え込むので使わない（2026-10-01 ぱっぱのiPhoneで送信が Worker に届かなかった件の対策）
+    const data = new FormData();
+    data.set('cat', form.querySelector('input[name=cat]:checked')?.value ?? '');
+    data.set('name', document.getElementById('ika-pp-name').value);
+    data.set('comment', document.getElementById('ika-pp-comment').value);
+    data.set('agree', document.getElementById('ika-pp-agree').checked ? '1' : '');
     data.set('cf-turnstile-response', token);
+    data.set('photo', new File([await blob.arrayBuffer()], 'photo.jpg', { type: 'image/jpeg' }));
 
-    const result = await submitIkabuPhoto(data);
+    const result = await submitIkabuPhoto(data, { size: blob.size, src: file.type || '?', srcSize: file.size });
     if (!result.ok) return say(result.error, true);
 
     form.reset();
