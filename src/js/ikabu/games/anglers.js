@@ -5,13 +5,15 @@ import { spend } from './tickets.js';
 
 export const KEY_ANGLERS = 'ikabu.anglers.v1';
 // src は public からの住所。白いイカ（部長）は最初から使える
+// padTop：絵の上に足した余白（立ち絵の高さ 991 に対して）。ヤリ・ケンサキは胴の先が長く、元の枠だと上が切れた（10/2 ぱっぱ指摘）
+export const ANGLER_BASE_H = 991;
 export const ANGLERS = [
   { id: 'shiro', cost: 0, src: '/assets/ikabu/hero-layers/squid.png' },
-  { id: 'aori', cost: 10, src: '/assets/ikabu/anglers/aori.webp' },
-  { id: 'kouika', cost: 10, src: '/assets/ikabu/anglers/kouika.webp' },
-  { id: 'mongo', cost: 10, src: '/assets/ikabu/anglers/mongo.webp' },
-  { id: 'yari', cost: 10, src: '/assets/ikabu/anglers/yari.webp' },
-  { id: 'kensaki', cost: 10, src: '/assets/ikabu/anglers/kensaki.webp' },
+  { id: 'aori', cost: 10, src: '/assets/ikabu/anglers/aori.webp', padTop: 110 },
+  { id: 'kouika', cost: 10, src: '/assets/ikabu/anglers/kouika.webp', padTop: 110 },
+  { id: 'mongo', cost: 10, src: '/assets/ikabu/anglers/mongo.webp', padTop: 110 },
+  { id: 'yari', cost: 10, src: '/assets/ikabu/anglers/yari.webp', padTop: 110 },
+  { id: 'kensaki', cost: 10, src: '/assets/ikabu/anglers/kensaki.webp', padTop: 110 },
 ];
 export const DEFAULT_ANGLER = 'shiro';
 export const anglerOf = (id) => ANGLERS.find((a) => a.id === id) ?? ANGLERS[0];

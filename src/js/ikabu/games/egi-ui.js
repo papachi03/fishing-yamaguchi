@@ -27,7 +27,7 @@ import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
-import { ANGLERS, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler } from './anglers.js';
+import { ANGLERS, ANGLER_BASE_H, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler } from './anglers.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { utcDay } from './rng.js';
 import { recommendedSizes } from './egi-advice.js';
@@ -682,7 +682,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let anglerAsk = null;   // 🎫を使う前の「使う？」を出しているキャラ
   function paintAngler() {
     const im = sc?.svg?.querySelector('.ika-eg-angler');
-    if (im) im.setAttribute('href', assetHref(anglerOf(anglerRec.current).src));
+    if (!im) return;
+    const a = anglerOf(anglerRec.current); const B = SCENE.squidBox;
+    const extra = B.h * (a.padTop ?? 0) / ANGLER_BASE_H;   // 上に足した余白の分だけ、上へ伸ばして置く（竿の握りの位置は変えない）
+    im.setAttribute('href', assetHref(a.src));
+    im.setAttribute('y', String(B.y - extra)); im.setAttribute('height', String(B.h + extra));
   }
   function renderAnglerPop() {
     if (!el.anglerPop) return;
