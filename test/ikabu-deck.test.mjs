@@ -64,3 +64,15 @@ test('おすすめ編成：持っているカードだけで30枚・検査に通
   assert.ok(r2.deck.filter((n) => CARDS.find((c) => c.no === n).kind === 'squid' && CARDS.find((c) => c.no === n).cost <= 2).length >= 4, '軽いイカが4枚以上');
   assert.ok(r2.mainMark);
 });
+
+test('おすすめ編成：持っている UR と SSR は必ず入る（上限 UR1・SSR2）。2026-10-01 ぱっぱ「SSR を選ばない」', async () => {
+  const { recommendDeck, availableCopies: ac } = await import('../src/js/ikabu/games/deck.js');
+  const ur = CARDS.filter((c) => c.rarity === 'UR' && c.no <= 120).map((c) => c.no);
+  const ssr = CARDS.filter((c) => c.rarity === 'SSR' && c.no <= 120).map((c) => c.no);
+  // UR を1枚・SSR を3枚（うち2枚しか入らない）持っている
+  const avail = ac({ [ur[0]]: 1, [ssr[0]]: 1, [ssr[1]]: 1, [ssr[2]]: 1 }, STARTER);
+  const r = recommendDeck(CARDS, avail);
+  assert.equal(r.deck.length, 30);
+  assert.ok(r.deck.includes(ur[0]), 'UR が入る');
+  assert.equal(r.deck.filter((n) => ssr.includes(n)).length, 2, 'SSR は2枚まで入る');
+});

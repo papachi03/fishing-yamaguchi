@@ -68,12 +68,18 @@ export function recommendDeck(cards, avail) {
   const rarityBonus = { N: 0, R: 0.5, SR: 1, SSR: 1.5, UR: 2 };
   let deck = [];
   const tryAdd = (no) => { const r = addCard(deck, no, avail, cards); if (r.ok) deck = r.deck; return r.ok; };
-  const fill = (list, want, kind) => { for (const c of list) { if (deck.filter((n) => cards.find((x) => x.no === n)?.kind === kind).length >= want) break; for (let k = 0; k < (avail[c.no] ?? 0); k++) { if (deck.filter((n) => cards.find((x) => x.no === n)?.kind === kind).length >= want) break; if (!tryAdd(c.no)) break; } } };
+  // ⓪ 持っている UR・SSR は先に入れる（決まりの上限 UR1・SSR2 まで。2026-10-01 ぱっぱ「おすすめが SSR を選ばない」）
+  //   レア度の加点より潮の割引が大きく、軽いカードばかり選んでいた。強いカードは枚数の上限があるので、先に確保してから残りを選ぶ
+  const topFirst = cards.filter((c) => (c.rarity === 'UR' || c.rarity === 'SSR') && has(c))
+    .sort((a, b) => rarityBonus[b.rarity] - rarityBonus[a.rarity] || (b.kind === 'squid') - (a.kind === 'squid') || b.cost - a.cost);
+  for (const c of topFirst) tryAdd(c.no);
+  // count：何枚入ったかの数え方（kind だけ、または「潮2以下のイカ」のように絞る）
+  const fill = (list, want, kind, count = (c) => c.kind === kind) => { const n = () => deck.filter((no) => { const c = cards.find((x) => x.no === no); return c && count(c); }).length; for (const c of list) { if (n() >= want) break; for (let k = 0; k < (avail[c.no] ?? 0); k++) { if (n() >= want) break; if (!tryAdd(c.no)) break; } } };
   // ①イカ：軽いイカを先に4枚（潮1〜2で強い順）、残りは強い順
   const squids = cards.filter((c) => c.kind === 'squid' && has(c));
   const power = (c) => c.atk + c.def + rarityBonus[c.rarity] - c.cost * 0.6;   // 重いカードは少し割り引く（出せる回数が少ない）
   const light = squids.filter((c) => c.cost <= 2).sort((a, b) => power(b) - power(a));
-  fill(light, 4, 'squid');
+  fill(light, 4, 'squid', (c) => c.kind === 'squid' && c.cost <= 2);   // 軽いイカそのものを4枚（先に入れた UR・SSR は数えない）
   fill(squids.slice().sort((a, b) => power(b) - power(a)), 14, 'squid');
   // ②主のマーク
   const byNo = new Map(cards.map((c) => [c.no, c]));

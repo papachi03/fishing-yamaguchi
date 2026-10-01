@@ -15,6 +15,7 @@ const TX = {
   title: ['デッキ編成', 'Deck builder'],
   save: ['保存', 'Save'], reset: ['スターターに戻す', 'Reset to starter'], close: ['閉じる', 'Close'],
   recommend: ['おすすめ編成', 'Auto build'],
+  clear: ['全部外す', 'Clear all'],
   recommended: (lang, mark) => (lang === 'en' ? `Auto-built from your cards${mark ? ` (main mark: ${mark})` : ''}. Save if you like it` : `持っているカードで組みました${mark ? `（主のマーク：${mark}）` : ''}。気に入ったら保存してください`),
   marks: { anchor: ['いかり', 'anchor'], sun: ['太陽', 'sun'], wave: ['波', 'wave'], star: ['星', 'star'], shell: ['貝', 'shell'] },
   saved: ['保存しました', 'Saved'], use: ['このデッキを使う', 'Use this deck'], using: ['使用中', 'In use'], unsaved: ['保存していない変更があります', 'Unsaved changes'],
@@ -52,7 +53,7 @@ export function openDeck({ lang = 'ja' } = {}) {
         <div class="ika-dk-slots" data-dk-slots></div>
         <div class="ika-dk-sum" data-dk-sum></div>
         <p class="ika-dk-errors" data-dk-errors></p>
-        <div class="ika-dk-btns"><button type="button" class="ika-btn ika-btn--primary" data-dk-save>${t(lang, ...TX.save)}</button><button type="button" class="ika-btn" data-dk-use>${t(lang, ...TX.use)}</button><button type="button" class="ika-btn" data-dk-recommend>${t(lang, ...TX.recommend)}</button><button type="button" class="ika-btn" data-dk-reset>${t(lang, ...TX.reset)}</button><button type="button" class="ika-btn" data-dk-close>${t(lang, ...TX.close)}</button></div>
+        <div class="ika-dk-btns"><button type="button" class="ika-btn ika-btn--primary" data-dk-save>${t(lang, ...TX.save)}</button><button type="button" class="ika-btn" data-dk-use>${t(lang, ...TX.use)}</button><button type="button" class="ika-btn" data-dk-recommend>${t(lang, ...TX.recommend)}</button><button type="button" class="ika-btn" data-dk-reset>${t(lang, ...TX.reset)}</button><button type="button" class="ika-btn" data-dk-clear>${t(lang, ...TX.clear)}</button><button type="button" class="ika-btn" data-dk-close>${t(lang, ...TX.close)}</button></div>
         <p class="ika-dk-msg" data-dk-msg role="status"></p>
       </div>
       <h3>${t(lang, ...TX.deck)} <small>${t(lang, ...TX.tapRemove)}</small></h3>
@@ -125,6 +126,7 @@ export function openDeck({ lang = 'ja' } = {}) {
   });
   $('[data-dk-kind]').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return; kind = b.dataset.v; $('[data-dk-kind]').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); render(); });
   $('[data-dk-reset]').addEventListener('click', () => { deck = starter.slice(); render(); });
+  $('[data-dk-clear]').addEventListener('click', () => { deck = []; render(); });   // 何も選んでいない状態に（2026-10-01 ぱっぱ）
   $('[data-dk-recommend]').addEventListener('click', () => { const r = recommendDeck(CARDS, avail); deck = r.deck; render(); say(TX.recommended(lang, r.mainMark ? t(lang, ...(TX.marks[r.mainMark] ?? [r.mainMark, r.mainMark])) : null), true); });
   const persist = () => writeJSON(KEY_DECK, store);
   el.save.addEventListener('click', () => { const s = summary(deck, CARDS); if (!s.check.ok) return; store.slots[cur].nos = deck.slice(); persist(); say(t(lang, ...TX.saved), true); render(); });
