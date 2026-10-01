@@ -2,7 +2,7 @@
 //   1. タップ・ドラッグ・キーボードを swap / inkFlash に変える
 //   2. 返ってきた steps（消えた段階の記録）を1段ずつ見せる（消える→落ちる→連鎖の吹き出し）
 //   3. スコア・手数・墨・ヒント・結果カード・バッジ（localStorage）
-import { createGame, swap, inkFlash, findHint, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
+import { createGame, swap, inkFlash, findHint, swapMatches, adjacent, SIZE, RARE, MOVES, INK_NEED, GOAL, BALL, LINE_V, colorOf, isLine, dailyGoals, starsOf, previewSwap, countColors } from './match3.js';
 import { createSfx } from './sumi-sfx.js';
 import { createBgm } from './bgm.js';
 import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rushDrop, fireable, inked, openBottom, CAP, panicOf } from './inkrush.js';
@@ -834,7 +834,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     const h = isRush() ? rushHint(g.board) : findHint(g.board);
     if (!h) return;
     for (const i of h) cells[i].classList.add('is-hint');
-    setMsg(t(lang, TX.msg.hint));
+    setMsg(t(lang, swapMatches(g.board, h[0], h[1]) ? TX.msg.hint : TX.msg.hintSpecial));
     setTimeout(() => { for (const i of h) cells[i].classList.remove('is-hint'); }, 1800);
   });
 

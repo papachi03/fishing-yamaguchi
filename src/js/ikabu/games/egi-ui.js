@@ -700,7 +700,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.cueSetting.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cue === settings.cue)));
   }
   // 手ざわり（振動・小さな音）。振動できない端末（iPhone など）には振動の切り替えを出さない
-  if (el.feelVib) el.feelVib.hidden = !canVibrate();
+  if (el.feelVib) {
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent ?? '');
+    el.feelVib.hidden = !canVibrate() && !ios;
+    // iPhone：行は出すが押せない。「震えない理由」を添える（感想「当たった時のバイブ機能が欲しい」→ 実は iPhone の Safari が対応していない。2026-10-01）
+    if (ios && !canVibrate()) { el.feelVib.querySelectorAll('button').forEach((b) => { b.disabled = true; b.setAttribute('aria-pressed', 'false'); }); el.feelVib.insertAdjacentHTML('beforeend', `<small class="ika-egi-feel-note">${t(lang, TX.feel.noIos)}</small>`); }
+  }
   // 振ってしゃくる（試験中）。スマホ（動きの読み取りができて、タッチの端末）だけに出す。最初はオフ
   let shakeOn = false, stopShake = null;
   if (el.feelShake) el.feelShake.hidden = !(shakeSupported() && matchMedia('(pointer: coarse)').matches);
@@ -921,6 +926,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   let calloutTimer = 0;
   function callout(text, tone = '', ms = 1700) {
+    ms = Math.max(ms, 1200 + [...String(text)].length * 95);   // 読み切れる長さに（体験版の感想「消えるのが早い」2026-10-01）
     el.callout.textContent = text;
     el.callout.className = `ika-egi-callout${tone ? ` is-${tone}` : ''}`;
     el.callout.hidden = false;

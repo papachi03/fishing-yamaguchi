@@ -3,7 +3,7 @@
 //   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
 //   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
 //   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
-import { createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS, BALL, RARE } from './match3.js';
+import { swapMatches, createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS, BALL, RARE } from './match3.js';
 
 export const CAP = 30;                  // 水位がここで飲み込まれる
 export const START = 8;                // 最初の水位
@@ -54,10 +54,14 @@ export const openBottom = (b) => inked(b).filter((i) => i >= BOTTOM);
 const isMove = (b, a, c) => adjacent(a, c) && (b[a] === null) !== (b[c] === null);
 const swapOk = (b, a, c) => adjacent(a, c) && !(b[a] === null && b[c] === null) && (swapWorks(b, a, c) || isMove(b, a, c));
 export function rushHint(b) {
+  // 順に：本当にそろう手 → 特殊パネルを使う手 → 空きへ動かすだけの手（2026-10-01 感想「アシストどおりでも連鎖しない」）
+  const real = (i, j) => adjacent(i, j) && b[i] !== null && b[j] !== null && swapMatches(b, i, j);
   const both = (i, j) => adjacent(i, j) && b[i] !== null && b[j] !== null && swapWorks(b, i, j);
-  for (let i = 0; i < N; i++) {
-    if (colOf(i) < SIZE - 1 && both(i, i + 1)) return [i, i + 1];
-    if (i + SIZE < N && both(i, i + SIZE)) return [i, i + SIZE];
+  for (const test of [real, both]) {
+    for (let i = 0; i < N; i++) {
+      if (colOf(i) < SIZE - 1 && test(i, i + 1)) return [i, i + 1];
+      if (i + SIZE < N && test(i, i + SIZE)) return [i, i + SIZE];
+    }
   }
   for (let i = 0; i < N; i++) {
     if (colOf(i) < SIZE - 1 && swapOk(b, i, i + 1)) return [i, i + 1];

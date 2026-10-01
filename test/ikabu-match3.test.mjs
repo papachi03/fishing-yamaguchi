@@ -258,3 +258,14 @@ test('予告：そろわない手は null、そろう手は special の有無を
   assert.equal(n.reduce((a, b) => a + b, 0), SIZE * SIZE);
   assert.deepEqual([1, 2, 3, 4].map(CHAIN_MULT), [1, 1.5, 2, 2.5]);
 });
+
+test('ヒントは「本当にそろう手」を優先し、特殊パネルの発動だけの手は後回し（2026-10-01 感想「アシストどおりでも連鎖しない」）', async () => {
+  const { swapMatches, BALL } = await import('../src/js/ikabu/games/match3.js');
+  for (const seed of ['h1', 'h2', 'h3', 'h4', 'h5']) {
+    const g = createGame({ seed });
+    g.board[0] = BALL;   // 左上に墨ダマ：以前は (0,1) の「発動だけの手」が最初に返っていた
+    const h = findHint(g.board);
+    assert.ok(h);
+    assert.equal(swapMatches(g.board, h[0], h[1]), true, `${seed}: そろう手を返す`);
+  }
+});

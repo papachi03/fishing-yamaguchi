@@ -84,10 +84,20 @@ export function previewSwap(b, a, c) {
 }
 // 色ごとの数（墨フラッシュで何を消すか選ぶ材料）
 export const countColors = (b) => { const n = Array(KINDS).fill(0); for (const v of b) { const c = colorOf(v); if (c != null) n[c] += 1; } return n; };
+// 入れ替えると本当にそろうか（特殊パネルの発動だけの手は含めない）
+export function swapMatches(b, a, c) {
+  if (!adjacent(a, c)) return false;
+  const t = [...b];
+  [t[a], t[c]] = [t[c], t[a]];
+  return findMatches(t).length > 0;
+}
+// ヒント：まず「そろう手」。無ければ特殊パネルを使う手（感想「アシストの方向に動かしても連鎖しない」＝特殊の発動だけの手を先に出していた。2026-10-01）
 export function findHint(b) {
-  for (let i = 0; i < N; i++) {
-    if (colOf(i) < SIZE - 1 && swapWorks(b, i, i + 1)) return [i, i + 1];
-    if (rowOf(i) < SIZE - 1 && swapWorks(b, i, i + SIZE)) return [i, i + SIZE];
+  for (const test of [swapMatches, swapWorks]) {
+    for (let i = 0; i < N; i++) {
+      if (colOf(i) < SIZE - 1 && test(b, i, i + 1)) return [i, i + 1];
+      if (rowOf(i) < SIZE - 1 && test(b, i, i + SIZE)) return [i, i + SIZE];
+    }
   }
   return null;
 }

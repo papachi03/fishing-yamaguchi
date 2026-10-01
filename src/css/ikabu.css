@@ -1978,11 +1978,12 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.ika-m3-cell[data-kind='0'] { --tile: #327de0; --edge: #164887; }
-.ika-m3-cell[data-kind='1'] { --tile: #f87735; --edge: #a84117; }
-.ika-m3-cell[data-kind='2'] { --tile: #16bea1; --edge: #08685c; }
-.ika-m3-cell[data-kind='3'] { --tile: #ffcf30; --edge: #957114; }
-.ika-m3-cell[data-kind='4'] { --tile: #b066d4; --edge: #653483; }
+/* 5色は見分けやすく離す（体験版の感想「似た色・薄い」2026-10-01）：青／赤オレンジ／緑／黄／紫 */
+.ika-m3-cell[data-kind='0'] { --tile: #2f6ff0; --edge: #123f8a; }
+.ika-m3-cell[data-kind='1'] { --tile: #f0562b; --edge: #8f2a0f; }
+.ika-m3-cell[data-kind='2'] { --tile: #22c55e; --edge: #116b35; }
+.ika-m3-cell[data-kind='3'] { --tile: #ffd600; --edge: #8a6a00; }
+.ika-m3-cell[data-kind='4'] { --tile: #a855f7; --edge: #5b2a8a; }
 .ika-m3-cell[data-kind='9'] { --tile: #102332; --edge: #ffc747; background: radial-gradient(circle at 35% 25%, #566687, #102332 70%); box-shadow: inset 0 2px 0 #ffffff40, 0 0 0 2px #ffc74755, 0 0 14px #ffc74766, 0 2px 0 #061e2c; }
 .ika-m3-cell img { width: 82%; height: 82%; display: block; filter: drop-shadow(0 2px 1px #10344877); pointer-events: none; }
 /* 色覚に頼らない記号のチップ（右下） */
@@ -3190,3 +3191,16 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bd-lim { position: absolute; left: 6px; bottom: 30px; max-width: calc(100% - 12px); padding: 2px 7px; border-radius: 999px; background: rgba(217,95,18,0.95); color: #fff; font-family: var(--font-maru); font-weight: 900; font-size: 10px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ika-bd-limnote { margin: 4px 0 8px; font-size: 13px; font-weight: 700; color: #ffd166; }
 .ika-gc-lim { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: #d95f12; color: #fff; font-size: 12px; font-weight: 900; vertical-align: middle; }
+
+/* ② 横画面：投げてから着底までの間は右のボタンを薄くして、イカが見えるように（体験版の感想 2026-10-01） */
+.is-egi-full .ika-egi-btn[data-phase='sink'] { opacity: 0.4; }
+.is-egi-full .ika-egi-controls:has(.ika-egi-btn[data-phase='sink']) .ika-egi-dart:not(:disabled) { opacity: 0.45; }
+.is-egi-full .ika-egi-controls:has(.ika-egi-btn[data-phase='sink']) .ika-egi-sidehud .ika-egi-count { opacity: 0.55; }
+/* ③ 海の選び方：ボタンを縦に並べ、説明の小さい文字を添える */
+.ika-egi-live-pick { margin: 14px 0 6px; }
+.ika-egi-live-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+.ika-egi-live-actions .ika-btn { display: grid; grid-template-columns: 1fr; justify-items: start; text-align: left; padding: 8px 16px; }
+.ika-egi-live-actions .ika-btn b { font-size: 15px; }
+.ika-egi-live-actions .ika-btn small { display: block; font-weight: 500; font-size: 12px; opacity: 0.85; margin-top: 1px; }
+/* ⑥ 振動の行（iPhone）：押せない理由 */
+.ika-egi-feel-note { display: block; width: 100%; font-size: 11.5px; color: var(--ika-ink-soft); margin-top: 2px; }
