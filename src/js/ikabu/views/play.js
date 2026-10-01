@@ -370,6 +370,7 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
     <p class="ika-egi-zone-head"><b>🎣 ${t(lang, T.zones.tackle)}</b><small>${t(lang, T.zones.tackleSub)}</small></p>
     ${methodPickHTML(lang)}
     ${tackleRibbonHTML(lang, { month, tod })}
+    <p class="ika-egi-cue-note">🦑 ${t(lang, T.angler.tap)}</p>
     </div>
     <div class="ika-egi-zone ika-egi-zone--land">
     <p class="ika-egi-zone-head"><b>🪝 ${t(lang, T.zones.land)}</b><small>${t(lang, T.zones.landSub)}</small></p>
@@ -468,6 +469,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
             <button type="button" class="ika-egi-bgmbtn" id="ika-egi-bgmbtn" aria-pressed="false" aria-label="${t(lang, T.feel.bgm)}">🔇</button>
             <p class="ika-egi-fullnote" id="ika-egi-fullnote" role="status" hidden>${t(lang, T.fullNote)}</p>
             <div class="ika-egi-colortip" id="ika-egi-colortip" hidden>${t(lang, T.egi.colorTap).split('|').map((w) => `<span>${w}</span>`).join('')}</div>
+            <div class="ika-egi-anglerpop" id="ika-egi-anglerpop" role="dialog" aria-label="${t(lang, T.angler.title)}" hidden></div>
             <div class="ika-egi-colorpop" id="ika-egi-colorpop" role="dialog" aria-label="${t(lang, T.egi.colorTitle)}" hidden>
               <p class="ika-egi-colorpop-title">${t(lang, T.egi.colorTitle)}</p>
               <div class="ika-egi-colors" id="ika-egi-colorpop-chips">${colorChipsHTML(lang, DEFAULT_EGI.color)}</div>

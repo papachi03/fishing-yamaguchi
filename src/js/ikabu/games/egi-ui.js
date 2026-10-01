@@ -27,6 +27,9 @@ import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
+import { ANGLERS, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler } from './anglers.js';
+import { readTickets, writeTickets } from './tickets.js';
+import { utcDay } from './rng.js';
 import { recommendedSizes } from './egi-advice.js';
 import { recordGedo } from './records.js';
 import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
@@ -59,7 +62,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
-    pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
+    pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
@@ -156,9 +159,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!sc.nodes) sc.nodes = makeNodes();
     const n = sc.nodes;
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
-    sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, ...n.drips);
+    sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, n.surprise, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     paintEgi();
+    paintAngler();   // 釣り人キャラ（2026-10-02）
     paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
     updateBottom(bottom);
     V.camShown = null;
@@ -234,6 +238,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       egiWater: mk('ika-eg-egi'), egiAir: mk('ika-eg-egi'),
       hugWater: mk('ika-eg-hug'), hugAir: mk('ika-eg-hug'),
       // 取り込みの道具（2026-10-01）：タモ・ギャフの絵。堤防側（左）から出てきてイカを取り、吊り上げに付いていく
+      // 釣り人の驚き（ジェットの瞬間。2026-10-02 ぱっぱ）：頭の上の「！」と汗のしずく
+      surprise: (() => {
+        const g = svgEl('g', { class: 'ika-eg-surprise', opacity: '0' });
+        g.append(
+          svgEl('circle', { cx: '0', cy: '0', r: '13', fill: '#fff', stroke: '#0b2a2f', 'stroke-width': '3' }),
+          svgEl('path', { d: 'M0,-7 L0,2', stroke: '#f47321', 'stroke-width': '4', 'stroke-linecap': 'round' }),
+          svgEl('circle', { cx: '0', cy: '7', r: '2.2', fill: '#f47321' }),
+          svgEl('path', { class: 'ika-eg-sweat', d: 'M-30,8 Q-35,16 -30,20 Q-25,16 -30,8 Z', fill: '#bfe3ff', stroke: '#0b2a2f', 'stroke-width': '1.6' }),
+        );
+        return g;
+      })(),
       toolPole: svgEl('line', { class: 'ika-eg-tool-pole', opacity: '0', stroke: '#1c2230', 'stroke-width': '5', 'stroke-linecap': 'round' }),   // 伸縮する柄（釣り人の手元から先まで）
       tool: svgEl('image', { class: 'ika-eg-tool', opacity: '0', preserveAspectRatio: 'xMidYMid meet' }),
       jet: svgEl('ellipse', { class: 'ika-eg-jet', fill: '#dff6f8', opacity: '0' }),
@@ -662,6 +677,53 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     for (const box of [el.pickRig, el.popRig]) box?.querySelectorAll('.ika-chip').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.rig === (e.rig ?? 'normal'))); b.disabled = !canPick; });
     syncTackle();
   }
+  /* ---------- 釣り人キャラ（2026-10-02）：一覧・🎫で入手・使う ---------- */
+  let anglerRec = readAnglers();
+  let anglerAsk = null;   // 🎫を使う前の「使う？」を出しているキャラ
+  function paintAngler() {
+    const im = sc?.svg?.querySelector('.ika-eg-angler');
+    if (im) im.setAttribute('href', assetHref(anglerOf(anglerRec.current).src));
+  }
+  function renderAnglerPop() {
+    if (!el.anglerPop) return;
+    const T = TX.angler; const have = readTickets().n;
+    const cards = ANGLERS.map((a) => {
+      const owned = anglerRec.owned.includes(a.id); const cur = anglerRec.current === a.id;
+      const btn = cur ? `<span class="ika-egi-ang-state">${t(lang, T.using)}</span>`
+        : owned ? `<button type="button" class="ika-chip" data-ang-use="${a.id}">${t(lang, T.use)}</button>`
+        : anglerAsk === a.id ? `<button type="button" class="ika-chip ika-egi-ang-yes" data-ang-buy="${a.id}">${T.confirm(lang, a.cost)}</button>`
+        : `<button type="button" class="ika-chip" data-ang-ask="${a.id}"${have < a.cost ? ' aria-disabled="true"' : ''} aria-label="${t(lang, T.names[a.id])} ${T.buy(lang, a.cost)}">${T.buy(lang, a.cost)}</button>`;
+      return `<div class="ika-egi-ang${cur ? ' is-cur' : ''}${owned ? '' : ' is-locked'}"><img src="${assetHref(a.src)}" alt="" width="64" height="72" decoding="async"><b>${esc(t(lang, T.names[a.id]))}</b>${btn}</div>`;
+    }).join('');
+    el.anglerPop.innerHTML = `<p class="ika-egi-colorpop-title">${t(lang, T.title)}<small>${T.have(lang, have)}</small></p><div class="ika-egi-ang-grid">${cards}</div><p class="ika-egi-colorpop-why">${t(lang, T.note)}</p><button type="button" class="ika-btn ika-egi-ang-close">${t(lang, T.close)}</button>`;
+  }
+  function openAnglerPop() { anglerAsk = null; renderAnglerPop(); el.anglerPop.hidden = false; }
+  el.anglerPop?.addEventListener('pointerdown', (e) => e.stopPropagation());
+  el.anglerPop?.addEventListener('click', (e) => {
+    const T = TX.angler;
+    if (e.target.closest('.ika-egi-ang-close')) { el.anglerPop.hidden = true; return; }
+    const use = e.target.closest('[data-ang-use]');
+    if (use) { const r = useAngler(anglerRec, use.dataset.angUse); if (r.ok) { anglerRec = r.rec; writeAnglers(anglerRec); paintAngler(); } renderAnglerPop(); return; }
+    const ask = e.target.closest('[data-ang-ask]');
+    if (ask) {
+      const a = anglerOf(ask.dataset.angAsk); const have = readTickets().n;
+      if (have < a.cost) { callout(T.short(lang, a.cost - have), 'bad'); return; }
+      anglerAsk = a.id; renderAnglerPop(); return;
+    }
+    const buy = e.target.closest('[data-ang-buy]');
+    if (buy) {
+      const r = buyAngler(anglerRec, readTickets(), buy.dataset.angBuy, { day: utcDay() });
+      anglerAsk = null;
+      if (r.ok) {
+        anglerRec = r.rec; writeAnglers(anglerRec); writeTickets(r.tickets);
+        dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
+        paintAngler();
+        callout(T.got(lang, t(lang, T.names[buy.dataset.angBuy])), 'good');
+      } else if (r.why === 'tickets') callout(T.short(lang, anglerOf(buy.dataset.angBuy).cost - readTickets().n), 'bad');
+      renderAnglerPop();
+    }
+  });
+
   /* ---------- タックル（ロッド・ドラグ）とリボン（2026-10-01） ---------- */
   function syncTackle() {
     const tk = settings.tackle;
@@ -1301,6 +1363,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
             setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 3200); }
           break;
         case 'jet': {
+          V.anglerJolt = now;   // 釣り人がビクッ（！と汗）
           // ジェット噴射はイカだけ（2026-09-27 ぱっぱ：カサゴなど外道は「抵抗している！」）
           const gedo = Boolean(s.hooking?.gedo);
           V.lastJet = now;
@@ -1788,8 +1851,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       openColorPop();
       return;
     }
+    if (el.anglerPop && !el.anglerPop.hidden) { if (!e.target.closest?.('.ika-egi-anglerpop')) { el.anglerPop.hidden = true; e.preventDefault(); } return; }
+    // 釣り人をタップ：キャラ一覧（投げる前・結果表示中・始める前だけ。2026-10-02）
+    if (!e.target.closest?.('.ika-egi-btn, .ika-egi-dart, .ika-egi-fullbtn, .ika-egi-bgmbtn, .ika-egi-card') && (!s || s.phase === 'ready' || s.phase === 'result' || s.phase === 'over') && !V.flight && inRect(sc?.svg?.querySelector('.ika-eg-angler'), e.clientX, e.clientY)) {
+      e.preventDefault();
+      openAnglerPop();
+      return;
+    }
     if (el.colorPop && !el.colorPop.hidden) { el.colorPop.hidden = true; if (!e.target.closest?.('.ika-egi-btn')) return; }
-    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) return;
+    if (e.target.closest('a, .ika-egi-card, select, .ika-chip, details, .ika-egi-colorpop, .ika-egi-anglerpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) return;
     if (ptr) return;
     const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
@@ -2402,6 +2472,23 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     n.hugAir.setAttribute('transform', hugT); n.hugWater.setAttribute('transform', hugT);
     n.hugAir.setAttribute('opacity', V.hug.on && hugInAir ? '1' : '0');
     n.hugWater.setAttribute('opacity', V.hug.on && !hugInAir ? String(V.hug.alpha ?? 1) : '0');
+    // 釣り人の驚き：ジェットの瞬間から 0.7 秒、ビクッと揺れて頭の上に「！」と汗（2026-10-02）
+    {
+      const jk = V.anglerJolt != null ? (now - V.anglerJolt) / 0.7 : 9;
+      const ang = sc.svg.querySelector('.ika-eg-angler');
+      const B = SCENE.squidBox;
+      if (jk < 1 && !reduced) {
+        const shake = Math.sin(jk * Math.PI * 6) * (1 - jk) * 5;
+        const hop = -Math.sin(Math.min(1, jk * 3) * Math.PI) * 6;
+        ang?.setAttribute('transform', `translate(${f1(shake)} ${f1(hop)})`);
+        const pop = jk < 0.15 ? jk / 0.15 : 1;
+        n.surprise.setAttribute('transform', `translate(${f1(B.x + B.w * 0.98)} ${f1(B.y + B.h * 0.36 - 6 * pop)}) scale(${(0.8 + 0.6 * pop).toFixed(2)})`);   // 頭の右横（縦画面だと頭の上は舞台の外になる）
+        n.surprise.setAttribute('opacity', String(jk > 0.8 ? (1 - jk) / 0.2 : 1));
+      } else {
+        if (ang?.getAttribute('transform')) ang.setAttribute('transform', '');
+        n.surprise.setAttribute('opacity', '0');
+      }
+    }
     // 吊ったイカから落ちるしずく
     n.drips.forEach((dp, i) => {
       if (!(V.hug.on && hugInAir) || reduced) { dp.setAttribute('opacity', '0'); return; }

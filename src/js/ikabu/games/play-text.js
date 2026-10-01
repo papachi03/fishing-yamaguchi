@@ -133,6 +133,21 @@ export const EGI_TEXT = {
   fullRotNote: pair('スマホの右側が上になるように横にして遊んでね。「✕ もどる」で縦に戻ります', 'Turn your phone so its right side is on top. Tap “✕ Exit” to go back'),
   fullNote: pair('スマホを横に倒すと、全画面で遊べます。iPhone は共有メニューの「ホーム画面に追加」から開くと、アドレスバーなしの全画面に', 'Turn your phone sideways to play full screen. On iPhone, open it from “Add to Home Screen” for a bar-free screen'),
   fall: { tension: pair('テンションフォール', 'Tension fall'), free: pair('フリーフォール', 'Free fall') },
+  // 釣り人キャラ（2026-10-02）：舞台の釣り人をタップ→一覧→🎫で入手。見た目だけ
+  angler: {
+    title: pair('釣り人を選ぶ', 'Choose your angler'),
+    note: pair('見た目だけが変わります（釣れ方は同じ）', 'Looks only. It does not change your catch'),
+    names: { shiro: pair('部長（白イカ）', 'The Captain'), aori: pair('アオリイカ', 'Bigfin reef squid'), kouika: pair('コウイカ', 'Golden cuttlefish'), mongo: pair('モンゴウイカ', 'Pharaoh cuttlefish'), yari: pair('ヤリイカ', 'Spear squid'), kensaki: pair('ケンサキイカ', 'Swordtip squid') },
+    using: pair('使用中', 'In use'),
+    use: pair('使う', 'Use'),
+    buy: (lang, n) => `🎫${n}`,
+    confirm: (lang) => (lang === 'en' ? 'Get it' : '入手する'),
+    have: (lang, n) => (lang === 'en' ? `You have 🎫${n}` : `持っている🎫 ${n}枚`),
+    short: (lang, n) => (lang === 'en' ? `Not enough 🎫 (need ${n})` : `🎫が足りません（あと${n}枚）`),
+    got: (lang, name) => (lang === 'en' ? `${name} joined!` : `${name}が仲間になった！`),
+    tap: pair('釣り人をタップでキャラを選べる', 'Tap the angler to change character'),
+    close: pair('閉じる', 'Close'),
+  },
   // 設定欄の3区画（2026-10-01 ぱっぱ：フィールド／タックル／取り込み方。縦に長くしない）
   zones: {
     field: pair('フィールド', 'Field'),
