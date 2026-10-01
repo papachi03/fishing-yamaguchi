@@ -156,7 +156,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!sc.nodes) sc.nodes = makeNodes();
     const n = sc.nodes;
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
-    sc.air.append(n.entry, n.egiAir, n.hugAir, n.tool, ...n.drips);
+    sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     paintEgi();
     paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
@@ -234,7 +234,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       egiWater: mk('ika-eg-egi'), egiAir: mk('ika-eg-egi'),
       hugWater: mk('ika-eg-hug'), hugAir: mk('ika-eg-hug'),
       // 取り込みの道具（2026-10-01）：タモ・ギャフの絵。堤防側（左）から出てきてイカを取り、吊り上げに付いていく
-      tool: svgEl('image', { class: 'ika-eg-tool', opacity: '0', width: String(TOOL.w), height: String(TOOL.h), preserveAspectRatio: 'xMidYMid meet' }),
+      toolPole: svgEl('line', { class: 'ika-eg-tool-pole', opacity: '0', stroke: '#1c2230', 'stroke-width': '5', 'stroke-linecap': 'round' }),   // 伸縮する柄（釣り人の手元から先まで）
+      tool: svgEl('image', { class: 'ika-eg-tool', opacity: '0', preserveAspectRatio: 'xMidYMid meet' }),
       jet: svgEl('ellipse', { class: 'ika-eg-jet', fill: '#dff6f8', opacity: '0' }),
       // エフェクト（2026-09-25）：ジェットの水流の筋、泡、パンチの足の影と波紋
       fx: svgEl('g', { class: 'ika-eg-fx' }),
@@ -309,17 +310,30 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
 
   /* ---------- 取り込みの道具（2026-10-01 ぱっぱ：小＝ぶっこ抜き、中＝タモ、大＝ギャフ。絵は GPT） ---------- */
-  const TOOL = { w: 300, h: 150, headX: 0.85, headY: 0.5, src: { net: assetHref('/assets/ikabu/tools/tamo.webp'), gaff: assetHref('/assets/ikabu/tools/gaff.webp') } };
-  // 道具の位置：先（網の中心・鉤の先）を (tx, ty) に置き、柄は左（堤防側）へ伸びる。ギャフは斜め上から
-  function drawTool(kind, tx, ty, alpha, ang = 0) {
-    const im = sc?.nodes?.tool;
-    if (!im) return;
-    if (!alpha) { im.setAttribute('opacity', '0'); return; }
-    if (im.dataset.kind !== kind) { im.setAttribute('href', TOOL.src[kind]); im.dataset.kind = kind; }
-    const x0 = tx - TOOL.w * TOOL.headX; const y0 = ty - TOOL.h * TOOL.headY;
+  // 絵は先（網・鉤）だけ。柄は釣り人の手元（SCENE.grip）から先まで線で描き、伸び縮みする（10/2 ぱっぱ：本物は手元を動かさず、伸縮する棒が伸びて取り、縮みながら回収）
+  const TOOL = {
+    net: { w: 98, h: 150, headX: 0.625, headY: 0.513, src: assetHref('/assets/ikabu/tools/tamo_head.webp') },
+    gaff: { w: 148, h: 150, headX: 0.678, headY: 0.5, src: assetHref('/assets/ikabu/tools/gaff_head.webp') },
+  };
+  // 先（網の中心・鉤）を (tx, ty) に置く。絵は手元→先の向きに回し、柄の線は手元から絵の付け根まで
+  function drawTool(kind, tx, ty, alpha) {
+    const im = sc?.nodes?.tool; const pole = sc?.nodes?.toolPole;
+    if (!im || !pole) return;
+    if (!alpha) { im.setAttribute('opacity', '0'); pole.setAttribute('opacity', '0'); return; }
+    const T = TOOL[kind];
+    if (im.dataset.kind !== kind) { im.setAttribute('href', T.src); im.setAttribute('width', String(T.w)); im.setAttribute('height', String(T.h)); im.dataset.kind = kind; }
+    const g = SCENE.grip;
+    const ang = Math.atan2(ty - g.y, tx - g.x);
+    const deg = (ang * 180) / Math.PI;
+    const x0 = tx - T.w * T.headX; const y0 = ty - T.h * T.headY;
     im.setAttribute('x', String(x0)); im.setAttribute('y', String(y0));
-    im.setAttribute('transform', ang ? `rotate(${ang} ${tx} ${ty})` : '');
+    im.setAttribute('transform', `rotate(${deg.toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})`);
     im.setAttribute('opacity', String(alpha));
+    const d = T.w * T.headX - 6;   // 絵の付け根（左端）まで
+    const bx = tx - Math.cos(ang) * d; const by = ty - Math.sin(ang) * d;
+    pole.setAttribute('x1', String(g.x)); pole.setAttribute('y1', String(g.y));
+    pole.setAttribute('x2', bx.toFixed(1)); pole.setAttribute('y2', by.toFixed(1));
+    pole.setAttribute('opacity', String(alpha));
   }
 
   /* ---------- 座標 ---------- */
@@ -2194,15 +2208,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           const hugH = V.hug.height ?? 100;
           const aimX = V.hug.x + (net ? 4 : 2);
           const aimY = net ? V.hug.y + hugH * 0.55 : V.hug.y + hugH * 0.35;     // タモは胴の下へ、ギャフは胴へ
-          // 釣り人の手元（堤防の上・左上）から、堤防の際に沿って下へ。柄は上（釣り人）へ向く＝角度 +72°（10/2 ぱっぱの図：真横からではなく上から刺す／入れる）
-          const startX = aimX - 30; const startY = aimY - 230;
+          // 手元（SCENE.grip）から先がイカまで伸びる（lead 秒）→ 取ったら先はイカに付いたまま、柄が縮みながら手元へ寄せる
           const ex = easeOut(u);
-          let tx = lerp(startX, aimX, ex); let ty = lerp(startY, aimY, ex);
-          if (u >= 1) { tx = aimX; ty = aimY; }
-          const since = now - V.land.t0 - lead;
+          const tx = u >= 1 ? aimX : lerp(SCENE.grip.x + 20, aimX, ex);
+          const ty = u >= 1 ? aimY : lerp(SCENE.grip.y + 10, aimY, ex);
           const fade = k >= 1 ? clamp(1 - (now - V.land.t0 - lead - 0.9) / 0.4, 0, 1) : 1;   // 吊ってから 0.4 秒で消える
-          const ang = (net ? 74 : 72) + (since > 0 && since < 0.3 ? -8 * Math.sin((since / 0.3) * Math.PI) : 0);   // 掛けた／入れた瞬間に少し起きる
-          drawTool(V.land.kind, tx, ty, fade, ang);
+          drawTool(V.land.kind, tx, ty, fade);
         } else drawTool('net', 0, 0, 0);
       } else if (phase === 'signal') {
         // 抱いた直後。アタリの種類で見え方が違う：
