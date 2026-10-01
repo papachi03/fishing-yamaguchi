@@ -178,3 +178,22 @@ test('投稿の枠は1時間3件（現地の声とは別に数える）。生の
     assert.equal(res.status, 201);
   });
 });
+
+test('受付番号（cid）：同じ番号で2回届いても1件。status で届いたか分かる（2026-10-01 iPhoneの送信途中エラー対策）', async () => {
+  const env = makeEnv();
+  await run(async (f) => {
+    assert.deepEqual(await (await get('/ikabu/photos/status?cid=abcd-1234-efgh', env, { origin: ORIGIN })).json(), { ok: true, arrived: false, id: null });
+    const r1 = await worker.fetch(postForm({ ...valid, cid: 'abcd-1234-efgh' }), env, ctx);
+    assert.equal(r1.status, 201);
+    const p1 = (await r1.json()).post;
+    const st = await (await get('/ikabu/photos/status?cid=abcd-1234-efgh', env, { origin: ORIGIN })).json();
+    assert.equal(st.arrived, true); assert.equal(st.id, p1.id);
+    const r2 = await worker.fetch(postForm({ ...valid, cid: 'abcd-1234-efgh' }), env, ctx);
+    const b2 = await r2.json();
+    assert.equal(r2.status, 201); assert.equal(b2.duplicate, true); assert.equal(b2.post.id, p1.id);
+    assert.equal([...env.REPORTS_KV._store.keys()].filter((k) => k.startsWith('ikabu:post:')).length, 1);
+    await settle();
+    assert.equal(f.calls.filter((c) => c.url.includes('discord')).length, 1, 'Discord への通知も1回');
+    assert.equal((await get('/ikabu/photos/status?cid=x', env)).status, 400);
+  });
+});

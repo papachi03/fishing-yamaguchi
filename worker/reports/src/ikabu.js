@@ -8,7 +8,8 @@
  *
  * 経路（公開）
  *   GET  /ikabu/photos?limit=       掲載済みの投稿（新しい順）
- *   POST /ikabu/photos              投稿（multipart：photo・cat・name・comment・agree・cf-turnstile-response）
+ *   POST /ikabu/photos              投稿（multipart：photo・cat・name・comment・agree・cf-turnstile-response・cid）
+ *   GET  /ikabu/photos/status?cid=  受付番号 cid の投稿が届いているか（iPhone が送信の途中で「失敗」と出す件の確かめ用・2026-10-01）
  *   GET  /ikabu/photo/<id>          写真（掲載済みだけ）
  * 経路（管理）
  *   GET  /admin/ikabu                         一覧（合言葉）。掲載待ちが上
@@ -40,6 +41,9 @@ const TOKEN_PURPOSE = 'ika';
 const POST = 'ikabu:post:';
 const INDEX = 'ikabu:index:public';
 const photoKey = (id) => `ikabu/photo/${id}.jpg`;
+// 受付番号（ブラウザが付ける）→ 投稿ID。同じ番号で2回届いても1件にする（送り直しで二重にならない）。1日で消える
+const cidKey = (cid) => `ikabu:cid:${cid}`;
+const isCid = (s) => /^[A-Za-z0-9-]{8,40}$/.test(String(s ?? ''));
 
 const getPost = (env, id) => env.REPORTS_KV.get(POST + id, 'json');
 const putPost = (env, post) => env.REPORTS_KV.put(POST + post.id, JSON.stringify(post));
@@ -93,6 +97,12 @@ export async function handleIkabu(request, env, ctx, url) {
     return json({ ok: true, posts }, 200, request, { 'cache-control': 'public, max-age=30' });
   }
   if (path === '/ikabu/photos' && request.method === 'POST') return handleCreate(request, env, ctx);
+  if (path === '/ikabu/photos/status' && request.method === 'GET') {
+    const cid = url.searchParams.get('cid');
+    if (!isCid(cid)) return json({ ok: false, error: '受付番号が正しくありません。' }, 400, request);
+    const id = await env.REPORTS_KV.get(cidKey(cid));
+    return json({ ok: true, arrived: Boolean(id), id: id || null }, 200, request, { 'cache-control': 'no-store' });
+  }
   const photo = path.match(/^[/]ikabu[/]photo[/]([^/]+)$/);
   if (photo && request.method === 'GET') {
     const id = photo[1];
@@ -118,6 +128,15 @@ async function handleCreate(request, env, ctx) {
   }
   const v = validateIkabuPost(Object.fromEntries(['name', 'cat', 'comment', 'agree'].map((k) => [k, form.get(k)])));
   if (!v.ok) return json({ ok: false, error: v.error }, 400, request);
+  // 受付番号：同じ番号がすでに届いていれば、その投稿を返す（保存も通知もしない）
+  const cid = isCid(form.get('cid')) ? String(form.get('cid')) : null;
+  if (cid) {
+    const dupId = await env.REPORTS_KV.get(cidKey(cid));
+    if (dupId) {
+      const dup = await getPost(env, dupId);
+      if (dup) return json({ ok: true, post: toPublic(dup), pending: !dup.approved, duplicate: true }, 201, request);
+    }
+  }
 
   // 写真（最大3MB）を読む前に、人かどうかを先に確かめる（現地の声と同じ順）
   if (!(await verifyTurnstile(form.get('cf-turnstile-response'), request, env))) {
@@ -139,6 +158,7 @@ async function handleCreate(request, env, ctx) {
   const post = { id, ...v.post, createdAt: new Date().toISOString(), approved: false, by: hash };
   await putPhoto(env, id, bytes);
   await putPost(env, post);
+  if (cid) await env.REPORTS_KV.put(cidKey(cid), id, { expirationTtl: 86400 });
   // 掲載待ちなので索引は変わらない（掲載した時に作り直す）
 
   ctx.waitUntil(notifyNewIkabuPost(env, post, new URL(request.url).origin).catch((e) => console.error('ikabu notify failed', String(e))));

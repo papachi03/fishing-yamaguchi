@@ -129,6 +129,9 @@ const msg = document.getElementById('ika-pp-msg');
 const submitBtn = document.getElementById('ika-pp-submit');
 const off = document.getElementById('ika-pp-off');
 let widgetId = null;
+// 受付番号：この入力内容の分。送り直しても同じ番号なので Worker で1件にまとまる。成功したら新しくする
+let cid = null;
+const newCid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`).replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
 
 function say(text, isError = false) {
   if (!msg) return;
@@ -176,12 +179,15 @@ form?.addEventListener('submit', async (e) => {
     data.set('comment', document.getElementById('ika-pp-comment').value);
     data.set('agree', document.getElementById('ika-pp-agree').checked ? '1' : '');
     data.set('cf-turnstile-response', token);
+    cid = cid ?? newCid();
+    data.set('cid', cid);
     data.set('photo', new File([await blob.arrayBuffer()], 'photo.jpg', { type: 'image/jpeg' }));
 
     const result = await submitIkabuPhoto(data, { size: blob.size, side: fit.side, src: file.type || '?', srcSize: file.size });
     if (!result.ok) return say(result.error, true);
 
     form.reset();
+    cid = null;
     // 🎫は「投稿が届いた時点」で付ける（2026-10-01 ぱっぱ）。付与は tickets-ui（1日1枚）
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'photo', counted: true } }));
     say(t(lang, '投稿しました。ありがとうございます！ 部長が確認してから写真部に並びます。', 'Posted. Thank you! It will appear once the club captain has checked it.'));

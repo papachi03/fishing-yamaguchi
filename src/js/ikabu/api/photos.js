@@ -44,18 +44,34 @@ function xhrPost(url, formData, timeoutMs = 60000) {
 }
 const parse = (text) => { try { return JSON.parse(text); } catch { return null; } };
 
+// 受付番号 cid の投稿が Worker に届いているか（iPhone が送信の途中で「失敗」と出しても、実は届いていることがある。2026-10-01 実測）
+export async function checkArrived(cid, waitMs = 0) {
+  if (waitMs) await new Promise((r) => setTimeout(r, waitMs));
+  try {
+    const res = await call(`/ikabu/photos/status?cid=${encodeURIComponent(cid)}`, { cache: 'no-store' }, 10000);
+    const d = await res.json().catch(() => null);
+    return d?.ok && d.arrived ? { ok: true, post: { id: d.id }, pending: true, arrivedLate: true } : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function submitIkabuPhoto(formData, info = {}) {
   const t0 = Date.now();
+  const cid = String(formData.get('cid') ?? '');
   const done = (data, status) => (data?.ok ? data : { ok: false, error: data?.error || `送信できませんでした（${status}）。時間をおいてもう一度お試しください。` });
   try {
     const res = await call('/ikabu/photos', { method: 'POST', body: formData }, 60000);
     return done(await res.json().catch(() => null), res.status);
   } catch (first) {
-    // 1回目が届かなかった（Worker に記録が無い）＝もう一度送っても二重にはならない。XMLHttpRequest で送り直す
+    // ①「失敗」と出ても届いていることがある → 少し待って Worker に聞く（Worker 側の処理は3秒ほどかかる）
+    if (cid) { const a = await checkArrived(cid, 3500); if (a) return a; }
+    // ② 本当に届いていない → XMLHttpRequest で送り直す（同じ受付番号なので、万一両方届いても1件）
     try {
       const r = await xhrPost(`${API}/ikabu/photos`, formData);
       if (r.status > 0) return done(parse(r.text), r.status);
-    } catch { /* 下で理由を残す */ }
+    } catch { /* 下で確かめる */ }
+    if (cid) { const a = await checkArrived(cid, 3500); if (a) return a; }
     const e = first;
     const why = `${e?.name ?? 'Error'}: ${e?.message ?? e}`;
     const q = new URLSearchParams({ why, ms: String(Date.now() - t0), ...Object.fromEntries(Object.entries(info).map(([k, v]) => [k, String(v)])) });
