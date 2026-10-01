@@ -1028,5 +1028,47 @@
 "do": "draw",
 "n": 2
 }
+],
+"121": [
+{
+"when": "enter",
+"do": "draw",
+"n": 1
+}
+],
+"122": [
+{
+"when": "play",
+"do": "tutorSquid",
+"n": 2
+}
+],
+"123": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "atk",
+"n": -3,
+"until": "turnEnd"
+}
+],
+"124": [
+{
+"when": "passive",
+"do": "haste"
+}
+],
+"125": [
+{
+"when": "passive",
+"do": "techCheaper",
+"n": 1,
+"only": "night"
+},
+{
+"when": "tag",
+"tag": "night"
+}
 ]
 }

@@ -12,9 +12,9 @@ const mk = (opts = {}) => newGame({ myDeck: starterDeck(CARDS), cpuDeck: starter
 const rich = (st) => { for (const s of ['me', 'cpu']) { st.players[s].tideMax = 9; st.players[s].tide = 8; } return st; };
 const give = (st, side, name) => { const c = byName(name); const x = { uid: 9000 + Math.random(), no: c.no, card: c, buffs: [], sick: true, skipNext: false, skipThis: false, attacked: false, shield: false, resting: false, faceDown: false, flags: {} }; st.players[side].hand.push(x); return x; };
 
-test('120枚すべてに効果の型がある（効果なしのイカは空の配列）', () => {
+test('125枚すべてに効果の型がある（効果なしのイカは空の配列）', () => {
   for (const c of CARDS) assert.ok(Array.isArray(EFFECTS[String(c.no)]), `${c.no} ${c.name}`);
-  assert.equal(Object.keys(EFFECTS).length, 120);
+  assert.equal(Object.keys(EFFECTS).length, 125);
 });
 
 test('スターターデッキは検査に通り、練習デッキはNだけ', () => {

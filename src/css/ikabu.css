@@ -1533,6 +1533,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-method-chip:disabled { opacity: 0.5; cursor: not-allowed; }
 .ika-egi-method-about { font-size: 12.5px; line-height: 1.6; color: var(--ika-sea); font-weight: 700; }
 .ika-egi-bait { display: grid; gap: 4px; padding: 8px 10px; border: 2px dashed var(--ika-sea-line); border-radius: 12px; }
+.ika-egi-bait[hidden] { display: none; }   /* 解放前の釣り方の欄（タナ・アジ・エサ）は出さない。display:grid が hidden に勝っていた（2026-10-01 ぱっぱ指摘） */
 .ika-egi-baitbar { position: relative; width: 56px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.35); overflow: hidden; }
 .ika-egi-baitbar i { position: absolute; inset: 0 auto 0 0; width: 100%; background: #f6dcd3; transition: width 0.3s; }
 .ika-egi-baitbar.is-low i { background: #e2b000; }
@@ -3172,3 +3173,14 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bd-share { width: 100%; font-size: 15px; background: #0b2a2f; color: #ffd166; border: 2px solid #d9b24a; }
 .ika-bd-share[disabled] { opacity: 0.6; }
 .ika-bd-share-msg { margin: 0; min-height: 1.2em; font-size: 12.5px; font-weight: 700; color: #ffd166; }
+
+/* ===== ガチャ限定フェス・シークレット（2026-10-01） ===== */
+.ika-gc-pools { display: grid; gap: 10px; width: min(92%, 420px); margin: 0 0 6px; }
+.ika-gc-pools[hidden] { display: none; }
+.ika-gc-pool { position: relative; display: block; width: 100%; padding: 0; border: 3px solid transparent; border-radius: 14px; background: none; cursor: pointer; overflow: hidden; opacity: 0.72; transform: scale(0.97); transition: opacity 0.15s, transform 0.15s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
+.ika-gc-pool img { display: block; width: 100%; height: auto; pointer-events: none; }
+.ika-gc-pool[aria-pressed='true'] { opacity: 1; transform: scale(1); border-color: #ffd166; box-shadow: 0 0 0 2px rgba(11,42,47,0.6), 0 8px 22px rgba(0,0,0,0.45); }
+.ika-gc-pool-period { position: absolute; right: 10px; bottom: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(11,42,47,0.85); color: #ffd166; font-family: 'Shippori Mincho B1', serif; font-weight: 800; font-size: 12px; letter-spacing: 0.04em; }
+.ika-bd-lim { position: absolute; left: 6px; bottom: 30px; max-width: calc(100% - 12px); padding: 2px 7px; border-radius: 999px; background: rgba(217,95,18,0.95); color: #fff; font-family: var(--font-maru); font-weight: 900; font-size: 10px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ika-bd-limnote { margin: 4px 0 8px; font-size: 13px; font-weight: 700; color: #ffd166; }
+.ika-gc-lim { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; background: #d95f12; color: #fff; font-size: 12px; font-weight: 900; vertical-align: middle; }

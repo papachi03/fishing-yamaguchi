@@ -31,15 +31,20 @@ export function rollRarity(u, floor = 'N') {
   return pool[pool.length - 1];
 }
 
-// カード一覧から、そのレア度のカードを1枚（乱数で）
-export function pickCard(cards, rarity, u) {
+// カード一覧から、そのレア度のカードを1枚（乱数で）。weightOf＝カードごとの重み（フェス限定は boost 倍。2026-10-01）
+export function pickCard(cards, rarity, u, weightOf = () => 1) {
   const pool = cards.filter((c) => c.rarity === rarity);
   if (!pool.length) throw new Error(`no cards of rarity ${rarity}`);
-  return pool[Math.min(pool.length - 1, Math.floor(u * pool.length))];
+  const w = pool.map((c) => Math.max(0, Number(weightOf(c)) || 0));
+  const total = w.reduce((s, x) => s + x, 0);
+  if (!(total > 0)) return pool[Math.min(pool.length - 1, Math.floor(u * pool.length))];
+  let acc = 0;
+  for (let i = 0; i < pool.length; i++) { acc += w[i] / total; if (u < acc) return pool[i]; }
+  return pool[pool.length - 1];
 }
 
 // n 回引く。乱数は seed から（同じ seed なら同じ結果＝テストと再現用）。戻り：{ rec, results:[{card, rarity, isNew, shards, guaranteed}] }
-export function pull(rec, cards, n, { seed = `${Date.now()}` } = {}) {
+export function pull(rec, cards, n, { seed = `${Date.now()}`, weightOf = () => 1 } = {}) {
   const r = { ...emptyCards(), ...(rec ?? {}), owned: { ...(rec?.owned ?? {}) }, log: [...(rec?.log ?? [])] };
   const rnd = seeded(`gacha:${seed}`);
   const results = [];
@@ -51,7 +56,7 @@ export function pull(rec, cards, n, { seed = `${Date.now()}` } = {}) {
     else if (r.sinceSR >= PITY_SR - 1) { floor = 'SR'; guaranteed = 'pitySR'; }
     else if (n >= COST_TEN && i === n - 1 && !tenHasR) { floor = 'R'; guaranteed = 'tenR'; }
     const rarity = rollRarity(rnd(), floor);
-    const card = pickCard(cards, rarity, rnd());
+    const card = pickCard(cards, rarity, rnd(), weightOf);
     if (rank(rarity) >= rank('R')) tenHasR = true;
     r.pulls += 1;
     r.sinceSR = rank(rarity) >= rank('SR') ? 0 : r.sinceSR + 1;

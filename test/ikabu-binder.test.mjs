@@ -12,15 +12,15 @@ test('番号順が既定。レア度順は UR が先頭、タイプ順はイカ�
   assert.equal(byKind[0].kind, 'squid'); assert.equal(byKind[byKind.length - 1].kind, 'trap');
   const byName = arrange(CARDS, {}, { sort: 'name' });
   assert.ok(byName[0].name.localeCompare(byName[1].name, 'ja') <= 0);
-  assert.equal(arrange(CARDS).length, 120);
+  assert.equal(arrange(CARDS).length, 125);
   assert.deepEqual(SORTS, ['no', 'rarity', 'name', 'kind']);
 });
 
 test('絞り込み：タイプ・レア度・持っている／いない', () => {
   const owned = { 1: 2, 51: 1 };
   assert.equal(arrange(CARDS, owned, { kind: 'tech' }).every((c) => c.kind === 'tech'), true);
-  assert.equal(arrange(CARDS, owned, { rarity: 'UR' }).length, 6);
+  assert.equal(arrange(CARDS, owned, { rarity: 'UR' }).length, 7);   // 通常6＋フェス限定1（2026-10-01）
   assert.deepEqual(arrange(CARDS, owned, { have: 'have' }).map((c) => c.no), [1, 51]);
-  assert.equal(arrange(CARDS, owned, { have: 'missing' }).length, 118);
-  assert.deepEqual(counts(CARDS, owned), { total: 3, kinds: 2, all: 120 });
+  assert.equal(arrange(CARDS, owned, { have: 'missing' }).length, 123);
+  assert.deepEqual(counts(CARDS, owned), { total: 3, kinds: 2, all: 125 });
 });

@@ -10,6 +10,7 @@ import { arrange, counts, SORTS, KIND_ORDER, KIND_LABEL } from './binder.js';
 import { readJSON, writeJSON } from './records.js';
 import { tierOf } from './gacha-show.js';
 import { makeShareImage, shareBlob } from './binder-share.js';
+import { isSecret, fesOf, limitLabel, fesPeriod } from './fes.js';
 
 const KEY_VIEW = 'ikabu.binder.view';
 const TX = {
@@ -88,9 +89,12 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
     if (!list.length) { el.grid.innerHTML = `<p class="ika-bd-empty">${t(lang, ...TX.empty)}</p>`; return; }
     el.grid.innerHTML = list.map((c) => {
       const n = rec.owned[c.no] ?? 0;
-      return `<button type="button" class="ika-bd-card${n ? '' : ' is-missing'}" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)}${n ? ` ×${n}` : ''}">
+      const hidden = isSecret(c) && !n;   // シークレットは持つまで名前も出さない（どこで出るかは書かない）
+      const lim = limitLabel(c, lang, { short: true });   // 格子では短い帯（長いと切れる）
+      return `<button type="button" class="ika-bd-card${n ? '' : ' is-missing'}${c.limit ? ' is-limited' : ''}" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${hidden ? '？？？' : esc(c.name)}${n ? ` ×${n}` : ''}">
         <img src="${n ? cardSrc(c.no, true) : assetHref('/assets/ikabu/cards/card_back.webp')}" alt="" width="240" height="360" loading="lazy" decoding="async" />
         ${n ? `<i class="ika-bd-n">×${n}</i>` : '<i class="ika-bd-q">?</i>'}
+        ${lim ? `<i class="ika-bd-lim">${esc(lim)}</i>` : ''}
         <span class="ika-bd-no">${String(c.no).padStart(3, '0')}</span>
       </button>`;
     }).join('');
@@ -115,7 +119,9 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
       <div class="ika-bd-big" data-tier="${tierOf(c.rarity)}"><img src="${n ? cardSrc(no) : assetHref('/assets/ikabu/cards/card_back.webp')}" alt="${esc(c.name)}" width="600" height="900" decoding="async" /></div>
       <div class="ika-bd-info">
         <p class="ika-bd-info-top">${rarityImg(c.rarity)}<span class="ika-bd-kind">${t(lang, ...KIND_LABEL[c.kind])}</span><span class="ika-bd-owned">${TX.owned(lang, n)}</span></p>
-        <h2>${n ? esc(c.name) : '？？？'}</h2>
+        <h2>${n || !isSecret(c) ? esc(c.name) : '？？？'}</h2>
+        ${fesOf(c) ? `<p class="ika-bd-limnote">${esc(limitLabel(c, lang))}（${fesPeriod(fesOf(c), lang)}）</p>` : ''}
+        ${!n && isSecret(c) ? `<p class="ika-bd-limnote">${t(lang, 'どこかで出会えるかも……', 'You might run into it somewhere…')}</p>` : ''}
         ${n ? `<p class="ika-bd-effect">${esc(c.effect)}</p>
         <p class="ika-bd-nums"><span>${t(lang, ...TX.cost)} ${c.cost}</span>${c.atk != null ? `<span>${t(lang, ...TX.atk)} ${c.atk}</span>` : ''}${c.def != null ? `<span>${t(lang, ...TX.def)} ${c.def}</span>` : ''}</p>` : ''}
         <p class="ika-bd-actions"><button type="button" class="ika-btn" data-bd-exchange="${no}" ${rec.shards < cost ? 'aria-disabled="true"' : ''}>${TX.exchange(lang, cost)}</button><span class="ika-bd-msg" data-bd-msg></span></p>

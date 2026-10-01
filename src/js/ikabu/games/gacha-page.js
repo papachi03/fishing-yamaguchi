@@ -13,6 +13,7 @@ import { createGachaAudio } from './gacha-audio.js';
 import { readJSON, writeJSON } from './records.js';
 import { utcDay } from './rng.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
+import { activeFes, gachaPool, weightFor, jst, todOf, fesPeriod, limitLabel, NORMAL_BANNER } from './fes.js';
 import { swimmingSquid, animateSquid } from '../squid-art2.js';   // 泳ぐイカはエギングと同じ絵（2026-09-30 ぱっぱ）
 import { speciesColors } from '../squid-art.js';
 
@@ -126,6 +127,7 @@ function pageHTML(lang, { demo }) {
         <img class="ika-gc-logo" src="${A('/assets/ikabu/gacha/logo.webp')}" alt="${t(lang, 'イカ部ガチャ', 'Squid Gacha')}" width="900" height="506" decoding="async" />
         ${demo ? `<p class="ika-gc-demo">${t(lang, ...TX.demo)}：${esc(demo)}</p>` : ''}
         ${IS_TRIAL ? `<p class="ika-gc-trial">${t(lang, ...TX.trial)}</p>` : ''}
+        <div class="ika-gc-pools" data-gc-pools hidden></div>
         <div class="ika-gc-pulls">
           <button type="button" class="ika-gc-imgbtn" data-gc-pull="1"><img src="${A('/assets/ikabu/gacha/btn_one.webp')}" alt="${t(lang, ...TX.one)}" width="1120" height="201" /><span>${t(lang, ...TX.cost1)}</span></button>
           <button type="button" class="ika-gc-imgbtn" data-gc-pull="10"><img src="${A('/assets/ikabu/gacha/btn_ten.webp')}" alt="${t(lang, ...TX.ten)}" width="1120" height="201" /><span>${t(lang, ...TX.cost10)}</span></button>
@@ -177,6 +179,11 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const devOk = import.meta.env.DEV || IS_TRIAL;
   const demo = devOk ? new URLSearchParams(location.search).get('demo') : null;
+  // 限定フェス（2026-10-01）。確認用：?fes=<フェスID>（期間外でも開く）・?tod=morning|day|evening|night（時間帯を決め打ち）。DEV と試遊版だけ
+  const q = new URLSearchParams(location.search);
+  const fes = activeFes(new Date(), { force: devOk ? q.get('fes') : null });
+  const todNow = () => (devOk && q.get('tod')) || todOf(jst().hour);
+  let banner = 'normal';
   document.documentElement.classList.add('is-gacha');
   // ページ専用の書体（2026-09-30 ぱっぱ「ゴシックはダサい。明朝やデザイン書体で」）
   if (!document.getElementById('ika-gc-fonts')) {
@@ -220,6 +227,21 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
     el.tickets.textContent = String(readTickets().n);
     el.pity.textContent = TX.pity(lang, Math.max(1, PITY_SR - rec.sinceSR), Math.max(1, PITY_UR - rec.sinceUR));
   }
+  // バナー：フェスが開催中なら「通常」と「フェス」の2つ、無ければ出さない
+  function renderBanners() {
+    const box = $('[data-gc-pools]');
+    if (!fes) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = `
+      <button type="button" class="ika-gc-pool" data-gc-pool="normal" aria-pressed="${String(banner === 'normal')}"><img src="${assetHref(NORMAL_BANNER)}" alt="${t(lang, '通常ガチャ', 'Standard gacha')}" width="1080" height="420" decoding="async" /></button>
+      <button type="button" class="ika-gc-pool" data-gc-pool="${esc(fes.id)}" aria-pressed="${String(banner === fes.id)}"><img src="${assetHref(fes.banner)}" alt="${esc(t(lang, fes.name))}" width="1080" height="420" decoding="async" /><span class="ika-gc-pool-period">${t(lang, '開催中', 'Now on')} ${fesPeriod(fes, lang)}</span></button>`;
+    box.querySelectorAll('[data-gc-pool]').forEach((b) => b.addEventListener('click', () => {
+      banner = b.dataset.gcPool;
+      box.querySelectorAll('[data-gc-pool]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      el.gc.classList.toggle('is-fes', banner !== 'normal');
+    }));
+  }
+  renderBanners();
   renderLobby();
   addEventListener('ikabu:tickets', renderLobby);
   addEventListener('storage', renderLobby);
@@ -371,7 +393,7 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
       if (!tk.ok) { say(t(lang, ...TX.noTickets)); el.gc.classList.add('is-shake-msg'); setTimeout(() => el.gc.classList.remove('is-shake-msg'), 500); return; }
       writeTickets(tk.rec);
       dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
-      const out = pull(readCards(), CARDS, n);
+      const out = pull(readCards(), gachaPool(CARDS, { banner, tod: todNow() }), n, { weightOf: weightFor(banner) });
       writeCards(out.rec);
       results = out.results;
       renderLobby();
@@ -476,7 +498,8 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   }
   const rarityImg = (r, cls = 'ika-gc-rimg') => `<img class="${cls}" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(r)}.webp`)}" alt="${r}" decoding="async" />`;
   function metaHTML(x) {
-    return `${rarityImg(x.rarity)}<span class="ika-gc-name">${esc(x.card.name)}</span>${x.isNew ? `<i class="ika-gc-new">${t(lang, ...TX.fresh)}</i>` : x.shards ? `<small>${TX.shards(lang, x.shards)}</small>` : ''}`;
+    const lim = limitLabel(x.card, lang, { short: true });
+    return `${rarityImg(x.rarity)}<span class="ika-gc-name">${esc(x.card.name)}</span>${lim ? `<i class="ika-gc-lim">${esc(lim)}</i>` : ''}${x.isNew ? `<i class="ika-gc-new">${t(lang, ...TX.fresh)}</i>` : x.shards ? `<small>${TX.shards(lang, x.shards)}</small>` : ''}`;
   }
   let skipping = false;
   // 1枚を見せる。レア度で長さと派手さが変わる（N/R 静か、SR 金、SSR 稲妻＋暗転、UR 金→虹）
