@@ -36,7 +36,7 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
   };
   addEventListener('ikabu:game', (e) => {
     const d = e.detail ?? {};
-    if (d.counted === false) return;   // 練習（数えない釣行）は🎫も無し
+    if (d.counted === false && d.tickets !== true) return;   // 記録に数えない釣行でも、tickets:true なら🎫は出す（10/2 ぱっぱ：初心者練習・季節モードでも）
     apply((rec, day) => {
       let got = 0, why = [], r = rec;
       if (d.game === 'battle') { const b = earnBattle(r, { day, win: Boolean(d.win) }); return { rec: b.rec, got: b.got, why: b.why }; }   // 対戦は「1戦」の枠と別

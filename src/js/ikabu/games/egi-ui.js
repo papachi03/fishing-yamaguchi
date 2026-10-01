@@ -1508,7 +1508,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const counted = settings.mode === 'live';
     const lvBefore = levelNow();
     const { rec: r, total } = recordEgiTrip(rec, catches, { counted });   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
-    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'egi', counted } }));   // チケット🎫（2026-09-30）練習は数えない
+    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'egi', counted, tickets: true } }));   // チケット🎫は初心者練習・季節モードでも出す（10/2 ぱっぱ）。釣行の数・自己ベスト（counted）は今日の萩の海だけ
     const fresh = counted ? firstSpecies.slice() : [];
     rec = r;
     saveRec();
