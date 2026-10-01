@@ -162,9 +162,9 @@ export const EGI_TEXT = {
     rod: pair('ロッド', 'Rod'),
     rods: { stiff: pair('硬め', 'Stiff'), medium: pair('ふつう', 'Medium'), soft: pair('柔らかめ', 'Soft') },
     rodNote: {
-      stiff: pair('アタリは取りにくいが、しゃくりが大きく動き、掛けてからの巻きが強い', 'Bites are harder to read, but jerks are bigger and it reels hard once hooked'),
+      stiff: pair('穂先はほとんど動かずアタリは取りにくい。しならないので強く寄せられるが、ジェットされると抵抗が強く身切れ注意', 'The tip barely moves, so bites are hard to read. It pulls hard, but a jet hits hard too: watch for tear-outs'),
       medium: pair('どちらでもない、ふつうの調子', 'The usual middle action'),
-      soft: pair('穂先が敏感でアタリが出る。しゃくりは小さく、寄せるのに時間がかかる', 'A sensitive tip shows bites. Jerks are small and it takes longer to bring in'),
+      soft: pair('穂先が繊細で「コン」でもしっかり曲がる。しなって寄せる力は弱く、ジェットを受け流せるがファイトは長い', 'A delicate tip bends even on a light knock. It pulls softly and absorbs jets, but fights take longer'),
     },
     drag: pair('ドラグ', 'Drag'),
     drags: { tight: pair('締め', 'Tight'), normal: pair('ふつう', 'Normal'), loose: pair('ゆるめ', 'Loose') },

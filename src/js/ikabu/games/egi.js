@@ -172,9 +172,11 @@ export const RODS = ['stiff', 'medium', 'soft'];   // 10/2 ぱっぱ：硬め・
 export const DRAGS = ['tight', 'normal', 'loose'];
 export const TACKLE = {
   rod: {
-    stiff: { signal: 0.6, jerk: 1.45, reel: 1.3, tension: 1.0 },   // 張りの上がりは今までどおり（1.15 にすると巻き0.8秒・ゆるめ0.6秒の基本の手で身切れした）
-    medium: { signal: 1, jerk: 1, reel: 1, tension: 0.9 },        // ふつう（真ん中）
-    soft: { signal: 1.6, jerk: 0.7, reel: 0.75, tension: 0.75 },   // 10/1 深夜「差が分からない」→ 幅を広げた
+    // 10/2 ぱっぱ：硬め＝穂先のアクションはほぼ無い（signal・bend 小）／しならないので強く寄せる／ジェットの抵抗が強く身切れ注意（jet 大）
+    //             柔らかめ＝穂先が繊細で「コン」でもしっかり曲がる／しなって寄せる力は弱い／ジェットを受け流す（jet 小）がファイトが長い
+    stiff: { signal: 0.35, bend: 0.4, jerk: 1.45, reel: 1.3, tension: 1.0, jet: 1.45 },   // 張りの上がりは今までどおり（1.15 にすると基本の手で身切れした）
+    medium: { signal: 1, bend: 1, jerk: 1, reel: 1, tension: 0.9, jet: 1 },              // ふつう（真ん中）
+    soft: { signal: 1.8, bend: 1.5, jerk: 0.7, reel: 0.7, tension: 0.75, jet: 0.6 },
   },
   drag: {
     tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65, lift: 1.08, snap: 1.6 },
@@ -1503,7 +1505,7 @@ export function tick(s, dt) {
       const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
       if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * tk.drag.jet * dt) {
         // 初心者練習は噴射の引きもやさしく。締めたドラグ（取り込み優先）は張りが一気に上がり、ゆるめ（駆け引き優先）は受け流す（2026-10-01）
-        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.drag.jetTension * tk.rod.tension;
+        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.drag.jetTension * (tk.rod.jet ?? tk.rod.tension);   // ロッドでもジェットの重さが変わる（硬めは強い・柔らかめは受け流す）
         else s.dist += 1;
         hk.jets.push(s.t);
         hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);

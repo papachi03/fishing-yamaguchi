@@ -2158,8 +2158,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (phase === 'fight') {
       // 重いイカほど竿が深く曲がり、引き込まれる
       const hv = V.heavy ?? 0.5;
-      rodAng = 58 - 10 * hv - (now - V.lastJet < 0.25 ? 7 * (1 - (now - V.lastJet) / 0.25) * Math.min(1.4, hv + 0.4) : 0);   // ジェットで竿先がガクッと入る
-      pull = clamp((s.tension / 100) * (0.75 + 0.45 * hv), 0.15, 1.3);
+      const bend = TACKLE.rod[settings.tackle.rod]?.bend ?? 1;   // 硬めはほとんど曲がらない・柔らかめは大きくしなる（10/2 ぱっぱ）
+      rodAng = 58 - 10 * hv * bend - (now - V.lastJet < 0.25 ? 7 * bend * (1 - (now - V.lastJet) / 0.25) * Math.min(1.4, hv + 0.4) : 0);   // ジェットで竿先がガクッと入る
+      pull = clamp((s.tension / 100) * (0.75 + 0.45 * hv) * bend, 0.06, 1.6);
     }
     else if (V.hug.on) { rodAng = 52; pull = 0.35; }
     // 竿は目標角へなめらかに（振り出しの最中だけは追従を速く）、しなりは角速度の逆向き
