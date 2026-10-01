@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { FES, activeFes, gachaPool, weightFor, todOf, jst, limitLabel, isSecret } from '../src/js/ikabu/games/fes.js';
+import { FES, activeFes, gachaPool, weightFor, todOf, jst, limitLabel, isSecret, isUpcoming } from '../src/js/ikabu/games/fes.js';
 import { pickCard, pull, emptyCards } from '../src/js/ikabu/games/gacha.js';
 import { checkDeck, starterDeck } from '../src/js/ikabu/games/battle.js';
 
@@ -12,6 +12,10 @@ const FES_CARDS = [121, 122, 123], SECRETS = [124, 125];
 test('限定5枚：フェス限定3・シークレット2。シークレットには帯を出さない', () => {
   for (const no of FES_CARDS) { const c = CARDS.find((x) => x.no === no); assert.equal(c.limit.fes, 'autumn2026'); assert.match(limitLabel(c), /フェス限定/); }
   for (const no of SECRETS) { const c = CARDS.find((x) => x.no === no); assert.ok(isSecret(c)); assert.equal(limitLabel(c), null); }
+  // まだ始まっていないフェスのカード（2026-10-01 時点の冬）は isUpcoming。秋は始まっていれば false
+  const w = CARDS.find((x) => x.no === 126), a = CARDS.find((x) => x.no === 121);
+  assert.equal(isUpcoming(w, new Date('2026-10-01T03:00:00Z')), true); assert.equal(isUpcoming(w, new Date('2026-12-10T03:00:00Z')), false);
+  assert.equal(isUpcoming(a, new Date('2026-10-20T03:00:00Z')), false);
 });
 
 test('フェスは日本時間の日付で開催中か決まる（10/10〜11/30）。確認用の force は期間外でも開く', () => {
@@ -21,7 +25,12 @@ test('フェスは日本時間の日付で開催中か決まる（10/10〜11/30�
   assert.equal(activeFes(at('2026-11-30T14:00:00Z'))?.id, 'autumn2026'); // JST 11/30 23:00
   assert.equal(activeFes(at('2026-11-30T15:00:00Z')), null);          // JST 12/1
   assert.equal(activeFes(at('2026-10-01T03:00:00Z'), { force: 'autumn2026' })?.id, 'autumn2026');
-  assert.equal(FES.length, 1);
+  assert.equal(FES.length, 4);
+  // 冬・春・初夏は期間が重ならず、秋の後に続く
+  for (let i = 1; i < FES.length; i++) assert.ok(FES[i].from > FES[i - 1].until, FES[i].id);
+  assert.equal(activeFes(at('2027-01-15T03:00:00Z'))?.id, 'winter2026');
+  assert.equal(activeFes(at('2027-04-01T03:00:00Z'))?.id, 'spring2027');
+  assert.equal(activeFes(at('2027-06-15T03:00:00Z'))?.id, 'summer2027');
 });
 
 test('時間帯：朝マズメ4〜8・昼9〜15・夕マズメ16〜18・夜19〜3。jst は日本時間', () => {
@@ -37,6 +46,9 @@ test('抽選の枠：通常は120枚だけ。フェスは＋3。シークレッ�
   assert.deepEqual(nos(gachaPool(CARDS, { banner: 'normal', tod: 'evening' })).filter((n) => n > 120), [124]);
   assert.deepEqual(nos(gachaPool(CARDS, { banner: 'normal', tod: 'night' })).filter((n) => n > 120), [125]);
   assert.deepEqual(nos(gachaPool(CARDS, { banner: 'autumn2026', tod: 'night' })).filter((n) => n > 120).sort(), [121, 122, 123, 125]);
+  assert.deepEqual(nos(gachaPool(CARDS, { banner: 'winter2026', tod: 'day' })).filter((n) => n > 120), [126, 127, 128]);
+  assert.deepEqual(nos(gachaPool(CARDS, { banner: 'spring2027', tod: 'day' })).filter((n) => n > 120), [129, 130, 131]);
+  assert.deepEqual(nos(gachaPool(CARDS, { banner: 'summer2027', tod: 'day' })).filter((n) => n > 120), [132, 133, 134]);
 });
 
 test('フェスの限定カードは同じレア度の中で3倍出やすい。通常の枠では重み1', () => {

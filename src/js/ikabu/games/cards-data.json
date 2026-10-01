@@ -1513,5 +1513,140 @@
   "limit": {
    "secret": "night"
   }
+ },
+ {
+  "no": 126,
+  "name": "スナイプヤリ",
+  "kind": "squid",
+  "rarity": "SR",
+  "mark": "star",
+  "cost": 2,
+  "atk": 4,
+  "effect": "出たターンに攻撃できる",
+  "short": null,
+  "def": 1,
+  "limit": {
+   "fes": "winter2026"
+  }
+ },
+ {
+  "no": 127,
+  "name": "ヤリイカの接岸",
+  "kind": "tech",
+  "rarity": "SSR",
+  "mark": "star",
+  "cost": 3,
+  "atk": null,
+  "effect": "2枚引き、夜のイカ1体の攻撃+1（このターン）",
+  "short": "攻撃+1",
+  "def": null,
+  "limit": {
+   "fes": "winter2026"
+  }
+ },
+ {
+  "no": 128,
+  "name": "真冬の大槍",
+  "kind": "squid",
+  "rarity": "UR",
+  "mark": "star",
+  "cost": 5,
+  "atk": 10,
+  "effect": "攻撃した時、相手のイカの防御-2（このターン）",
+  "short": null,
+  "def": 6,
+  "limit": {
+   "fes": "winter2026"
+  }
+ },
+ {
+  "no": 129,
+  "name": "藻場の親イカ",
+  "kind": "squid",
+  "rarity": "SR",
+  "mark": "anchor",
+  "cost": 3,
+  "atk": 5,
+  "effect": "相手のターンは防御+1",
+  "short": null,
+  "def": 4,
+  "limit": {
+   "fes": "spring2027"
+  }
+ },
+ {
+  "no": 130,
+  "name": "アマモの揺りかご",
+  "kind": "tech",
+  "rarity": "SSR",
+  "mark": "anchor",
+  "cost": 3,
+  "atk": null,
+  "effect": "自分の場のイカ全部の防御+1（相手のターンの終わりまで）",
+  "short": "防御+1",
+  "def": null,
+  "limit": {
+   "fes": "spring2027"
+  }
+ },
+ {
+  "no": 131,
+  "name": "春の親イカ",
+  "kind": "squid",
+  "rarity": "UR",
+  "mark": "anchor",
+  "cost": 5,
+  "atk": 8,
+  "effect": "弾かれても「バラシ」にならない",
+  "short": null,
+  "def": 10,
+  "limit": {
+   "fes": "spring2027"
+  }
+ },
+ {
+  "no": 132,
+  "name": "梅雨のモンスター",
+  "kind": "squid",
+  "rarity": "SR",
+  "mark": "wave",
+  "cost": 3,
+  "atk": 5,
+  "effect": "出た時、相手のイカ1体の防御-2（このターン）",
+  "short": null,
+  "def": 3,
+  "limit": {
+   "fes": "summer2027"
+  }
+ },
+ {
+  "no": 133,
+  "name": "BIGベイト",
+  "kind": "tech",
+  "rarity": "SSR",
+  "mark": "wave",
+  "cost": 3,
+  "atk": null,
+  "effect": "イカ1体の攻撃+3、さらに1枚引く",
+  "short": "攻撃+3",
+  "def": null,
+  "limit": {
+   "fes": "summer2027"
+  }
+ },
+ {
+  "no": 134,
+  "name": "初夏のBIGモンスター",
+  "kind": "squid",
+  "rarity": "UR",
+  "mark": "wave",
+  "cost": 5,
+  "atk": 10,
+  "effect": "出た時、相手の場のイカ1体を手札に戻す",
+  "short": null,
+  "def": 8,
+  "limit": {
+   "fes": "summer2027"
+  }
  }
 ]

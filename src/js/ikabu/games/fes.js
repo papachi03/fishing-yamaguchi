@@ -14,6 +14,33 @@ export const FES = [
     cards: [121, 122, 123],
     boost: 3,
   },
+  {
+    id: 'winter2026',
+    name: pair('真冬のヤリイカスナイプフェス！', 'Midwinter Spear-Squid Snipe Fest!'),
+    short: pair('❄️ 冬フェス限定', '❄️ Winter fest only'),
+    from: '2026-12-10', until: '2027-02-28',
+    banner: '/assets/ikabu/gacha/banner_fes_winter2026.webp',
+    cards: [126, 127, 128],
+    boost: 3,
+  },
+  {
+    id: 'spring2027',
+    name: pair('春の親イカラッシュフェス！', 'Spring Big-Mama Rush Fest!'),
+    short: pair('🌸 春フェス限定', '🌸 Spring fest only'),
+    from: '2027-03-10', until: '2027-05-10',
+    banner: '/assets/ikabu/gacha/banner_fes_spring2027.webp',
+    cards: [129, 130, 131],
+    boost: 3,
+  },
+  {
+    id: 'summer2027',
+    name: pair('初夏のBIGモンスターフェス！', 'Early-Summer BIG Monster Fest!'),
+    short: pair('🌊 初夏フェス限定', '🌊 Early-summer fest only'),
+    from: '2027-05-20', until: '2027-07-31',
+    banner: '/assets/ikabu/gacha/banner_fes_summer2027.webp',
+    cards: [132, 133, 134],
+    boost: 3,
+  },
 ];
 export const NORMAL_BANNER = '/assets/ikabu/gacha/banner_normal.webp';
 
@@ -46,6 +73,8 @@ export function activeFes(now = new Date(), { force = null } = {}) {
 }
 
 export const isLimited = (c) => Boolean(c.limit);
+// まだ始まっていないフェスのカード（バインダーでは名前もフェス名も出さない＝「？？？」）
+export const isUpcoming = (c, now = new Date()) => { const f = fesOf(c); return Boolean(f) && jst(now).date < f.from; };
 export const isSecret = (c) => Boolean(c.limit?.secret);
 export const fesOf = (c) => (c.limit?.fes ? fesById(c.limit.fes) : null);
 

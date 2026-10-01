@@ -5,8 +5,8 @@ import { RATES, rollRarity, pull, exchange, progress, omen, emptyCards, PITY_SR,
 
 const CARDS = JSON.parse(readFileSync(new URL('../src/js/ikabu/games/cards-data.json', import.meta.url), 'utf8'));
 
-test('カードは125枚（通常120＋フェス限定3＋シークレット2）で、どのレア度にも1枚以上ある', () => {
-  assert.equal(CARDS.length, 125);
+test('カードは134枚（通常120＋フェス限定3×4＋シークレット2）で、どのレア度にも1枚以上ある', () => {
+  assert.equal(CARDS.length, 134);
   for (const r of Object.keys(RATES)) assert.ok(CARDS.some((c) => c.rarity === r), r);
 });
 
@@ -67,7 +67,7 @@ test('かけらで交換：足りなければ不可、足りれば減って1枚�
 test('集めた率と演出の判定', () => {
   const rec = { ...emptyCards(), owned: { 1: 1, 2: 3 } };
   const p = progress(rec, CARDS);
-  assert.equal(p.have, 2); assert.equal(p.all, 125); assert.equal(p.kind.squid.have, 2);
+  assert.equal(p.have, 2); assert.equal(p.all, 134); assert.equal(p.kind.squid.have, 2);
   const o = omen([{ rarity: 'N' }, { rarity: 'R' }, { rarity: 'R' }, { rarity: 'N' }, { rarity: 'N' }, { rarity: 'N' }, { rarity: 'N' }, { rarity: 'N' }, { rarity: 'R' }, { rarity: 'SR' }]);
   assert.equal(o.top, 'SR'); assert.equal(o.sure, 'kiloUp'); assert.equal(o.nabura, true); assert.equal(o.comeback, true);
   assert.equal(omen([{ rarity: 'UR' }]).sure, 'goldInk');

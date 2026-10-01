@@ -1070,5 +1070,95 @@
 "when": "tag",
 "tag": "night"
 }
+],
+"126": [
+{
+"when": "passive",
+"do": "haste"
+},
+{
+"when": "tag",
+"tag": "night"
+}
+],
+"127": [
+{
+"when": "play",
+"do": "draw",
+"n": 2
+},
+{
+"when": "play",
+"do": "buff",
+"who": "ownNightOne",
+"stat": "atk",
+"n": 1,
+"until": "turnEnd"
+}
+],
+"128": [
+{
+"when": "attack",
+"do": "buff",
+"who": "target",
+"stat": "def",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"129": [
+{
+"when": "passive",
+"do": "defOnEnemyTurn",
+"n": 1
+}
+],
+"130": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownAll",
+"stat": "def",
+"n": 1,
+"until": "oppTurnEnd"
+}
+],
+"131": [
+{
+"when": "passive",
+"do": "noTiredWhenBlocked"
+}
+],
+"132": [
+{
+"when": "enter",
+"do": "buff",
+"who": "enemyOne",
+"stat": "def",
+"n": -2,
+"until": "turnEnd"
+}
+],
+"133": [
+{
+"when": "play",
+"do": "buff",
+"who": "ownOne",
+"stat": "atk",
+"n": 3,
+"until": "turnEnd"
+},
+{
+"when": "play",
+"do": "draw",
+"n": 1
+}
+],
+"134": [
+{
+"when": "enter",
+"do": "bounce",
+"who": "enemyOne"
+}
 ]
 }
