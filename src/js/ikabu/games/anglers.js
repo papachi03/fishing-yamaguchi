@@ -5,15 +5,16 @@ import { spend } from './tickets.js';
 
 export const KEY_ANGLERS = 'ikabu.anglers.v1';
 // src は public からの住所。白いイカ（部長）は最初から使える
+// jet：ジェットの瞬間だけ差し替える「驚いた顔」の絵（10/2 ぱっぱ：表情差分が欲しい）。src と同じ台紙・同じ位置
 // padTop：絵の上に足した余白（立ち絵の高さ 991 に対して）。ヤリ・ケンサキは胴の先が長く、元の枠だと上が切れた（10/2 ぱっぱ指摘）
 export const ANGLER_BASE_H = 991;
 export const ANGLERS = [
-  { id: 'shiro', cost: 0, src: '/assets/ikabu/hero-layers/squid.png' },
-  { id: 'aori', cost: 10, src: '/assets/ikabu/anglers/aori.webp', padTop: 110 },
-  { id: 'kouika', cost: 10, src: '/assets/ikabu/anglers/kouika.webp', padTop: 110 },
-  { id: 'mongo', cost: 10, src: '/assets/ikabu/anglers/mongo.webp', padTop: 110 },
-  { id: 'yari', cost: 10, src: '/assets/ikabu/anglers/yari.webp', padTop: 110 },
-  { id: 'kensaki', cost: 10, src: '/assets/ikabu/anglers/kensaki.webp', padTop: 110 },
+  { id: 'shiro', cost: 0, src: '/assets/ikabu/hero-layers/squid.png', jet: '/assets/ikabu/anglers/shiro_jet.webp' },
+  { id: 'aori', cost: 10, src: '/assets/ikabu/anglers/aori.webp', jet: '/assets/ikabu/anglers/aori_jet.webp', padTop: 110 },
+  { id: 'kouika', cost: 10, src: '/assets/ikabu/anglers/kouika.webp', jet: '/assets/ikabu/anglers/kouika_jet.webp', padTop: 110 },
+  { id: 'mongo', cost: 10, src: '/assets/ikabu/anglers/mongo.webp', jet: '/assets/ikabu/anglers/mongo_jet.webp', padTop: 110 },
+  { id: 'yari', cost: 10, src: '/assets/ikabu/anglers/yari.webp', jet: '/assets/ikabu/anglers/yari_jet.webp', padTop: 110 },
+  { id: 'kensaki', cost: 10, src: '/assets/ikabu/anglers/kensaki.webp', jet: '/assets/ikabu/anglers/kensaki_jet.webp', padTop: 110 },
 ];
 export const DEFAULT_ANGLER = 'shiro';
 export const anglerOf = (id) => ANGLERS.find((a) => a.id === id) ?? ANGLERS[0];

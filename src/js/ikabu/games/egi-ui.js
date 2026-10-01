@@ -685,8 +685,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!im) return;
     const a = anglerOf(anglerRec.current); const B = SCENE.squidBox;
     const extra = B.h * (a.padTop ?? 0) / ANGLER_BASE_H;   // 上に足した余白の分だけ、上へ伸ばして置く（竿の握りの位置は変えない）
-    im.setAttribute('href', assetHref(a.src));
+    im.setAttribute('href', assetHref(a.src)); im.dataset.face = 'normal';
     im.setAttribute('y', String(B.y - extra)); im.setAttribute('height', String(B.h + extra));
+    if (a.jet) { const pre = new Image(); pre.src = assetHref(a.jet); }   // 驚いた顔は先に読んでおく（初めてのジェットで一瞬消えないように）
   }
   function renderAnglerPop() {
     if (!el.anglerPop) return;
@@ -2221,8 +2222,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const nearD = YAEN_DIST + 8;
       const tx = yaenFar && s.dist > nearD ? lerp(X(nearD), W + 90, clamp((s.dist - nearD) / 3, 0, 1)) : X(s.dist);
       const ty = Y(clamp(s.depth - V.sinkOffset, 0.15, s.bottom)) - (V.egi.mode === 'stuck' ? 0 : 6) - (yaenFar && phase === 'run' ? 30 : 0);
-      const jerkFresh = now - V.jerkAt < 0.28;
-      const rate = jerkFresh ? 1 - Math.exp(-dt * 16) : k8;
+      const jerkFresh = now - V.jerkAt < 0.28 * dragNow().jerkDur;   // ゆるいと上がりきるまでが長い
+      const rate = jerkFresh ? 1 - Math.exp(-dt * 16 * (dragNow().snap ?? 1)) : k8;   // 締め＝クイックに跳ね上がる／ゆるめ＝ふわっと（10/2 ぱっぱ）
       if (V.egi.mode === 'stuck') {
         const shake = now - V.snagAt < 0.6 && !reduced ? Math.sin(now * 40) * 3 : 0;
         V.egi.x += (tx + shake - V.egi.x) * k8; V.egi.y += (ty + 2 - V.egi.y) * k8;
@@ -2485,11 +2486,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const shake = Math.sin(jk * Math.PI * 6) * (1 - jk) * 5;
         const hop = -Math.sin(Math.min(1, jk * 3) * Math.PI) * 6;
         ang?.setAttribute('transform', `translate(${f1(shake)} ${f1(hop)})`);
+        const a = anglerOf(anglerRec.current);
+        if (ang && a.jet && ang.dataset.face !== 'jet') { ang.setAttribute('href', assetHref(a.jet)); ang.dataset.face = 'jet'; }   // 驚いた顔
         const pop = jk < 0.15 ? jk / 0.15 : 1;
         n.surprise.setAttribute('transform', `translate(${f1(B.x + B.w * 0.98)} ${f1(B.y + B.h * 0.36 - 6 * pop)}) scale(${(0.8 + 0.6 * pop).toFixed(2)})`);   // 頭の右横（縦画面だと頭の上は舞台の外になる）
         n.surprise.setAttribute('opacity', String(jk > 0.8 ? (1 - jk) / 0.2 : 1));
       } else {
         if (ang?.getAttribute('transform')) ang.setAttribute('transform', '');
+        if (ang && ang.dataset.face === 'jet') { ang.setAttribute('href', assetHref(anglerOf(anglerRec.current).src)); ang.dataset.face = 'normal'; }
         n.surprise.setAttribute('opacity', '0');
       }
     }

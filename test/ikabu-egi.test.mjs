@@ -747,3 +747,8 @@ test('ラトル入りは、やる気のある日に寄る数が増える（同�
   assert.equal(a1.mood, 'active');
   assert.ok(a1.squid >= a0.squid, `ノーマル${a0.squid} ラトル${a1.squid}`);
 });
+test('ドラグ：締めるとしゃくりで高く跳ね上がり、ゆるいと力が逃げて上がりが小さい（10/2 ぱっぱ）', () => {
+  const up = (drag) => { const s = createEgi({ rand: calm, tackle: { rod: 'medium', drag } }); cast(s); run(s, 3); s.depth = s.bottom; const d0 = s.depth; press(s); release(s); return d0 - s.depth; };
+  const tight = up('tight'); const loose = up('loose');
+  assert.ok(tight > loose * 1.25, `締め ${tight} / ゆるめ ${loose}`);
+});

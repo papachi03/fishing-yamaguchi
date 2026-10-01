@@ -164,6 +164,7 @@ export const RATTLE = { activeMore: 0.5, activeNew: 0.25, calmLess: 0.4, stale: 
 // タックル（2026-10-01 ぱっぱの説明を数字に）：
 //   ロッド 硬め … アタリが取りにくい（竿先の振れ 0.7）／しゃくりが大きく動く（1.3）／巻き取りが強い（1.2）／張りの上がりはふつう（1.0）
 //        柔らかめ … 穂先が敏感でアタリが出る（1.4）／しゃくりの反動が小さい（0.8）／取り込みが大変（0.85）／竿が張りを吸収（0.8）
+//   ドラグのしゃくり（10/2）：lift＝跳ね上がる高さ（締め1.08／ゆるめ0.8）、snap＝画面でエギが上がる速さ（締め1.6＝クイック／ゆるめ0.5＝ふわっと）
 //   ドラグ 締め（取り込み優先）… 寄せは速い（1.25）が、ジェットで張りが一気に上がる（1.5）。しゃくり音は短く「ジッ」（0.1秒）
 //        ゆるめ（駆け引き優先）… 寄せはゆるやか（0.7）、ジェットの張りはやわらかい（0.6）、ゆるめた時にすっぽ抜けやすい（0.75）。音は「ジー」（0.42秒）
 //   ジェットの音は変えない（ぱっぱ）。差は抵抗値（張り）につける。初心者練習（easy）には効かせない
@@ -176,9 +177,9 @@ export const TACKLE = {
     soft: { signal: 1.6, jerk: 0.7, reel: 0.75, tension: 0.75 },   // 10/1 深夜「差が分からない」→ 幅を広げた
   },
   drag: {
-    tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65 },
-    normal: { reel: 1, jetTension: 1, jet: 1, slack: 1, zip: 0.3, jerkDur: 1 },
-    loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.42, jerkDur: 1.7 },   // 音は 0.8→0.42（10/1 ぱっぱ「鳴りが長い」）
+    tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65, lift: 1.08, snap: 1.6 },
+    normal: { reel: 1, jetTension: 1, jet: 1, slack: 1, zip: 0.18, jerkDur: 1, lift: 1, snap: 1 },   // 締め0.1 < ふつう0.18 < ゆるめ0.26（10/2）
+    loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.26, jerkDur: 1.7, lift: 0.8, snap: 0.5 },   // 音は 0.8→0.42→0.26（10/1・10/2 ぱっぱ「まだ長い」。締め0.1・ふつう0.3 より少しだけ長い程度に）
   },
 };
 export const DEFAULT_TACKLE = { rod: 'medium', drag: 'normal' };
@@ -621,6 +622,8 @@ function jerk(s, kind = 'lift') {
   s.tensionFall = false;
   // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
   let [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
+  // ドラグ（10/2 ぱっぱ）：締めるとしゃくりの力がそのまま伝わってクイックに跳ね上がり、ゆるいとドラグが出て力が逃げ、上がりが小さくふわっとする
+  lift *= tackleOf(s).drag.lift ?? 1;
   if (kind === 'lift' && double) { s.pendingLift = { from: s.t, at: s.t + DOUBLE_DELAY, lift: lift - DOUBLE_NOW, done: 0 }; lift = DOUBLE_NOW; }
   s.depth = Math.max(0.5, s.depth - lift);
   s.dist = Math.max(0, s.dist - pull);
