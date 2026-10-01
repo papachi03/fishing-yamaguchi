@@ -1022,6 +1022,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         }
         case 'jerk':
+          // 2段しゃくりの「遅れて上がる」分は、竿の振りをやり直さない（跳ね上がりが二度見えて違和感。10/2 ぱっぱ）。知らせだけ出す
+          if (e.delayed) { callout(t(lang, TX.cue.double)); if (guide === 2) { guide = 3; showGuide(); } setFallMode(null); break; }
           V.jerkAt = now;
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
@@ -2192,13 +2194,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           const hugH = V.hug.height ?? 100;
           const aimX = V.hug.x + (net ? 4 : 2);
           const aimY = net ? V.hug.y + hugH * 0.55 : V.hug.y + hugH * 0.35;     // タモは胴の下へ、ギャフは胴へ
-          const startX = aimX - 260; const startY = net ? aimY + 40 : aimY - 150;
+          // 釣り人の手元（堤防の上・左上）から、堤防の際に沿って下へ。柄は上（釣り人）へ向く＝角度 +72°（10/2 ぱっぱの図：真横からではなく上から刺す／入れる）
+          const startX = aimX - 30; const startY = aimY - 230;
           const ex = easeOut(u);
           let tx = lerp(startX, aimX, ex); let ty = lerp(startY, aimY, ex);
           if (u >= 1) { tx = aimX; ty = aimY; }
           const since = now - V.land.t0 - lead;
           const fade = k >= 1 ? clamp(1 - (now - V.land.t0 - lead - 0.9) / 0.4, 0, 1) : 1;   // 吊ってから 0.4 秒で消える
-          const ang = net ? (u < 1 ? -8 * (1 - u) : 0) : lerp(-38, -20, Math.min(1, u)) + (since > 0 && since < 0.3 ? 8 * Math.sin((since / 0.3) * Math.PI) : 0);   // ギャフは掛けた瞬間に少し起きる
+          const ang = (net ? 74 : 72) + (since > 0 && since < 0.3 ? -8 * Math.sin((since / 0.3) * Math.PI) : 0);   // 掛けた／入れた瞬間に少し起きる
           drawTool(V.land.kind, tx, ty, fade, ang);
         } else drawTool('net', 0, 0, 0);
       } else if (phase === 'signal') {

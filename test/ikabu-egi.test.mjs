@@ -75,7 +75,7 @@ test('2〜3回続けてしゃくって、2秒フォールさせると、イカ�
   assert.ok(s.interest > before + 0.3);
 });
 
-test('3回目からはスラックジャーク（スマホの連打の速さ 0.3秒でも出る）。待っていた2段目の大きな上がりは出さない', () => {
+test('3回目からはスラックジャーク（スマホの連打の速さ 0.3秒でも出る）。待っていた2段目の残りの上がりは出さない', () => {
   const s = createEgi({ rand: calm });
   cast(s);
   run(s, 3);
@@ -84,11 +84,11 @@ test('3回目からはスラックジャーク（スマホの連打の速さ 0.3
   const kinds = [];
   for (let i = 0; i < 4; i++) { press(s); kinds.push(s.events.filter((e) => e.type === 'jerk').map((e) => e.kind).pop()); release(s); run(s, 0.3); }
   assert.deepEqual(kinds, ['lift', 'lift', 'slack', 'slack']);
-  // 上がったのは しゃくり2.6＋2回目の小さな0.4＋スラック0.4×2 だけ（大きな3.0は取り消し）。沈んだ分があるので「それ以下」で見る
-  assert.ok(d0 - s.depth <= 2.6 + 0.4 + 0.8 + 1e-9, String(d0 - s.depth));
+  // 上がったのは しゃくり2.6＋2回目の1.8＋0.3秒ぶんのなめらかな残り（1.6×0.3/0.5）＋スラック0.4×2。残りの続きは取り消し。沈んだ分があるので「それ以下」で見る
+  assert.ok(d0 - s.depth <= 2.6 + 1.8 + 1.6 * 0.6 + 0.8 + 1e-9, String(d0 - s.depth));
 });
 
-test('テンポよく2回で止めると、0.5秒後に2段目がぐんと上がる（合計3.4m）', () => {
+test('テンポよく2回で止めると、押した瞬間にほぼ上がり、残りは0.5秒かけてなめらかに上がる（合計3.4m）', () => {
   const s = createEgi({ rand: calm });
   cast(s);
   run(s, 3);
@@ -96,12 +96,12 @@ test('テンポよく2回で止めると、0.5秒後に2段目がぐんと上が
   press(s); release(s); run(s, 0.3);
   const d1 = s.depth;
   press(s); release(s);
-  assert.ok(d1 - s.depth > 0.39 && d1 - s.depth < 0.41, '押した瞬間は小さく');
+  assert.ok(d1 - s.depth > 1.79 && d1 - s.depth < 1.81, '押した瞬間にほぼ上がる（10/2 ぱっぱ：遅れて跳ね上がるのは違和感）');
   const before = s.depth;
   const ev = [];
   for (let k = 0; k < 12; k++) ev.push(...tick(s, 0.05));
   assert.ok(ev.some((e) => e.type === 'jerk' && e.double && e.delayed), '遅れて「2段」の知らせ');
-  assert.ok(before - s.depth > 2.5, String(before - s.depth));   // 3.0 上がって、少し沈んだ
+  assert.ok(before - s.depth > 1.0, String(before - s.depth));   // 残りの 1.6 が上がって、0.6秒ぶん沈んだ（約1.18）
 });
 
 test('しゃくりすぎ（5回以上）は、かえって警戒される', () => {
