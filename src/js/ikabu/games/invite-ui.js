@@ -7,7 +7,8 @@ import { t } from '../i18n.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
 import { readTickets, INVITE_MAX, INVITE_BONUS, inviteLeft } from './tickets.js';
 
-export const LINE_ADD_URL = 'https://lin.ee/YiK3hIJ';   // 山口イカ部 公式LINE（募集画像のQRと同じ）
+import { LINE_ADD_URL } from './links.js';
+export { LINE_ADD_URL };
 
 export const INVITE_TEXT = {
   title: (lang) => (lang === 'en' ? '📣 Invite a friend, get 🎫 2' : '📣 友だちに紹介して🎫2枚'),

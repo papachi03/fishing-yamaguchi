@@ -9,6 +9,7 @@ import { readTickets } from './tickets.js';
 import { arrange, counts, SORTS, KIND_ORDER, KIND_LABEL } from './binder.js';
 import { readJSON, writeJSON } from './records.js';
 import { tierOf } from './gacha-show.js';
+import { makeShareImage, shareBlob } from './binder-share.js';
 
 const KEY_VIEW = 'ikabu.binder.view';
 const TX = {
@@ -20,6 +21,12 @@ const TX = {
   gacha: ['ガチャへ', 'To the gacha'],
   top: ['← あそび場TOPへ', '← Back to TOP'],
   close: ['閉じる', 'Close'],
+  share: ['📣 バインダーをシェア', '📣 Share my binder'],
+  shareBusy: ['画像を作っています…', 'Making the image…'],
+  shareDone: ['シェアしました！', 'Shared!'],
+  shareSaved: ['画像を保存しました。SNSに貼ってください', 'Image saved. Post it anywhere you like'],
+  shareNone: ['カードを1枚でも引くとシェアできます', 'Pull at least one card to share'],
+  shareFail: ['画像を作れませんでした。もう一度お試しください', 'Could not make the image. Please try again'],
   owned: (lang, n) => (n > 0 ? (lang === 'en' ? `Owned ×${n}` : `所持 ×${n}`) : lang === 'en' ? 'Not yet' : 'まだ持っていない'),
   cost: ['コスト', 'Cost'], atk: ['攻', 'ATK'], def: ['防', 'DEF'],
   exchange: (lang, c) => (lang === 'en' ? `Exchange (${c} shards)` : `かけら ${c} 個で交換`),
@@ -48,6 +55,8 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
         <div id="ika-battle"></div>
         <a class="ika-gc-imgbtn" href="${pageHref('gacha', lang)}"><img src="${assetHref('/assets/ikabu/gacha/btn_gacha.webp')}" alt="${t(lang, ...TX.gacha)}" width="964" height="170" /></a>
         <button type="button" class="ika-gc-imgbtn" data-deck-open><img src="${assetHref('/assets/ikabu/gacha/btn_deck.webp')}" alt="${t(lang, 'デッキ編成', 'Deck builder')}" width="964" height="170" /></button>
+        <button type="button" class="ika-btn ika-bd-share" data-bd-share>${t(lang, ...TX.share)}</button>
+        <p class="ika-bd-share-msg" data-bd-share-msg role="status" aria-live="polite"></p>
       </div>
     </div>
     <div class="ika-bd-controls">
@@ -124,6 +133,23 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
   el.grid.addEventListener('click', (e) => { const b = e.target.closest('.ika-bd-card'); if (b) openCard(Number(b.dataset.no)); });
   const close = () => { el.modal.hidden = true; };
   root.querySelector('[data-bd-close]').addEventListener('click', close);
+  // シェア（2026-10-01）：持っているカードの画像を作って共有画面へ
+  const shareBtn = root.querySelector('[data-bd-share]'), shareMsg = root.querySelector('[data-bd-share-msg]');
+  let sharing = false;
+  shareBtn.addEventListener('click', async () => {
+    if (sharing) return;
+    const rec = readCards();
+    if (!Object.values(rec.owned ?? {}).some((n) => n > 0)) { shareMsg.textContent = t(lang, ...TX.shareNone); return; }
+    sharing = true; shareBtn.disabled = true; shareMsg.textContent = t(lang, ...TX.shareBusy);
+    try {
+      const blob = await makeShareImage({ cards: CARDS, owned: rec.owned, lang, assetHref });
+      const r = await shareBlob(blob, lang);
+      shareMsg.textContent = r === 'shared' ? t(lang, ...TX.shareDone) : r === 'saved' ? t(lang, ...TX.shareSaved) : '';
+    } catch (e) {
+      console.warn('binder share failed', e);
+      shareMsg.textContent = t(lang, ...TX.shareFail);
+    } finally { sharing = false; shareBtn.disabled = false; }
+  });
   el.modal.addEventListener('click', (e) => { if (e.target === el.modal) close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el.modal.hidden) close(); });
   addEventListener('storage', render);

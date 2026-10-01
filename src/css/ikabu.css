@@ -3167,3 +3167,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-invite-btn[disabled] { opacity: 0.5; cursor: default; }
 .ika-invite-left { font-family: var(--font-maru); font-weight: 900; font-size: 14px; color: var(--ika-sea); }
 .ika-invite-msg { margin: 8px 0 0; min-height: 1.2em; font-size: 13px; font-weight: 700; color: var(--ika-sea); }
+
+/* バインダーのシェア（2026-10-01） */
+.ika-bd-share { width: 100%; font-size: 15px; background: #0b2a2f; color: #ffd166; border: 2px solid #d9b24a; }
+.ika-bd-share[disabled] { opacity: 0.6; }
+.ika-bd-share-msg { margin: 0; min-height: 1.2em; font-size: 12.5px; font-weight: 700; color: #ffd166; }
