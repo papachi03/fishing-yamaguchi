@@ -26,7 +26,7 @@ import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
-import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
+import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
 import { recommendedSizes } from './egi-advice.js';
 import { recordGedo } from './records.js';
 import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
@@ -59,7 +59,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
-    pickRig: q('ika-egi-rig'), tk: q('ika-egi-tk'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
+    pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
@@ -636,7 +636,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const rec = recommendedSizes(settings.month, settings.tod);
     el.pickSize.querySelectorAll('.ika-chip').forEach((b) => b.classList.toggle('is-rec', rec.includes(Number(b.dataset.size))));
     el.pickRec.textContent = rec.map((x) => `${x}${t(lang, '号', '')}`).join(' / ');
-    el.pickIcon.innerHTML = egiIconHTML(e.size, e.type, e.color);
+    el.pickIcon.innerHTML = egiIconHTML(e.size, e.type, e.color, e.rig);
     syncColorChips();
     paintEgi();
     el.pickCurrent.textContent = TX.egi.current(lang, e.size, typeName(e.type));
@@ -645,7 +645,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const canPick = !s || s.phase === 'ready' || s.phase === 'result' || s.phase === 'over';
     root.querySelectorAll('#ika-egi-size .ika-chip, #ika-egi-type .ika-chip, #ika-egi-rig .ika-chip, #ika-egi-rod .ika-chip, #ika-egi-drag .ika-chip').forEach((b) => { b.disabled = !canPick; });
     el.pick.classList.toggle('is-locked', !canPick);
-    el.pickRig?.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.rig === (e.rig ?? 'normal'))));
+    for (const box of [el.pickRig, el.popRig]) box?.querySelectorAll('.ika-chip').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.rig === (e.rig ?? 'normal'))); b.disabled = !canPick; });
     syncTackle();
   }
   /* ---------- タックル（ロッド・ドラグ）とリボン（2026-10-01） ---------- */
@@ -669,7 +669,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.rod?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rod]'); if (b) chooseTackle({ rod: b.dataset.rod }); });
   el.drag?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-drag]'); if (b) chooseTackle({ drag: b.dataset.drag }); });
-  el.pickRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) { chooseEgi({ rig: b.dataset.rig }); writePref('ikabu.egi.rig', b.dataset.rig); } });
+  const chooseRig = (rig) => { chooseEgi({ rig }); writePref('ikabu.egi.rig', settings.egi.rig); };
+  el.pickRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) chooseRig(b.dataset.rig); });
+  el.popRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) chooseRig(b.dataset.rig); });   // 舞台のエギを押した窓からも（2026-10-01 深夜 ぱっぱ）
+  // 設定欄のエギの絵を押すと、足なし⇄足つき（ぱっぱ：アイコンをタップで切り替えたい）
+  el.pickIcon?.addEventListener('click', () => { const was = settings.egi.rig; chooseRig(was === 'legs' ? 'normal' : 'legs'); if (settings.egi.rig !== was) callout(t(lang, TX.tackle.rigs[settings.egi.rig])); });
   // リボン：押した札だけ開く（もう一度押すと閉じる）
   el.tk?.querySelector('.ika-egi-tk-tabs')?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-tk-tab]');
@@ -680,8 +684,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.tk.querySelectorAll('[data-tk-panel]').forEach((p) => { p.hidden = !(open && p.dataset.tkPanel === key); });
   });
   // 現在のタックルの数字（描画・音で使う）
-  const rodNow = () => (s?.easy ? { signal: 1, jerk: 1 } : TACKLE.rod[settings.tackle.rod]);
-  const dragNow = () => (s?.easy ? { zip: 0.22, jerkDur: 1 } : TACKLE.drag[settings.tackle.drag]);
+  const rodNow = () => TACKLE.rod[settings.tackle.rod];
+  const dragNow = () => TACKLE.drag[settings.tackle.drag];
   // エギの色：舞台のエギ・アイコン・色のボタンをそろえる
   // 泡：dir=-1 は釣り人側（左）へ吹き出す、1 はエギのまわりに散る。ゆらゆら上へ浮いて消える
   const bubbles = [];
@@ -697,6 +701,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const n = sc?.nodes;
     if (!n) return;
     [n.egiWater, n.egiAir, n.ghost].forEach((g) => g.querySelector('.ika-art-egi path')?.setAttribute('fill', hex));
+    // 足つき（パタパタ系）：見た目だけ。舞台のすべてのエギの絵に足を付け外しする（2026-10-01 深夜 ぱっぱ）
+    const legs = settings.egi.rig === 'legs';
+    sc.svg?.querySelectorAll('.ika-art-egi').forEach((art) => {
+      let lg = art.querySelector('.ika-art-egi-legs');
+      if (legs && !lg) { lg = svgEl('path', { class: 'ika-art-egi-legs', d: EGI_LEGS_D, fill: 'none', stroke: '#16233a', 'stroke-width': '2.2', 'stroke-linecap': 'round' }); art.appendChild(lg); }
+      if (lg) lg.style.display = legs ? '' : 'none';
+    });
   }
   const colorOpts = () => ({ tod: settings.tod, cond: settings.cond, mood: moodOf(settings.month, settings.tod, settings.cond) });
   // なぜその色が効くのか（時間帯と、波から見た濁り）
@@ -1645,11 +1656,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.main.append(pickPop);
   let pickHome = null;
   function openPickPop() {
-    if (!pickHome) { pickHome = document.createComment('ika-egi-pick'); el.pick.before(pickHome); pickPop.prepend(el.pick); }
+    const box = el.tk ?? el.pick;   // タックルの札ごと窓へ（ロッド・ドラグも投げる前なら替えられる。2026-10-01 深夜）
+    if (!pickHome) { pickHome = document.createComment('ika-egi-pick'); box.before(pickHome); pickPop.prepend(box); }
     pickPop.hidden = false;
   }
   function closePickPop() {
-    if (pickHome) { pickHome.replaceWith(el.pick); pickHome = null; }
+    if (pickHome) { pickHome.replaceWith(el.tk ?? el.pick); pickHome = null; }
     pickPop.hidden = true;
   }
   pickPop.addEventListener('click', (e) => { if (e.target.closest('.ika-egi-pickpop-close')) closePickPop(); });
@@ -1665,7 +1677,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       // エギ選びへ（替えたら「次の一投へ」でそのまま続けられる）
       el.pick.classList.add('is-flash');
       setTimeout(() => el.pick.classList.remove('is-flash'), 1600);
-      el.pick.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+      (el.tk ?? el.pick).scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
       el.pickSize.querySelector('.ika-chip')?.focus({ preventScroll: true });
     }
     else if (e.target.closest('[data-restart]')) { newGame(); }

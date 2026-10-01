@@ -158,7 +158,7 @@ const TIME_SCALE = 3.4;
 export const DEFAULT_EGI = { size: 3, type: 'normal', color: 'orange', rig: 'normal' };
 // 仕掛け（2026-10-01 ぱっぱ）：ラトル入りは音でやる気のあるイカが集まりやすいが、スレている時・渋い時は逆効果で寄らない。
 //   足つき（パタパタ系）は見た目だけで効きは変わらない、という判断なので数字には入れない
-export const EGI_RIGS = ['normal', 'rattle'];
+export const EGI_RIGS = ['normal', 'rattle', 'legs'];   // legs＝足つき（パタパタ系）。見た目だけで効きは同じ（ぱっぱ 10/1）
 export const RATTLE = { activeMore: 0.5, activeNew: 0.25, calmLess: 0.4, stale: 0.7 };
 // タックル（2026-10-01 ぱっぱの説明を数字に）：
 //   ロッド 硬め … アタリが取りにくい（竿先の振れ 0.7）／しゃくりが大きく動く（1.3）／巻き取りが強い（1.2）／張りの上がりはふつう（1.0）
@@ -170,13 +170,13 @@ export const RODS = ['stiff', 'soft'];
 export const DRAGS = ['tight', 'normal', 'loose'];
 export const TACKLE = {
   rod: {
-    stiff: { signal: 0.7, jerk: 1.3, reel: 1.2, tension: 1.0 },   // 張りの上がりは今までどおり（1.15 にすると巻き0.8秒・ゆるめ0.6秒の基本の手で身切れした）
-    soft: { signal: 1.4, jerk: 0.8, reel: 0.85, tension: 0.8 },
+    stiff: { signal: 0.6, jerk: 1.45, reel: 1.3, tension: 1.0 },   // 張りの上がりは今までどおり（1.15 にすると巻き0.8秒・ゆるめ0.6秒の基本の手で身切れした）
+    soft: { signal: 1.6, jerk: 0.7, reel: 0.75, tension: 0.75 },   // 10/1 深夜「差が分からない」→ 幅を広げた
   },
   drag: {
-    tight: { reel: 1.25, jetTension: 1.5, jet: 1.2, slack: 1, zip: 0.1, jerkDur: 0.8 },
+    tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65 },
     normal: { reel: 1, jetTension: 1, jet: 1, slack: 1, zip: 0.3, jerkDur: 1 },
-    loose: { reel: 0.7, jetTension: 0.6, jet: 1, slack: 0.75, zip: 0.8, jerkDur: 1.35 },
+    loose: { reel: 0.55, jetTension: 0.55, jet: 1, slack: 0.7, zip: 0.8, jerkDur: 1.7 },
   },
 };
 export const DEFAULT_TACKLE = { rod: 'stiff', drag: 'normal' };
@@ -1475,7 +1475,7 @@ export function tick(s, dt) {
       // イカの体力：ジェットのたび、また時間とともに減る。ゆるめた時に糸を引き出す力も体力に比例（大物も最後は寄る）
       s.hooking.stamina ??= 1;
       s.hooking.stamina = Math.max(STAMINA_MIN, s.hooking.stamina - STAMINA_DECAY * dt);
-      const tk = s.easy ? { rod: { reel: 1, tension: 1 }, drag: { reel: 1, jetTension: 1, jet: 1, slack: 1 } } : tackleOf(s);   // 初心者練習はタックルの差を出さない
+      const tk = tackleOf(s);   // 初心者練習でもタックルの差は出す（EASY のやさしさはそのまま掛かる。2026-10-01 深夜）
       if (s.pressing) {
         // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）。ロッド・ドラグで寄せる速さが変わる（2026-10-01）
         s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * tk.rod.reel * tk.drag.reel * dt);

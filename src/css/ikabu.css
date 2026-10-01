@@ -1564,7 +1564,9 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-pick.is-flash { box-shadow: 0 0 0 4px var(--ika-orange); }
 .ika-egi-pick.is-locked { opacity: 0.85; }
 .ika-egi-pick-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.ika-egi-pick-icon-wrap { display: inline-grid; place-items: center; width: 44px; height: 48px; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 10px; }
+.ika-egi-pick-icon-wrap { display: inline-grid; place-items: center; width: 44px; height: 48px; padding: 0; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 10px; cursor: pointer; font: inherit; }
+.ika-egi-pick-icon-wrap:active { transform: scale(0.94); }
+.ika-egi-colorpop-rig { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding-top: 6px; border-top: 1px dashed var(--ika-sea-line); }
 .ika-egi-pick-current { font-family: var(--font-maru); font-weight: 900; font-size: 15px; color: var(--ika-ink); }
 .ika-egi-size.is-rec::after { content: '★'; margin-left: 4px; font-size: 11px; color: var(--ika-orange-deep); }
 .ika-egi-size.is-rec[aria-pressed='true']::after { color: var(--ika-orange-light); }
@@ -3216,8 +3218,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-egi-zone-head small { font-size: 11.5px; color: var(--ika-ink-soft); }
 .ika-egi-zone--tackle .ika-egi-setup-label, .ika-egi-zone--field .ika-egi-live-head .ika-egi-setup-label { color: var(--ika-sea); }
 /* リボン：3つの札。開いている札だけ色が付く */
-.ika-egi-tk { display: grid; gap: 8px; }
-.ika-egi-tk-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ika-egi-tk { --zone: var(--ika-orange-deep, #d9531e); display: grid; gap: 8px; }   /* 全画面の窓へ移しても色が付くように、区画の色を札自身にも持たせる */
+.ika-egi-tk-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: start; }
 .ika-egi-tk-tab { display: grid; gap: 2px; min-height: 48px; padding: 6px 8px; border: 2px solid var(--zone); border-radius: 10px; background: var(--ika-white); color: var(--ika-ink); font: inherit; text-align: left; cursor: pointer; }
 .ika-egi-tk-tab-name { font-family: var(--font-maru); font-weight: 900; font-size: 11.5px; color: var(--zone); }
 .ika-egi-tk-tab-val { font-family: var(--font-maru); font-weight: 900; font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }

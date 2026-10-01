@@ -168,10 +168,12 @@ const howtoHTML = (lang, game) => {
 /* ---------- しゃくって抱かせろ！ ---------- */
 
 // エギの絵（号数で大きさ、タイプで色）。ブラウザ側でも同じ関数で描き直す
-export function egiIconHTML(size = 3, type = 'normal', color = 'orange') {
+export const EGI_LEGS_D = 'M-5,17 Q-12,21 -10,28 M5,17 Q12,21 10,28';   // 足つきの足（舞台の絵と同じ形。games/egi-ui.js の paintEgi）
+export function egiIconHTML(size = 3, type = 'normal', color = 'orange', rig = 'normal') {
   const k = { 2.5: 0.85, 3: 1, 3.5: 1.15 }[size] ?? 1;
   const fill = EGI_COLOR_HEX[color] ?? '#f47321';
-  return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${k.toFixed(2)})"><path d="M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z" fill="${fill}" stroke="#16233a" stroke-width="3" stroke-linejoin="round"/><path d="M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22" stroke="#ffd2a8" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="3.5" r="1.8" fill="#16233a"/><path d="M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35" stroke="#16233a" stroke-width="1.6" stroke-linecap="round"/></g></svg>`;
+  const legs = rig === 'legs' ? `<path d="${EGI_LEGS_D}" fill="none" stroke="#16233a" stroke-width="2.2" stroke-linecap="round"/>` : '';
+  return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${k.toFixed(2)})"><path d="M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z" fill="${fill}" stroke="#16233a" stroke-width="3" stroke-linejoin="round"/><path d="M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22" stroke="#ffd2a8" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="3.5" r="1.8" fill="#16233a"/><path d="M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35" stroke="#16233a" stroke-width="1.6" stroke-linecap="round"/>${legs}</g></svg>`;
 }
 
 // エギの色の丸いボタン（エギ選び欄と、舞台の色選びで同じものを使う）
@@ -186,7 +188,7 @@ export function egiPickerHTML(lang, { month = 9, tod = 'evening', egi = DEFAULT_
   const sizes = EGI_SIZES.map((s) => `<button type="button" class="ika-chip ika-egi-size${rec.includes(s) ? ' is-rec' : ''}" data-size="${s}" aria-pressed="${String(s === egi.size)}">${s}${t(lang, '号', '')}</button>`).join('');
   const types = EGI_TYPES.map((k) => `<button type="button" class="ika-chip" data-type="${k}" aria-pressed="${String(k === egi.type)}">${t(lang, T.types[k])}</button>`).join('');
   return `
-    <div class="ika-egi-pick-head"><span class="ika-egi-pick-icon-wrap" id="ika-egi-pick-icon">${egiIconHTML(egi.size, egi.type, egi.color)}</span><span class="ika-egi-setup-label">${t(lang, T.title)}</span><b class="ika-egi-pick-current" id="ika-egi-pick-current">${T.current(lang, egi.size, t(lang, T.types[egi.type]))}</b></div>
+    <div class="ika-egi-pick-head"><button type="button" class="ika-egi-pick-icon-wrap" id="ika-egi-pick-icon" title="${t(lang, EGI_TEXT.tackle.legsTap)}" aria-label="${t(lang, EGI_TEXT.tackle.legsTap)}">${egiIconHTML(egi.size, egi.type, egi.color)}</button><span class="ika-egi-setup-label">${t(lang, T.title)}</span><b class="ika-egi-pick-current" id="ika-egi-pick-current">${T.current(lang, egi.size, t(lang, T.types[egi.type]))}</b></div>
     <div class="ika-egi-setup-row">
       <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.size)}</span><div class="ika-chips ika-chips--small" id="ika-egi-size" role="group" aria-label="${t(lang, T.size)}">${sizes}</div></div>
       <div class="ika-egi-setup-item"><span class="ika-egi-setup-label">${t(lang, T.type)}</span><div class="ika-chips ika-chips--small" id="ika-egi-type" role="group" aria-label="${t(lang, T.type)}">${types}</div></div>
@@ -470,6 +472,7 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               <p class="ika-egi-colorpop-title">${t(lang, T.egi.colorTitle)}</p>
               <div class="ika-egi-colors" id="ika-egi-colorpop-chips">${colorChipsHTML(lang, DEFAULT_EGI.color)}</div>
               <p class="ika-egi-colorpop-why" id="ika-egi-colorpop-why"></p>
+              <div class="ika-egi-colorpop-rig"><span class="ika-egi-setup-label">${t(lang, T.tackle.rig)}</span><div class="ika-chips ika-chips--small" id="ika-egi-colorpop-rig" role="group" aria-label="${t(lang, T.tackle.rig)}">${EGI_RIGS.map((k) => `<button type="button" class="ika-chip" data-rig="${k}" aria-pressed="${String(k === 'normal')}">${t(lang, T.tackle.rigs[k])}</button>`).join('')}</div></div>
             </div>
             <div class="ika-egi-callout" id="ika-egi-callout" hidden aria-hidden="true"></div>
             <p class="ika-egi-guide" id="ika-egi-guide" hidden aria-live="polite"></p>
