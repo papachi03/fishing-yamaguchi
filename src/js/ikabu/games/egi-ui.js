@@ -10,7 +10,7 @@
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
 import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
-import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi } from './egi.js';
+import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
@@ -59,6 +59,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
+    pickRig: q('ika-egi-rig'), tk: q('ika-egi-tk'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
@@ -90,7 +91,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.guideTag.hidden = !key;
     if (key) el.guideTag.textContent = t(lang, TX.guide[key]);
   }   // アタリなしが3投続いたら、一度だけ「コツを見る」を勧める   // 🔰初心者練習の手順案内（1＝投げる前、2＝投げた、3＝しゃくった、0＝おしまい）   // シェアする結果（釣れた1杯／釣行のまとめ）。share.js
-  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: { ...DEFAULT_EGI }, cue: readPref('ikabu.egi.cue') ?? 'real',
+  const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: normalizeEgi({ ...DEFAULT_EGI, rig: readPref('ikabu.egi.rig') }), cue: readPref('ikabu.egi.cue') ?? 'real',
+    tackle: normalizeTackle({ rod: readPref('ikabu.egi.rod'), drag: readPref('ikabu.egi.drag') }),   // ロッド・ドラグ（2026-10-01）
     method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
     bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami',
     aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live',   // ヤエンのアジ（2026-09-28 案B）
@@ -154,7 +156,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!sc.nodes) sc.nodes = makeNodes();
     const n = sc.nodes;
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
-    sc.air.append(n.entry, n.egiAir, n.hugAir, ...n.drips);
+    sc.air.append(n.entry, n.egiAir, n.hugAir, n.tool, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     paintEgi();
     paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
@@ -231,6 +233,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       punchSquid: mk('ika-eg-punchsquid'),   // イカパンチで突っ込んでくるイカの影（2026-09-27 ぱっぱ：パンチの動きが見えないと伝わらない）
       egiWater: mk('ika-eg-egi'), egiAir: mk('ika-eg-egi'),
       hugWater: mk('ika-eg-hug'), hugAir: mk('ika-eg-hug'),
+      // 取り込みの道具（2026-10-01）：タモ・ギャフの絵。堤防側（左）から出てきてイカを取り、吊り上げに付いていく
+      tool: svgEl('image', { class: 'ika-eg-tool', opacity: '0', width: String(TOOL.w), height: String(TOOL.h), preserveAspectRatio: 'xMidYMid meet' }),
       jet: svgEl('ellipse', { class: 'ika-eg-jet', fill: '#dff6f8', opacity: '0' }),
       // エフェクト（2026-09-25）：ジェットの水流の筋、泡、パンチの足の影と波紋
       fx: svgEl('g', { class: 'ika-eg-fx' }),
@@ -304,6 +308,20 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     buildScene();
   }
 
+  /* ---------- 取り込みの道具（2026-10-01 ぱっぱ：小＝ぶっこ抜き、中＝タモ、大＝ギャフ。絵は GPT） ---------- */
+  const TOOL = { w: 300, h: 150, headX: 0.85, headY: 0.5, src: { net: assetHref('/assets/ikabu/tools/tamo.webp'), gaff: assetHref('/assets/ikabu/tools/gaff.webp') } };
+  // 道具の位置：先（網の中心・鉤の先）を (tx, ty) に置き、柄は左（堤防側）へ伸びる。ギャフは斜め上から
+  function drawTool(kind, tx, ty, alpha, ang = 0) {
+    const im = sc?.nodes?.tool;
+    if (!im) return;
+    if (!alpha) { im.setAttribute('opacity', '0'); return; }
+    if (im.dataset.kind !== kind) { im.setAttribute('href', TOOL.src[kind]); im.dataset.kind = kind; }
+    const x0 = tx - TOOL.w * TOOL.headX; const y0 = ty - TOOL.h * TOOL.headY;
+    im.setAttribute('x', String(x0)); im.setAttribute('y', String(y0));
+    im.setAttribute('transform', ang ? `rotate(${ang} ${tx} ${ty})` : '');
+    im.setAttribute('opacity', String(alpha));
+  }
+
   /* ---------- 座標 ---------- */
   const X = (dist) => distX(dist, W);
   const Y = (depth) => depthY(depth);
@@ -331,7 +349,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
-    s = createEgi({ month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana });
+    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
@@ -607,6 +625,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.playPractice.disabled = lock;
     el.locked.hidden = !lock;
     syncMethod();
+    syncEgiPick();   // エギ・ロッド・ドラグ・仕掛けも、投げている間は押せない表示に（2026-10-01）
   }
   /* ---------- エギ選び：投げる前（構え・結果表示）ならいつでも替えられる ---------- */
   const typeName = (type) => t(lang, TX.egi.types[type]);
@@ -624,9 +643,45 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.pickTraits.innerHTML = egiTraitsHTML(lang, e);
     el.spec.textContent = TX.egi.current(lang, e.size, typeName(e.type));
     const canPick = !s || s.phase === 'ready' || s.phase === 'result' || s.phase === 'over';
-    root.querySelectorAll('#ika-egi-size .ika-chip, #ika-egi-type .ika-chip').forEach((b) => { b.disabled = !canPick; });
+    root.querySelectorAll('#ika-egi-size .ika-chip, #ika-egi-type .ika-chip, #ika-egi-rig .ika-chip, #ika-egi-rod .ika-chip, #ika-egi-drag .ika-chip').forEach((b) => { b.disabled = !canPick; });
     el.pick.classList.toggle('is-locked', !canPick);
+    el.pickRig?.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.rig === (e.rig ?? 'normal'))));
+    syncTackle();
   }
+  /* ---------- タックル（ロッド・ドラグ）とリボン（2026-10-01） ---------- */
+  function syncTackle() {
+    const tk = settings.tackle;
+    el.rod?.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.rod === tk.rod)));
+    el.drag?.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.drag === tk.drag)));
+    if (el.rodNote) el.rodNote.textContent = t(lang, TX.tackle.rodNote[tk.rod]);
+    if (el.dragNote) el.dragNote.textContent = t(lang, TX.tackle.dragNote[tk.drag]);
+    const e = settings.egi;
+    const vals = { rod: t(lang, TX.tackle.rods[tk.rod]), drag: t(lang, TX.tackle.drags[tk.drag]), egi: `${TX.egi.current(lang, e.size, typeName(e.type))}${e.rig === 'rattle' ? `・${t(lang, TX.tackle.rigs.rattle)}` : ''}` };
+    el.tk?.querySelectorAll('[data-tk-val]').forEach((b) => { b.textContent = vals[b.dataset.tkVal] ?? ''; });
+  }
+  function chooseTackle(patch) {
+    const next = normalizeTackle({ ...settings.tackle, ...patch });
+    if (s && s.phase !== 'over' && !setTackle(s, next)) return;   // 投げている最中は替えられない
+    settings.tackle = next;
+    writePref('ikabu.egi.rod', next.rod); writePref('ikabu.egi.drag', next.drag);
+    syncTackle();
+    if (s?.phase === 'result') callout(`${t(lang, TX.tackle.changed)}：${TX.tackle.current(lang, t(lang, TX.tackle.rods[next.rod]), t(lang, TX.tackle.drags[next.drag]))}`);
+  }
+  el.rod?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rod]'); if (b) chooseTackle({ rod: b.dataset.rod }); });
+  el.drag?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-drag]'); if (b) chooseTackle({ drag: b.dataset.drag }); });
+  el.pickRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) { chooseEgi({ rig: b.dataset.rig }); writePref('ikabu.egi.rig', b.dataset.rig); } });
+  // リボン：押した札だけ開く（もう一度押すと閉じる）
+  el.tk?.querySelector('.ika-egi-tk-tabs')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tk-tab]');
+    if (!b) return;
+    const key = b.dataset.tkTab;
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    el.tk.querySelectorAll('[data-tk-tab]').forEach((x) => x.setAttribute('aria-expanded', String(open && x.dataset.tkTab === key)));
+    el.tk.querySelectorAll('[data-tk-panel]').forEach((p) => { p.hidden = !(open && p.dataset.tkPanel === key); });
+  });
+  // 現在のタックルの数字（描画・音で使う）
+  const rodNow = () => (s?.easy ? { signal: 1, jerk: 1 } : TACKLE.rod[settings.tackle.rod]);
+  const dragNow = () => (s?.easy ? { zip: 0.22, jerkDur: 1 } : TACKLE.drag[settings.tackle.drag]);
   // エギの色：舞台のエギ・アイコン・色のボタンをそろえる
   // 泡：dir=-1 は釣り人側（左）へ吹き出す、1 はエギのまわりに散る。ゆらゆら上へ浮いて消える
   const bubbles = [];
@@ -959,7 +1014,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.jerkAt = now;
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
-          feel.fire('zip');   // しゃくりで一瞬「ジッ！」（2026-09-30 ぱっぱ）
+          feel.fire('zip', { len: dragNow().zip });   // しゃくりで「ジッ！」。長さはドラグしだい（締め＝短く、ゆるめ＝ジーーー。2026-10-01 ぱっぱ）
           if (e.kind === 'dart') { V.dartAt = now; callout(t(lang, TX.cue.dart)); }
           else if (e.kind === 'slack') { V.slackAt = now; V.slackSide = -(V.slackSide ?? 1); if (e.slackN === 1) callout(t(lang, TX.cue.slack)); }   // 何回目の連打かに関係なく、スラックジャークに入った1回目で出す
           else if (e.double) callout(t(lang, TX.cue.double));
@@ -1103,7 +1158,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.hug.height = (44 * clamp(mantleUnits(h.mantle) / 56, 0.75, 1.8) + mantleUnits(h.mantle)) * 1.15;
           V.swim.forEach((w) => { w.alpha = 0; });
           // アタリの出方：走る／竿先にコン／止まる／フケる。本格モードでは糸と竿先だけで見せる
-          V.bite = { kind: e.kind, light: e.light, t0: now, amp: e.light ? 0.6 : 1 };
+          V.bite = { kind: e.kind, light: e.light, t0: now, amp: (e.light ? 0.6 : 1) * rodNow().signal };   // 柔らかめは穂先に大きく出る、硬めは出にくい（2026-10-01）
           V.lastBite = V.bite;
           if (cue() === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.kinds[e.kind]);
@@ -1232,11 +1287,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           callout(t(lang, e.type === 'break' ? TX.msg.break : TX.msg.unhooked), 'bad');
           break;
         case 'landed': {
-          V.land = { t0: now, from: { x: V.hug.x, y: V.hug.y } };
-          burst(V.hug.x, SCENE.surface, 8);
+          // 取り込み方は重さで自動（2026-10-01 ぱっぱ）：lift＝ぶっこ抜き／net＝タモ／gaff＝ギャフ。タモ・ギャフは道具が出てから持ち上がる
+          const land = e.gedo ? 'lift' : (e.land ?? 'lift');
+          V.land = { t0: now, from: { x: V.hug.x, y: V.hug.y }, kind: land, lead: land === 'lift' ? 0 : land === 'net' ? 1.0 : 1.2 };
+          if (land === 'lift') burst(V.hug.x, SCENE.surface, 8);
           feel.fire('landed');
           if (e.gedo) { callout(t(lang, TX.gedo.got), ''); addGedo(e); break; }
-          callout(t(lang, TX.msg.landed), 'good');
+          callout(t(lang, land === 'net' ? TX.msg.landedNet : land === 'gaff' ? TX.msg.landedGaff : TX.msg.landed), 'good', land === 'lift' ? 1700 : 2600);
           addCatch(e);
           break;
         }
@@ -1312,7 +1369,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (events.length) {
       setButton();
       syncSide();
-      if (s.phase === 'result') showResult();
+      // タモ・ギャフの取り込みは、道具が出て吊り上げるまで結果カードを待たせる（カードが舞台を隠すため。2026-10-01）
+      const landWait = s.phase === 'result' && V.land && V.land.kind !== 'lift' ? Math.round(((V.land.lead ?? 0) + 1.1) * 1000) : 0;
+      if (s.phase === 'result') { if (landWait) { const g = s; setTimeout(() => { if (s === g && s.phase === 'result') showResult(); }, landWait); } else showResult(); }
       if (s.phase === 'over') finishSession();
     }
   }
@@ -1347,7 +1406,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.revealed = false;
     el.card.hidden = true;
     el.flash.hidden = true;
-    V.hug.on = false; V.hug.alpha = 0; V.land = null; V.ink = null;
+    V.hug.on = false; V.hug.alpha = 0; V.land = null; V.ink = null; drawTool('net', 0, 0, 0);
     const tp = tipRest();
     if (V.egi.mode === 'stuck') {
       V.ghost = { x: V.egi.x, y: V.egi.y, ang: V.egi.ang, t0: now };
@@ -1977,8 +2036,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     else if (phase === 'sinking') rodAng = 30;
     else if (phase === 'action' || phase === 'signal') {
       const j = now - V.jerkAt;
-      const top = V.jerkKind === 'drag' ? 48 : V.jerkKind === 'dart' ? 80 : V.jerkKind === 'slack' ? 60 : V.jerkDouble ? 66 : 72;   // ズル引きは竿を小さく立てるだけ
-      rodAng = j < 0.5 ? lerp(top, 34, easeOut(j / 0.5)) : 34;
+      const top0 = V.jerkKind === 'drag' ? 48 : V.jerkKind === 'dart' ? 80 : V.jerkKind === 'slack' ? 60 : V.jerkDouble ? 66 : 72;   // ズル引きは竿を小さく立てるだけ
+      const top = 34 + (top0 - 34) * (V.jerkKind === 'drag' ? 1 : rodNow().jerk);   // 硬めは大きく、柔らかめは小さく（2026-10-01）
+      const jd = 0.5 * dragNow().jerkDur;   // 締め＝キビキビ、ゆるめ＝ふわっと
+      rodAng = j < jd ? lerp(top, 34, easeOut(j / jd)) : 34;
       pull = j < 0.2 ? 0.6 : 0;
       if (s.tensionFall) { rodAng = 40; pull = 0.25; }   // テンションフォール：竿を少し立てて糸を張る
       // アタリ：竿先にコン＝一度だけ下へ叩く。走る＝竿先が引かれる
@@ -2065,12 +2126,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       } else {
         // ダート：大きく横へ跳ねてから戻る（ジグザグ）。2段：小さく2回目の跳ね
         const dartK = V.dartAt != null ? (now - V.dartAt) / 0.45 : 9;
-        const dartX = dartK < 1 ? 80 * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;   // 横へ大きく（2026-09-29 高さは控えめに）
+        const dartX = dartK < 1 ? 80 * rodNow().jerk * Math.sin(Math.PI * dartK) * (dartK < 0.5 ? 1 : -0.6) : 0;   // 横へ大きく（2026-09-29 高さは控えめに）。ロッドで振れ幅が変わる
         // スラックジャーク：左右に小刻みにチョンチョン
         // 1回ごとに左右交互へ鋭く跳ねる（0.22秒）。最初の3割で一気に振り、残りで戻る
         const slackK = V.slackAt != null ? (now - V.slackAt) / 0.22 : 9;
         const slackE = slackK < 1 ? (slackK < 0.3 ? Math.sin((Math.PI / 2) * (slackK / 0.3)) : Math.cos((Math.PI / 2) * ((slackK - 0.3) / 0.7))) : 0;
-        const slackX = reduced ? 0 : 46 * (V.slackSide ?? 1) * slackE;
+        const slackX = reduced ? 0 : 46 * rodNow().jerk * (V.slackSide ?? 1) * slackE;
         V.egi.x += (tx + dartX + slackX - V.egi.x) * rate;
         V.egi.y += (ty - (dartK < 1 ? 10 * Math.sin(Math.PI * dartK) : 0) - V.egi.y) * rate;
         // 糸は釣り人側（左上）から頭に結ばれている。フォールは頭を下げて（左下）、尻を沖の上へ向けて沈む。
@@ -2099,8 +2160,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (V.hug.on) {
       const h = s.hooking;
       if (V.land) {
-        // 取り込み：糸に沿って持ち上げ、堤防の先で吊る（足が上・胴が下）
-        const k = easeInOut(clamp((now - V.land.t0) / 0.9, 0, 1));
+        // 取り込み：糸に沿って持ち上げ、堤防の先で吊る（足が上・胴が下）。タモ・ギャフは道具が届く（lead 秒）まで水面で待つ
+        const lead = V.land.lead ?? 0;
+        const k = easeInOut(clamp((now - V.land.t0 - lead) / 0.9, 0, 1));
+        if (lead > 0 && now - V.land.t0 < lead && !V.land.splashed && now - V.land.t0 > lead - 0.15) { V.land.splashed = true; burst(V.hug.x, SCENE.surface, 8); }
         const hp = hangPoint();
         V.hug.x = lerp(V.land.from.x, hp.x, k);
         V.hug.y = lerp(V.land.from.y, hp.y, k) - 30 * Math.sin(Math.PI * k);
@@ -2108,6 +2171,22 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         V.hug.ang += wrap(swing - V.hug.ang) * (k >= 1 ? k8 : 1 - Math.exp(-dt * 6));
         hugInAir = V.hug.y < S.surface - 10;
         taut = 1;
+        // タモ・ギャフ：道具が堤防側から届く（lead 秒）→ イカを取る → 持ち上げに付いていく → 吊ったら引っ込む
+        if (V.land.kind === 'net' || V.land.kind === 'gaff') {
+          const net = V.land.kind === 'net';
+          const u = clamp((now - V.land.t0) / lead, 0, 1);                       // 届くまで
+          const hugH = V.hug.height ?? 100;
+          const aimX = V.hug.x + (net ? 4 : 2);
+          const aimY = net ? V.hug.y + hugH * 0.55 : V.hug.y + hugH * 0.35;     // タモは胴の下へ、ギャフは胴へ
+          const startX = aimX - 260; const startY = net ? aimY + 40 : aimY - 150;
+          const ex = easeOut(u);
+          let tx = lerp(startX, aimX, ex); let ty = lerp(startY, aimY, ex);
+          if (u >= 1) { tx = aimX; ty = aimY; }
+          const since = now - V.land.t0 - lead;
+          const fade = k >= 1 ? clamp(1 - (now - V.land.t0 - lead - 0.9) / 0.4, 0, 1) : 1;   // 吊ってから 0.4 秒で消える
+          const ang = net ? (u < 1 ? -8 * (1 - u) : 0) : lerp(-38, -20, Math.min(1, u)) + (since > 0 && since < 0.3 ? 8 * Math.sin((since / 0.3) * Math.PI) : 0);   // ギャフは掛けた瞬間に少し起きる
+          drawTool(V.land.kind, tx, ty, fade, ang);
+        } else drawTool('net', 0, 0, 0);
       } else if (phase === 'signal') {
         // 抱いた直後。アタリの種類で見え方が違う：
         //   run   … エギごと沖へ走り、糸がピンと張る（はっきり）

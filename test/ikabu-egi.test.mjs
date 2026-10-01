@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createEgi, press, release, tick, speciesPool, seasonOf, totalWeight, CASTS, EGI_STOCK, SIGNAL_GOOD, SIGNAL_LATE, SINK,
+  setTackle, landKindOf, normalizeTackle, TACKLE,
 } from '../src/js/ikabu/games/egi.js';
 
 // 何も起きない乱数（0.99 = 確率の判定にほぼ通らない）。必要なときだけ値を差し替える
@@ -343,7 +344,7 @@ test('エギは投げる前（構え中・結果表示中）だけ替えられ�
   assert.equal(setEgi(s, { size: 2.5, type: 'shallow' }), true);
   cast(s);
   assert.equal(setEgi(s, { size: 3.5 }), false);
-  assert.deepEqual(s.spec, { size: 2.5, type: 'shallow', color: 'orange' });
+  assert.deepEqual(s.spec, { size: 2.5, type: 'shallow', color: 'orange', rig: 'normal' });
 });
 
 test('フォール：しゃくった後に押したままだとテンションフォール（ゆっくり沈み、手前に寄る）、離すとフリーフォール', () => {
@@ -692,4 +693,57 @@ test('誘いのスレ：初心者練習・シャクリの無いフォールで�
   cast(s);
   run(s, 3);
   assert.equal(s.lureSame, 0, '着水直後のフォール（シャクリなし）は数えない');
+});
+
+// ---------- タックル（ロッド・ドラグ）2026-10-01 ぱっぱ：取り込み優先（締め・硬め）は寄せが速いがジェットで張りが跳ね、駆け引き優先（ゆるめ・柔らかめ）は時間がかかるが受け流す ----------
+// 同じ手（巻き0.8秒・ゆるめ0.6秒）で、取り込みにかかる時間を比べる。ジェットは乱数で起こす
+function fightWith(tackle, jetRand) {
+  const s = createEgi({ rand: jetRand, tackle });
+  cast(s);
+  s.phase = 'fight'; s.tension = 30; s.dist = 12;
+  s.hooking = { id: 'aori', weight: 900, mantle: 20, power: 0.8 };
+  // 人はテンションのゲージを見て巻く：60未満なら巻く、70を超えたらゆるめる（botTrip と同じ手）
+  let why = null; let time = 0; let peak = 0;
+  const step = 0.05;
+  while (!why && time < 180) {
+    if (s.tension < 60 && !s.pressing) press(s);
+    else if (s.tension > 70 && s.pressing) release(s);
+    for (const e of tick(s, step)) if (['landed', 'break', 'unhooked'].includes(e.type)) why = e.type;
+    peak = Math.max(peak, s.tension);
+    time += step;
+  }
+  return { why, time: Math.round(time), peak };
+}
+test('タックル：締め×硬めは、ゆるめ×柔らかめより速く取り込める（ジェット無し）', () => {
+  const fast = fightWith({ rod: 'stiff', drag: 'tight' }, calm);
+  const slow = fightWith({ rod: 'soft', drag: 'loose' }, calm);
+  assert.equal(fast.why, 'landed'); assert.equal(slow.why, 'landed');
+  assert.ok(fast.time < slow.time * 0.7, `取り込み優先 ${fast.time}s / 駆け引き優先 ${slow.time}s`);
+});
+test('タックル：ジェットが続く相手には、締めは身切れしやすく、ゆるめは受け流せる', () => {
+  const jets = () => 0.01;   // 乱数を小さくしてジェットを間隔いっぱいに起こす（ファイト中はほかの判定に乱数を使わない）
+  const tight = fightWith({ rod: 'stiff', drag: 'tight' }, jets);
+  const loose = fightWith({ rod: 'soft', drag: 'loose' }, jets);
+  assert.equal(tight.why, 'break', `締め：${tight.why}`);
+  assert.equal(loose.why, 'landed', `ゆるめ：${loose.why}（${loose.time}s）`);
+});
+test('タックルは投げる前だけ替えられる。知らない値は既定に戻る', () => {
+  const s = createEgi({ rand: calm });
+  assert.equal(setTackle(s, { rod: 'soft', drag: 'loose' }), true);
+  cast(s);
+  assert.equal(setTackle(s, { rod: 'stiff' }), false);
+  assert.deepEqual(s.tackle, { rod: 'soft', drag: 'loose' });
+  assert.deepEqual(normalizeTackle({ rod: 'x', drag: 'y' }), { rod: 'stiff', drag: 'normal' });
+  assert.ok(TACKLE.drag.tight.reel > TACKLE.drag.loose.reel);
+});
+test('取り込み方は重さで決まる：〜500g ぶっこ抜き、500g〜1.5kg タモ、1.5kg〜 ギャフ', () => {
+  assert.equal(landKindOf(300), 'lift'); assert.equal(landKindOf(500), 'net'); assert.equal(landKindOf(1499), 'net'); assert.equal(landKindOf(1500), 'gaff');
+});
+test('ラトル入りは、やる気のある日に寄る数が増える（同じ乱数で、ノーマル以上）', () => {
+  const seq = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
+  const mk = (rig) => createEgi({ rand: seq([0.3]), month: 10, tod: 'evening', conditions: { expectation: 9 }, egi: { rig } });
+  const a0 = mk('normal'); cast(a0);
+  const a1 = mk('rattle'); cast(a1);
+  assert.equal(a1.mood, 'active');
+  assert.ok(a1.squid >= a0.squid, `ノーマル${a0.squid} ラトル${a1.squid}`);
 });

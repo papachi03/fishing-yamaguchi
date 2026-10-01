@@ -61,16 +61,19 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
     } catch { st.ctx = null; }
   }
   // しゃくりの「ジッ！」：本物のドラグ音の頭だけ（0.22秒）。音源が無ければ短い合成音
-  function zip() {
+  // len：鳴る長さ（秒）。ドラグを締めると「ジッ！」と短く（0.1）、ゆるめると「ジーーー！」と長く（0.8）（2026-10-01 ぱっぱ）
+  function zip(len = 0.22) {
     const ctx = st.ctx;
     if (!ctx) return;
     const t = ctx.currentTime;
-    if (!st.sample) { blip({ type: 'noise', f0: 3400, dur: 0.12, vol: 1.2 }); return; }
+    const L = Math.max(0.08, Math.min(1.2, len));
+    if (!st.sample) { blip({ type: 'noise', f0: 3400, dur: Math.max(0.1, L * 0.6), vol: 1.2 }); return; }
     const src = ctx.createBufferSource(); src.buffer = st.sample;
+    if (L > 0.5) { src.loop = true; src.loopStart = 0.4; src.loopEnd = Math.min(7.8, st.sample.duration); }
     const g = ctx.createGain();
-    g.gain.setValueAtTime(ZIP_VOL, t); g.gain.setValueAtTime(ZIP_VOL, t + 0.16); g.gain.linearRampToValueAtTime(0.0001, t + 0.22);
+    g.gain.setValueAtTime(ZIP_VOL, t); g.gain.setValueAtTime(ZIP_VOL, t + L * 0.75); g.gain.linearRampToValueAtTime(0.0001, t + L);
     src.connect(g).connect(ctx.destination);
-    src.start(t, 0.02); src.stop(t + 0.24);
+    src.start(t, 0.02); src.stop(t + L + 0.02);
   }
 
   // 短い音を1つ。type: 'sine' | 'square' | 'sawtooth' | 'noise'
@@ -235,7 +238,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
       case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); shing(); break;   // 手に来る「ドン」＋決まった「シャキーン！」
       case 'jet': break;   // 音は出さない（2026-09-29 ぱっぱ：ドラグの「ジジジッ」と被るので「ピピピッ」は消す）。振動だけ
       case 'whoosh': whoosh(opt.vol ?? 1); break;
-      case 'zip': zip(); break;   // しゃくりの「ジッ！」
+      case 'zip': zip(opt.len); break;   // しゃくりの「ジッ！」（長さはドラグしだい）
       case 'break': blip({ type: 'sine', f0: 700, f1: 180, dur: 0.18 }); break;
       case 'landed': blip({ type: 'sine', f0: 520, dur: 0.07 }); blip({ type: 'sine', f0: 780, dur: 0.09, at: 0.09 }); break;
       default: break;

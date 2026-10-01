@@ -155,7 +155,39 @@ const TYPE_SINK = { shallow: 1.9, normal: 1, deep: 0.6 }; // シャローは遅�
 const TYPE_SNAG = { shallow: 0.5, normal: 1, deep: 1.6 }; // 速く沈むほど根掛かりしやすい
 const SIZE_DIST = { 2.5: 0.85, 3: 0.93, 3.5: 1 }; // 重いほど遠くへ飛ぶ
 const TIME_SCALE = 3.4;
-export const DEFAULT_EGI = { size: 3, type: 'normal', color: 'orange' };
+export const DEFAULT_EGI = { size: 3, type: 'normal', color: 'orange', rig: 'normal' };
+// 仕掛け（2026-10-01 ぱっぱ）：ラトル入りは音でやる気のあるイカが集まりやすいが、スレている時・渋い時は逆効果で寄らない。
+//   足つき（パタパタ系）は見た目だけで効きは変わらない、という判断なので数字には入れない
+export const EGI_RIGS = ['normal', 'rattle'];
+export const RATTLE = { activeMore: 0.5, activeNew: 0.25, calmLess: 0.4, stale: 0.7 };
+// タックル（2026-10-01 ぱっぱの説明を数字に）：
+//   ロッド 硬め … アタリが取りにくい（竿先の振れ 0.7）／しゃくりが大きく動く（1.3）／巻き取りが強い（1.2）／張りの上がりはふつう（1.0）
+//        柔らかめ … 穂先が敏感でアタリが出る（1.4）／しゃくりの反動が小さい（0.8）／取り込みが大変（0.85）／竿が張りを吸収（0.8）
+//   ドラグ 締め（取り込み優先）… 寄せは速い（1.25）が、ジェットで張りが一気に上がる（1.5）。しゃくり音は短く「ジッ」（0.1秒）
+//        ゆるめ（駆け引き優先）… 寄せはゆるやか（0.7）、ジェットの張りはやわらかい（0.6）、ゆるめた時にすっぽ抜けやすい（0.75）。音は「ジーーー」（0.8秒）
+//   ジェットの音は変えない（ぱっぱ）。差は抵抗値（張り）につける。初心者練習（easy）には効かせない
+export const RODS = ['stiff', 'soft'];
+export const DRAGS = ['tight', 'normal', 'loose'];
+export const TACKLE = {
+  rod: {
+    stiff: { signal: 0.7, jerk: 1.3, reel: 1.2, tension: 1.0 },   // 張りの上がりは今までどおり（1.15 にすると巻き0.8秒・ゆるめ0.6秒の基本の手で身切れした）
+    soft: { signal: 1.4, jerk: 0.8, reel: 0.85, tension: 0.8 },
+  },
+  drag: {
+    tight: { reel: 1.25, jetTension: 1.5, jet: 1.2, slack: 1, zip: 0.1, jerkDur: 0.8 },
+    normal: { reel: 1, jetTension: 1, jet: 1, slack: 1, zip: 0.3, jerkDur: 1 },
+    loose: { reel: 0.7, jetTension: 0.6, jet: 1, slack: 0.75, zip: 0.8, jerkDur: 1.35 },
+  },
+};
+export const DEFAULT_TACKLE = { rod: 'stiff', drag: 'normal' };
+export function normalizeTackle(t = {}) {
+  return { rod: RODS.includes(t.rod) ? t.rod : DEFAULT_TACKLE.rod, drag: DRAGS.includes(t.drag) ? t.drag : DEFAULT_TACKLE.drag };
+}
+export const tackleOf = (s) => ({ rod: TACKLE.rod[s.tackle?.rod] ?? TACKLE.rod[DEFAULT_TACKLE.rod], drag: TACKLE.drag[s.tackle?.drag] ?? TACKLE.drag[DEFAULT_TACKLE.drag] });
+// 取り込み（2026-10-01 ぱっぱ：小＝ぶっこ抜き、中＝タモ、大＝ギャフが一般的なセオリー。重さで自動）
+export const LAND_NET = 500;
+export const LAND_GAFF = 1500;
+export const landKindOf = (weight) => (weight >= LAND_GAFF ? 'gaff' : weight >= LAND_NET ? 'net' : 'lift');
 
 // ---------------- エギの色（布＝背中の色） ----------------
 // YAMASHITA 公式「エギの色の選び方」ほか（2026-09-25 調査）：
@@ -211,7 +243,8 @@ export function normalizeEgi(e = {}) {
   const size = EGI_SIZES.includes(Number(e.size)) ? Number(e.size) : DEFAULT_EGI.size;
   const type = EGI_TYPES.includes(e.type) ? e.type : DEFAULT_EGI.type;
   const color = EGI_COLORS.includes(e.color) ? e.color : DEFAULT_EGI.color;
-  return { size, type, color };
+  const rig = EGI_RIGS.includes(e.rig) ? e.rig : DEFAULT_EGI.rig;
+  return { size, type, color, rig };
 }
 // 実物の沈下速度（秒/m）と、ゲームでの沈む速さ（m/秒）
 export const egiSecPerMeter = (egi) => SEC_PER_M[egi.size] * TYPE_SINK[egi.type];
@@ -433,9 +466,10 @@ export function signalWindows(cond, kind = 'run', light = false, easy = false) {
 }
 
 // ---------------- 状態 ----------------
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one' } = {}) {
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one', tackle } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
+  const tk = normalizeTackle(tackle);
   const m = METHOD_IDS_ENGINE.includes(method) ? method : 'egi';
   return {
     tana: TANAS.includes(tana) ? tana : 'one',   // テーラーのタナ
@@ -453,7 +487,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     month,
     tod,
     cond,
-    spec, // 使っているエギ（号数・タイプ）
+    spec, // 使っているエギ（号数・タイプ・色・仕掛け）
+    tackle: tk, // ロッド・ドラグ（2026-10-01）
     mood: moodOf(month, tod, cond),
     easy, // 🔰初心者練習
     windows: signalWindows(cond, 'run', false, easy), // いまのアタリのアワセ猶予（アタリが出るたびに種類に合わせて入れ替える）
@@ -513,6 +548,13 @@ export function setEgi(s, egi) {
     if (s.dryCasts >= ROTATE_AFTER) s.rotated = true;
     s.dryCasts = 0;
   }
+  return true;
+}
+
+// ロッド・ドラグも、投げる前（構え中・結果表示中）だけ替えられる
+export function setTackle(s, tackle) {
+  if (s.phase !== 'ready' && s.phase !== 'result') return false;
+  s.tackle = normalizeTackle(tackle);
   return true;
 }
 
@@ -1103,6 +1145,11 @@ export function release(s) {
     s.guaranteeFall = 0;
     if (s.rotated) { s.interest += ROTATE_GAIN; s.rotated = false; emit(s, 'rotation', {}); }
     s.squid = sampleSquid(s);
+    // ラトル（2026-10-01）：やる気のある日は音で寄る数が増える。渋い日は警戒して減る（スレは抱く時に効く）
+    if (s.spec.rig === 'rattle' && s.method === 'egi' && !s.easy) {
+      if (s.mood === 'active') { if (s.squid > 0) { if (s.rand() < RATTLE.activeMore) s.squid += 1; } else if (s.rand() < RATTLE.activeNew * (s.cond.expectation / 10)) s.squid = 1; }
+      else if (s.mood === 'calm' && s.squid > 0 && s.rand() < RATTLE.calmLess) s.squid -= 1;
+    }
     // 邪道エギングは、夜はエサの匂いで寄ってくる（エサが新しいほど）。気になり具合もエサしだい
     if (s.method === 'jado') {
       if (s.squid === 0 && s.tod === 'night' && s.rand() < 0.35 * s.baitLeft) s.squid = 1;
@@ -1368,7 +1415,8 @@ export function tick(s, dt) {
         const fallFactor = s.mood === 'calm' ? (s.tensionFall ? 1.25 : 0.85) : (s.tensionFall ? 1.0 : 1.1);
         const rate = 0.55 * HUG_SCALE * s.interest * moodFactor * fallFactor * (sumW / AVAIL_NORM)
           * colorFit(s.spec.color, { tod: s.tod, cond: s.cond, mood: s.mood }) * (s.easy ? EASY.bite : 1) * weedBoost(s)
-          * (s.bonus === 'last' ? LAST_BOOST : 1);
+          * (s.bonus === 'last' ? LAST_BOOST : 1)
+          * (s.spec.rig === 'rattle' && !s.easy && (s.lureSame ?? 0) >= STALE_AT ? RATTLE.stale : 1);   // ラトルはスレたイカに逆効果
         // ラストチャンスの保証：しゃくってフォールさせた時間が合計 LAST_GUARANTEE 秒に達したら、必ず抱く
         if (s.guarantee && since >= 1) s.guaranteeFall += dt;
         const forced = s.guarantee && s.guaranteeFall >= LAST_GUARANTEE;
@@ -1427,10 +1475,11 @@ export function tick(s, dt) {
       // イカの体力：ジェットのたび、また時間とともに減る。ゆるめた時に糸を引き出す力も体力に比例（大物も最後は寄る）
       s.hooking.stamina ??= 1;
       s.hooking.stamina = Math.max(STAMINA_MIN, s.hooking.stamina - STAMINA_DECAY * dt);
+      const tk = s.easy ? { rod: { reel: 1, tension: 1 }, drag: { reel: 1, jetTension: 1, jet: 1, slack: 1 } } : tackleOf(s);   // 初心者練習はタックルの差を出さない
       if (s.pressing) {
-        // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）
-        s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * dt);
-        s.tension += (22 + p * 22) * dt * (s.easy || s.hooking?.bonus ? EASY.tension : 1);
+        // 重いイカほど巻いても寄ってこない（2kg級は2分ほどのファイト＝ダディの実感 2026-09-25）。ロッド・ドラグで寄せる速さが変わる（2026-10-01）
+        s.dist = Math.max(0, s.dist - (2.2 / (1 + REEL_WEIGHT * Math.min(s.hooking.boss ? BOSS_REEL_CAP : Infinity, s.hooking.weight ?? 0) / 1000)) * tk.rod.reel * tk.drag.reel * dt);
+        s.tension += (22 + p * 22) * dt * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.rod.tension;
       } else {
         s.tension -= 45 * dt;
         s.dist += 0.6 * p * s.hooking.stamina * dt;
@@ -1444,8 +1493,9 @@ export function tick(s, dt) {
       const recent = hk.jets.filter((t) => s.t - t < JET_WINDOW);
       const resting = recent.length >= JET_BURST && s.t - recent[recent.length - 1] < JET_REST;
       const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
-      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * dt) {
-        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1);   // 初心者練習は噴射の引きもやさしく
+      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * tk.drag.jet * dt) {
+        // 初心者練習は噴射の引きもやさしく。締めたドラグ（取り込み優先）は張りが一気に上がり、ゆるめ（駆け引き優先）は受け流す（2026-10-01）
+        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.drag.jetTension * tk.rod.tension;
         else s.dist += 1;
         hk.jets.push(s.t);
         hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);
@@ -1457,7 +1507,7 @@ export function tick(s, dt) {
         emit(s, 'break', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'break');
-      } else if (s.slackFor > SLACK_LIMIT * (s.easy || s.hooking?.bonus ? EASY.slack : 1)) {
+      } else if (s.slackFor > SLACK_LIMIT * (s.easy || s.hooking?.bonus ? EASY.slack : 1) * tk.drag.slack) {
         emit(s, 'unhooked', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'unhooked');
@@ -1472,7 +1522,7 @@ export function tick(s, dt) {
         s.catches.push(c);
         s.lureKey = null;   // 釣り上げたら、誘いのスレは数え直し（別のイカ）
         s.lureSame = 0;
-        emit(s, 'landed', c);
+        emit(s, 'landed', { ...c, land: landKindOf(c.weight) });   // land：lift＝ぶっこ抜き／net＝タモ／gaff＝ギャフ（2026-10-01）
         s.hooking = null;
         endCast(s, 'landed');
       }
