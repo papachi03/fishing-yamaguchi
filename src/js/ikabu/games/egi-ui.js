@@ -1378,10 +1378,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           if (now - (V.jetCallout ?? -9) > 2.5) { callout(t(lang, gedo ? TX.msg.resist : TX.msg.jet)); V.jetCallout = now; }
           break;
         }
+        case 'geso':
+          V.gesoAt = now;
+          addGedo(e);
+          break;
         case 'break':
         case 'unhooked':
           escapeSquid();
           feel.fire('break');
+          if (e.type === 'break' && V.gesoAt === now) { callout(t(lang, TX.msg.geso), '', 3000); break; }   // ゲソだけ上がってきた
           callout(t(lang, e.type === 'break' ? TX.msg.break : TX.msg.unhooked), 'bad');
           break;
         case 'landed': {
@@ -1529,7 +1534,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 今日の萩の海の釣果は、その場で図鑑と記録に保存する（釣行の途中でページを閉じても消えない）
     if (settings.mode === 'live') {
       const before = levelNow();
-      const got = recordEgiCatch(rec, { id: c.id, weight: c.weight, mantle: c.mantle }, { tripTotal: s.catches.reduce((sum, x) => sum + x.weight, 0) });
+      const got = recordEgiCatch(rec, { id: c.id, weight: c.weight, mantle: c.mantle, ...(c.nushi ? { nushi: true } : {}) }, { tripTotal: s.catches.reduce((sum, x) => sum + x.weight, 0) });
       rec = got.rec;
       saveRec();
       syncRecords();
@@ -1631,7 +1636,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       li.className = `ika-egi-zukan-card${r ? ' is-got' : ''}${z.boss ? ' is-boss' : ''}`;
       const img = `<img class="ika-egi-zukan-art${r ? '' : ' is-shadow'}" src="${assetHref(zukanArt(z.id, true))}" alt="" width="160" height="80" loading="lazy" decoding="async" />`;   // 図鑑はリアル調（ぱっぱ 9/25）
       const body = r
-        ? `<p class="ika-egi-zukan-name">${esc(speciesName(lang, z.id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}</p>
+        ? `<p class="ika-egi-zukan-name">${esc(speciesName(lang, z.id))}${z.boss ? ` <span class="ika-tag ika-tag--orange">${t(lang, Z.boss)}</span>` : ''}${rec.nushi?.[z.id] ? ` <span class="ika-tag ika-tag--orange" title="${t(lang, Z.nushiNote)} ${rec.nushi[z.id]}">${t(lang, Z.nushi)}</span>` : ''}</p>
            <p class="ika-egi-zukan-meta">${t(lang, Z.best)} ${r.weight.toLocaleString()} g・${r.mantle} cm<br>${t(lang, Z.count)} ${r.count}${r.first ? `・${t(lang, Z.first)} ${r.first}` : ''}</p>
            <p class="ika-egi-zukan-tap">${t(lang, Z.tapHint)} ›</p>`
         : `<p class="ika-egi-zukan-name">${t(lang, Z.unknown)}${z.boss ? ` <span class="ika-tag">${t(lang, Z.boss)}</span>` : ''}</p>
@@ -2340,7 +2345,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle), true);
           sc.nodes.hugWater.style.filter = '';
           const big = h.weight >= 1000;
-          if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good');
+          if (h.nushi) callout(TX.msg.nushiReveal(lang, speciesName(lang, h.id)), 'good', 3200);
+          else if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good');
           else callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
           if (big) feel.fire('hook', { heavy: V.heavy });
         }

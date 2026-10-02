@@ -752,3 +752,33 @@ test('ドラグ：締めるとしゃくりで高く跳ね上がり、ゆるい�
   const tight = up('tight'); const loose = up('loose');
   assert.ok(tight > loose * 1.25, `締め ${tight} / ゆるめ ${loose}`);
 });
+
+// ---------- 感想2回目（10/2）：季節のヌシとゲソ ----------
+import { BOSSES as BOSSES2, bossesFor as bossesFor2, NUSHI_IDS, GESO_CHANCE } from '../src/js/ikabu/games/egi.js';
+import { recordEgiCatch as recCatch, mergeEgi as mergeEgi2 } from '../src/js/ikabu/games/records.js';
+test('季節のヌシ：春のアオリ・初夏のモンゴウ・夏夜のケンサキ・冬夜のヤリが、それぞれの季節にだけ出る', () => {
+  const ids = (m, tod) => bossesFor2(m, tod).filter((b) => b.nushi).map((b) => b.id);
+  assert.deepEqual(ids(4, 'evening'), ['aori']);
+  assert.ok(ids(6, 'night').includes('mongo') && ids(6, 'night').includes('kensaki'));
+  assert.deepEqual(ids(1, 'night'), ['yari']);
+  assert.deepEqual(ids(10, 'evening'), []);
+  assert.deepEqual([...NUSHI_IDS].sort(), Object.values(BOSSES2).filter((b) => b.nushi).map((b) => b.id).sort());
+});
+test('ヌシを釣ると、図鑑のそのイカに初めて釣った日が残り、引き継ぎで合わせても消えない', () => {
+  const day = new Date(2026, 3, 20);
+  const r = recCatch(null, { id: 'aori', weight: 4100, mantle: 46, nushi: true }, { date: day }).rec;
+  assert.equal(r.nushi.aori, '2026-04-20');
+  assert.equal(r.species.aori.weight, 4100);
+  assert.equal(mergeEgi2({ best: 0, sessions: 0, species: {}, bestOne: null, points: 0, gedo: {} }, r).nushi.aori, '2026-04-20');
+});
+test('身切れのとき、GESO_CHANCE でゲソだけ上がってくる（外道の記録に入る）', () => {
+  assert.ok(GESO_CHANCE > 0 && GESO_CHANCE < 1);
+  const s = createEgi({ rand: () => 0.01 });   // 乱数が小さい＝ゲソが出る側
+  cast(s);
+  s.phase = 'fight'; s.tension = 99; s.dist = 10; s.hooking = { id: 'aori', weight: 800, mantle: 20, power: 0.5 };
+  press(s);
+  const ev = run(s, 0.5);
+  assert.ok(ev.some((e) => e.type === 'geso'), 'ゲソ');
+  assert.ok(ev.some((e) => e.type === 'break'), '身切れ');
+  assert.equal(s.gedo.find((g) => g.id === 'geso').weight, 24);
+});

@@ -116,6 +116,7 @@ export const TAILOR_REBAIT = 2.5;        // エサが無くなってから付け
 //   カサゴ … 底にいる時に「コン」と食う（岩の底ほど）。軽くてすぐ上がる
 //   海藻   … 藻に掛かった時、ときどきそのまま付いてくる
 //   長靴・空き缶 … 根掛かりのうち、ときどきゴミだった（エギは戻る）
+export const GESO_CHANCE = 0.3;   // 身切れのうち、ゲソだけ上がってくる割合
 export const GEDO = {
   fugu: { g: [80, 300], power: 0.3 },   // テーラーでエサを取っていく（ウキが細かくピクピク）
   kasago: { g: [80, 350], power: 0.35 },
@@ -124,6 +125,7 @@ export const GEDO = {
   can: { g: [30, 80] },
   namako: { g: [150, 400] },   // 邪道エギングで底を引いていると、ごくまれに（ぱっぱの実釣）
   tako: { g: [800, 2500] },    // ヤエンで。浮かなければタコ（ぱっぱの実釣）
+  geso: { g: [5, 150] },       // 身切れで触腕1本だけ（重さはイカの約3%）
 };
 export const KASAGO_RATE = { egi: 0.02, jado: 0.05 };   // 底にいる1秒あたり
 export const WEED_GEDO = 0.4;    // 藻に掛かった時、海藻が付いてくる確率
@@ -441,7 +443,14 @@ export const BOSSES = {
   sodeika: { id: 'sodeika', months: [4, 5, 6, 7, 8], tods: ['morning', 'day', 'evening'], zone: [0.7, 1], rate: 0.0006, g: [6000, 16000], mantle: [55, 80], power: 1.5 },
   akaika: { id: 'akaika', months: [3, 4, 5], tods: ['evening', 'night'], zone: [0.2, 0.7], rate: 0.0003, g: [2500, 5000], mantle: [45, 60], power: 1.3 },
   daiou: { id: 'daiou', months: [12, 1, 2, 3], tods: ['night'], zone: [0.8, 1], rate: 0.0003, g: [60000, 150000], mantle: [70, 130], power: 1.8 },
+  // 季節のヌシ（10/2 感想「色んなボスイカ出して欲しい」）：おなじみのイカの特大の個体。絵・図鑑は元のイカのまま、図鑑に👑ヌシの印が付く
+  //   重さは萩の陸っぱりで「伝説級」と言われる大きさ（ぱっぱの実釣・squid-seasons.md の最大より少し上）
+  nushi_aori: { id: 'aori', nushi: true, months: [3, 4, 5, 6], tods: ['morning', 'evening', 'night'], zone: [0.7, 1], rate: 0.0004, g: [3000, 4500], mantle: [40, 50], power: 1.4 },
+  nushi_mongo: { id: 'mongo', nushi: true, months: [5, 6, 7], tods: ['evening', 'night'], zone: [0.3, 0.8], rate: 0.0004, g: [2500, 3500], mantle: [32, 40], power: 1.3 },
+  nushi_kensaki: { id: 'kensaki', nushi: true, months: [6, 7, 8, 9], tods: ['night'], zone: [0.3, 0.7], rate: 0.0004, g: [800, 1200], mantle: [35, 45], power: 1.1 },
+  nushi_yari: { id: 'yari', nushi: true, months: [12, 1, 2, 3], tods: ['night'], zone: [0.2, 0.6], rate: 0.0004, g: [600, 900], mantle: [38, 45], power: 1.0 },
 };
+export const NUSHI_IDS = ['aori', 'mongo', 'kensaki', 'yari'];
 export function bossesFor(month, tod) {
   return Object.values(BOSSES).filter((b) => b.months.includes(month) && b.tods.includes(tod));
 }
@@ -1400,7 +1409,7 @@ export function tick(s, dt) {
         if (boss) {
           const weight = Math.round(boss.g[0] + (boss.g[1] - boss.g[0]) * s.rand() ** 1.4);
           const mantle = Math.round(boss.mantle[0] + (boss.mantle[1] - boss.mantle[0]) * s.rand());
-          s.hooking = { id: boss.id, weight, mantle, power: boss.power, boss: true };
+          s.hooking = { id: boss.id, weight, mantle, power: boss.power, boss: true, ...(boss.nushi ? { nushi: true } : {}) };
           const kind = s.tensionFall ? 'run' : 'stop';   // 大物は走るか、重く止まる
           s.bite = { kind, light: false };
           s.windows = signalWindows(s.cond, kind, false, s.easy);
@@ -1515,6 +1524,13 @@ export function tick(s, dt) {
       s.tension = Math.max(0, s.tension);
       s.slackFor = s.tension <= 0 ? s.slackFor + dt : 0;
       if (s.tension >= 100) {
+        // 身切れ。イカなら GESO_CHANCE で足（ゲソ）だけ上がってくる（10/2 感想「ゲソだけ。とか釣れてもいいかな🤣」）
+        if (!s.hooking.gedo && !s.hooking.boss && s.rand() < GESO_CHANCE) {
+          // ゲソ＝長い触腕が1本ちぎれて、エギにからんだまま上がってくるもの（10/2 ぱっぱ：下半身まるごとは上がらない）。重さはイカの約3%
+          const g = { id: 'geso', weight: Math.max(5, Math.round((s.hooking.weight ?? 300) * 0.03)), from: s.hooking.id };
+          s.gedo.push(g);
+          emit(s, 'geso', g);
+        }
         emit(s, 'break', { id: s.hooking.id });
         s.hooking = null;
         endCast(s, 'break');
@@ -1529,7 +1545,7 @@ export function tick(s, dt) {
         s.hooking = null;
         endCast(s, 'gedo');
       } else if (s.dist <= 0) {
-        const c = { id: s.hooking.id, weight: s.hooking.weight, mantle: s.hooking.mantle, ...(s.hooking.boss ? { boss: true } : {}) };
+        const c = { id: s.hooking.id, weight: s.hooking.weight, mantle: s.hooking.mantle, ...(s.hooking.boss ? { boss: true } : {}), ...(s.hooking.nushi ? { nushi: true } : {}) };
         s.catches.push(c);
         s.lureKey = null;   // 釣り上げたら、誘いのスレは数え直し（別のイカ）
         s.lureSame = 0;

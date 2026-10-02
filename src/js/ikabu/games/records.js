@@ -170,7 +170,7 @@ export function recordM3(rec, g, { day = null, today = new Date().toISOString().
 /* ---------- しゃくって抱かせろ！ ---------- */
 
 // points＝部員レベルの釣りポイント、gedo＝外道の記録（2026-09-27。progress.js）
-export const emptyEgi = () => ({ best: 0, sessions: 0, species: {}, bestOne: null, points: 0, gedo: {} });
+export const emptyEgi = () => ({ best: 0, sessions: 0, species: {}, bestOne: null, points: 0, gedo: {}, nushi: {} });   // nushi：季節のヌシを初めて釣った日（10/2）
 
 const dayOf = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
@@ -186,6 +186,7 @@ export function recordEgiCatch(rec, c, { counted = true, date = new Date(), trip
   sp.weight = Math.max(sp.weight, c.weight);
   sp.mantle = Math.max(sp.mantle, c.mantle);
   if (!r.bestOne || c.weight > r.bestOne.weight) r.bestOne = { id: c.id, weight: c.weight, mantle: c.mantle };
+  if (c.nushi) { r.nushi = r.nushi ?? {}; r.nushi[c.id] = r.nushi[c.id] ?? dayOf(date); }
   r.best = Math.max(r.best, tripTotal);
   const points = catchPoints(c, { fresh });
   r.points = (r.points ?? 0) + points;
@@ -295,6 +296,8 @@ export function mergeEgi(a, b) {
     };
   }
   if (b.bestOne && (!r.bestOne || b.bestOne.weight > r.bestOne.weight)) r.bestOne = b.bestOne;
+  r.nushi = {};
+  for (const id of new Set([...Object.keys(x.nushi ?? {}), ...Object.keys(b.nushi ?? {})])) r.nushi[id] = earlier(x.nushi?.[id], b.nushi?.[id]);
   return r;
 }
 
