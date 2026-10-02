@@ -60,6 +60,12 @@ export function earnBattle(rec, { day, win }) {
   const got = add(r, win ? BATTLE_WIN : BATTLE_LOSE);
   return { rec: r, got, why: got ? [win ? 'battleWin' : 'battleLose'] : [] };
 }
+// ストーリーモードの初回クリア（2026-10-03 ぱっぱ：初回だけ🎫2。1日の上限には数えない。「一度だけ」の印は story.js が持つ）
+export function earnStory(rec, amount, { day }) {
+  const r = roll(rec, day);
+  const got = add(r, amount);
+  return { rec: r, got, why: got ? ['story'] : [] };
+}
 // 写真部に投稿した（1日1回・1枚。2026-10-01 ぱっぱ：投稿が届いた時点で付ける）
 export function earnPhoto(rec, { day }) {
   const r = roll(rec, day);

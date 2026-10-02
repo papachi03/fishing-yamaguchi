@@ -4,7 +4,7 @@
 //   mountTickets   ：TOP（games）の🎫の欄。枚数と「今日あと何枚」を表示し、配布コードの入力を受ける
 //   ゲーム側は終わった時に 'ikabu:game'（detail: { game, goal, seconds, counted }）を投げる
 import { utcDay } from './rng.js';
-import { readTickets, writeTickets, earnPlay, earnSumiGoal, earnRush60, earnCert, earnBattle, earnPhoto, earnInvite, todayLeft, CAP } from './tickets.js';
+import { readTickets, writeTickets, earnPlay, earnSumiGoal, earnRush60, earnCert, earnBattle, earnPhoto, earnInvite, earnStory, todayLeft, CAP } from './tickets.js';
 import { HUB_TEXT } from './play-text.js';
 import { t } from '../i18n.js';
 import { redeem, lockState } from './codes.js';
@@ -39,6 +39,7 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
     if (d.counted === false && d.tickets !== true) return;   // 記録に数えない釣行でも、tickets:true なら🎫は出す（10/2 ぱっぱ：初心者練習・季節モードでも）
     apply((rec, day) => {
       let got = 0, why = [], r = rec;
+      if (d.game === 'story') { const p = earnStory(r, d.amount ?? 0, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // ストーリーの初回クリア（2026-10-03）
       if (d.game === 'battle') { const b = earnBattle(r, { day, win: Boolean(d.win) }); return { rec: b.rec, got: b.got, why: b.why }; }   // 対戦は「1戦」の枠と別
       if (d.game === 'photo') { const p = earnPhoto(r, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // 写真部への投稿（1日1枚・2026-10-01）
       if (d.game === 'invite') { const p = earnInvite(r, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // 友だち紹介（2枚×5回・2026-10-01）

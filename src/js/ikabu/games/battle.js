@@ -69,16 +69,24 @@ export function starterDeck(cards, { practice = false } = {}) {
 /* ---------- 状態 ---------- */
 let uidSeq = 1;
 const inst = (card) => ({ uid: uidSeq++, no: card.no, card, buffs: [], sick: true, skipNext: false, skipThis: false, attacked: false, shield: false, resting: false, faceDown: false, flags: {} });
-const player = (nos, byNo, rnd) => {
+const player = (nos, byNo, rnd, { egi = EGI, back = BACK } = {}) => {
   const deck = nos.map((n) => inst(byNo.get(n)));
   for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
-  return { deck, hand: [], front: [null, null, null], back: [null, null, null], grave: [], egi: EGI, tideMax: 0, tide: 0, tideNext: 0, summoned: false, techUsed: 0, techLimit: null, noAttack: false, lost: null };
+  return { deck, hand: [], front: [null, null, null], back: Array(back).fill(null), grave: [], egi, tideMax: 0, tide: 0, tideNext: 0, summoned: false, techUsed: 0, techLimit: null, noAttack: false, lost: null };
 };
 
-export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = `${Date.now()}` }) {
+// 場のルール（ストーリーモード 2026-10-03。両者に同じだけ効く）
+//   night：星のイカの攻撃+1 ／ summerNight：太陽のテクニックが潮1安い ／ rough：後列の枠が4 ／ exam：相手（cpu）が先攻
+export const FIELD_RULES = {
+  night: { back: BACK }, summerNight: { back: BACK }, rough: { back: 4 }, exam: { back: BACK, first: 'cpu' },
+};
+export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = `${Date.now()}`, cpuEgi = EGI, rule = null }) {
   const byNo = new Map(cards.map((c) => [c.no, c]));
   const rnd = seeded(`battle:${seed}`);
-  const st = { turn: 0, active: first, first, players: { me: player(myDeck, byNo, rnd), cpu: player(cpuDeck, byNo, rnd) }, effects, byNo, log: [], winner: null, rnd, pending: null };
+  const fr = rule ? FIELD_RULES[rule] : null;
+  if (fr?.first) first = fr.first;
+  const back = fr?.back ?? BACK;
+  const st = { turn: 0, active: first, first, players: { me: player(myDeck, byNo, rnd, { back }), cpu: player(cpuDeck, byNo, rnd, { egi: cpuEgi, back }) }, effects, byNo, log: [], winner: null, rnd, pending: null, rule };
   for (const side of ['me', 'cpu']) dealStart(st, side, rnd);
   startTurn(st);
   return st;
@@ -145,6 +153,7 @@ export function statOf(st, x, stat) {
   for (const b of x.buffs) if (b.stat === stat && (b.starts ?? 0) <= st.turn) v += b.n;
   if (stat === 'def' && passive(st, x, 'defOnEnemyTurn') && ownerOf(st, x) !== st.active) v += effectsOf(st, x.no).find((e) => e.do === 'defOnEnemyTurn').n;
   if (stat === 'atk' && x.flags.zeroAtk) return 0;
+  if (stat === 'atk' && st.rule === 'night' && x.card.mark === 'star') v += 1;   // 場のルール「夜」
   return Math.max(0, v);
 }
 export const ownerOf = (st, x) => (P(st, 'me').front.includes(x) || P(st, 'me').back.includes(x) || P(st, 'me').hand.includes(x) ? 'me' : 'cpu');
@@ -158,6 +167,7 @@ export function costOf(st, side, x) {
   let c = x.card.cost;
   if (x.card.kind === 'tech') {
     if (p.front.some((f) => f && f.card.mark === x.card.mark)) c -= 1;   // 同じマークのイカがいると潮1安い
+    if (st.rule === 'summerNight' && x.card.mark === 'sun') c -= 1;   // 場のルール「夏の夜」
     for (const f of p.front) if (f) for (const e of effectsOf(st, f.no)) if (e.when === 'passive' && e.do === 'techCheaper' && (e.only === 'all' || (e.only === 'night' && isNight(x.card)))) { c -= e.n; break; }
   }
   return Math.max(0, c);

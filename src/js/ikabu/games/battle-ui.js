@@ -10,6 +10,7 @@ import { readJSON, writeJSON } from './records.js';
 import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
 import { tierOf } from './gacha-show.js';
+import { brainNext } from './cpu-brain.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // 曲（Suno・ぱっぱ 2026-10-01）：対戦中（前奏9秒→9〜66秒を繰り返す）／終盤（エギ残り2以下かターン8以降。6〜156秒を繰り返す）／勝ちのジングル
@@ -47,6 +48,8 @@ const PADS = {
   'me-back': [31.5, 52, 73].map((cx) => ({ cx, cy: 81, w: 18.5, h: 15 })),
 };
 const cellStyle = (p) => `left:${p.cx - p.w / 2}%;top:${p.cy - p.h / 2}%;width:${p.w}%;height:${p.h}%`;
+// 後列が4枠（場のルール「荒れた天候」）の時は、4枚目を3枚目の右に同じ間隔で足す
+const padOf = (row, i) => { const base = PADS[row]; if (i < base.length) return base[i]; const p = base[base.length - 1]; return { ...p, cx: p.cx + (p.cx - base[base.length - 2].cx) }; };
 // 部長イカの How to（練習デッキの対戦だけ。2026-10-01 ぱっぱ）。状況に合った一言を順に出す
 const TUTOR = [
   { id: 'start', pic: 'wave', when: (st) => st.active === 'me' && st.players.me.front.every((x) => !x),
@@ -114,14 +117,17 @@ export function mountBattle(root, { lang = 'ja' } = {}) {
   return {};
 }
 
-export function openBattle({ lang = 'ja', practice = true, level = practice ? 'practice' : 'bucho' } = {}) {
-  const myDeck = activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ
-  const st = newGame({ myDeck, cpuDeck: cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu' });
+export function openBattle({ lang = 'ja', practice = true, level = practice ? 'practice' : 'bucho', story = null } = {}) {
+  // story（ストーリーモード 2026-10-03）：相手のデッキ・エギの数・考える力・場のルール・盤面を外から渡す。記録と🎫はストーリー側（story-ui.js）が持つ
+  const myDeck = story?.myDeck ?? activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ（修行は課題デッキ）
+  const st = newGame({ myDeck, cpuDeck: story?.cpuDeck ?? cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu', cpuEgi: story?.cpuEgi, rule: story?.rule ?? null });
+  const stageSrc = story?.stage ? `/assets/ikabu/story/stage/${story.stage}.webp` : '/assets/ikabu/battle/stage_b.webp';
+  if (story) practice = false;
   const ov = document.createElement('div');
   ov.className = 'ika-bt';
   ov.innerHTML = `
     <div class="ika-bt-stage">
-      <div class="ika-bt-board" style="background-image:url('${assetHref('/assets/ikabu/battle/stage_b.webp')}')">
+      <div class="ika-bt-board" style="background-image:url('${assetHref(stageSrc)}')">
         <div class="ika-bt-row" data-row="cpu-back"></div>
         <div class="ika-bt-row" data-row="cpu-front"></div>
         <div class="ika-bt-row" data-row="me-front"></div>
@@ -195,14 +201,14 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     for (const side of ['me', 'cpu']) {
       const p = st.players[side];
       el.rows[`${side}-front`].innerHTML = p.front.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-front`][i])}">${cardHTML(x, side, 'front')}</div>`).join('');
-      el.rows[`${side}-back`].innerHTML = p.back.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(PADS[`${side}-back`][i])}">${cardHTML(x, side, 'back')}</div>`).join('');
+      el.rows[`${side}-back`].innerHTML = p.back.map((x, i) => `<div class="ika-bt-cell" style="${cellStyle(padOf(`${side}-back`, i))}">${cardHTML(x, side, 'back')}</div>`).join('');
       if (p.egi !== egiPrev[side]) { el.egi[side].innerHTML = egiHTML(p.egi); if (p.egi < egiPrev[side]) el.egi[side].querySelectorAll('.ika-bt-egi-i')[p.egi]?.classList.add('is-just'); egiPrev[side] = p.egi; }
       const v = view(st, side);
       el.nums[side].innerHTML = `<span>🌊 ${v.tide}/${v.tideMax}</span><span>${t(lang, ...TX.hand)} ${v.hand}</span><span>${t(lang, ...TX.deck)} ${v.deck}</span>`;
     }
     const me = st.players.me;
     for (const side of ['me', 'cpu']) { const q = st.players[side]; el.tide[side].innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < q.tide ? 'is-on' : i < q.tideMax ? 'is-max' : ''}"></i>`).join(''); }
-    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
+    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${story ? ` ・ ${story.foeName}` : practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
       return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i></button>`;
@@ -376,7 +382,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       draw();
     });
   }
-  $('[data-quit]').addEventListener('click', close);
+  $('[data-quit]').addEventListener('click', () => { close(); if (story) story.onEnd?.(null); });
   function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); }
 
   async function cpuTurn() {
@@ -384,7 +390,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     await wait(600);
     let guard = 0;
     while (st.active === 'cpu' && !st.winner && guard++ < 40) {
-      const a = cpuNext(st);
+      const a = story ? brainNext(st, story.brain ?? 2) : cpuNext(st);
       if (a.type === 'end') break;
       if (a.type === 'shakuri') { shakuri(st, 'cpu', a.x); audio.se('place'); render(); await wait(600); continue; }
       if (a.type === 'play') { const before = snapshot(); const logFrom = st.log.length; play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); fxAfter(before, logFrom, null); if (a.x.card.kind !== 'trap') fxRipple(posOf(a.x.uid)); await wait(800); }
@@ -406,18 +412,19 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const win = st.winner === 'me';
     audio.stopBgm(0.8); audio.se(win ? 'win' : 'lose');
     el.over.hidden = false;
-    const rec = practice ? null : recordResult(level, win);
+    const rec = practice || story ? null : recordResult(level, win);
     if (rec) dispatchEvent(new CustomEvent('ikabu:battle', { detail: { level, win } }));
     el.over.className = `ika-bt-over ${win ? 'is-win' : 'is-lose'}`;
     el.over.innerHTML = `<div class="ika-bt-over-in">
       <div class="ika-bt-over-rays" aria-hidden="true"></div>
       <img class="ika-bt-over-title" src="${assetHref(`/assets/ikabu/battle/${win ? 'co_win' : 'co_lose'}.webp`)}" alt="${t(lang, ...(win ? TX.win : TX.lose))}" />
       <img class="ika-bt-over-mascot" src="${assetHref(`/assets/ikabu/mascot/${win ? 'banzai' : 'sad'}.webp`)}" alt="" />
-      <p class="ika-bt-over-sub">${practice ? t(lang, ...TX.practiceNote) : `${t(lang, ...CPU_DECKS[level].name)}<br><b>${TX.record(lang, rec)}</b>`}</p>
+      <p class="ika-bt-over-sub">${story ? `${t(lang, 'ストーリー', 'Story')} ・ ${esc(story.foeName)}` : practice ? t(lang, ...TX.practiceNote) : `${t(lang, ...CPU_DECKS[level].name)}<br><b>${TX.record(lang, rec)}</b>`}</p>
       <div class="ika-bt-over-btns">
-        <button type="button" class="ika-gc-imgbtn" data-again><img src="${assetHref('/assets/ikabu/gacha/btn_again.webp')}" alt="${t(lang, ...TX.again)}" /></button>
-        <button type="button" class="ika-gc-imgbtn" data-close><img src="${assetHref('/assets/ikabu/battle/btn_close.webp')}" alt="${t(lang, ...TX.close)}" /></button>
+        ${story ? `<button type="button" class="ika-btn ika-btn--primary ika-bt-over-next" data-next>${t(lang, 'つづきを見る ▶', 'Continue ▶')}</button>` : `<button type="button" class="ika-gc-imgbtn" data-again><img src="${assetHref('/assets/ikabu/gacha/btn_again.webp')}" alt="${t(lang, ...TX.again)}" /></button>
+        <button type="button" class="ika-gc-imgbtn" data-close><img src="${assetHref('/assets/ikabu/battle/btn_close.webp')}" alt="${t(lang, ...TX.close)}" /></button>`}
       </div></div>`;
+    if (story) { el.over.querySelector('[data-next]').addEventListener('click', () => { close(); story.onEnd?.(win); }); return true; }
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice, level }); });
     el.over.querySelector('[data-close]').addEventListener('click', close);
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'battle', win, counted: !practice } }));
