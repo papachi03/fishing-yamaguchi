@@ -136,11 +136,12 @@ export const TENSION_HOLD = 0.3; // しゃくった後これ以上押したま�
 export const DOUBLE_JERK = 0.45; // この間隔以内の2回目のしゃくりは「2段しゃくり」
 // 誘いの動き（2026-09-29 ぱっぱ：しゃくり・2段・ダート・スラックジャークで動きを分ける）。[上がる高さ m, 手前に寄る m]
 //   しゃくり＝上へ／2段の2回目＝大きく上へ／ダート＝横へ跳ぶ（高さは控えめ）／スラックジャーク＝素早い連打で小刻み（0.3秒以内の3回目から）
-export const JERK_MOVE = { lift: [2.6, 1.5], double: [3.4, 1.5], dart: [2.2, 2.5], slack: [0.4, 0.5] };   // スラックジャークはその場で左右に（高さは小さく）
+// 10/2 感想「1回のしゃくりで動きすぎ、2回連続でしかできない」→ 2.6/3.4 は底6〜10mだと2回で水面近く。9/29 の 1.2/1.8（すぐ底に着いた）との間に
+export const JERK_MOVE = { lift: [1.9, 1.5], double: [2.7, 1.5], dart: [1.8, 2.5], slack: [0.4, 0.5] };   // スラックジャークはその場で左右に（高さは小さく）
 // 2段しゃくりの2回目：押した瞬間に DOUBLE_NOW 上がり、残り（JERK_MOVE.double − DOUBLE_NOW）は DOUBLE_DELAY 秒かけてなめらかに上がり続ける（ひと続きの動き）。
 //   その間に3回目が来たらスラックジャーク＝残りの上がりは取り消す（水面近くでスラックジャークにならないように：2026-09-29 ぱっぱ B案）
 //   10/2 ぱっぱ「2段目がワンテンポ遅れて跳ね上がるのが違和感」→ 0.5秒後に一気に3.0上がる作りをやめ、1.8を即・残り1.6を0.5秒かけて
-export const DOUBLE_NOW = 1.8;
+export const DOUBLE_NOW = 1.5;
 export const DOUBLE_DELAY = 0.5;
 export const SLACK_JERK = 0.5; // この間隔以内の連打の3回目以降は「スラックジャーク」（0.25秒はスマホの連打では届かなかった：2026-09-29 ぱっぱ）
 export const SLACK_MAX = 3;     // スラックジャークとして効くのは3回まで（連打5回まで）。それ以上は「しゃくりすぎ」
@@ -174,9 +175,9 @@ export const TACKLE = {
   rod: {
     // 10/2 ぱっぱ：硬め＝穂先のアクションはほぼ無い（signal・bend 小）／しならないので強く寄せる／ジェットの抵抗が強く身切れ注意（jet 大）
     //             柔らかめ＝穂先が繊細で「コン」でもしっかり曲がる／しなって寄せる力は弱い／ジェットを受け流す（jet 小）がファイトが長い
-    stiff: { signal: 0.35, bend: 0.4, jerk: 1.45, reel: 1.3, tension: 1.0, jet: 1.45 },   // 張りの上がりは今までどおり（1.15 にすると基本の手で身切れした）
+    stiff: { signal: 0.35, bend: 0.4, jerk: 1.45, lift: 1.1, reel: 1.3, tension: 1.0, jet: 1.45 },   // 張りの上がりは今までどおり（1.15 にすると基本の手で身切れした）
     medium: { signal: 1, bend: 1, jerk: 1, reel: 1, tension: 0.9, jet: 1 },              // ふつう（真ん中）
-    soft: { signal: 1.8, bend: 1.5, jerk: 0.7, reel: 0.7, tension: 0.75, jet: 0.6 },
+    soft: { signal: 1.8, bend: 1.5, jerk: 0.7, lift: 0.88, reel: 0.7, tension: 0.75, jet: 0.6 },
   },
   drag: {
     tight: { reel: 1.4, jetTension: 1.6, jet: 1.25, slack: 1, zip: 0.1, jerkDur: 0.65, lift: 1.08, snap: 1.6 },
@@ -625,7 +626,7 @@ function jerk(s, kind = 'lift') {
   // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
   let [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
   // ドラグ（10/2 ぱっぱ）：締めるとしゃくりの力がそのまま伝わってクイックに跳ね上がり、ゆるいとドラグが出て力が逃げ、上がりが小さくふわっとする
-  lift *= tackleOf(s).drag.lift ?? 1;
+  lift *= (tackleOf(s).drag.lift ?? 1) * (tackleOf(s).rod.lift ?? 1);   // ロッドでも少し（硬め1.1／柔らかめ0.88）
   if (kind === 'lift' && double) { s.pendingLift = { from: s.t, at: s.t + DOUBLE_DELAY, lift: lift - DOUBLE_NOW, done: 0 }; lift = DOUBLE_NOW; }
   s.depth = Math.max(0.5, s.depth - lift);
   s.dist = Math.max(0, s.dist - pull);

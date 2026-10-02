@@ -3273,3 +3273,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .is-egi-full .ika-egi-ang b { font-size: 12px; }
 .is-egi-full .ika-egi-ang .ika-chip { min-height: 30px; padding: 2px 10px; font-size: 12px; }
 .ika-egi-backup[hidden] { display: none; }
+/* 10/2 感想「右上の距離メーターにボタンが重なって距離が分からない」：舞台の右上の角は音ボタン（.ika-egi-bgmbtn 34px）の場所。
+   ふだん（全画面でない時）のカウント・距離の表示はその下から始める */
+:root:not(.is-egi-full) .ika-egi-hud .ika-egi-count { margin-top: 40px; }
+/* 全画面（横向き・横画面モード）では表示が右の操作欄の上に移る。そこも音ボタンの真下なので、同じく下げる（10/2 実測で重なっていた） */
+.is-egi-full .ika-egi-sidehud { padding-top: 42px; }
