@@ -3292,8 +3292,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-m3-modes .ika-chip--rush[aria-pressed='true'] { background: linear-gradient(135deg, #f47321, #e0611a); border-color: #0b2a2f; color: #0b2a2f; box-shadow: 3px 3px 0 #0b2a2f; }
 .ika-m3-modes .ika-chip--rush[aria-pressed='true'] .ika-m3-rush-tx small { color: #3a1d0c; }
 .ika-m3-modes .ika-chip--rush[aria-pressed='true'] .ika-m3-rush-new { background: #0b2a2f; color: #fff; }
-@media (prefers-reduced-motion: no-preference) { .ika-m3-modes .ika-chip--rush[aria-pressed='false'] .ika-m3-rush-ic { animation: ika-m3-wave 2.4s ease-in-out infinite; } }
-@keyframes ika-m3-wave { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2px) rotate(-8deg); } }
+@media (prefers-reduced-motion: no-preference) { .ika-m3-modes .ika-chip--rush[aria-pressed='false'] .ika-m3-rush-ic { animation: ika-m3-rushic-bob 2.4s ease-in-out infinite; } }
+@keyframes ika-m3-rushic-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2px) rotate(-8deg); } }   /* 10/3 名前を ika-m3-wave にしたら墨の水面の波（1893行）を上書きし、盤の上の帯がかたむいて揺れた（ぱっぱ指摘）→ 別の名前に */
 /* スマホは「今日の一戦・自由に遊ぶ」を上の段、墨のがれを下の段いっぱいに */
 @media (max-width: 560px) { .ika-m3-modes { grid-template-columns: 1fr 1fr; } .ika-m3-modes .ika-chip--rush { grid-column: 1 / -1; } }
 
