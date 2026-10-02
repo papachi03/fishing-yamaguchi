@@ -72,7 +72,7 @@ export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } 
     if (A.loop) { s.loopStart = A.loopStart ?? 0; s.loopEnd = Math.min(A.loopEnd ?? buf.duration, buf.duration); }
     const g = c.createGain(); g.gain.value = 0; s.connect(g).connect(st.bgmGain); s.__gain = g;
     const t = c.currentTime; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(A.volume, t + xfade);
-    s.start(t);
+    s.start(t, A.offset ?? 0);   // offset：曲の途中から（ストーリーのエピローグの後半 2026-10-03）
     st.bgm = s;
   }
   // 効果音を1つ。戻り値の stop() で途中で止められる（ドラグ音）
@@ -97,6 +97,7 @@ export function createGachaAudio({ on = true, href = (p) => p, tracks = AUDIO } 
   }
   return {
     get on() { return st.on; },
+    get bgmName() { return st.bgmName; },   // いま鳴らしている曲（確認用）
     setOn(v) {
       st.on = Boolean(v);
       if (!st.on) { stopBgm(0.2); stopAllSe(); }

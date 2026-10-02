@@ -3345,3 +3345,4 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-st-banner.is-on { opacity: 1; transform: translate(-50%, 0); }
 .ika-bt-over-next { font-size: 16px; padding: 12px 22px; }
 @media (prefers-reduced-motion: reduce) { .ika-st-vs, .ika-st-next { animation: none; } }
+.ika-st-sound { position: absolute; right: 46px; top: 0; width: 38px; height: 38px; border: 2px solid #fff; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; font-size: 17px; cursor: pointer; }
