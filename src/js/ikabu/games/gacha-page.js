@@ -617,6 +617,16 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   audio.preload(['lobby']);
   // 上の帯のレア度画像を先に読み込む（読み込み待ちで帯が横にずれないように。2026-10-01）
   for (const t of ['n', 'r', 'sr', 'ssr', 'ur']) { const im = new Image(); im.src = assetHref(`/assets/ikabu/gacha/rarity_${t}.webp`); }
+  // 絵の読み込みに失敗したら読み直す（最大2回・0.6秒／1.5秒後）。2026-10-03 ぱっぱ：結果のカードが「？」になった（公開の入れ替わりの数秒や通信の途切れで起きる）
+  el.gc.addEventListener('error', (e) => {
+    const im = e.target;
+    if (!(im instanceof HTMLImageElement)) return;
+    const n = Number(im.dataset.retry ?? 0);
+    if (n >= 2) return;
+    im.dataset.retry = String(n + 1);
+    const base = im.src.replace(/[?&]r=\d+$/, '');
+    setTimeout(() => { im.src = `${base}${base.includes('?') ? '&' : '?'}r=${Date.now()}`; }, n ? 1500 : 600);
+  }, true);
   if (audio.on) el.gc.addEventListener('pointerdown', () => { audio.unlock(); if (phase === 'lobby') audio.bgm('lobby'); }, { once: true });
   return { startPull, resetToLobby };
 }
