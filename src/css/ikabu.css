@@ -3302,14 +3302,14 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-story-entry b { font-size: 18px; font-weight: 900; letter-spacing: .04em; } .ika-story-entry small { grid-column: 1; font-size: 12px; font-weight: 700; color: #bfe3ea; }
 .ika-story-entry-tag { position: absolute; top: -9px; right: 10px; padding: 1px 8px; border-radius: 999px; background: #f47321; color: #0b2a2f; font-weight: 900; font-size: 11px; border: 2px solid #0b2a2f; }
 .ika-story-entry:hover { filter: brightness(1.1); }
-.ika-st { position: fixed; z-index: 95; inset: 0; background: #04121c; color: #fff; font-family: var(--font-maru); overflow: hidden; }
+.ika-st { position: fixed; z-index: 85; inset: 0; background: #04121c; color: #fff; font-family: var(--font-maru); overflow: hidden; }
 .ika-st-list { position: absolute; inset: 0; overflow-y: auto; padding: 14px 14px max(24px, env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
 .ika-st-list.is-hidden { display: none; }
 .ika-st-head { position: relative; padding: 4px 44px 6px 0; } .ika-st-head h2 { margin: 0; font-size: 24px; font-weight: 900; } .ika-st-head p { margin: 4px 0 0; font-size: 13px; color: #bfe3ea; line-height: 1.6; }
 .ika-st-close { position: absolute; right: 0; top: 0; width: 38px; height: 38px; border: 2px solid #fff; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; }
-.ika-st-name { display: flex; gap: 8px; align-items: end; margin: 10px 0 14px; } .ika-st-name label { flex: 1; display: grid; gap: 4px; font-size: 12px; color: #bfe3ea; font-weight: 700; }
-.ika-st-name input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 2px solid #fff; border-radius: 8px; background: #0a1848; color: #fff; font-family: inherit; font-size: 16px; font-weight: 700; }
-.ika-st-name .ika-btn { padding: 8px 14px; font-size: 14px; }
+.ika-st-nameform { display: flex; gap: 8px; align-items: end; margin: 10px 0 14px; } .ika-st-nameform label { flex: 1; display: grid; gap: 4px; font-size: 12px; color: #bfe3ea; font-weight: 700; }
+.ika-st-nameform input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 2px solid #fff; border-radius: 8px; background: #0a1848; color: #fff; font-family: inherit; font-size: 16px; font-weight: 700; }
+.ika-st-nameform .ika-btn { padding: 8px 14px; font-size: 14px; }
 .ika-st-ch { margin: 0 0 14px; padding: 10px 12px 12px; border: 3px solid #fff; border-radius: 12px; background: linear-gradient(180deg, rgba(18,40,110,.72), rgba(6,14,52,.82)); }
 .ika-st-ch h3 { margin: 0 0 8px; font-size: 16px; font-weight: 900; line-height: 1.4; } .ika-st-ch h3 small { display: block; font-size: 12px; font-weight: 700; color: #ffd84a; }
 .ika-st-chno { display: inline-block; margin-right: 8px; padding: 1px 8px; border-radius: 6px; background: #f47321; color: #0b2a2f; font-size: 12px; }
@@ -3334,8 +3334,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-st-win { position: absolute; z-index: 3; left: 10px; right: 10px; bottom: max(14px, env(safe-area-inset-bottom)); min-height: 150px; box-sizing: border-box; padding: 18px 18px 16px; color: #fff; font-size: 17px; line-height: 1.7; font-weight: 700; cursor: pointer;
   background: linear-gradient(180deg, rgba(18,40,110,.72), rgba(6,14,52,.78)); border: 3px solid #fff; border-radius: 10px; box-shadow: inset 0 0 0 2px rgba(10,20,60,.9), inset 0 0 0 3px rgba(255,255,255,.35), 0 4px 0 rgba(0,0,0,.35); text-shadow: 0 2px 0 rgba(0,0,0,.55); backdrop-filter: blur(2px); }
 .ika-st-win p { margin: 0; min-height: 3.4em; } .ika-st-win.is-narr p { color: #ffe9b3; }
-.ika-st-name { position: absolute; top: -34px; left: 14px; z-index: 1; padding: 3px 16px; font-size: 15px; font-weight: 900; letter-spacing: .06em; line-height: 1.6; background: linear-gradient(180deg, #1c3a8e, #0a1848); border: 3px solid #fff; border-radius: 8px; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
-.ika-st-name.is-foe { left: auto; right: 14px; } .ika-st-name[hidden] { display: none; }
+.ika-st-plate { position: absolute; top: -34px; left: 14px; z-index: 1; padding: 3px 16px; font-size: 15px; font-weight: 900; letter-spacing: .06em; line-height: 1.6; background: linear-gradient(180deg, #1c3a8e, #0a1848); border: 3px solid #fff; border-radius: 8px; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.ika-st-plate.is-foe { left: auto; right: 14px; } .ika-st-plate[hidden] { display: none; }
 .ika-st-next { position: absolute; right: 16px; bottom: 8px; font-size: 14px; animation: ika-st-blink .9s steps(2) infinite; } @keyframes ika-st-blink { 50% { opacity: 0; } }
 /* 場のルールの札・知らせ */
 .ika-st-rule { position: absolute; z-index: 6; inset: 0; display: grid; place-items: center; background: rgba(2,8,20,.7); }

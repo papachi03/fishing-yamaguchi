@@ -66,7 +66,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     const nxt = nextBattle(story, 1, ch1.count);
     ov.innerHTML = `<div class="ika-st-list">
       <header class="ika-st-head"><button type="button" class="ika-st-close" data-close aria-label="${t(lang, '閉じる', 'Close')}">×</button><h2>📖 ${t(lang, ...TX.title)}</h2><p>${esc(fillName(t(lang, ...TX.lead), hero))}</p></header>
-      <form class="ika-st-name" data-name-form><label>${t(lang, ...TX.nameLabel)}<input type="text" name="name" maxlength="${NAME_MAX}" value="${esc(story.name ?? '')}" placeholder="アオ" autocomplete="off"></label><button type="button" class="ika-btn" data-name-save>${t(lang, ...TX.nameSave)}</button></form>
+      <form class="ika-st-nameform" data-name-form><label>${t(lang, ...TX.nameLabel)}<input type="text" name="name" maxlength="${NAME_MAX}" value="${esc(story.name ?? '')}" placeholder="アオ" autocomplete="off"></label><button type="button" class="ika-btn" data-name-save>${t(lang, ...TX.nameSave)}</button></form>
       <section class="ika-st-ch is-open">
         <h3><span class="ika-st-chno">${t(lang, '第1章', 'Ch. 1')}</span>${t(lang, ...ch1.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...ch1.goal)}</small></h3>
         <ol class="ika-st-battles">${BATTLES_CH1.map((b) => {
@@ -98,7 +98,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
       <div class="ika-st-who ika-st-who--me" data-me><img src="${charSrc('ao', 'normal')}" alt="" /></div>
       <img class="ika-st-vs" src="${assetHref('/assets/ikabu/story/chars/vs.webp')}" alt="VS" hidden />
       <button type="button" class="ika-st-skip" data-skip>${t(lang, ...TX.skip)}</button>
-      <div class="ika-st-win" data-win><span class="ika-st-name" data-name></span><p data-text></p><span class="ika-st-next">${t(lang, ...TX.tap)}</span></div>
+      <div class="ika-st-win" data-win><span class="ika-st-plate" data-name></span><p data-text></p><span class="ika-st-next">${t(lang, ...TX.tap)}</span></div>
     </div>`;
     ov.appendChild(box);
     const me = box.querySelector('[data-me]'), fo = box.querySelector('[data-foe]'), nm = box.querySelector('[data-name]'), tx = box.querySelector('[data-text]');
