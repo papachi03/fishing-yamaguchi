@@ -1838,7 +1838,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-m3-start-count { font-family: var(--font-varsity); font-weight: 800; font-size: 96px; line-height: 1; color: #fff; text-shadow: 4px 4px 0 var(--ika-orange); animation: ika-m3-count 0.6s ease-out both; }
 @keyframes ika-m3-count { from { transform: scale(1.8); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ika-m3-start .ika-m3-start-btn, .ika-m3-start-count { animation: none; } }
-.ika-m3-main { width: min(100%, 460px); margin-inline: auto; display: grid; gap: 12px; }
+.ika-m3-main { width: min(100%, 460px); margin-inline: auto; display: grid; gap: 12px; align-self: start; align-content: start; }   /* PC で右のバッジ列が長いと、この列も同じ高さに引き伸ばされ、スコア・墨フラッシュが盤から離れた（10/3 ぱっぱ） */
 .ika-m3-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ika-m3-hud div { display: grid; padding: 6px 10px; text-align: center; background: var(--ika-white); border: 2px solid var(--ika-sea); border-radius: 10px; }
 .ika-m3-hud dt { font-family: var(--font-varsity); font-weight: 800; font-size: 12px; letter-spacing: 0.16em; color: var(--ika-sea); text-transform: uppercase; }
