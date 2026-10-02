@@ -592,10 +592,11 @@ export const m3HTML = (lang) => {
 
       <div class="ika-m3" id="ika-m3" data-lang="${lang}">
         <div class="ika-m3-top">
-          <div class="ika-chips ika-chips--small" id="ika-m3-mode" role="group" aria-label="${t(lang, 'モード', 'Mode')}">
+          <div class="ika-chips ika-chips--small ika-m3-modes" id="ika-m3-mode" role="group" aria-label="${t(lang, 'モード', 'Mode')}">
             <button type="button" class="ika-chip" data-mode="daily" aria-pressed="true">${t(lang, T.mode.daily)}</button>
             <button type="button" class="ika-chip" data-mode="free" aria-pressed="false">${t(lang, T.mode.free)}</button>
-            <button type="button" class="ika-chip ika-chip--rush" data-mode="rush" aria-pressed="false">🌊 ${t(lang, T.mode.rush)}</button>
+            <!-- 墨のがれ：別の遊び方なので大きな札にする（10/3 ぱっぱ：小さくて別のモードがあると分かりにくい） -->
+            <button type="button" class="ika-chip ika-chip--rush" data-mode="rush" aria-pressed="false"><span class="ika-m3-rush-ic" aria-hidden="true">🌊</span><span class="ika-m3-rush-tx"><b>${t(lang, T.mode.rush)}</b><small>${t(lang, T.mode.rushSub)}</small></span><i class="ika-m3-rush-new">${t(lang, T.mode.rushNew)}</i></button>
           </div>
           <p class="ika-m3-daily" id="ika-m3-daily">${t(lang, T.dailyNote)} <b id="ika-m3-day"></b></p>
           <!-- 説明は1行の要約＋たたんだ「遊び方」（2026-09-30：長い説明で盤面が画面の外に出ていた） -->

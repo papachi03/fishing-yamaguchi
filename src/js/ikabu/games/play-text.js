@@ -715,7 +715,7 @@ export const M3_TEXT = {
     pair('消した数で墨がたまる。満タンで「墨フラッシュ」：選んだマークを全部消す。手数は減らない。', 'Clearing marks fills the ink meter. When full, use Ink Flash to clear every mark of one kind, without spending a move.'),
     pair('連鎖するほど1匹あたりの点が上がる。', 'Cascades multiply the points of every mark they clear.'),
   ],
-  mode: { daily: pair('今日の一戦', "Today's board"), free: pair('自由に遊ぶ', 'Free play'), rush: pair('墨のがれ', 'Ink Escape') },
+  mode: { daily: pair('今日の一戦', "Today's board"), free: pair('自由に遊ぶ', 'Free play'), rush: pair('墨のがれ', 'Ink Escape'), rushSub: pair('もう1つの遊び方｜時間との勝負', 'Another mode | Race the clock'), rushNew: pair('別モード', 'MODE') },
   // 墨のがれ（2026-09-29）：上から墨が落ちてイカを飲み込む。下のマークを消して墨を流し落とす。競うのは「何手しのいだか」
   rush: {
     note: pair('イカの部屋に墨がたまっていて、時間とともに水位が上がります（だんだん速く）。消した所は空いたままで、部屋とつながった空き間に墨が流れ込みます。上から一番下まで道が通ると、墨が抜け続けます。マークは指で押したままなぞると、ついて来て通ったマス（斜めも）と入れ替わります。指を離すと、そろった所がまとめて消えます。5つ一直線で生まれる虹色の「墨ダマ」と、L字・T字で生まれる黒いレアイカは、つかんで離すと発動（墨ダマ＝いちばん多いマークを全部消す、レアイカ＝まわり9マス）。ときどき上からブロックが降ってきて道をふさぐので、また消して道を開けてください。頭まで来たら飲み込まれ。今日の盤面は世界中で同じ。', 'Ink is pooling in the squid\'s room and rises with time, faster and faster. Cleared cells stay empty and fill with ink from the room. Open a path all the way to the bottom and the ink keeps draining. Hold a mark and drag it: it follows your finger and swaps with every cell it passes (diagonals too). Let go and all the matches clear at once. The rainbow ink ball (five in a row) and the black rare squid (L or T shape) fire when you pick them up and let go: the ball clears every mark of the most common kind, the squid clears the 3×3 around it. Now and then blocks drop in and plug the path, so clear it again. When the ink reaches the head, the squid goes under. Today\'s board is the same worldwide.'),

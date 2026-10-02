@@ -3278,3 +3278,21 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 :root:not(.is-egi-full) .ika-egi-hud .ika-egi-count { margin-top: 40px; }
 /* 全画面（横向き・横画面モード）では表示が右の操作欄の上に移る。そこも音ボタンの真下なので、同じく下げる（10/2 実測で重なっていた） */
 .is-egi-full .ika-egi-sidehud { padding-top: 42px; }
+/* 墨のがれのボタン：別モードだと一目で分かる大きな札（10/3） */
+.ika-m3-modes { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; align-items: stretch; width: min(100%, 560px); }
+.ika-m3-modes .ika-chip { min-height: 44px; font-size: 14px; }
+.ika-m3-modes .ika-chip--rush { position: relative; display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left; min-height: 56px; padding: 6px 14px 6px 12px;
+  background: linear-gradient(135deg, #1b3a5c, #0e2238); border: 3px solid #f47321; color: #fff; box-shadow: 3px 3px 0 #0b2a2f; }
+.ika-m3-rush-ic { font-size: 26px; line-height: 1; }
+.ika-m3-rush-tx { display: grid; gap: 1px; }
+.ika-m3-rush-tx b { font-family: var(--font-maru); font-weight: 900; font-size: 17px; letter-spacing: 0.04em; }
+.ika-m3-rush-tx small { font-size: 11px; font-weight: 700; color: #bfe3ea; }
+.ika-m3-rush-new { position: absolute; top: -9px; right: 10px; padding: 1px 8px; border-radius: 999px; background: #f47321; color: #0b2a2f; font-style: normal; font-family: var(--font-maru); font-weight: 900; font-size: 11px; letter-spacing: 0.06em; border: 2px solid #0b2a2f; }
+.ika-m3-modes .ika-chip--rush:hover { filter: brightness(1.12); }
+.ika-m3-modes .ika-chip--rush[aria-pressed='true'] { background: linear-gradient(135deg, #f47321, #e0611a); border-color: #0b2a2f; color: #0b2a2f; box-shadow: 3px 3px 0 #0b2a2f; }
+.ika-m3-modes .ika-chip--rush[aria-pressed='true'] .ika-m3-rush-tx small { color: #3a1d0c; }
+.ika-m3-modes .ika-chip--rush[aria-pressed='true'] .ika-m3-rush-new { background: #0b2a2f; color: #fff; }
+@media (prefers-reduced-motion: no-preference) { .ika-m3-modes .ika-chip--rush[aria-pressed='false'] .ika-m3-rush-ic { animation: ika-m3-wave 2.4s ease-in-out infinite; } }
+@keyframes ika-m3-wave { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2px) rotate(-8deg); } }
+/* スマホは「今日の一戦・自由に遊ぶ」を上の段、墨のがれを下の段いっぱいに */
+@media (max-width: 560px) { .ika-m3-modes { grid-template-columns: 1fr 1fr; } .ika-m3-modes .ika-chip--rush { grid-column: 1 / -1; } }
