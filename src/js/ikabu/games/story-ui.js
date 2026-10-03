@@ -155,7 +155,8 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     if (!rule) return done();
     const r = RULE_TEXT[rule];
     const d = document.createElement('div'); d.className = 'ika-st-rule';
-    d.innerHTML = `<div class="ika-st-rule-in"><b>${t(lang, ...r.title)}</b><p>${t(lang, ...r.body)}</p><button type="button" class="ika-btn ika-btn--primary" data-ok>${t(lang, ...TX.ruleOk)}</button></div>`;
+    const markOf = { night: 'star', summerNight: 'sun' }[rule];   // その場のルールが効くマーク（絵で見せる）
+    d.innerHTML = `<div class="ika-st-rule-in"><b>${t(lang, ...r.title)}</b>${markOf ? `<img class="ika-st-rule-mark" src="${assetHref(`/assets/ikabu/tiles/${markOf}_128.webp`)}" alt="" width="56" height="56" />` : ''}<p>${t(lang, ...r.body)}</p><p class="ika-st-rule-note">${markOf ? t(lang, 'カードの左上の印・カードを押した説明で、マークが分かります', 'The mark shows at the top-left of each card and in the card details') : ''}</p><button type="button" class="ika-btn ika-btn--primary" data-ok>${t(lang, ...TX.ruleOk)}</button></div>`;
     ov.appendChild(d);
     d.querySelector('[data-ok]').addEventListener('click', () => { d.remove(); done(); });
   }

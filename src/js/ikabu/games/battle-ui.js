@@ -11,6 +11,8 @@ import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
 import { tierOf } from './gacha-show.js';
 import { brainNext } from './cpu-brain.js';
+import { TILE_FILES } from './marks.js';
+import { RULE_TEXT } from './story-data.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // 曲（Suno・ぱっぱ 2026-10-01）：対戦中（前奏9秒→9〜66秒を繰り返す）／終盤（エギ残り2以下かターン8以降。6〜156秒を繰り返す）／勝ちのジングル
@@ -76,6 +78,9 @@ const TUTOR = [
     ja: 'エギを1個取られた…\nでも取られた側は1枚引ける。\n手札を増やして巻き返そう！', en: 'You lost an egi, but you also draw a card. Rebuild and fight back!' },
 ];
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
+// マークの絵（墨つなぎのコマと同じ）と名前（2026-10-03 ぱっぱ：場のルールの「星マーク」がカードの説明に無くて分からない）
+const MARK_NAME = { anchor: ['いかり', 'Anchor'], sun: ['太陽', 'Sun'], wave: ['波', 'Wave'], star: ['星', 'Star'], shell: ['貝', 'Shell'] };
+const markImg = (mark, size = 18) => (TILE_FILES.includes(mark) ? `<img class="ika-bt-mark-i" src="${assetHref(`/assets/ikabu/tiles/${mark}_128.webp`)}" alt="" width="${size}" height="${size}" draggable="false" />` : '');
 const BACK = assetHref('/assets/ikabu/cards/card_back.webp');
 const TX = {
   start: ['CPUと対戦（練習）', 'Practice vs CPU'], startReal: ['部長と対戦（本番）', 'Captain match'],
@@ -134,7 +139,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
         <div class="ika-bt-row" data-row="me-back"></div>
       </div>
       <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-side-left"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-tide" data-tide="cpu"></div></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
-      <div class="ika-bt-band"><span class="ika-bt-turn" data-turn></span><span class="ika-bt-msg" data-msg></span></div>
+      <div class="ika-bt-band">${story?.rule && RULE_TEXT[story.rule] ? `<span class="ika-bt-rule">${({ night: '🌙', summerNight: '🎆', rough: '🌊', exam: '📝' })[story.rule] ?? ''}${t(lang, ...RULE_TEXT[story.rule].title).replace(/^場のルール：|^Field: /, '')}：${t(lang, ...RULE_TEXT[story.rule].body).replace(/（おたがい）| \(both sides\)/, '')}</span>` : ''}<span class="ika-bt-turn" data-turn></span><span class="ika-bt-msg" data-msg></span></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide="me"></div><div class="ika-bt-nums" data-nums="me"></div></div>
       <button type="button" class="ika-bt-scale" data-scale aria-label="${t(lang, 'カードの大きさ', 'Card size')}">⚙</button>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
@@ -194,6 +199,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     return `<div class="ika-bt-card${hidden ? ' is-facedown' : ''}${row === 'back' ? ' is-back' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}">
       <img src="${hidden ? BACK : cardSrc(x.no)}" alt="${hidden ? '' : esc(x.card.name)}" width="240" height="360" draggable="false" />
       ${x.card.kind === 'squid' ? `<b class="ika-bt-atk">${statOf(st, x, 'atk')}</b><b class="ika-bt-def">${statOf(st, x, 'def')}</b>` : ''}
+      ${!hidden ? `<span class="ika-bt-mark${st.rule === 'night' && x.card.mark === 'star' && x.card.kind === 'squid' ? ' is-boost' : ''}">${markImg(x.card.mark, 16)}</span>` : ''}
       ${s ? `<i class="ika-bt-state is-${s}">${t(lang, ...TX.state[s])}</i>` : ''}
     </div>`;
   }
@@ -211,7 +217,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${story ? ` ・ ${story.foeName}` : practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
-      return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i></button>`;
+      return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i><span class="ika-bt-hmark">${markImg(x.card.mark, 16)}</span></button>`;
     }).join('');
     const ov7 = overflow(st, 'me');
     const ofEl = $('[data-overflow]'); ofEl.hidden = !(ov7 > 0 && st.active === 'me'); if (ov7 > 0) ofEl.textContent = TX.over(lang, me.hand.length, me.hand.length - ov7);
@@ -286,7 +292,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   function cardInfoHTML(x, onField) {
     const c = x.card;
     const stats = c.kind === 'squid' ? `<p class="ika-bt-sheet-stats"><span class="is-atk">${t(lang, ...TX.atk)} ${c.atk}${onField && statOf(st, x, 'atk') !== c.atk ? `<b>→${statOf(st, x, 'atk')}</b>` : ''}</span><span class="is-def">${t(lang, ...TX.def)} ${c.def}${onField && statOf(st, x, 'def') !== c.def ? `<b>→${statOf(st, x, 'def')}</b>` : ''}</span></p>` : '';
-    return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
+    return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${MARK_NAME[c.mark] ? `<p class="ika-bt-sheet-mark">${markImg(c.mark, 22)}<b>${t(lang, ...MARK_NAME[c.mark])}${t(lang, 'マーク', ' mark')}</b>${st.rule === 'night' && c.mark === 'star' && c.kind === 'squid' ? `<i>${t(lang, '夜：攻撃+1', 'Night: ATK +1')}</i>` : ''}${st.rule === 'summerNight' && c.mark === 'sun' && c.kind === 'tech' ? `<i>${t(lang, '夏の夜：潮-1', 'Summer night: -1 tide')}</i>` : ''}</p>` : ''}${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
   }
   const bigModal = document.createElement('div'); bigModal.className = 'ika-bd-modal ika-bt-big'; bigModal.hidden = true;
   bigModal.innerHTML = `<div class="ika-bd-modal-in" role="dialog" aria-modal="true"><button type="button" class="ika-bd-close" data-close aria-label="${t(lang, ...TX.close)}">×</button><div data-body></div></div>`;
