@@ -782,3 +782,25 @@ test('身切れのとき、GESO_CHANCE でゲソだけ上がってくる（外�
   assert.ok(ev.some((e) => e.type === 'break'), '身切れ');
   assert.equal(s.gedo.find((g) => g.id === 'geso').weight, 24);
 });
+
+// 🔰初心者練習：初心者の動きでも1投ごとにアタリが来る（2026-10-03 ぱっぱ：食いつきが悪くて練習にならない。前は45〜69%）
+test('🔰初心者練習：初心者の動きでも、どの季節でも1投ごとに必ずアタリが来る（95%以上）', () => {
+  for (const [month, tod, exp] of [[10, 'evening', 4], [3, 'evening', 5], [1, 'night', 4]]) {
+    let casts = 0, hit = 0;
+    for (let i = 0; i < 25; i++) {
+      const s = createEgi({ seed: `eb${month}-${i}`, month, tod, conditions: { expectation: exp, wind: 1, gust: 2 }, easy: true });
+      let signaled = false, guard = 0;
+      while (s.phase !== 'over' && guard++ < 40000) {
+        if (s.phase === 'ready') { if (guard > 1) { casts++; if (signaled) hit++; } signaled = false; press(s); run(s, 0.8, 0.05); release(s); continue; }
+        if (s.phase === 'result') { press(s); release(s); continue; }
+        if (s.phase === 'sinking') { run(s, 2.0, 0.05); if (s.phase === 'sinking') { press(s); release(s); } continue; }
+        if (s.phase === 'action') { press(s); for (let t = 0; t < 3 && s.phase === 'action'; t += 0.05) tick(s, 0.05); if (s.pressing) release(s); continue; }
+        if (s.phase === 'signal') { signaled = true; run(s, 0.9, 0.05); if (s.phase === 'signal') { press(s); release(s); } continue; }
+        if (s.phase === 'fight') { if (!s.pressing) press(s); run(s, 0.05, 0.05); if (s.phase === 'fight' && s.tension > 90) { release(s); run(s, 0.5, 0.05); } if (s.phase !== 'fight' && s.pressing) release(s); continue; }
+        run(s, 0.05, 0.05);
+      }
+      casts++; if (signaled) hit++;
+    }
+    assert.ok(hit / casts >= 0.95, `${month}月 ${tod} 期待${exp}：${hit}/${casts}`);
+  }
+});

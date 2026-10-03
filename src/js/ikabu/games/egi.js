@@ -474,7 +474,8 @@ export const PUNCH_GAIN = 0.25;
 // 風が強いと糸がふくらんでアタリが取りにくい：アワセの猶予が短くなる（7m/s を超えるとじわじわ、最大 45% 短く）
 export const windFactor = (cond) => 1 - Math.min(0.45, Math.max(0, (cond.gust - 6) * 0.06));
 // 🔰初心者練習（2026-09-27、ぱっぱ：知り合いが難しすぎてやめかけた）：アワセの猶予2倍・寄り1.5倍・根掛かりなし・ファイトはやさしく
-export const EASY = { window: 2, bite: 1.5, tension: 0.6, jet: 0.5, slack: 2 };
+// bite 1.5→2.5・squid＝1投ごとに近くにいるイカの最少・zone＝棚が合わない時の下限（2026-10-03 ぱっぱ：初心者練習は食いつきが悪くて練習にならない）
+export const EASY = { window: 2, bite: 2.5, tension: 0.6, jet: 0.5, slack: 2, squid: 2, zone: 0.6 };
 export function signalWindows(cond, kind = 'run', light = false, easy = false) {
   const k = windFactor(cond) * (light ? 0.6 : 1) * (easy ? EASY.window : 1);
   return { good: BITES[kind].good * k, late: BITES[kind].late * k };
@@ -896,7 +897,7 @@ function tailorCast(s) {
   s.reacted = false;
   s.hooking = null;
   s.setIdx = null;
-  s.squid = sampleSquid(s);
+  s.squid = s.easy ? Math.max(EASY.squid, sampleSquid(s)) : sampleSquid(s);
   s.bottom = 6 + Math.round(s.rand() * 4);
   s.depth = tanaDepth(s);
   s.watchFrom = s.t;
@@ -1161,7 +1162,7 @@ export function release(s) {
     s.guarantee = false;
     s.guaranteeFall = 0;
     if (s.rotated) { s.interest += ROTATE_GAIN; s.rotated = false; emit(s, 'rotation', {}); }
-    s.squid = sampleSquid(s);
+    s.squid = s.easy ? Math.max(EASY.squid, sampleSquid(s)) : sampleSquid(s);   // 🔰は毎回近くに2杯
     // ラトル（2026-10-01）：やる気のある日は音で寄る数が増える。渋い日は警戒して減る（スレは抱く時に効く）
     if (s.spec.rig === 'rattle' && s.method === 'egi' && !s.easy) {
       if (s.mood === 'active') { if (s.squid > 0) { if (s.rand() < RATTLE.activeMore) s.squid += 1; } else if (s.rand() < RATTLE.activeNew * (s.cond.expectation / 10)) s.squid = 1; }
@@ -1302,7 +1303,7 @@ export function contactWeights(s) {
   const frac = s.bottom > 0 ? Math.min(1, s.depth / s.bottom) : 0;
   const lifting = s.t - s.liftAt < LIFT_WINDOW;
   return speciesPool(s.month, s.tod).map((p) => {
-    let w = p.w * zoneMatch(frac, p.zone) * sizeMatch(s.spec.size, p.ideal);
+    let w = p.w * (s.easy ? Math.max(EASY.zone, zoneMatch(frac, p.zone)) : zoneMatch(frac, p.zone)) * sizeMatch(s.spec.size, p.ideal);   // 🔰は棚が多少ずれても抱く
     if (p.lift) w *= (lifting ? 2 : 1) * (s.dist <= SLOPE_DIST ? 1.3 : 1);
     return { ...p, w };
   });
