@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createEgi, press, release, tick, dart, rebait, sinkRate, BITES, JADO_SINK, JADO_DRAG, KOTSU_WAIT, CASTS, EGI_STOCK,
+  createEgi, press, release, tick, dart, rebait, canJadoLift, JADO_LIFT, JADO_LIFT_GAP, sinkRate, BITES, JADO_SINK, JADO_DRAG, KOTSU_WAIT, CASTS, EGI_STOCK,
 } from '../src/js/ikabu/games/egi.js';
 import { levelOf, LEVELS, methodState, nextSeasonMonth, unlockedBetween, catchPoints, POINTS } from '../src/js/ikabu/games/progress.js';
 import { emptyEgi, recordEgiCatch, recordEgiTrip, recordGedo, mergeEgi } from '../src/js/ikabu/games/records.js';
@@ -111,7 +111,7 @@ test('邪道：オモリの分だけ速く沈み、着底したら底での釣�
   assert.ok(Math.abs(sec - s.bottom / (sinkRate(s.spec) * JADO_SINK)) < 0.2);
 });
 
-test('邪道：押す＝ズル引き（手前へ寄る・底のまま）。ダートはできない', () => {
+test('邪道：押す＝ズル引き（手前へ寄る・底のまま）。ダートの場所は「ふわっと」で前には寄らない', () => {
   const s = createEgi({ seed: 'j2', method: 'jado', month: 5, tod: 'evening', rand: () => 0.99 });
   cast(s); toBottom(s);
   const d0 = s.dist;
@@ -544,4 +544,24 @@ test('テーラー：浅いタナは海藻が少なく、深いタナは多い�
     return n;
   };
   assert.ok(weeds('half') < weeds('two'));
+});
+
+test('邪道：ふわっと＝底から高く上げてゆっくり落ちる。落ちている間は抱かず、着底で気が向く。続けては押せない（2026-10-03）', () => {
+  const s = createEgi({ seed: 'j9', method: 'jado', month: 5, tod: 'evening', rand: () => 0.99 });
+  cast(s); toBottom(s); run(s, 0.5);
+  assert.ok(canJadoLift(s));
+  const i0 = s.interest; const d0 = s.dist;
+  dart(s);
+  assert.ok(s.events.some((e) => e.type === 'jado-lift'));
+  assert.ok(!canJadoLift(s), '上げている間は押せない');
+  run(s, 0.6);
+  assert.ok(Math.abs(s.depth - Math.max(0.5, s.bottom - JADO_LIFT)) < 0.05, `頂点 ${s.depth.toFixed(2)}`);
+  let land = null; let t = 0;
+  while (!land && t < 20) { const ev = run(s, 0.1); land = ev.find((e) => e.type === 'jado-land'); t += 0.1; assert.ok(!ev.some((e) => e.type === 'signal')); }
+  assert.ok(land, '着底した');
+  assert.ok(t > 1.5, `ゆっくり落ちる（${t.toFixed(1)}秒）`);
+  assert.equal(s.depth, s.bottom);
+  assert.equal(s.dist, d0, '前には寄らない');
+  assert.ok(s.interest > i0, '気が向く');
+  assert.equal(canJadoLift(s), s.t - s.jadoLiftAt >= JADO_LIFT_GAP);
 });

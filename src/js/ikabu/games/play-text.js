@@ -279,6 +279,9 @@ export const EGI_TEXT = {
     kotsuSpooked: pair('コツコツの直後に動かした…警戒された', 'You moved right after the taps… it got wary'),
     kotsuLeft: pair('コツコツの直後に動かした…離れていった', 'You moved right after the taps… it left'),
     rock: pair('底に岩が多い。根掛かりに注意', 'Rocky bottom. Watch for snags'),
+    lift: pair('ふわっと', 'Lift'),
+    liftHint: pair('底からエギを高く一度ふわっと上げて、ゆっくり落とす', 'Lift the egi high off the bottom once and let it fall slowly'),
+    liftCall: pair('ふわっと誘って、イカが寄ってきた', 'The lift drew a squid in'),
   },
   // ヤエン（2026-09-27）
   yaen: {

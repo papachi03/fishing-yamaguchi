@@ -8,7 +8,7 @@
 //   ・イカはフォール中にだけ寄ってきて、エギを足で抱く。抱いたイカは胴が外（沖）を向いて走る
 //   ・釣り上げたイカは足が上（エギ側）、胴が下に垂れる。糸は必ず竿先→エギ（イカ）で終わる
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
-import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE } from './egi.js';
+import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE, canJadoLift } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS } from './progress.js';
 import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
@@ -448,7 +448,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 残りの投げ（エギ5回）／残りのアジ／残りのエサ（テーラーは9個）の数だけ印を並べ直す
     { const n0 = tailor ? TAILOR_BAITS : CASTS;
       if (el.casts.children.length !== n0) el.casts.innerHTML = Array.from({ length: n0 }, () => '<i></i>').join(''); }
-    el.dartBtn.hidden = jado || tailor;
+    el.dartBtn.hidden = tailor;   // 邪道エギングは「ふわっと」ボタンとして出す（2026-10-03 ぱっぱ）
     el.baitRow.hidden = !jado;
     if (jado) el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, TX.bait.left);
     ajiShown = null;
@@ -463,6 +463,17 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // ヤエンの横のボタン（ダートの場所）：糸を上げる／糸を切る／ヤエン投入
   const dartHTML0 = el.dartBtn.innerHTML;
+  // 邪道エギングのダートの場所：「ふわっと」（底から高く一度上げてゆっくり落とす）。着底して止めている時だけ押せる
+  let jadoLabel = false;
+  function syncJadoLift() {
+    const jado = Boolean(s) && s.method === 'jado';
+    if (jado !== jadoLabel) {
+      jadoLabel = jado;
+      if (jado) { el.dartBtn.innerHTML = `<span class="ika-egi-dart-arrow" aria-hidden="true">↑</span><span>${t(lang, TX.jado.lift)}</span>`; el.dartBtn.title = t(lang, TX.jado.liftHint); el.dartBtn.setAttribute('aria-label', `${t(lang, TX.jado.lift)}：${t(lang, TX.jado.liftHint)}`); }
+      else if (sideKey === null) { el.dartBtn.innerHTML = dartHTML0; el.dartBtn.title = t(lang, TX.gestures.dartHint); el.dartBtn.setAttribute('aria-label', `${t(lang, TX.gestures.dart)}：${t(lang, TX.gestures.dartHint)}`); }
+    }
+    if (jado) { const on = !frozen && canJadoLift(s); if (el.dartBtn.disabled === on) el.dartBtn.disabled = !on; }
+  }
   let sideKey = null;
   function syncSide() {
     if (!s || s.method !== 'yaen') {
@@ -1067,7 +1078,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.btn.dataset.phase = key;
     el.power.hidden = key !== 'aiming';
     el.tension.hidden = key !== 'fight';
-    if (s.method !== 'yaen') el.dartBtn.disabled = key !== 'sink';   // ダートは沈下・フォール中だけ（邪道エギングでは隠す。ヤエンは横のボタン）
+    if (s.method !== 'yaen' && s.method !== 'jado') el.dartBtn.disabled = key !== 'sink';   // ダートは沈下・フォール中だけ（邪道は「ふわっと」＝syncJadoLift。ヤエンは横のボタン）
   }
   function setText(node, keyName, value) {
     if (last[keyName] === value) return;
@@ -1124,6 +1135,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           setFallMode(e.mode);
           break;
         // 邪道エギング（2026-09-27）
+        case 'jado-lift':
+          V.jerkAt = now; V.jerkKind = 'lift'; V.jerkDouble = false;
+          break;
+        case 'jado-land':
+          if (e.called) callout(t(lang, TX.jado.liftCall), 'good', 1800);
+          break;
         case 'drag':
           V.jerkAt = now; V.jerkKind = 'drag'; V.jerkDouble = false;
           V.fastDrags = e.good ? 0 : (V.fastDrags ?? 0) + 1;
@@ -1169,6 +1186,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.dragAt = now; V.dragKind = e.kind;
           if (e.kind === 'run' && now - (V.hug.t0 ?? -9) < 0.5) break;   // 抱いた瞬間は「抱いて走った！」の一言を残す
           if (e.kind !== 'run') feel.fire('tap');
+          // 2026-10-03 ぱっぱ：イカがアジを引いたら、引きの強さで本物のドラグ「ジジ」（約0.3秒）〜「ジジー！」（約1秒）。タコのちょろちょろは短い「ジ」。
+          //   引きの強さ＝イカの重さ×その時の勢い。この後に巻き始めると「チリリリ」が1回
+          if (e.kind === 'jiji' || e.kind === 'choro') {
+            const w = s.hooking?.weight ?? 600;
+            const str = e.kind === 'choro' ? 0 : clamp((0.35 + 0.65 * Math.random()) * (0.6 + 0.4 * Math.min(1.5, w / 1200)), 0.15, 1);
+            feel.fire('zip', { len: e.kind === 'choro' ? 0.15 : 0.25 + 0.75 * str });
+            V.pullAt = now;
+          }
           callout(`${t(lang, TX.yaen.sounds[e.kind])}${s.phase !== 'yaen' && (cue() === 'easy' || e.kind === 'jiji') ? `　${t(lang, TX.yaen.soundHint[e.kind])}` : ''}`, e.kind === 'jiji' && s.phase === 'draw' ? 'bad' : '', 1500);   // ヤエンを滑らせている間は巻かないので「手を止めて」は出さない
           break;
         case 'draw':
@@ -1205,6 +1230,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           feel.fire('tap');
           break;
         case 'yaen-pull':
+          feel.fire('zip', { len: 1.1 });   // 抵抗している時に巻いた＝糸が出ていく「ジジー！」
+          V.pullAt = now;
           callout(t(lang, TX.yaen.pull), 'bad', 2200);
           break;
         case 'yaen-in':
@@ -1375,6 +1402,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           // ジェット噴射はイカだけ（2026-09-27 ぱっぱ：カサゴなど外道は「抵抗している！」）
           const gedo = Boolean(s.hooking?.gedo);
           V.lastJet = now;
+          V.pullAt = now;   // この後に巻き始めると「チリリリ」が1回（ヤエンのジジッと同じ印）
           if (!gedo) spawnBubbles(V.hug.x - 10, V.hug.y, 6 + Math.round(6 * Math.min(1.6, V.heavy ?? 0.5)), -1);
           feel.fire('jet', { power: s.hooking?.power });
           if (now - (V.jetCallout ?? -9) > 2.5) { callout(t(lang, gedo ? TX.msg.resist : TX.msg.jet)); V.jetCallout = now; }
@@ -2085,6 +2113,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const ev = tick(s, dt);
         if (ev.length) onEvents(ev);
         if (s.method === 'yaen') { syncSide(); syncAji(); }   // 寄せて45度に入ったら「ヤエン投入」に変える（出来事が無くても）
+        syncJadoLift();
       }
       draw(dt);
     }
@@ -2691,8 +2720,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     feel.drag(yRun || jetRun || resist);
     // ジェットの「ジー！」の後は抵抗が少し残る：その後に巻いたら「チリリリ」を1回だけ、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
     //   抵抗が残るのはジェットから JET_RESIST 秒まで
-    const reelOn = reeling && !jetRun && !resist;
-    if (V.lastJet != null && V.lastJet !== V.reelJetSeen) { V.reelJetSeen = V.lastJet; V.reelBurst = true; }
+    // ヤエン：寄せている間（押していて、イカが抵抗していない時）もリールの「チリ… チリ…」（2026-10-03 ぱっぱ）
+    const yDraw = s.method === 'yaen' && phase === 'draw' && Boolean(s.pressing) && Boolean(s.yaen?.on) && !(s.t < (s.yaen.resistUntil ?? -1));
+    const reelOn = (reeling && !jetRun && !resist) || yDraw;
+    if (V.pullAt != null && V.pullAt !== V.reelJetSeen) { V.reelJetSeen = V.pullAt; V.reelBurst = true; }
     const burst = Boolean(V.reelBurst) && now - V.reelJetSeen < JET_RESIST;
     if (feel.reel(reelOn, { burst })) V.reelBurst = false;
     // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。

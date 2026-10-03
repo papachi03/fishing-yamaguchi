@@ -38,6 +38,15 @@ export const JADO_GOOD_STOP = 1.5;   // この秒数止めてから次のズル�
 export const JADO_SNAG = 0.008;      // ズル引き1回で根掛かる確率（岩場は ROCK_SNAG 倍）。1釣行で0.5本ほど失うくらい
 export const JADO_SNAG_IDLE = 0.001; // 止めている間の1秒あたり
 export const ROCK_SNAG = 1.8;
+// 「ふわっと」（2026-10-03 ぱっぱ）：底から JADO_LIFT m を JADO_LIFT_UP 秒でふわっと上げ、ふつうの沈みの JADO_LIFT_FALL 倍でゆっくり落とす。
+//   気を引く誘い：着底したら気が向く（+JADO_LIFT_INTEREST）。たまに遠くのイカも寄る。抱くのは着底して止めた後（ズル引きと同じ）。前には寄らない
+export const JADO_LIFT = 2;
+export const JADO_LIFT_UP = 0.6;
+export const JADO_LIFT_FALL = 0.45;
+export const JADO_LIFT_GAP = 2.5;        // 次に上げられるまでの秒数
+export const JADO_LIFT_INTEREST = 0.15;
+export const JADO_LIFT_CALL = 0.2;       // 着底のとき、遠くのイカが1杯寄る確率（3杯まで）
+export const canJadoLift = (s) => s.method === 'jado' && s.phase === 'action' && !s.jadoLift && s.depth >= s.bottom - 0.01 && s.t - (s.jadoLiftAt ?? -99) >= JADO_LIFT_GAP;
 export const ROCK_CHANCE = 0.35;     // 1投ごとの「岩まじりの底」の確率
 export const BAIT_USE = { cast: 0.1, bite: 0.3 };   // エサの減り（投げるたび／アタリ・コツコツのたび）
 export const KOTSU_SHARE = 0.45;     // 深夜（夜）に、寄ったイカが抱かずにコツコツだけで終わる割合
@@ -692,7 +701,7 @@ export function press(s) {
 // ダート（上へ強くスワイプ）。沈下・フォール中だけ
 export function dart(s) {
   if (s.method === 'yaen') { yaenSide(s); return; }
-  if (s.method === 'jado') return;
+  if (s.method === 'jado') { jadoLift(s); return; }
   if (s.phase === 'sinking' || s.phase === 'action') jerk(s, 'dart');
 }
 
@@ -1075,6 +1084,41 @@ function drag(s) {
   else if (s.dist <= 2) { emit(s, 'recover'); endCast(s, 'recover'); }
 }
 
+function jadoLift(s) {
+  if (!canJadoLift(s)) return;
+  if (s.kotsuPending && s.t - s.kotsuAt < KOTSU_SPOOK) {
+    // コツコツの直後に動かした：ズル引きと同じく離れていくことがある
+    const left = s.rand() < 0.35;
+    if (left) s.squid = Math.max(0, s.squid - 1);
+    s.interest = Math.max(0.05, s.interest - 0.15);
+    emit(s, 'spooked', { left, squidLeft: s.squid, kotsu: true });
+  }
+  s.kotsuPending = false;
+  s.jadoLiftAt = s.t;
+  s.jadoLift = { from: s.t, top: Math.max(0.5, s.bottom - JADO_LIFT), rising: true };
+  s.lastJerk = s.t;
+  emit(s, 'jado-lift', {});
+}
+// 上げている間・落ちている間（抱かない）。着底したら止めの数え直し
+function jadoLiftTick(s, dt) {
+  const L = s.jadoLift;
+  if (L.rising) {
+    const k = Math.min(1, (s.t - L.from) / JADO_LIFT_UP);
+    s.depth = s.bottom + (L.top - s.bottom) * Math.sin((Math.PI / 2) * k);
+    if (k >= 1) L.rising = false;
+    return;
+  }
+  s.depth = Math.min(s.bottom, s.depth + sinkRate(s.spec) * JADO_SINK * JADO_LIFT_FALL * dt);
+  if (s.depth >= s.bottom) {
+    s.jadoLift = null;
+    s.lastDrag = s.t;
+    s.interest = Math.min(1, s.interest + JADO_LIFT_INTEREST);
+    const called = s.squid < 3 && s.rand() < JADO_LIFT_CALL;
+    if (called) s.squid += 1;
+    emit(s, 'jado-land', { called });
+  }
+}
+
 const CUTTLE = ['kouika', 'shiriyake', 'mongo'];
 // 邪道エギングの、アタリの元（止めている間）。egi のフォール中の判定と同じ考え方で、底・匂い・コツコツを足したもの
 function jadoAction(s, dt) {
@@ -1139,6 +1183,7 @@ export function release(s) {
     s.weed = s.method === 'jado' || s.method === 'yaen' ? null : makeWeed(s);   // 邪道・ヤエンは底に置く釣り（藻場は出さない）
     s.yaen = null;
     s.rock = s.method === 'jado' && s.rand() < ROCK_CHANCE;
+    s.jadoLift = null;   // 「ふわっと」の途中で投げ直した時の残りを消す
     s.lastDrag = s.t;
     s.kotsuPending = false;
     if (s.method === 'jado') s.baitLeft = Math.max(0, s.baitLeft - BAIT_USE.cast);
@@ -1371,7 +1416,7 @@ export function tick(s, dt) {
           s.pendingLift = null;
         }
       }
-      if (s.method === 'jado') { jadoAction(s, dt); break; }
+      if (s.method === 'jado') { if (s.jadoLift) jadoLiftTick(s, dt); else jadoAction(s, dt); break; }
       const since = s.t - s.lastJerk;
       // しゃくった後も押したまま＝テンションフォール（ゆっくり沈み、手前に寄ってくる）
       if (s.pressing && !s.tensionFall && s.t - s.pressAt >= TENSION_HOLD) {
