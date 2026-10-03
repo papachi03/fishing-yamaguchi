@@ -29,8 +29,20 @@ const VOLUME = 0.05; // 控えめに（最大 1）
 //   読めた時はそれをループで鳴らし（drag）、頭 0.22 秒を「ジッ！」（zip）に使う。読めない・まだ読み込み中は今までの合成音
 const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25（2026-09-30 ぱっぱ：ジェットの音がかき消される）
 const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
-export function createFeel({ vibrate = true, sound = false, dragSample = null } = {}) {
-  const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null };
+// reelSample：ぱっぱのリールの生音（2026-10-03）。巻いている間の「チリ…チリリ…」。
+//   1本のmp3に6つの音（短い2・中くらい3・長い1）を無音をはさんで並べてあり、読んだ後に無音で切り分ける
+const REEL_VOL = 0.1;   // ドラグのループより約8dB小さく（ぱっぱ：寄せている時は静かにチリリ。勢いよく糸が出る時のドラグは今の大きさ）
+export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null } = {}) {
+  const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null, reelUrl: reelSample, reel: null, reelLoading: null };
+  function loadReel() {
+    if (!st.reelUrl || st.reel || st.reelLoading || !st.ctx) return;
+    st.reelLoading = fetch(st.reelUrl)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((ab) => new Promise((ok, ng) => { const q = st.ctx.decodeAudioData(ab, ok, ng); if (q?.then) q.then(ok, ng); }))
+      .then((buf) => { st.reel = { buf, parts: splitBySilence(buf) }; })
+      .catch(() => {})   // 読めなければ鳴らさない
+      .finally(() => { st.reelLoading = null; });
+  }
   function loadSample() {
     if (!st.sampleUrl || st.sample || st.sampleLoading || !st.ctx) return;
     st.sampleLoading = fetch(st.sampleUrl)
@@ -58,6 +70,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
       st.ctx = new AC();
       st.ctx.resume?.();
       loadSample();
+      loadReel();
     } catch { st.ctx = null; }
   }
   // しゃくりの「ジッ！」：本物のドラグ音の頭だけ（0.22秒）。音源が無ければ短い合成音
@@ -160,6 +173,26 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
     src.start(t); lfo.start(t);
     dragNode = { g, srcs: [src, lfo] };
   }
+  // 巻いている間の「チリ…チリリ…」（2026-10-03 ぱっぱ）：毎フレーム reel(true/false) を呼ぶ。
+  //   鳴らしたら「音の長さ＋0.3〜0.9秒」休む。短い・中くらいを主に、ときどき長い。高さを少しずつ変えて毎回同じに聞こえないように
+  let reelNext = 0;
+  function reel(on) {
+    const ctx = st.ctx;
+    if (!on || !st.sound || !ctx || !st.reel?.parts.length) { if (!on) reelNext = 0; return; }
+    const t = ctx.currentTime;
+    if (reelNext === 0) reelNext = t + 0.08 + Math.random() * 0.2;   // 巻き始めはすぐ鳴らさず、少し置いて
+    if (t < reelNext) return;
+    const ps = st.reel.parts;
+    const longOne = ps.length > 1 && Math.random() < 0.1;
+    const pool = longOne ? [ps[ps.length - 1]] : ps.slice(0, Math.max(1, ps.length - 1));
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    const rate = 0.94 + Math.random() * 0.12;
+    const src = ctx.createBufferSource(); src.buffer = st.reel.buf; src.playbackRate.value = rate;
+    const g = ctx.createGain(); g.gain.value = REEL_VOL * (0.75 + Math.random() * 0.25);
+    src.connect(g).connect(ctx.destination);
+    src.start(t, p.start, p.dur);
+    reelNext = t + p.dur / rate + 0.3 + Math.random() * 0.6;
+  }
   // ジェット噴射「シュワッ」：ノイズの帯域を低→高へ滑らせ、ふくらんで消える
   function whoosh(vol = 1) {
     const ctx = st.ctx;
@@ -253,10 +286,24 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null } 
     get vibrate() { return st.vibrate; },
     get sound() { return st.sound; },
     setVibrate(v) { st.vibrate = Boolean(v); },
-    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); else drag(false); },
+    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); else { drag(false); reel(false); } },
     drag,
+    reel,
     unlock,
     // できごとを1つ伝える（振動と音をまとめて）
     fire(kind, opt) { buzz(kind, opt); play(kind, opt); },
   };
+}
+
+// 1本の音を、0.15秒以上の無音で区切って [{ start, dur }]（秒）に分ける。mp3の頭の詰め物で位置がずれても困らないように、読んだ後に探す
+export function splitBySilence(buf, { th = 0.01, gap = 0.15 } = {}) {
+  const ch = buf.getChannelData(0); const sr = buf.sampleRate; const g = Math.round(gap * sr);
+  const parts = []; let s = -1; let last = -1;
+  for (let i = 0; i < ch.length; i++) {
+    if (Math.abs(ch[i]) < th) continue;
+    if (s < 0) s = i; else if (i - last > g) { parts.push({ start: s / sr, dur: (last - s) / sr + 0.03 }); s = i; }
+    last = i;
+  }
+  if (s >= 0) parts.push({ start: s / sr, dur: (last - s) / sr + 0.03 });
+  return parts.filter((x) => x.dur > 0.05);
 }
