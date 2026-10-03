@@ -2186,6 +2186,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
     /* ----- エギの目標位置 ----- */
     let taut = 0.35;
+    let sagMul = 1;   // 糸のたるみの大きさ（アタリ「フケる」だけ大きく）
     if (V.egi.mode === 'tip' || (V.egi.mode === 'cast' && !C?.released)) {
       // 竿先のタラシにぶら下がる振り子。振りかぶりでは遅れて後ろへ、振り出しでは遠心力で回る
       const tp = tipNow();
@@ -2320,15 +2321,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.hug.ang += wrap(angleOf(0.95, 0.3) - V.hug.ang) * k8;
           taut = 1;
         } else if (B.kind === 'slack') {
-          // 2026-10-03 ぱっぱ：前は真上近くを向いて 26px 持ち上げ、浅い所では胴が海面から出ていた（本物は水の中で抱いて浮くだけ）。
-          //   胴の先（絵の高さ×上向きの割合）が海面より下に収まる分だけ持ち上げ、浅いほど体を寝かせる。上向きは最大 0.47（約28度）
+          // 2026-10-03 ぱっぱ：前は真上近くを向いて持ち上げ、浅い所では胴が海面から出ていた（本物は水の中で抱いて浮くだけ）。
+          //   イカは横向きのまま、胴が海面の下に収まる分だけ持ち上げる。分かりやすさは糸のたるみ（ふつうの約3.5倍）で見せる
           const bodyH = V.hug.height ?? 100;
           const room = V.egi.y - SCENE.surface - 10;                        // エギから海面（少し下）までの余裕
-          const lift = Math.min(26 * B.amp * easeOut(k), Math.max(0, room - 0.77 * bodyH));   // 0.3＝胴の幅が傾いて上に出る分
+          const lift = Math.min(26 * B.amp * easeOut(k), Math.max(0, room - 0.3 * bodyH));   // 0.3＝横向きの胴の半分の幅
           V.hug.x = V.egi.x - 6 * easeOut(k);
           V.hug.y = V.egi.y - lift;
-          const up = clamp((V.hug.y - SCENE.surface - 10) / bodyH - 0.3, 0, 0.47);
-          V.hug.ang += wrap(angleOf(Math.sqrt(1 - up * up), -up) - V.hug.ang) * k8;
+          V.hug.ang += wrap(angleOf(1, 0) - V.hug.ang) * k8;
+          sagMul = 1 + 2.5 * easeOut(k);
           taut = 0.02;
         } else {
           V.hug.x = V.egi.x + jitter * 0.5;
@@ -2394,7 +2395,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       d = trailingLineD(tip, lineEnd, V.flyDir, V.flyK, reduced ? 0 : Math.sin(now * 9) * 6);
     } else {
       const L = Math.hypot(lineEnd.x - tip.x, lineEnd.y - tip.y);
-      const sag = (1 - taut) * L * 0.16;
+      const sag = (1 - taut) * L * 0.16 * sagMul;
       const mid = { x: (tip.x + lineEnd.x) / 2, y: (tip.y + lineEnd.y) / 2 + sag };
       d = `M${f1(tip.x)},${f1(tip.y)} Q${f1(mid.x)},${f1(mid.y)} ${f1(lineEnd.x)},${f1(lineEnd.y)}`;
       lineCtrl = mid;
