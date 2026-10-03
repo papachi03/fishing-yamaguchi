@@ -2724,8 +2724,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const yDraw = s.method === 'yaen' && phase === 'draw' && Boolean(s.pressing) && Boolean(s.yaen?.on) && !(s.t < (s.yaen.resistUntil ?? -1));
     const reelOn = (reeling && !jetRun && !resist) || yDraw;
     if (V.pullAt != null && V.pullAt !== V.reelJetSeen) { V.reelJetSeen = V.pullAt; V.reelBurst = true; }
-    const burst = Boolean(V.reelBurst) && now - V.reelJetSeen < JET_RESIST;
-    if (feel.reel(reelOn, { burst })) V.reelBurst = false;
+    // 名前は reelBurst（2026-10-04）：前は burst としたため、同じ draw() の中の水しぶきの関数 burst() を隠し、タモ・ギャフの取り込みで止まった
+    const reelBurst = Boolean(V.reelBurst) && now - V.reelJetSeen < JET_RESIST;
+    if (feel.reel(reelOn, { burst: reelBurst })) V.reelBurst = false;
     // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。
     //   アタリの合図やヤエンの走りで下げると、音量の変化でアタリが先に分かってしまうので下げない）
     bgm.duck(phase === 'fight');

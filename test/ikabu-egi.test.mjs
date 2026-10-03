@@ -804,3 +804,14 @@ test('🔰初心者練習：初心者の動きでも、どの季節でも1投ご
     assert.ok(hit / casts >= 0.95, `${month}月 ${tod} 期待${exp}：${hit}/${casts}`);
   }
 });
+
+// 2026-10-04：draw() の中で const burst を作り、水しぶきの関数 burst() を隠して、タモ・ギャフの取り込みで画面が止まった。
+//   egi-ui.js の中で、関数と同じ名前の変数を作っていないかを確かめる
+test('エギングの画面：関数と同じ名前の変数で隠していない（タモ・ギャフで止まった不具合）', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/js/ikabu/games/egi-ui.js', import.meta.url), 'utf8');
+  const fns = [...src.matchAll(/^\s*function (\w+)\(/gm)].map((m) => m[1]);
+  const vars = new Set([...src.matchAll(/\b(?:const|let) (\w+)\s*=/g)].map((m) => m[1]));
+  const clash = [...new Set(fns.filter((f) => vars.has(f)))];
+  assert.deepEqual(clash, []);
+});
