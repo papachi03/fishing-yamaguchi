@@ -15,6 +15,7 @@ import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
+const AFTER_JET = 1.6;   // ジェットの後に「チリチリチリ…」と詰めて鳴らす秒数
 const RESIST_TENSION = 70;   // 糸の張りがこれ以上で「抵抗がある」＝ドラグ「ジーー」（ゲージが赤くなる80の少し手前）
 import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
@@ -2681,7 +2682,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   ジェットの直後と、糸の張りが強い（抵抗がある）時だけ、今までのドラグ「ジーー」
     const resist = reeling && s.tension >= RESIST_TENSION;
     feel.drag(yRun || jetRun || resist);
-    feel.reel(reeling && !jetRun && !resist);
+    // ジェットの「ジー！」の後 AFTER_JET 秒は「チリチリチリ…」と詰めて、それからふつうの「チリ… チリ…」へ（2026-10-03 ぱっぱ）
+    const afterJet = phase === 'fight' && V.lastJet != null && now - V.lastJet < 0.45 + AFTER_JET;
+    feel.reel(reeling && !jetRun && !resist, { busy: afterJet });
     // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。
     //   アタリの合図やヤエンの走りで下げると、音量の変化でアタリが先に分かってしまうので下げない）
     bgm.duck(phase === 'fight');

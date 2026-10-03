@@ -184,15 +184,17 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
     try { reelNow.g.gain.cancelScheduledValues(t); reelNow.g.gain.setTargetAtTime(0.0001, t, 0.01); reelNow.src.stop(t + 0.05); } catch { /* もう止まっている */ }
     reelNow = null;
   }
-  function reel(on) {
+  // ふつう（busy=false）＝短い「チリ」だけを 0.45〜0.85 秒あけて「チリ… チリ…」。
+  // ジェットの後（busy=true）＝短い・中くらいを 0.03〜0.12 秒で詰めて「チリチリチリ…」（2026-10-03 ぱっぱ）
+  function reel(on, { busy = false } = {}) {
     const ctx = st.ctx;
     if (!on || !st.sound || !ctx || !st.reel?.parts.length) { if (!on) { reelNext = 0; reelCut(); } return; }
     const t = ctx.currentTime;
     if (reelNext === 0) reelNext = t + 0.08 + Math.random() * 0.2;   // 巻き始めはすぐ鳴らさず、少し置いて
     if (t < reelNext) return;
     const ps = st.reel.parts;
-    const longOne = ps.length > 1 && Math.random() < 0.1;
-    const pool = longOne ? [ps[ps.length - 1]] : ps.slice(0, Math.max(1, ps.length - 1));
+    const shorts = ps.filter((x) => x.dur < 0.2);
+    const pool = busy ? ps.filter((x) => x.dur < 0.8) : (shorts.length ? shorts : ps);
     const p = pool[Math.floor(Math.random() * pool.length)];
     const rate = 0.94 + Math.random() * 0.12;
     const src = ctx.createBufferSource(); src.buffer = st.reel.buf; src.playbackRate.value = rate;
@@ -200,7 +202,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
     src.connect(g).connect(ctx.destination);
     src.start(t, p.start, p.dur);
     reelNow = { src, g }; src.onended = () => { if (reelNow?.src === src) reelNow = null; };
-    reelNext = t + p.dur / rate + 0.3 + Math.random() * 0.6;
+    reelNext = t + p.dur / rate + (busy ? 0.03 + Math.random() * 0.09 : 0.45 + Math.random() * 0.4);
   }
   // ジェット噴射「シュワッ」：ノイズの帯域を低→高へ滑らせ、ふくらんで消える
   function whoosh(vol = 1) {
