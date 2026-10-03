@@ -3384,3 +3384,5 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-m3-rush .ika-m3-callout.is-clear { white-space: pre-line; text-align: center; line-height: 1.25; width: max-content; max-width: 92%; box-sizing: border-box; font-size: 15px; padding: 8px 18px; }
 .ika-m3-rush .ika-m3-callout.is-clear.is-huge::first-line { font-size: 40px; }
 .ika-m3-rush .ika-m3-callout.is-clear::first-line { font-size: 30px; }
+/* 横画面モードでは知らせを回っているゲームの中に入れる（2026-10-03）。fixed は回った箱が基準になる。幅は回した後の横幅で */
+html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(var(--rot-w, 100vh) - 32px); }

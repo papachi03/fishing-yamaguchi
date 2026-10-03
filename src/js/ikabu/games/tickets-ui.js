@@ -26,7 +26,10 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
     else if (why.includes('cap') && capShown !== utcDay()) { capShown = utcDay(); text = T.capPop(lang); }
     if (!text) return;
     if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'ika-tickets-toast'; toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite'); }
-    document.body.appendChild(toastEl);   // いちばん後ろに付け直す（後から開いたゲームの画面より上に出す）
+    // いちばん後ろに付け直す（後から開いたゲームの画面より上に出す）。エギングの横画面モード（ゲームだけ90度回している）の時は、
+    //   回している部品の中に入れて一緒に回す（2026-10-03 ぱっぱ：横で遊んでいたら知らせが違う向きで出た）
+    const rot = document.documentElement.classList.contains('is-egi-rot') ? document.querySelector('.ika-egi-main') : null;
+    (rot ?? document.body).appendChild(toastEl);
     toastEl.classList.toggle('is-cap', got <= 0);
     toastEl.textContent = text;
     toastEl.classList.remove('is-on');
