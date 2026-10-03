@@ -5,7 +5,7 @@
 import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
-import { newGame, play, attack, endTurn, overflow, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK } from './battle.js';
+import { newGame, play, attack, endTurn, overflow, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK, isNight, markOf, MARK_IDS, effectsOf } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
 import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
@@ -61,7 +61,7 @@ const TUTOR = [
   { id: 'end', pic: 'point', when: (st) => st.active === 'me' && st.players.me.summoned,
     ja: '出したターンのイカは攻撃できない。\n右の丸い「ターン終了」で\n相手の番へ。\n手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
   { id: 'attack', pic: 'point', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
-    ja: '攻撃しよう！\n自分のイカをタップ→相手のイカをタップ。\n赤い数字（攻撃）が相手の\n青い数字（防御）より大きければ釣れる。\n同じなら「バラシ」、\n小さいと弾かれて次のターン休みだよ', en: 'Attack! Tap your squid, then an enemy squid. Red (ATK) higher than their blue (DEF) catches it. Equal is a miss; lower bounces you and the squid rests next turn.' },
+    ja: '攻撃しよう！\n自分のイカをタップ→相手のイカをタップ。\n赤い数字（攻撃）が相手の\n青い数字（防御）より大きければ釣れる。\n同じなら「互角」でどちらも残る。\n小さいと弾かれて「バラシ」＝次のターン休みだよ', en: 'Attack! Tap your squid, then an enemy squid. Red (ATK) higher than their blue (DEF) catches it. Equal is a miss; lower bounces you and the squid rests next turn.' },
   { id: 'direct', pic: 'yatta', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && !st.players.cpu.front.some(Boolean),
     ja: '相手の前列が空だ！\n自分のイカをタップして\n「ダイレクトアタック」。\n相手のエギを1個奪えるよ。\n5個ぜんぶ奪えば勝ち！', en: "The enemy front row is empty! Tap your squid and hit Direct Attack to take one of their egi. Take all five to win!" },
   { id: 'trap', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'trap' && canPlay(st, 'me', x).ok),
@@ -95,13 +95,13 @@ const TX = {
   pickTarget: ['対象を選んでください（光っているイカ）', 'Pick a target (glowing squid)'],
   pickEnemy: ['攻撃する相手を選んでください', 'Pick a squid to attack'],
   direct: ['ダイレクトアタック！', 'Direct attack!'],
-  why: { tide: ['潮が足りません', 'Not enough tide'], summoned: ['イカはこのターンもう出しました', 'Already played a squid this turn'], frontFull: ['前列がいっぱいです', 'Front row is full'], backFull: ['後列がいっぱいです', 'Back row is full'], techLimit: ['このターンはテクニックをもう使えません', 'No more techniques this turn'], sick: ['出したターンは攻撃できません', "Can't attack the turn it was played"], tired: ['弾かれたので、このターンは攻撃できません', 'Bounced last time; rests this turn'], attacked: ['このターンはもう攻撃しました', 'Already attacked'], noAttack: ['このターンは攻撃できません', "Can't attack this turn"], shielded: ['そのイカは守られています', 'That squid is protected'] },
+  why: { tide: ['潮が足りません', 'Not enough tide'], summoned: ['イカはこのターンもう出しました', 'Already played a squid this turn'], frontFull: ['前列がいっぱいです', 'Front row is full'], backFull: ['後列がいっぱいです', 'Back row is full'], techLimit: ['このターンはテクニックをもう使えません', 'No more techniques this turn'], sick: ['出したターンは攻撃できません', "Can't attack the turn it was played"], tired: ['バラシ中：弾かれた次の番は攻撃できません', 'Tired: bounced last time, rests this turn'], attacked: ['このターンはもう攻撃しました', 'Already attacked'], noAttack: ['このターンは攻撃できません', "Can't attack this turn"], shielded: ['そのイカは守られています', 'That squid is protected'] },
   win: ['勝った！', 'You win!'], lose: ['負けた…', 'You lose…'],
   over: (lang, n, max) => (lang === 'en' ? `Hand ${n}/${max}: discard ${n - max} at end of turn` : `手札 ${n}／${max}：ターン終了で${n - max}枚捨てます`),
   pickDiscard: (lang, n) => (lang === 'en' ? `Choose ${n} card${n > 1 ? 's' : ''} to discard (納竿)` : `捨てるカードを${n}枚選んでください（納竿）`),
   discardGo: ['捨てる', 'Discard'],
   again: ['もう一度', 'Play again'], close: ['閉じる', 'Close'],
-  state: { sick: ['出たばかり', 'new'], tired: ['休み', 'rest'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },
+  state: { sick: ['出たばかり', 'new'], tired: ['バラシ', 'tired'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },   // バラシ＝弾かれて次の番は休み（カードの説明の言葉にそろえた 2026-10-03）
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
   kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
   noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
@@ -199,7 +199,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     return `<div class="ika-bt-card${hidden ? ' is-facedown' : ''}${row === 'back' ? ' is-back' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}">
       <img src="${hidden ? BACK : cardSrc(x.no)}" alt="${hidden ? '' : esc(x.card.name)}" width="240" height="360" draggable="false" />
       ${x.card.kind === 'squid' ? `<b class="ika-bt-atk">${statOf(st, x, 'atk')}</b><b class="ika-bt-def">${statOf(st, x, 'def')}</b>` : ''}
-      ${!hidden ? `<span class="ika-bt-mark${st.rule === 'night' && x.card.mark === 'star' && x.card.kind === 'squid' ? ' is-boost' : ''}">${markImg(x.card.mark, 16)}</span>` : ''}
+      ${!hidden ? `<span class="ika-bt-mark${st.rule === 'night' && markOf(x) === 'star' && x.card.kind === 'squid' ? ' is-boost' : ''}${x.mark ? ' is-changed' : ''}">${markImg(markOf(x), 16)}${isNight(x.card) ? '<i class="ika-bt-night">🌙</i>' : ''}</span>` : ''}
       ${s ? `<i class="ika-bt-state is-${s}">${t(lang, ...TX.state[s])}</i>` : ''}
     </div>`;
   }
@@ -217,7 +217,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${story ? ` ・ ${story.foeName}` : practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
-      return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i><span class="ika-bt-hmark">${markImg(x.card.mark, 16)}</span></button>`;
+      return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i><span class="ika-bt-hmark">${markImg(x.card.mark, 16)}${isNight(x.card) ? '<i class="ika-bt-night">🌙</i>' : ''}</span></button>`;
     }).join('');
     const ov7 = overflow(st, 'me');
     const ofEl = $('[data-overflow]'); ofEl.hidden = !(ov7 > 0 && st.active === 'me'); if (ov7 > 0) ofEl.textContent = TX.over(lang, me.hand.length, me.hand.length - ov7);
@@ -275,7 +275,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   function callout(text, kind = '') { el.callout.textContent = text; el.callout.className = `ika-bt-callout is-on ${kind}`; clearTimeout(calloutTimer); calloutTimer = setTimeout(() => el.callout.classList.remove('is-on'), 1300); }
   function flushLog() {
     const fresh = st.log.slice(logSeen); logSeen = st.log.length;
-    const last = fresh.filter((l) => /釣った|バラシ|弾かれた|トラップ|ダイレクト|無効|止められた/.test(l.text)).pop();
+    const last = fresh.filter((l) => /釣った|互角|弾かれた|トラップ|ダイレクト|無効|止められた|マークが変わった/.test(l.text)).pop();
     if (last) callout(last.text, /釣った|ダイレクト/.test(last.text) ? 'is-good' : /トラップ|止められた|無効/.test(last.text) ? 'is-trap' : '');
   }
   const findInst = (uid) => { for (const s of ['me', 'cpu']) { const p = st.players[s]; for (const x of [...p.front, ...p.back, ...p.hand]) if (x && String(x.uid) === String(uid)) return x; } return null; };
@@ -292,7 +292,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   function cardInfoHTML(x, onField) {
     const c = x.card;
     const stats = c.kind === 'squid' ? `<p class="ika-bt-sheet-stats"><span class="is-atk">${t(lang, ...TX.atk)} ${c.atk}${onField && statOf(st, x, 'atk') !== c.atk ? `<b>→${statOf(st, x, 'atk')}</b>` : ''}</span><span class="is-def">${t(lang, ...TX.def)} ${c.def}${onField && statOf(st, x, 'def') !== c.def ? `<b>→${statOf(st, x, 'def')}</b>` : ''}</span></p>` : '';
-    return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${MARK_NAME[c.mark] ? `<p class="ika-bt-sheet-mark">${markImg(c.mark, 22)}<b>${t(lang, ...MARK_NAME[c.mark])}${t(lang, 'マーク', ' mark')}</b>${st.rule === 'night' && c.mark === 'star' && c.kind === 'squid' ? `<i>${t(lang, '夜：攻撃+1', 'Night: ATK +1')}</i>` : ''}${st.rule === 'summerNight' && c.mark === 'sun' && c.kind === 'tech' ? `<i>${t(lang, '夏の夜：潮-1', 'Summer night: -1 tide')}</i>` : ''}</p>` : ''}${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
+    return `<p class="ika-bt-sheet-name"><img class="ika-bt-sheet-rimg" src="${assetHref(`/assets/ikabu/gacha/rarity_${tierOf(c.rarity)}.webp`)}" alt="${c.rarity}" /><span>${esc(c.name)}</span><small>${t(lang, ...TX.kind[c.kind])} ・ 🌊${onField ? c.cost : costOf(st, 'me', x)}</small></p>${MARK_NAME[markOf(x)] ? `<p class="ika-bt-sheet-mark">${markImg(markOf(x), 22)}<b>${t(lang, ...MARK_NAME[markOf(x)])}${t(lang, 'マーク', ' mark')}</b>${x.mark ? `<i>${t(lang, 'カラーチェンジ中', 'Recolored')}</i>` : ''}${isNight(c) ? `<em class="ika-bt-sheet-night">🌙${t(lang, c.kind === 'squid' ? '夜のイカ' : c.kind === 'tech' ? '夜のテクニック' : '夜', c.kind === 'squid' ? 'Night squid' : 'Night technique')}</em>` : ''}${st.rule === 'night' && markOf(x) === 'star' && c.kind === 'squid' ? `<i>${t(lang, '夜：攻撃+1', 'Night: ATK +1')}</i>` : ''}${st.rule === 'summerNight' && c.mark === 'sun' && c.kind === 'tech' ? `<i>${t(lang, '夏の夜：潮-1', 'Summer night: -1 tide')}</i>` : ''}</p>` : ''}${stats}<p class="ika-bt-sheet-effect">${c.effect ? esc(c.effect) : t(lang, ...TX.noEffect)}</p>`;
   }
   const bigModal = document.createElement('div'); bigModal.className = 'ika-bd-modal ika-bt-big'; bigModal.hidden = true;
   bigModal.innerHTML = `<div class="ika-bd-modal-in" role="dialog" aria-modal="true"><button type="button" class="ika-bd-close" data-close aria-label="${t(lang, ...TX.close)}">×</button><div data-body></div></div>`;
@@ -321,9 +321,20 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       doPlay(x, null);
     });
   }
-  function doPlay(x, target) {
+  // エギのカラーチェンジ：イカを選んだ後に、変えるマークを選ぶ窓（2026-10-03 前は効果なしだった）
+  function pickMark(target) {
+    return new Promise((resolve) => {
+      el.sheet.hidden = false;
+      el.sheet.innerHTML = `<div class="ika-bt-sheet-in"><p class="ika-bt-sheet-name">${t(lang, `${esc(target.card.name)}のマークを何に変える？`, `Change ${esc(target.card.name)} to which mark?`)}</p><div class="ika-bt-markpick">${MARK_IDS.map((m) => `<button type="button" class="ika-bt-markbtn${m === markOf(target) ? ' is-now' : ''}" data-m="${m}">${markImg(m, 34)}<span>${t(lang, ...MARK_NAME[m])}</span></button>`).join('')}</div><div><button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.cancel)}</button></div></div>`;
+      el.sheet.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', () => { el.sheet.hidden = true; resolve(b.dataset.m); }));
+      el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; resolve(null); });
+    });
+  }
+  async function doPlay(x, target) {
+    let mark = null;
+    if (target && effectsOf(st, x.no).some((e) => e.do === 'changeMark')) { mark = await pickMark(target); if (!mark) { sel = null; render(); return; } }
     const before = snapshot(); const logFrom = st.log.length;
-    const r = play(st, 'me', x, { target });
+    const r = play(st, 'me', x, { target, mark });
     if (r.ok) audio.se('place');
     sel = null;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');

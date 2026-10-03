@@ -163,3 +163,34 @@ test('第1章：9人の相手のデッキと課題デッキが規則どおり（
     assert.ok(!/\{(?!name\})/.test(line.text), line.text);
   }
 });
+
+// 点検で見つけた直し（2026-10-03）：夜のイカ・夜のテクニックは番号の一覧／カラーチェンジが効く／同じ数字は「互角」
+import { isNight, markOf } from '../src/js/ikabu/games/battle.js';
+test('夜のイカ・夜のテクニック：真冬の大槍は夜、常夜灯・ナイトエギングなど夜の技は夜。ケンサキイカがいると夜の技が潮1安い', () => {
+  const card = (name) => CARDS.find((c) => c.name === name);
+  for (const n of ['ケンサキイカ', 'ヤリイカ', 'ホタルイカ', 'アカイカ', '真冬の大槍', '常夜灯', 'ナイトエギング', '夜光エギ', '満月の夜', '新月', 'イカメタル', 'ヤリイカの接岸']) assert.equal(isNight(card(n)), true, n);
+  for (const n of ['アオリイカ', 'コウイカ', 'しゃくり', '夕マズメ（時合い）']) assert.equal(isNight(card(n)), false, n);
+  const st = mk();
+  onField(st, 'me', 'ケンサキイカ');
+  const lamp = give(st, 'me', '常夜灯');          // 太陽・潮2。ケンサキ（太陽）がいるので同じマークで-1、夜の技で-1
+  assert.equal(costOf(st, 'me', lamp), 0);
+  const night = give(st, 'me', 'ナイトエギング');  // 星・潮2：夜の技で-1
+  assert.equal(costOf(st, 'me', night), 1);
+});
+test('エギのカラーチェンジ：選んだイカのマークが変わり、同じマークの割引・夜のルールに効く。釣られたら元に戻る', () => {
+  const st = mk({ rule: 'night' });
+  st.active = 'me'; st.players.me.tide = 5; st.players.me.tideMax = 5;
+  const ao = onField(st, 'me', 'アオリイカ');      // 波・5/5
+  const cc = give(st, 'me', 'エギのカラーチェンジ');
+  const r = play(st, 'me', cc, { target: ao, mark: 'star' });
+  assert.equal(r.ok, true);
+  assert.equal(markOf(ao), 'star');
+  assert.equal(statOf(st, ao, 'atk'), 6);           // 夜：星のイカは攻撃+1
+  const fs = give(st, 'me', 'フリーフォール');     // 星の技：星のイカがいるので潮1安い
+  assert.equal(costOf(st, 'me', fs), 0);
+});
+test('攻撃＝防御は「互角」（「バラシ」はカードの説明どおり、弾かれて次の番は休み）', () => {
+  const src = readFileSync(new URL('../src/js/ikabu/games/battle.js', import.meta.url), 'utf8');
+  assert.ok(src.includes("'互角！ どちらも残った'"));
+  assert.ok(!src.includes("'バラシ！ どちらも残った'"));
+});

@@ -3394,3 +3394,10 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
 .ika-bt-sheet-mark { margin: 4px 0 0; display: flex; align-items: center; gap: 6px; font-size: 14px; } .ika-bt-sheet-mark b { font-weight: 900; } .ika-bt-sheet-mark i { font-style: normal; padding: 1px 8px; border-radius: 999px; background: #ffd84a; color: #0b2a2f; font-weight: 900; font-size: 12px; }
 .ika-bt-rule { padding: 2px 10px; border-radius: 999px; background: #ffd84a; color: #0b2a2f; font-size: 12px; white-space: nowrap; }
 .ika-st-rule-mark { display: block; margin: 8px auto 0; width: 56px; height: 56px; } .ika-st-rule-note { font-size: 12.5px !important; color: #bfe3ea; margin-top: -6px !important; }
+/* 夜の印・カラーチェンジ（2026-10-03） */
+.ika-bt-night { position: absolute; right: -8px; top: -8px; font-style: normal; font-size: 11px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+.ika-bt-mark.is-changed { border-color: #ff7eb6; box-shadow: 0 0 0 2px #ff7eb6; }
+.ika-bt-sheet-night { font-style: normal; padding: 1px 8px; border-radius: 999px; background: #1c2f6e; color: #ffe9b3; font-weight: 900; font-size: 12px; }
+.ika-bt-markpick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0; }
+.ika-bt-markbtn { display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border: 2px solid #0b2a2f; border-radius: 10px; background: #fff; color: #0b2a2f; font-family: inherit; font-weight: 900; font-size: 12px; cursor: pointer; }
+.ika-bt-markbtn.is-now { opacity: .45; }

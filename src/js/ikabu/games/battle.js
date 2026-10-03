@@ -15,7 +15,16 @@ export const NIGHT = ['ケンサキ', 'ヤリ', 'アカ', 'ホタル'];
 export const SHAKURI_COST = 2, SHAKURI_ATK = 1, WEAR_DEF = 1;
 export const TAILWIND_TURNS = 2, TAILWIND_TIDE = 1;   // 後攻の追い風：自分の最初の2ターンは潮+1（2026-10-01 自動対戦で先攻71%→54%）
 const other = (side) => (side === 'me' ? 'cpu' : 'me');
-const isNight = (card) => NIGHT.some((k) => card.name.includes(k));
+// 夜のイカ・夜のテクニック（2026-10-03）：名前の文字で決めると「真冬の大槍」（ヤリイカ）が漏れ、「常夜灯」「ナイトエギング」などの夜の技が
+//   夜に数えられていなかった（ぱっぱの点検の依頼で発覚）→ カードの番号で決める。画面ではカードに🌙を出す
+export const NIGHT_NOS = new Set([
+  4, 5, 7, 15, 22, 23, 34, 49, 125, 126, 128,   // イカ：ケンサキ・ヤリ・ホタル・アカ・欧州ヤリ・カリフォルニアヤリ・アメリカオオアカ・ヤリの群れ・月夜のケンサキ・スナイプヤリ・真冬の大槍
+  68, 71, 76, 85, 86, 90, 127,                   // テクニック：常夜灯・ナイトエギング・夜光エギ・満月の夜・新月・イカメタル・ヤリイカの接岸
+]);
+export const isNight = (card) => NIGHT_NOS.has(card.no);
+// そのカードの今のマーク（エギのカラーチェンジで変わる）
+export const markOf = (x) => x.mark ?? x.card.mark;
+export const MARK_IDS = ['anchor', 'sun', 'wave', 'star', 'shell'];
 
 /* ---------- デッキの検査 ---------- */
 export function checkDeck(nos, cards) {
@@ -153,7 +162,7 @@ export function statOf(st, x, stat) {
   for (const b of x.buffs) if (b.stat === stat && (b.starts ?? 0) <= st.turn) v += b.n;
   if (stat === 'def' && passive(st, x, 'defOnEnemyTurn') && ownerOf(st, x) !== st.active) v += effectsOf(st, x.no).find((e) => e.do === 'defOnEnemyTurn').n;
   if (stat === 'atk' && x.flags.zeroAtk) return 0;
-  if (stat === 'atk' && st.rule === 'night' && x.card.mark === 'star') v += 1;   // 場のルール「夜」
+  if (stat === 'atk' && st.rule === 'night' && markOf(x) === 'star') v += 1;   // 場のルール「夜」
   return Math.max(0, v);
 }
 export const ownerOf = (st, x) => (P(st, 'me').front.includes(x) || P(st, 'me').back.includes(x) || P(st, 'me').hand.includes(x) ? 'me' : 'cpu');
@@ -166,7 +175,7 @@ export function costOf(st, side, x) {
   const p = P(st, side);
   let c = x.card.cost;
   if (x.card.kind === 'tech') {
-    if (p.front.some((f) => f && f.card.mark === x.card.mark)) c -= 1;   // 同じマークのイカがいると潮1安い
+    if (p.front.some((f) => f && markOf(f) === x.card.mark)) c -= 1;   // 同じマークのイカがいると潮1安い（イカのマークはカラーチェンジで変わる）
     if (st.rule === 'summerNight' && x.card.mark === 'sun') c -= 1;   // 場のルール「夏の夜」
     for (const f of p.front) if (f) for (const e of effectsOf(st, f.no)) if (e.when === 'passive' && e.do === 'techCheaper' && (e.only === 'all' || (e.only === 'night' && isNight(x.card)))) { c -= e.n; break; }
   }
@@ -197,6 +206,12 @@ export function needsTarget(st, x) {
   const e = effectsOf(st, x.no).find((e) => ['ownOne', 'enemyOne', 'ownNightOne', 'ownTiredOne'].includes(e.who) && (e.when === 'play' || e.when === 'enter'));
   return e ? e.who : null;
 }
+// 手札のテクニックにいちばん多いマーク（カラーチェンジで CPU が選ぶ・選ばなかった時）。無ければ今のまま
+function favoriteMark(p, x) {
+  const n = {}; for (const h of p.hand) if (h.card.kind === 'tech') n[h.card.mark] = (n[h.card.mark] ?? 0) + 1;
+  const best = Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0];
+  return best ?? (x ? markOf(x) : 'anchor');
+}
 function removeFromFront(st, side, x) { const p = P(st, side); const i = p.front.indexOf(x); if (i >= 0) p.front[i] = null; }
 function run(st, side, acts, ctx) {
   const me = P(st, side), en = P(st, other(side));
@@ -213,14 +228,18 @@ function run(st, side, acts, ctx) {
       case 'flag': for (const x of targets) x.flags[a.flag] = a.until === 'forever' ? Infinity : st.turn; break;
       case 'zeroAtk': for (const x of targets) x.flags.zeroAtk = st.turn; break;
       case 'heal': for (const x of targets) { x.skipThis = false; x.skipNext = false; } break;
-      case 'bounce': for (const x of targets) { const o = ownerOf(st, x); removeFromFront(st, o, x); x.buffs = []; x.flags = {}; P(st, o).hand.push(x); } break;
+      case 'bounce': for (const x of targets) { const o = ownerOf(st, x); removeFromFront(st, o, x); x.buffs = []; x.flags = {}; delete x.mark; P(st, o).hand.push(x); } break;
       case 'catch': for (const x of targets) if (a.maxDef == null || statOf(st, x, 'def') <= a.maxDef) caught(st, other(side), x, side); break;
       case 'tutor': { const i = me.deck.findIndex((x) => x.card.name === a.name); if (i >= 0) me.hand.push(...me.deck.splice(i, 1)); break; }
       case 'tutorSquid': { let n = a.n ?? 1; for (let i = 0; i < me.deck.length && n > 0; i++) { const x = me.deck[i]; if (x.card.kind === 'squid' && (a.maxCost == null || x.card.cost <= a.maxCost)) { me.hand.push(...me.deck.splice(i, 1)); i--; n--; } } break; }
       case 'peekPick': { const top = me.deck.slice(0, a.n); if (top.length) { const best = top.reduce((m, x) => (x.card.cost > m.card.cost ? x : m), top[0]); me.deck.splice(me.deck.indexOf(best), 1); me.hand.push(best); } break; }
       case 'summonFromDeck': { const slot = me.front.indexOf(null); const i = me.deck.findIndex((x) => x.card.kind === 'squid' && x.card.cost <= a.maxCost); if (slot >= 0 && i >= 0) { const x = me.deck.splice(i, 1)[0]; x.sick = true; me.front[slot] = x; } break; }
       case 'revealTrap': { const i = en.back.findIndex((x) => x && x.card.kind === 'trap'); if (i >= 0) { en.grave.push(en.back[i]); en.back[i] = null; say(st, 'トラップを見破った！'); } break; }
-      case 'changeMark': break;   // マーク変更は簡略版：効果なし（同じマークの割引はイカの側で判定するため、実質「1枚引く」相当にはしない）
+      case 'changeMark': {   // 2026-10-03：前は効果なしだった。選んだマーク（ctx.mark）に変える。CPU・選ばなかった時は手札のテクニックに多いマーク
+        const m = MARK_IDS.includes(ctx.mark) ? ctx.mark : favoriteMark(me, targets[0]);
+        for (const x of targets) { x.mark = m; say(st, `${x.card.name}のマークが変わった`); }
+        break;
+      }
       case 'discardEnemy': if (en.hand.length) en.grave.push(en.hand.splice(Math.floor(st.rnd() * en.hand.length), 1)[0]); break;
       case 'limitTech': en.techLimit = a.n; break;
       case 'noAttack': en.noAttack = true; break;
@@ -254,7 +273,7 @@ function caught(st, side, x, bySide) {
   const ctx = { defender: x };
   fireTraps(st, side, 'ownCaught', ctx);
   removeFromFront(st, side, x);
-  x.buffs = []; x.flags = {};
+  x.buffs = []; x.flags = {}; delete x.mark;
   if (ctx.saved) { P(st, side).hand.push(x); say(st, `${x.card.name}は手札に戻った`); return; }
   P(st, side).grave.push(x);
   say(st, `${x.card.name}を釣った！`);
@@ -274,7 +293,7 @@ export function canPlay(st, side, x) {
   return { ok: true };
 }
 // target：対象のイカ（要る時だけ）。戻り値：{ ok, why, events }
-export function play(st, side, x, { target = null } = {}) {
+export function play(st, side, x, { target = null, mark = null } = {}) {
   const c = canPlay(st, side, x);
   if (!c.ok) return c;
   const p = P(st, side), en = P(st, other(side));
@@ -282,7 +301,7 @@ export function play(st, side, x, { target = null } = {}) {
   if (need && !target) return { ok: false, why: 'needTarget', who: need };
   p.tide -= costOf(st, side, x);
   p.hand.splice(p.hand.indexOf(x), 1);
-  const ctx = { target };
+  const ctx = { target, mark };
   if (x.card.kind === 'squid') {
     x.sick = true; x.attacked = false; x.skipNext = false; x.skipThis = false;
     p.front[p.front.indexOf(null)] = x; p.summoned = true;
@@ -358,7 +377,7 @@ export function attack(st, side, x, target = null) {
   const tieWins = passive(st, x, 'tieWins') || x.flags.tieWins != null;
   let result;
   if (A > D || (A === D && tieWins)) { caught(st, other(side), target, side); result = 'catch'; }
-  else if (A === D) { say(st, 'バラシ！ どちらも残った'); result = 'tie'; }
+  else if (A === D) { say(st, '互角！ どちらも残った'); result = 'tie'; }   // 「バラシ」はカードの説明どおり「弾かれて次の番は休み」の意味に（2026-10-03）
   else { say(st, `${target.card.name}に弾かれた`); if (!passive(st, x, 'noTiredWhenBlocked')) x.skipNext = true; buff(st, target, 'def', -WEAR_DEF, 'forever'); result = 'blocked'; }   // 守りの疲れ：受けた側の防御-1（ずっと）
   check(st);
   return { ok: true, result, A, D, trap: ctx.trap };
