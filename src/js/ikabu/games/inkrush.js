@@ -16,6 +16,11 @@ export const ROW_FIRST = 12;
 // 降ってくるブロックがスペシャル（ライン）になる確率（2026-09-29 ぱっぱ：3消しばかりでスペシャルが出ない）。
 //   降ってくるのはラインだけ。墨ダマ・レアイカは5つ一直線・L字T字で生まれ、つかんで離すと発動する（rushDrop）
 export const SPECIAL_RATE = 0.1;
+// ほぼ全消し・全消しのごほうび（2026-10-03 ぱっぱ）。自動で400回遊ばせて全消しは0回・残り6個以下は上手な手で2%（ikabu-research/sim/rush_allclear.mjs）
+//   ＝ほぼ全消しは「上手な人がたまに見る」、全消しは「伝説」。どちらも盤のマークがその数を下回った瞬間に1回（また増えてから下回れば、もう一度）
+export const NEAR_CLEAR = 6;                 // 残りのマークがこれ以下で「ほぼ全消し」
+export const NEAR_BONUS = 300, NEAR_DELAY = 2;     // 点・次のブロックが遅れる秒
+export const ALL_BONUS = 1000, ALL_DELAY = 5;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
 export const PACE = [[0, 0.5], [20, 0.9], [40, 1.4], [60, 2.0], [90, 2.8], [120, 4.0], [160, 5.5]];   // 道を意識して2秒に1手で約100秒・でたらめ33秒（rush_sim.mjs）
 export const inflowAt = (sec) => { let v = PACE[0][1]; for (const [from, amt] of PACE) if (sec >= from) v = amt; return v; };
@@ -124,17 +129,31 @@ export function rushTick(g, dt) {
     const before = g.rush.open.length;
     const landed = dropBlocks(g);
     drainUpdate(g);
+    g.rush.marks = marksLeft(g.board);   // ブロックが降って増えた（また減らせば、もう一度ごほうび）
     events.push({ type: 'row', landed, plugged: Math.max(0, before - g.rush.open.length) });
   }
   if (g.rush.level >= CAP) { g.rush.level = CAP; g.over = true; g.rush.reason = 'drown'; events.push({ type: 'over' }); }
   return { events, steps: [] };
 }
 
+// 盤のマークの数（空き・墨の入ったマスは数えない）
+export const marksLeft = (b) => b.reduce((n, v) => n + (v === null ? 0 : 1), 0);
+// ほぼ全消し・全消しの判定：しきいを下回った瞬間だけ（marks の前回の値と比べる）
+function clearBonus(g) {
+  const m = marksLeft(g.board);
+  const prev = g.rush.marks ?? SIZE * SIZE;
+  g.rush.marks = m;
+  if (m === 0 && prev > 0) { g.score += ALL_BONUS; g.rush.nextRow += ALL_DELAY; g.rush.allClears = (g.rush.allClears ?? 0) + 1; return { type: 'allClear', points: ALL_BONUS, delay: ALL_DELAY }; }
+  if (m <= NEAR_CLEAR && prev > NEAR_CLEAR) { g.score += NEAR_BONUS; g.rush.nextRow += NEAR_DELAY; g.rush.nearClears = (g.rush.nearClears ?? 0) + 1; return { type: 'nearClear', points: NEAR_BONUS, delay: NEAR_DELAY, left: m }; }
+  return null;
+}
 function afterMove(g, r) {
   const d = drainUpdate(g);
   const events = [];
+  const cb = clearBonus(g);   // 知らせは最後（「道が通った」より後に出して、上書きされないように）
   if (d.fresh.length) events.push({ type: 'hole', cells: d.fresh, cols: d.fresh.map(colOf), amount: Math.round(d.burst * 10) / 10 });
   if (d.dHold > 0) events.push({ type: 'fill', amount: Math.round(d.dHold * 10) / 10 });
+  if (cb) events.push(cb);
   return { ok: true, steps: [...r.steps], events, maxChain: r.maxChain, shuffled: false, panic: panicOf(g), over: g.over };
 }
 export function rushSwap(g, a, b) {

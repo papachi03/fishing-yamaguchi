@@ -197,3 +197,36 @@ test('バッジ以前の記録（2分35秒・13,200点）からも時間と点�
   assert.equal(backfillRush(rec).rush.badges.r_join, '2026-09-29');
   assert.equal(backfillRush(emptyM3()).rush, null);
 });
+
+// ほぼ全消し・全消し（2026-10-03）：しきいを下回った瞬間に1回だけ、点とブロックの遅れ。実績（バッジ）は付けない（ぱっぱ）
+import { NEAR_CLEAR, NEAR_BONUS, NEAR_DELAY, ALL_BONUS, ALL_DELAY, marksLeft } from '../src/js/ikabu/games/inkrush.js';
+test('ほぼ全消し（残り6個以下）と全消し（0）で、点が増え次のブロックが遅れる。下回った瞬間だけ', () => {
+  const g = createRush({ seed: 'clear' });
+  // マーク7個だけ残した盤（そろわない並び）にして、1個消す形を作る
+  g.board = Array(N).fill(null);
+  const keep = [0, 2, 4, 13, 15, 26, 28];
+  keep.forEach((i, k) => { g.board[i] = k % 5; });
+  g.rush.marks = marksLeft(g.board);
+  assert.equal(g.rush.marks, 7);
+  const s0 = g.score, n0 = g.rush.nextRow;
+  g.board[28] = null;   // 1個減って6個＝ほぼ全消し
+  let r = rushDrop(g, null);
+  const near = r.events.find((e) => e.type === 'nearClear');
+  assert.ok(near, JSON.stringify(r.events));
+  assert.equal(g.score - s0 >= NEAR_BONUS, true);
+  assert.equal(g.rush.nextRow, n0 + NEAR_DELAY);
+  // もう一度動かしても（6個のまま）出ない
+  r = rushDrop(g, null);
+  assert.equal(r.events.some((e) => e.type === 'nearClear'), false);
+  // 全部消えた＝全消し
+  const s1 = g.score, n1 = g.rush.nextRow;
+  g.board = Array(N).fill(null);
+  r = rushDrop(g, null);
+  const all = r.events.find((e) => e.type === 'allClear');
+  assert.ok(all);
+  assert.equal(g.score - s1 >= ALL_BONUS, true);
+  assert.equal(g.rush.nextRow, n1 + ALL_DELAY);
+  assert.equal(NEAR_CLEAR, 6);
+  // 実績（バッジ）は増やしていない
+  assert.equal(RUSH_BADGES.some((b) => /clear/i.test(b.id)), false);
+});

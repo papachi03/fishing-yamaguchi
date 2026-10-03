@@ -208,7 +208,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   let calloutTimer = 0;
   function callout(text, tone = '') {
     el.callout.textContent = text;
-    el.callout.className = `ika-m3-callout${tone ? ` is-${tone}` : ''}`;
+    el.callout.className = `ika-m3-callout${tone ? tone.split(' ').map((x) => ` is-${x}`).join('') : ''}`;   // 'huge clear' のように2つ付けられる（2026-10-03）
     el.callout.hidden = false;
     el.callout.classList.remove('is-pop');
     void el.callout.offsetWidth;
@@ -460,6 +460,14 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       } else if (ev.type === 'stuck') {
         callout(t(lang, TX.rush.stuck), 'blast');
         await sleep(dur(400));
+      } else if (ev.type === 'nearClear') {   // ほぼ全消し（2026-10-03）
+        callout(TX.rush.nearClear(lang, ev.points, ev.delay), 'combo clear'); sfx.goal();
+        if (!g.over) { setMood('relief'); await sleep(dur(900)); mood = ''; }
+      } else if (ev.type === 'allClear') {    // 全消し：盤が光って、いちばん大きな一言
+        callout(TX.rush.allClear(lang, ev.points, ev.delay), 'huge clear'); sfx.combo(); setTimeout(() => sfx.goal(), 380);
+        el.board.classList.remove('is-allclear'); void el.board.offsetWidth; el.board.classList.add('is-allclear');
+        setTimeout(() => el.board.classList.remove('is-allclear'), 1800);
+        if (!g.over) { setMood('relief'); await sleep(dur(1400)); mood = ''; }
       }
     }
     if (drained && !g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }
