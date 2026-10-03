@@ -18,7 +18,7 @@ export const ROW_FIRST = 12;
 export const SPECIAL_RATE = 0.1;
 // ほぼ全消し・全消しのごほうび（2026-10-03 ぱっぱ）。自動で400回遊ばせて全消しは0回・残り6個以下は上手な手で2%（ikabu-research/sim/rush_allclear.mjs）
 //   ＝ほぼ全消しは「上手な人がたまに見る」、全消しは「伝説」。どちらも盤のマークがその数を下回った瞬間に1回（また増えてから下回れば、もう一度）
-export const NEAR_CLEAR = 6;                 // 残りのマークがこれ以下で「ほぼ全消し」
+export const NEAR_CLEAR = 3;                 // 残りのマークがこれ以下で「ほぼ全消し」（10/3 ぱっぱ：6→3。自動の手では400回で0回＝人が墨ダマを使って狙えるくらい）
 export const NEAR_BONUS = 300, NEAR_DELAY = 2;     // 点・次のブロックが遅れる秒
 export const ALL_BONUS = 1000, ALL_DELAY = 5;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
