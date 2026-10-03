@@ -15,8 +15,7 @@ import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
-const AFTER_JET = 1.2;   // ジェットの後、巻き始めに「チリチリチリ…」と詰めて鳴らす秒数
-const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻き始めると「チリチリチリ…」）
+const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
 const RESIST_TENSION = 70;   // 糸の張りがこれ以上で「抵抗がある」＝ドラグ「ジーー」（ゲージが赤くなる80の少し手前）
 import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
@@ -2683,13 +2682,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   ジェットの直後と、糸の張りが強い（抵抗がある）時だけ、今までのドラグ「ジーー」
     const resist = reeling && s.tension >= RESIST_TENSION;
     feel.drag(yRun || jetRun || resist);
-    // ジェットの後は抵抗が少し残る：その後に巻き始めた最初の AFTER_JET 秒は「チリチリチリ…」、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
-    //   抵抗が残るのはジェットから JET_RESIST 秒まで。途中で指を離したら、次に押した時にまた最初から
+    // ジェットの「ジー！」の後は抵抗が少し残る：その後に巻いたら「チリリリ」を1回だけ、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
+    //   抵抗が残るのはジェットから JET_RESIST 秒まで
     const reelOn = reeling && !jetRun && !resist;
-    if (V.lastJet != null && V.lastJet !== V.reelJetSeen) { V.reelJetSeen = V.lastJet; V.reelBusyUntil = null; }
-    if (reelOn && V.reelJetSeen != null && now - V.reelJetSeen < JET_RESIST && V.reelBusyUntil == null) V.reelBusyUntil = now + AFTER_JET;
-    if (!reelOn && V.reelBusyUntil != null && now < V.reelBusyUntil) V.reelBusyUntil = null;   // 離した＝次に押した時にもう一度
-    feel.reel(reelOn, { busy: V.reelBusyUntil != null && now < V.reelBusyUntil });
+    if (V.lastJet != null && V.lastJet !== V.reelJetSeen) { V.reelJetSeen = V.lastJet; V.reelBurst = true; }
+    const burst = Boolean(V.reelBurst) && now - V.reelJetSeen < JET_RESIST;
+    if (feel.reel(reelOn, { burst })) V.reelBurst = false;
     // BGMは、やり取り（掛けた後）の間だけ下げる（ぱっぱ 2026-09-30：ドラグの出る音などが大事。
     //   アタリの合図やヤエンの走りで下げると、音量の変化でアタリが先に分かってしまうので下げない）
     bgm.duck(phase === 'fight');
