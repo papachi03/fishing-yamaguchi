@@ -70,7 +70,13 @@ function shell({ page, lang, name, desc, path }) {
   <meta property="og:image" content="${OG_IMAGE}" />
   <meta property="og:locale" content="${lang === 'en' ? 'en_US' : 'ja_JP'}" />
   <meta name="twitter:card" content="summary_large_image" />
-${robots}  <link rel="icon" href="/assets/images/logo_cd_96.png" />
+${robots}  <link rel="icon" href="/assets/ikabu/icons/favicon-96.png" />
+  <link rel="apple-touch-icon" href="/assets/ikabu/icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/ikabu.webmanifest" />
+  <meta name="theme-color" content="#0b2a2f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="イカ部" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="${FONTS}" rel="stylesheet" />

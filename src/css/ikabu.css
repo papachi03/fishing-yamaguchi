@@ -3346,3 +3346,28 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-over-next { font-size: 16px; padding: 12px 22px; }
 @media (prefers-reduced-motion: reduce) { .ika-st-vs, .ika-st-next { animation: none; } }
 .ika-st-sound { position: absolute; right: 46px; top: 0; width: 38px; height: 38px; border: 2px solid #fff; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; font-size: 17px; cursor: pointer; }
+
+/* ===== ホーム画面に追加の案内（2026-10-03） ===== */
+.ika-hs { margin: 0 0 14px; }
+.ika-hs-card { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: start; padding: 12px 14px; border: 3px solid var(--ika-ink); border-radius: 14px; background: #fff; box-shadow: 4px 4px 0 var(--ika-ink); }
+.ika-hs-card img { width: 56px; height: 56px; border-radius: 13px; }
+.ika-hs-card b { display: block; font-family: var(--font-maru); font-size: 15px; font-weight: 900; color: var(--ika-ink); line-height: 1.4; }
+.ika-hs-card p { margin: 4px 0 8px; font-size: 12.5px; line-height: 1.6; color: var(--ika-ink-soft); }
+.ika-hs-card .ika-btn { padding: 8px 14px; font-size: 14px; }
+.ika-hs--compact { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; }
+.ika-hs-pill { flex: 1; display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 2px solid var(--ika-ink); border-radius: 999px; background: #fff; color: var(--ika-ink); font-family: var(--font-maru); cursor: pointer; text-align: left; }
+.ika-hs-pill b { font-size: 13.5px; font-weight: 900; white-space: nowrap; } .ika-hs-pill span { font-size: 11.5px; color: var(--ika-ink-soft); }
+.ika-hs-later { width: 32px; height: 32px; border: 2px solid var(--ika-ink); border-radius: 50%; background: #fff; color: var(--ika-ink); font-weight: 900; cursor: pointer; }
+.ika-hs-sheet { position: fixed; z-index: 120; inset: 0; display: grid; place-items: end center; background: rgba(2,8,20,.6); padding: 0; }
+.ika-hs-sheet-in { position: relative; width: 100%; max-width: 520px; max-height: 92dvh; overflow-y: auto; box-sizing: border-box; padding: 18px 18px max(18px, env(safe-area-inset-bottom)); border: 3px solid var(--ika-ink); border-bottom: 0; border-radius: 18px 18px 0 0; background: #fff; color: var(--ika-ink); font-family: var(--font-maru); }
+.ika-hs-x { position: absolute; right: 10px; top: 10px; width: 36px; height: 36px; border: 2px solid var(--ika-ink); border-radius: 50%; background: #fff; font-size: 20px; font-weight: 900; cursor: pointer; }
+.ika-hs-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 2px 0 8px; font-size: 11px; font-weight: 700; } .ika-hs-icon img { width: 64px; height: 64px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,.25); }
+.ika-hs-title { margin: 0 0 6px; font-size: 17px; font-weight: 900; text-align: center; line-height: 1.4; }
+.ika-hs-p { margin: 0 0 10px; font-size: 14px; line-height: 1.7; } .ika-hs-small { font-size: 12.5px; color: var(--ika-ink-soft); }
+.ika-hs-h { margin: 10px 0 8px; font-size: 14px; font-weight: 900; color: var(--ika-sea); }
+.ika-hs-steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; counter-reset: hs; }
+.ika-hs-steps li { display: grid; grid-template-columns: 28px 44px 1fr; align-items: center; gap: 8px; padding: 8px 10px; border: 2px solid var(--ika-mist); border-radius: 10px; background: var(--ika-mist); font-size: 14px; font-weight: 700; line-height: 1.5; counter-increment: hs; }
+.ika-hs-steps li::before { content: counter(hs); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--ika-orange); color: #fff; font-weight: 900; font-size: 13px; }
+.ika-hs-steps li i { display: grid; place-items: center; width: 44px; height: 40px; border: 2px solid var(--ika-ink); border-radius: 9px; background: #fff; color: #1a73e8; font-style: normal; } .ika-hs-steps li i b { font-size: 12px; color: #1a73e8; }
+.ika-hs-ext, .ika-hs-install { display: block; width: 100%; box-sizing: border-box; margin: 0 0 10px; text-align: center; text-decoration: none; }
+.ika-hs-done { display: block; width: 100%; margin-top: 6px; }

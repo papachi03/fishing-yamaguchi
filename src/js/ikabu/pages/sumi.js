@@ -6,9 +6,11 @@ import { mountYouTube } from '../yt-facade.js';
 import { mountCerts } from '../games/certs-ui.js';
 import { mountTicketEarn } from '../games/tickets-ui.js';
 import { mountTrialNotice } from '../views/trial-notice.js';
+import { mountHomescreen } from '../games/homescreen-ui.js';
 
 const { lang } = boot(render);
-mountTrialNotice(lang);   // テストプレイ版だけ：記録・実績・レベルは正式版でリセットの注意書き
+mountTrialNotice(lang);
+mountHomescreen(document.querySelector('main .wrap'), { lang, compact: true });   // 📲 ホーム画面に追加の小さな案内（2026-10-03）   // テストプレイ版だけ：記録・実績・レベルは正式版でリセットの注意書き
 mountYouTube();
 mountTicketEarn({ lang });   // チケット🎫の付与（2026-09-30）。欄はTOP（games）にある
 mountCerts(null, { lang });   // ゴールド認定証の判定（欄はTOP）   // 遊び方の動画：押したら埋め込みに差し替える（2026-09-29 単体ページで呼び忘れていて、押しても再生されなかった）

@@ -1,0 +1,16 @@
+{
+  "name": "山口イカ部",
+  "short_name": "イカ部",
+  "description": "萩の海をもとにしたイカ釣りのゲーム。エギング・墨つなぎ・ガチャ・イカカード。",
+  "scope": "/ikabu/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b2a2f",
+  "theme_color": "#0b2a2f",
+  "lang": "ja",
+  "icons": [
+    { "src": "/assets/ikabu/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/ikabu/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/ikabu/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
