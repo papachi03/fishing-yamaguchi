@@ -2320,9 +2320,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.hug.ang += wrap(angleOf(0.95, 0.3) - V.hug.ang) * k8;
           taut = 1;
         } else if (B.kind === 'slack') {
+          // 2026-10-03 ぱっぱ：前は真上近くを向いて 26px 持ち上げ、浅い所では胴が海面から出ていた（本物は水の中で抱いて浮くだけ）。
+          //   胴の先（絵の高さ×上向きの割合）が海面より下に収まる分だけ持ち上げ、浅いほど体を寝かせる。上向きは最大 0.47（約28度）
+          const bodyH = V.hug.height ?? 100;
+          const room = V.egi.y - SCENE.surface - 10;                        // エギから海面（少し下）までの余裕
+          const lift = Math.min(26 * B.amp * easeOut(k), Math.max(0, room - 0.77 * bodyH));   // 0.3＝胴の幅が傾いて上に出る分
           V.hug.x = V.egi.x - 6 * easeOut(k);
-          V.hug.y = V.egi.y - 26 * B.amp * easeOut(k);
-          V.hug.ang += wrap(angleOf(0.5, -0.85) - V.hug.ang) * k8;
+          V.hug.y = V.egi.y - lift;
+          const up = clamp((V.hug.y - SCENE.surface - 10) / bodyH - 0.3, 0, 0.47);
+          V.hug.ang += wrap(angleOf(Math.sqrt(1 - up * up), -up) - V.hug.ang) * k8;
           taut = 0.02;
         } else {
           V.hug.x = V.egi.x + jitter * 0.5;
