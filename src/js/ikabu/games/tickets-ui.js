@@ -18,10 +18,17 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
   earnMounted = true;
   const T = HUB_TEXT.tickets;
   let toastEl = null;
+  let capShown = null;   // 上限の知らせを出した日（1日1回）
   const show = (got, why) => {
-    if (!toast || got <= 0) return;
-    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'ika-tickets-toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
-    toastEl.textContent = T.pop(lang, got, why);
+    if (!toast) return;
+    let text;
+    if (got > 0) text = T.pop(lang, got, why).replace(/（/, '\n（').replace(/ {2}\(/, '\n(');   // 理由は2行目に（途中で折れないように）
+    else if (why.includes('cap') && capShown !== utcDay()) { capShown = utcDay(); text = T.capPop(lang); }
+    if (!text) return;
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'ika-tickets-toast'; toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite'); }
+    document.body.appendChild(toastEl);   // いちばん後ろに付け直す（後から開いたゲームの画面より上に出す）
+    toastEl.classList.toggle('is-cap', got <= 0);
+    toastEl.textContent = text;
     toastEl.classList.remove('is-on');
     void toastEl.offsetWidth;
     toastEl.classList.add('is-on');
@@ -40,13 +47,13 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
     apply((rec, day) => {
       let got = 0, why = [], r = rec;
       if (d.game === 'story') { const p = earnStory(r, d.amount ?? 0, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // ストーリーの初回クリア（2026-10-03）
-      if (d.game === 'battle') { const b = earnBattle(r, { day, win: Boolean(d.win) }); return { rec: b.rec, got: b.got, why: b.why }; }   // 対戦は「1戦」の枠と別
+      if (d.game === 'battle') { const b = earnBattle(r, { day, win: Boolean(d.win) }); return { rec: b.rec, got: b.got, why: b.got ? b.why : ['cap'] }; }   // 対戦は「1戦」の枠と別
       if (d.game === 'photo') { const p = earnPhoto(r, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // 写真部への投稿（1日1枚・2026-10-01）
       if (d.game === 'invite') { const p = earnInvite(r, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // 友だち紹介（2枚×5回・2026-10-01）
       const a = earnPlay(r, { day }); r = a.rec; got += a.got; why.push(...a.why);
       if (d.game === 'sumi' && d.goal) { const b = earnSumiGoal(r, { day }); r = b.rec; got += b.got; why.push(...b.why); }
       if (d.game === 'rush') { const c = earnRush60(r, { day, seconds: d.seconds ?? 0 }); r = c.rec; got += c.got; why.push(...c.why); }
-      return { rec: r, got, why };
+      return { rec: r, got, why: got ? why : ['cap'] };   // 0枚＝今日の分は上限（知らせを1日1回）
     });
   });
   addEventListener('ikabu:cert', (e) => {

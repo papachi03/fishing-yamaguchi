@@ -3371,3 +3371,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-hs-steps li i { display: grid; place-items: center; width: 44px; height: 40px; border: 2px solid var(--ika-ink); border-radius: 9px; background: #fff; color: #1a73e8; font-style: normal; } .ika-hs-steps li i b { font-size: 12px; color: #1a73e8; }
 .ika-hs-ext, .ika-hs-install { display: block; width: 100%; box-sizing: border-box; margin: 0 0 10px; text-align: center; text-decoration: none; }
 .ika-hs-done { display: block; width: 100%; margin-top: 6px; }
+/* ika-tickets-toast 2026-10-03：ゲーム・対戦・ストーリー・ホーム画面の案内より上に、画面の上側に出す（下は操作ボタンと重なって見えなかった。ぱっぱ） */
+.ika-tickets-toast { z-index: 2147483001; top: max(14px, env(safe-area-inset-top)); bottom: auto; transform: translate(-50%, -20px); width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; white-space: pre-line; }   /* 幅：真ん中寄せ（left 50%）だと画面の半分に縮んで「ゲ／ット」と折れた */
+.ika-tickets-toast.is-on { animation: ika-tickets-toast-top 4.2s ease-out forwards; }
+.ika-tickets-toast.is-cap { color: #fff; border-color: #9fc7cf; font-size: 14px; }
+@keyframes ika-tickets-toast-top { 0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); } 8% { opacity: 1; transform: translate(-50%, 0) scale(1.06); } 14% { transform: translate(-50%, 0) scale(1); } 86% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -8px); } }

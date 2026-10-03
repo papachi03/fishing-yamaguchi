@@ -867,6 +867,7 @@ export const HUB_TEXT = {
       // 2026-09-30 ぱっぱ：ゲームの後に「チケット〇枚ゲット！」と分かる知らせを
       return lang === 'en' ? `🎫 You got ${got} ticket${got > 1 ? 's' : ''}!${w ? `  (${w})` : ''}` : `🎫 チケット ${got}枚ゲット！${w ? `（${w}）` : ''}`;
     },
+    capPop: (lang) => (lang === 'en' ? '🎫 Today’s play tickets are maxed out. More tomorrow!' : '🎫 今日遊んでもらえるチケットは上限です（あしたまた貯まります）'),   // 2026-10-03
     how: pair('1戦遊ぶ +1（1日5回まで）／今日はじめの1戦 +1／墨つなぎで今日の目標 +1／墨のがれで60秒 +1／認定証 +10／写真部に投稿 +1（1日1回）', '+1 per game (5 a day) · +1 first game of the day · +1 daily goal in Ink Link · +1 for 60 s in Ink Escape · +10 per certificate · +1 for a gallery post (once a day)'),
     photoLink: pair('📷 写真部に写真を投稿して🎫1枚 →', '📷 Post a photo in the gallery for 🎫 +1 →'),
     code: pair('コードを入れる', 'Enter a code'),
