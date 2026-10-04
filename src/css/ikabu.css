@@ -3473,3 +3473,6 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
 .ika-play-card--pic .ika-play-card-tag { position: absolute; top: 12px; left: 12px; box-shadow: 2px 2px 0 var(--ika-ink); }
 .ika-play-card--pic .ika-play-card-no, .ika-play-card--pic .ika-play-card-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
 .ika-play-card--pic .ika-play-card-desc { margin-top: 0; }
+
+/* アタリチャレンジ：吹き出しは竿先から離して、舞台の下の方（左下の欄の上）に。竿先・水面の糸を見ている目の邪魔をしない（2026-10-04 感想 #36） */
+.ika-egi-stage.is-blind .ika-egi-callout, .ika-egi-stage.is-blind .ika-egi-callout.is-guide { top: auto; bottom: 26%; font-size: 14px; padding: 4px 12px; opacity: 0.92; }
