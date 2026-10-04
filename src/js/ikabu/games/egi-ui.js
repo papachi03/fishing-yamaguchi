@@ -1252,7 +1252,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'yaen-stolen':
           V.punchAt = now;
-          feel.fire('punch');
+          feel.fire('punch', { soft: settings.blind });
           callout(t(lang, TX.yaen.stolenMsg), 'bad', 2600);
           break;
         case 'yaen-eat':
@@ -1327,7 +1327,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           }
           // 手に伝わるアタリ（コン・走る）だけ震わせる。止まる・フケるは目で気づくアタリなので震わせない
           // アタリチャレンジでは「走る」「ずっしり」の音（ポポポ）を鳴らさない：ほかのアタリに音が無いので、そこだけ音があると逆に不自然（2026-10-04 ぱっぱ）。振動（Android）は残す
-          if (e.kind === 'tap') feel.fire('tap', { loud: settings.blind });
+          if (e.kind === 'tap') feel.fire('tap', { soft: settings.blind });
           else if (e.kind === 'run' || e.kind === 'heavy') feel.fire('run', { silent: settings.blind });
           if (settings.blind && V.blindStats) V.blindStats.bites += 1;
           syncBait();
@@ -1352,7 +1352,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           resetForNextCast();
           break;
         case 'tailor-touch':
-          feel.fire('punch');
+          feel.fire('punch', { soft: settings.blind });
           callout(e.double ? t(lang, TX.tailor.double) : TX.tailor.touch(lang, tailorColor(e.i)), e.double ? 'good' : '', 1800);
           break;
         case 'tailor-lean':
@@ -1480,7 +1480,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           // イカパンチ：エギがピクッと弾かれる（描画側）。やさしいモードは文字でも知らせる
           V.punchAt = now;
           spawnBubbles(V.egi.x, V.egi.y, 5, 1);
-          feel.fire('punch');
+          feel.fire('punch', { soft: settings.blind });
           if (cue() === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.punch);
             el.cueLabel.className = 'ika-egi-cue is-light';
