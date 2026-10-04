@@ -1252,7 +1252,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'yaen-stolen':
           V.punchAt = now;
-          feel.fire('punch', { soft: settings.blind });
+          feel.fire('punch', { silent: settings.blind });   // アタリチャレンジは音なし（糸の震えと波紋で見せる）
           callout(t(lang, TX.yaen.stolenMsg), 'bad', 2600);
           break;
         case 'yaen-eat':
@@ -1352,7 +1352,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           resetForNextCast();
           break;
         case 'tailor-touch':
-          feel.fire('punch', { soft: settings.blind });
+          feel.fire('punch', { silent: settings.blind });   // アタリチャレンジは音なし（糸の震えと波紋で見せる）
           callout(e.double ? t(lang, TX.tailor.double) : TX.tailor.touch(lang, tailorColor(e.i)), e.double ? 'good' : '', 1800);
           break;
         case 'tailor-lean':
@@ -1480,7 +1480,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           // イカパンチ：エギがピクッと弾かれる（描画側）。やさしいモードは文字でも知らせる
           V.punchAt = now;
           spawnBubbles(V.egi.x, V.egi.y, 5, 1);
-          feel.fire('punch', { soft: settings.blind });
+          feel.fire('punch', { silent: settings.blind });   // アタリチャレンジは音なし（糸の震えと波紋で見せる）
           if (cue() === 'easy') {
             el.cueLabel.textContent = t(lang, TX.cue.punch);
             el.cueLabel.className = 'ika-egi-cue is-light';
@@ -2485,6 +2485,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const L = Math.hypot(lineEnd.x - tip.x, lineEnd.y - tip.y);
       const sag = (1 - taut) * L * 0.16 * sagMul;
       const mid = { x: (tip.x + lineEnd.x) / 2, y: (tip.y + lineEnd.y) / 2 + sag };
+      // イカパンチ：糸がブルッと細かく震える（0.45秒・だんだん収まる）
+      const pz = V.punchAt != null && !reduced ? (now - V.punchAt) / 0.45 : 9;
+      if (pz < 1) { mid.x += 6 * Math.sin(now * 70) * (1 - pz); mid.y += 4 * Math.sin(now * 53) * (1 - pz); }
       d = `M${f1(tip.x)},${f1(tip.y)} Q${f1(mid.x)},${f1(mid.y)} ${f1(lineEnd.x)},${f1(lineEnd.y)}`;
       lineCtrl = mid;
     }
@@ -2547,7 +2550,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (!V.lineBroken && lineEnd.y > S.surface + 4 && tip.y < S.surface) {
       // 糸はたるんだ曲線なので、まっすぐな線ではなく曲線が水面と交わる点に輪を置く（ぱっぱ指摘：フリーフォールで輪がずれる）
       const ex = lineCtrl ? quadCrossX(tip, lineCtrl, lineEnd, S.surface) : lerp(tip.x, lineEnd.x, (S.surface - tip.y) / (lineEnd.y - tip.y));
-      setAttrs(n.entry, { cx: f1(ex), cy: f1(S.surface + 1), rx: f1(9 + 2 * Math.sin(now * 3)), opacity: '0.7' });
+      // イカパンチ：入水点の輪が波紋のように広がって薄れる（0.8秒）
+      const rz = V.punchAt != null && !reduced ? (now - V.punchAt) / 0.8 : 9;
+      if (rz < 1) setAttrs(n.entry, { cx: f1(ex), cy: f1(S.surface + 1), rx: f1(9 + 22 * rz), ry: f1(3.5 + 4 * rz), opacity: (0.95 * (1 - rz) + 0.15).toFixed(2) });
+      else setAttrs(n.entry, { cx: f1(ex), cy: f1(S.surface + 1), rx: f1(9 + 2 * Math.sin(now * 3)), ry: '3.5', opacity: '0.7' });
     } else n.entry.setAttribute('opacity', '0');
 
     /* ----- エギの絵（空中と水中で前後を変える） ----- */
