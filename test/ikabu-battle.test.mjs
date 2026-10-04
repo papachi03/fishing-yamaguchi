@@ -27,13 +27,19 @@ test('スターターデッキは検査に通り、練習デッキはNだけ', (
   assert.equal(checkDeck([...d.slice(0, 29), 120, 120], CARDS).ok, false);   // 31枚・UR2枚
 });
 
-test('最初の手札には潮2以下で出せるイカが必ず1枚ある（無ければ配り直し）', () => {
-  for (let i = 0; i < 40; i++) {
-    const st = mk({ seed: `m${i}` });
+test('最初の手札には、自分の最初のターンの潮（先攻1・後攻2）で出せるイカが必ず1枚ある', () => {
+  for (const first of ['me', 'cpu']) for (let i = 0; i < 200; i++) {
+    const st = mk({ seed: `m${i}`, first });
     for (const side of ['me', 'cpu']) {
-      const hand = side === 'me' ? st.players.me.hand.slice(0, 5) : st.players.cpu.hand;   // 先攻の6枚目は引いた分
-      assert.ok(hand.some((x) => x.card.kind === 'squid' && x.card.cost <= 2), `${side} seed m${i}`);
+      const p = st.players[side];
+      const hand = side === first ? p.hand.slice(0, 5) : p.hand;   // 先攻の6枚目は引いた分
+      const tide = side === first ? 1 : 2;
+      assert.ok(hand.some((x) => x.card.kind === 'squid' && x.card.cost <= tide), `${first}先攻 ${side} seed m${i}`);
+      assert.equal(p.hand.length + p.deck.length, DECK_SIZE);   // カードが増えも減りもしない
     }
+    const fp = st.players[first];   // 先攻は潮1で実際に前列へ出せる
+    assert.equal(fp.tide, 1);
+    assert.ok(fp.hand.some((x) => x.card.kind === 'squid' && costOf(st, first, x) <= fp.tide), `先攻が出せない seed m${i}`);
   }
 });
 
