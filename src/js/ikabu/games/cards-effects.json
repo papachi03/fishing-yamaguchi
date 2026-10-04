@@ -400,11 +400,8 @@
 "61": [
 {
 "when": "play",
-"do": "buff",
-"who": "enemyOne",
-"stat": "atk",
-"n": -1,
-"until": "turnEnd"
+"do": "bounce",
+"who": "enemyOne"
 }
 ],
 "62": [
@@ -615,7 +612,7 @@
 "who": "enemyOne",
 "stat": "atk",
 "n": -2,
-"until": "turnEnd"
+"until": "oppTurnEnd"
 }
 ],
 "82": [
@@ -625,7 +622,7 @@
 "who": "enemyAll",
 "stat": "atk",
 "n": -1,
-"until": "turnEnd"
+"until": "oppTurnEnd"
 }
 ],
 "83": [
@@ -677,7 +674,7 @@
 "who": "enemyAll",
 "stat": "atk",
 "n": -2,
-"until": "turnEnd"
+"until": "oppTurnEnd"
 }
 ],
 "87": [

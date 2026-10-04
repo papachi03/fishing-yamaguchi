@@ -146,7 +146,7 @@ export function startTurn(st) {
   if (p.tailwind) p.tide = Math.min(TIDE_MAX, p.tide + TAILWIND_TIDE);
   p.summoned = false; p.techUsed = 0; p.techLimit = null; p.noAttack = st.turn === 1;   // 先攻の最初のターンは攻撃できない
   for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.shakuri = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
-  for (const x of P(st, other(side)).front) if (x) x.shield = false;
+  // 「攻撃されない」（ダート・ドリフト）は相手の番の終わりまで残す。前は相手の番の始めに外していて、自分の番にしか効かない空振りだった（2026-10-04 ぱっぱ）
   if (!draw(st, side)) { finish(st, other(side)); return st; }
   fireTraps(st, other(side), 'enemyTurnStart', {});
   return st;
@@ -400,6 +400,38 @@ function check(st) {
 }
 
 /* ---------- CPU の手（読みやすい型） ---------- */
+// 次の相手の番に、相手の前列のイカで釣られてしまう自分のイカの数（攻撃>防御）
+function exposedCount(st, side, { atkDelta = new Map(), defDelta = new Map(), gone = null, safe = null } = {}) {
+  const atks = P(st, other(side)).front.filter((e) => e && e !== gone).map((e) => statOf(st, e, 'atk') + (atkDelta.get(e) ?? 0));
+  return P(st, side).front.filter((x) => x && x !== safe && !x.shield).filter((x) => atks.some((a) => a > statOf(st, x, 'def') + (defDelta.get(x) ?? 0))).length;
+}
+// 守りのテクニックのうち、釣られるイカをいちばん減らす1手。減らないなら null
+function guardMove(st, side, techs) {
+  const own = P(st, side).front.filter(Boolean), en = P(st, other(side)).front.filter(Boolean);
+  if (!own.length || !en.length) return null;
+  const base = exposedCount(st, side);
+  if (!base) return null;
+  const lasting = (u) => u === 'oppTurnEnd' || u === 'nextTurn' || u === 'forever';
+  let best = null;
+  const consider = (x, target, after) => { if (after < base && (!best || after < best.after)) best = { type: 'play', x, target, after }; };
+  for (const x of techs) {
+    for (const e of effectsOf(st, x.no)) {
+      if (e.when !== 'play') continue;
+      if (e.do === 'buff' && e.stat === 'def' && e.n > 0 && lasting(e.until) && ['ownOne', 'ownAll', 'ownNightOne', 'ownNight'].includes(e.who)) {
+        const pool = e.who.startsWith('ownNight') ? own.filter((o) => isNight(o.card)) : own;
+        if (e.who === 'ownOne' || e.who === 'ownNightOne') for (const t of pool) consider(x, t, exposedCount(st, side, { defDelta: new Map([[t, e.n]]) }));
+        else consider(x, null, exposedCount(st, side, { defDelta: new Map(pool.map((o) => [o, e.n])) }));
+      }
+      if (e.do === 'buff' && e.stat === 'atk' && e.n < 0 && lasting(e.until) && (e.who === 'enemyOne' || e.who === 'enemyAll')) {
+        if (e.who === 'enemyOne') for (const t of en) consider(x, t, exposedCount(st, side, { atkDelta: new Map([[t, e.n]]) }));
+        else consider(x, null, exposedCount(st, side, { atkDelta: new Map(en.map((o) => [o, e.n])) }));
+      }
+      if (e.do === 'shield' && e.who === 'ownOne') for (const t of own) consider(x, t, exposedCount(st, side, { safe: t }));
+      if (e.do === 'bounce' && e.who === 'enemyOne') for (const t of en) consider(x, t, exposedCount(st, side, { gone: t }));
+    }
+  }
+  return best && { type: best.type, x: best.x, target: best.target };
+}
 // 次の1手を返す：{ type:'play', x, target } | { type:'attack', x, target } | { type:'end' }
 export function cpuNext(st, side = 'cpu') {
   if (st.active !== side || st.winner) return { type: 'end' };
@@ -454,6 +486,9 @@ export function cpuNext(st, side = 'cpu') {
     if (allBuff && gain(allBuff.n, 0) > 0) return { type: 'play', x, target: null };
     if (allDebuff && gain(0, allDebuff.n) > 0) return { type: 'play', x, target: null };
   }
+  // 3c. 守り：次の相手の番で釣られそうな自分のイカがいれば、守りのテクニックで減らす（2026-10-04 前は守りを一度も使わなかった）
+  const g = guardMove(st, side, techs);
+  if (g) return g;
   // 4. トラップを伏せる
   const trap = p.hand.find((x) => x.card.kind === 'trap' && canPlay(st, side, x).ok);
   if (trap) return { type: 'play', x: trap, target: null };
