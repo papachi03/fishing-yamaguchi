@@ -61,3 +61,22 @@ export function watchShake(onShake) {
   addEventListener('devicemotion', onMotion);
   return () => removeEventListener('devicemotion', onMotion);
 }
+
+// スマホの傾き（2026-10-04 ぱっぱ：奥へ少し倒すとテンションフォール）。重力の向きから「画面がどれだけ上を向いたか」を度で出す。
+//   0 度＝画面を立てて自分に向けている、90 度＝机に置いたように上向き。奥へ倒す（上側を向こうへ）ほど大きくなる。
+//   縦・横どちらで持っても同じ式（画面の面に沿った重力の大きさと、画面に垂直な重力の比）
+export const pitchOf = (gx, gy, gz) => (Math.atan2(-gz, Math.hypot(gx, gy)) * 180) / Math.PI;
+
+// 傾きの見張り（振ってしゃくると同じ devicemotion を使うので、新しい許可は要らない）。ゆっくり平らにならした角度を onTilt(度) に渡す
+export function watchTilt(onTilt, k = 0.85) {
+  let p = null;
+  const onMotion = (e) => {
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.x == null) return;
+    const v = pitchOf(g.x, g.y, g.z);
+    p = p == null ? v : k * p + (1 - k) * v;
+    onTilt(p);
+  };
+  addEventListener('devicemotion', onMotion);
+  return () => removeEventListener('devicemotion', onMotion);
+}

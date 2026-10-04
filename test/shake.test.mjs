@@ -31,3 +31,13 @@ test('重力を含む値でも、じっとしていれば揺れは0に近い', (
   for (let i = 0; i < 50; i++) m = f(0, 9.8, 0.3);
   assert.ok(m < 0.1, String(m));
 });
+
+// スマホの傾き（2026-10-04）：0 度＝画面を立てて自分に向けている、90 度＝上向き。縦・横どちらで持っても同じ
+import { pitchOf } from '../src/js/ikabu/games/shake.js';
+test('pitchOf：立てる 0 度・上向き 90 度・45 度で持つ 45 度。横持ちでも同じ', () => {
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 0.5, `${a} ≒ ${b}`);
+  near(pitchOf(0, -9.8, 0), 0);
+  near(pitchOf(0, 0, -9.8), 90);
+  near(pitchOf(0, -6.93, -6.93), 45);
+  near(pitchOf(-6.93, 0, -6.93), 45);   // 横持ち
+});

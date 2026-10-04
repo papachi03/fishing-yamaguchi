@@ -592,6 +592,7 @@ function endCast(s, why) {
   s.dryCasts = s.signaled ? 0 : (s.dryCasts ?? 0) + 1;
   s.quiet = s.reacted ? 0 : (s.quiet ?? 0) + 1;
   s.tensionFall = false;
+  s.tiltFall = false;
   s.phase = s.casts > 0 && s.egi > 0 ? 'result' : 'over';
   if (s.phase === 'over') emit(s, 'over', { total: totalWeight(s) });
 }
@@ -642,6 +643,7 @@ function jerk(s, kind = 'lift') {
   s.lastJerk = s.t;
   s.judged = false;
   s.tensionFall = false;
+  s.tiltFall = false;
   // 跳ね上がる高さ（2026-09-29 ぱっぱ：前の 1.2/1.8m だとすぐ底に着き、フォールで抱かせる間がなかった）。手前に寄る距離は据え置き
   let [lift, pull] = JERK_MOVE[kind === 'lift' && double ? 'double' : kind];
   // ドラグ（10/2 ぱっぱ）：締めるとしゃくりの力がそのまま伝わってクイックに跳ね上がり、ゆるいとドラグが出て力が逃げ、上がりが小さくふわっとする
@@ -652,6 +654,30 @@ function jerk(s, kind = 'lift') {
   s.bottomFor = 0;
   s.phase = 'action';
   emit(s, 'jerk', { streak: s.jerks.length, kind, double: false, slackN: s.slackJerks ?? 0 });   // 2段の知らせは、遅れて上がる時に出す
+}
+
+// しゃくらずにテンションフォールに入る（2段しゃくりの後に押し続けた時。2026-10-04 ぱっぱ：前は3回目のしゃくりになった）。
+//   竿を立てたまま糸を張って落とす＝本物の手の動き。しゃくった後の誘い（action）の間だけ。離すと release() で終わる
+export function holdFall(s) {
+  if (s.pressing || s.phase !== 'action' || s.method !== 'egi') return false;
+  s.pressing = true;
+  s.pressAt = s.t;
+  if (!s.tensionFall) { s.tensionFall = true; emit(s, 'fall', { mode: 'tension' }); }
+  return true;
+}
+// スマホを奥へ少し倒すとテンションフォール・戻すと終わる（振ってしゃくる機能の時。2026-10-04 ぱっぱ）。
+//   倒したまま振り上げると、ふつうのしゃくり・合わせになる（jerk が tiltFall を終える）
+export function setTiltFall(s, on) {
+  if (on) {
+    if (s.phase !== 'action' || s.method !== 'egi' || s.tiltFall) return false;
+    s.tiltFall = true;
+    if (!s.tensionFall) { s.tensionFall = true; emit(s, 'fall', { mode: 'tension' }); }
+    return true;
+  }
+  if (!s.tiltFall) return false;
+  s.tiltFall = false;
+  if (!s.pressing && s.tensionFall) { s.tensionFall = false; emit(s, 'fall', { mode: 'free' }); }
+  return true;
 }
 
 export function press(s) {
@@ -1170,7 +1196,7 @@ function jadoAction(s, dt) {
 export function release(s) {
   if (!s.pressing) return;
   s.pressing = false;
-  if (s.tensionFall) {
+  if (s.tensionFall && !s.tiltFall) {
     s.tensionFall = false;
     emit(s, 'fall', { mode: 'free' });
   }

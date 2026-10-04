@@ -15,6 +15,10 @@ import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
+import { holdFall, setTiltFall } from './egi.js';
+import { watchTilt } from './shake.js';
+const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内に押したら 0.25 秒待って、しゃくりかテンションフォールか見分ける（2026-10-04）
+const TILT = { on: 15, off: 9, block: 800 };       // 奥へ倒す角度（度）：15 度で入る・9 度未満で終わる。振り上げた後 0.8 秒は入らない
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
 const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
@@ -889,14 +893,34 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function onShake() {
     // しゃくり（沈下・フォール）とアワセ（合図）の時だけ。巻いている時（ファイト）に振っても何もしない
     if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) return;
+    if (tilt.on) { tilt.on = false; tilt.armed = false; tilt.blockUntil = performance.now() + TILT.block; }   // 倒したまま振り上げた＝しゃくり・合わせ（エンジン側でもテンションフォールが終わる）
     doPress();
     doRelease();
+  }
+  // スマホを奥へ倒すとテンションフォール（2026-10-04 ぱっぱ）。基準は着水してからの最初の角度（人によって持つ角度が違うので）
+  const tilt = { base: null, on: false, armed: true, blockUntil: 0 };
+  let stopTilt = null;
+  function onTilt(p) {
+    if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) { tilt.base = null; tilt.on = false; tilt.armed = true; return; }
+    if (tilt.base == null) { tilt.base = p; return; }
+    if (tilt.on && !s.tiltFall) { tilt.on = false; tilt.armed = false; }   // ボタンでしゃくった等でエンジン側が終えた
+    const d = p - tilt.base;
+    if (tilt.on) {
+      if (d < TILT.off) { tilt.on = false; setTiltFall(s, false); onEvents(s.events.splice(0)); setButton(); }
+      return;
+    }
+    if (!tilt.armed) { if (d < TILT.off) tilt.armed = true; return; }
+    if (performance.now() < tilt.blockUntil) return;
+    if (d >= TILT.on && setTiltFall(s, true)) { tilt.on = true; onEvents(s.events.splice(0)); setButton(); }
   }
   async function setShake(on, ask) {
     if (on && ask && (await requestShakePermission()) !== 'granted') { callout(t(lang, TX.feel.shakeDenied), '', 3600); on = false; }
     shakeOn = on;
     stopShake?.();
     stopShake = on ? watchShake(onShake) : null;
+    stopTilt?.();
+    stopTilt = on ? watchTilt(onTilt) : null;
+    tilt.base = null; tilt.on = false; tilt.armed = true;
     writePref('ikabu.egi.shake', on);
     syncFeel();
   }
@@ -1912,6 +1936,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     onEvents(s.events.splice(0));
     setButton();
   }
+  // しゃくらずにテンションフォール（2段しゃくりの後に押し続けた時）
+  function doHoldFall() {
+    if (!s || frozen) return;
+    if (!holdFall(s)) { doPress(); return; }
+    onEvents(s.events.splice(0));
+    setButton();
+  }
+  const followUp = () => s && s.method === 'egi' && s.phase === 'action' && s.t - (s.lastJerk ?? -99) <= FOLLOW_HOLD.within;
   function doRelease() {
     if (!s || frozen) return;
     release(s);
@@ -1972,7 +2004,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (ptr) return;
     const sw = SWIPE[e.pointerType] ?? SWIPE.touch;
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, pressed: false, darted: false, px: sw.px };
-    if (canSwipe()) {
+    if (canSwipe() && followUp()) {
+      // しゃくりの直後：0.25 秒以内に離せばしゃくり（onUp の素早いタップ）、押し続ければしゃくらずにテンションフォール（2026-10-04 ぱっぱ）
+      ptr.timer = setTimeout(() => { if (ptr && !ptr.pressed && !ptr.darted) { ptr.pressed = true; doHoldFall(); } }, Math.max(sw.ms, FOLLOW_HOLD.ms));
+    } else if (canSwipe()) {
       ptr.timer = setTimeout(() => { if (ptr && !ptr.pressed && !ptr.darted) { ptr.pressed = true; doPress(); } }, sw.ms);
     } else {
       ptr.pressed = true;
@@ -2003,11 +2038,21 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerup', onUp);
   addEventListener('pointercancel', onUp);
+  let kbTimer = 0;   // キーボードでも、しゃくりの直後は 0.25 秒待って見分ける
   el.btn.addEventListener('keydown', (e) => {
-    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doPress(); }
+    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+      e.preventDefault();
+      if (followUp()) { clearTimeout(kbTimer); kbTimer = setTimeout(() => { kbTimer = 0; doHoldFall(); }, FOLLOW_HOLD.ms); }
+      else doPress();
+    }
     if (e.key === 'ArrowUp') { e.preventDefault(); doDart(); }
   });
-  el.btn.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); doRelease(); } });
+  el.btn.addEventListener('keyup', (e) => {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault();
+    if (kbTimer) { clearTimeout(kbTimer); kbTimer = 0; doPress(); doRelease(); return; }   // 素早いタップ＝しゃくり
+    doRelease();
+  });
   // フォールの種類の表示
   function setFallMode(mode) {
     V.fallMode = mode;
