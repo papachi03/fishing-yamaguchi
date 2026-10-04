@@ -31,9 +31,19 @@ const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25�
 const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
 // reelSample：ぱっぱのリールの生音（2026-10-03）。巻いている間の「チリ…チリリ…」。
 //   1本のmp3に6つの音（短い2・中くらい3・長い1）を無音をはさんで並べてあり、読んだ後に無音で切り分ける
+const WAVE_VOL = 0.3;   // 波の音（ゲームの画面が出ている間ずっと・ドラグより小さく。2026-10-04）
 const REEL_VOL = 0.1;   // ドラグのループより約8dB小さく（ぱっぱ：寄せている時は静かにチリリ。勢いよく糸が出る時のドラグは今の大きさ）
-export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null } = {}) {
-  const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null, reelUrl: reelSample, reel: null, reelLoading: null };
+export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null, waveSample = null } = {}) {
+  const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null, reelUrl: reelSample, reel: null, reelLoading: null, waveUrl: waveSample, wave: null, waveLoading: null };
+  function loadWave() {
+    if (!st.waveUrl || st.wave || st.waveLoading || !st.ctx) return;
+    st.waveLoading = fetch(st.waveUrl)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+      .then((ab) => new Promise((ok, ng) => { const q = st.ctx.decodeAudioData(ab, ok, ng); if (q?.then) q.then(ok, ng); }))
+      .then((buf) => { st.wave = buf; })
+      .catch(() => {})   // 読めなければ鳴らさない
+      .finally(() => { st.waveLoading = null; });
+  }
   function loadReel() {
     if (!st.reelUrl || st.reel || st.reelLoading || !st.ctx) return;
     st.reelLoading = fetch(st.reelUrl)
@@ -71,6 +81,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
       st.ctx.resume?.();
       loadSample();
       loadReel();
+      loadWave();
     } catch { st.ctx = null; }
   }
   // しゃくりの「ジッ！」：本物のドラグ音の頭だけ（0.22秒）。音源が無ければ短い合成音
@@ -205,6 +216,27 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
     reelNext = t + p.dur / rate + 0.45 + Math.random() * 0.4;
     return burst;
   }
+  // 波の音：ambient(true) でループを鳴らし、ambient(false) で止める（何度呼んでもよい）。
+  //   mp3 は頭と終わりにわずかな無音が付くので、0.06 秒ずつ内側をループにする（波の音なら切れ目は聞こえない）
+  let waveNode = null;
+  function ambient(on) {
+    const ctx = st.ctx;
+    if (!on || !st.sound || !ctx || !st.wave) {
+      if (waveNode && ctx) {
+        const t = ctx.currentTime;
+        try { waveNode.g.gain.cancelScheduledValues(t); waveNode.g.gain.setTargetAtTime(0.0001, t, 0.25); waveNode.src.stop(t + 1.2); } catch { /* 止まっている */ }
+      }
+      waveNode = null;
+      return;
+    }
+    if (waveNode) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = st.wave; src.loop = true;
+    src.loopStart = 0.06; src.loopEnd = Math.max(1, st.wave.duration - 0.06);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(WAVE_VOL, t, 0.6);   // ふわっと入る
+    src.connect(g).connect(ctx.destination); src.start(t, 0.06 + Math.random() * 40);   // 毎回ちがう所から
+    waveNode = { src, g };
+  }
   // ジェット噴射「シュワッ」：ノイズの帯域を低→高へ滑らせ、ふくらんで消える
   function whoosh(vol = 1) {
     const ctx = st.ctx;
@@ -299,9 +331,10 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
     get vibrate() { return st.vibrate; },
     get sound() { return st.sound; },
     setVibrate(v) { st.vibrate = Boolean(v); },
-    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); else { drag(false); reel(false); } },
+    setSound(v) { st.sound = Boolean(v); if (st.sound) unlock(); else { drag(false); reel(false); ambient(false); } },
     drag,
     reel,
+    ambient,
     unlock,
     // できごとを1つ伝える（振動と音をまとめて）
     fire(kind, opt) { buzz(kind, opt); play(kind, opt); },

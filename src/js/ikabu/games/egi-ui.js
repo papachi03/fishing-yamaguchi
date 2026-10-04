@@ -105,7 +105,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one' };   // テーラーのタナ（2026-09-28）
   // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
   const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
-  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true, dragSample: assetHref('/assets/ikabu/audio/gacha/se_drag.mp3'), reelSample: assetHref('/assets/ikabu/audio/reel-click.mp3') });   // ドラグ音は本物（2026-09-30）   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
+  const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true, dragSample: assetHref('/assets/ikabu/audio/gacha/se_drag.mp3'), reelSample: assetHref('/assets/ikabu/audio/reel-click.mp3'), waveSample: assetHref('/assets/ikabu/audio/wave-loop.mp3') });   // 波の音（2026-10-04）   // ドラグ音は本物（2026-09-30）   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
   // BGMは最初はオフ（2026-09-30 ぱっぱ：好みがあるので）。オンにした人だけ曲を読み込む
   const bgm = createBgm({ on: readPref('ikabu.egi.bgm') ?? false, track: 'egi', href: assetHref });
   const WIND_PRESET = { calm: { wind: 2, gust: 4, wave: 0.3 }, breezy: { wind: 5, gust: 8, wave: 0.8 }, strong: { wind: 7, gust: 12, wave: 1.3 } };
@@ -2181,7 +2181,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     lastNow = performance.now();
     raf = requestAnimationFrame(frame);
   }
-  function stop() { running = false; cancelAnimationFrame(raf); feel.drag(false); feel.reel(false); }
+  function stop() { running = false; cancelAnimationFrame(raf); feel.drag(false); feel.reel(false); feel.ambient(false); }
   // 画面の外・非表示タブでは止める。やり取りの途中で画面外に出ても止めない（急に負けないように）
   let inView = true;
   const sync = () => {
@@ -2782,6 +2782,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   ジェットの直後と、糸の張りが強い（抵抗がある）時だけ、今までのドラグ「ジーー」
     const resist = reeling && s.tension >= RESIST_TENSION;
     feel.drag(yRun || jetRun || resist);
+    feel.ambient(true);   // 波の音：ゲームの画面が出ている間（毎フレーム呼んでよい。画面の外・裏のタブでは stop() が止める）
     // ジェットの「ジー！」の後は抵抗が少し残る：その後に巻いたら「チリリリ」を1回だけ、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
     //   抵抗が残るのはジェットから JET_RESIST 秒まで
     // ヤエン：寄せている間（押していて、イカが抵抗していない時）もリールの「チリ… チリ…」（2026-10-03 ぱっぱ）
