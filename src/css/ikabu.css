@@ -3446,3 +3446,10 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
   .ika-news-inner { grid-template-columns: 1fr; }
   .ika-stk-band { flex-direction: column; align-items: flex-start; }
 }
+
+/* ---------- アタリチャレンジ（2026-10-04） ---------- */
+.ika-egi-play-blind { border-color: #1c2f6e; color: #1c2f6e; }
+.ika-egi-play-blind.is-active { background: #1c2f6e; border-color: #1c2f6e; color: #fff; }
+.ika-eg-blindfog { transition: opacity 0.45s ease; pointer-events: none; }
+.ika-eg-under { transition: opacity 0.45s ease; }
+.ika-egi-blind-sum { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: #e9edf8; color: #1c2f6e; font-size: 14px; line-height: 1.6; }

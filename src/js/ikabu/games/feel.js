@@ -281,9 +281,10 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
   function play(kind, opt = {}) {
     if (!st.sound || !st.ctx) return;
     switch (kind) {
-      case 'punch': blip({ type: 'noise', f0: 2400, dur: 0.02 }); blip({ type: 'noise', f0: 2400, dur: 0.02, at: 0.06 }); break;
-      case 'tap': blip({ type: 'sine', f0: 220, f1: 140, dur: 0.07, vol: 1.4 }); break;
-      case 'run': for (let i = 0; i < 4; i++) blip({ type: 'square', f0: 900, dur: 0.018, at: i * 0.045, vol: 0.5 }); break;
+      // loud：アタリチャレンジ（海の中が見えない）では、手に来るアタリの音を少し聞き取りやすく（2026-10-04）
+      case 'punch': { const k = opt.loud ? 1.8 : 1; blip({ type: 'noise', f0: 2400, dur: 0.02, vol: k }); blip({ type: 'noise', f0: 2400, dur: 0.02, at: 0.06, vol: k }); break; }
+      case 'tap': blip({ type: 'sine', f0: 220, f1: 140, dur: 0.07, vol: 1.4 * (opt.loud ? 1.6 : 1) }); break;
+      case 'run': for (let i = 0; i < 4; i++) blip({ type: 'square', f0: 900, dur: 0.018, at: i * 0.045, vol: 0.5 * (opt.loud ? 1.6 : 1) }); break;
       case 'hook': blip({ type: 'sine', f0: 110, f1: 70, dur: 0.12, vol: 1.6 }); shing(); break;   // 手に来る「ドン」＋決まった「シャキーン！」
       case 'jet': break;   // 音は出さない（2026-09-29 ぱっぱ：ドラグの「ジジジッ」と被るので「ピピピッ」は消す）。振動だけ
       case 'whoosh': whoosh(opt.vol ?? 1); break;

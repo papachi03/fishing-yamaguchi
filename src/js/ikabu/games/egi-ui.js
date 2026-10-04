@@ -63,7 +63,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), reelLabel: q('ika-egi-reel-label'), reelDelta: q('ika-egi-reel-delta'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
-    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
+    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), playBlind: q('ika-egi-play-blind'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
@@ -86,7 +86,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const now0 = new Date();
   const sun0 = sunTimes(HAGI.homeSpot?.lat ?? HAGI.lat, HAGI.homeSpot?.lon ?? HAGI.lon, now0);
   let lastShare = null;
-  const cue = () => (settings.mode === 'beginner' ? 'easy' : settings.cue);   // 初心者練習はアタリを「やさしい表示」に固定
+  const cue = () => (settings.blind ? 'real' : settings.mode === 'beginner' ? 'easy' : settings.cue);   // 初心者練習はアタリを「やさしい表示」に固定。アタリチャレンジは本格に固定
   let guide = 0;
   let dryCasts = 0, tipsNudged = false;
   // 手順の案内は専用の札に、次の手順まで出したままにする（吹き出しは「着水！」などで上書きされて一瞬で消えた。ぱっぱ 9/27）
@@ -148,6 +148,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 舞台の組み立て ---------- */
   let sc = null;   // SVG の要素
+  let blindShown = null;   // アタリチャレンジで海の中を隠しているか（変わった時だけ書き換える）
   function buildScene() {
     const bottom = s?.bottom || 8;
     el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref, moon: (settings.mode === 'live' ? settings.live?.conditions?.moon : settings.cond?.moon) ?? 0.5 });
@@ -164,6 +165,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     sc.under.append(n.swim[0], n.swim[1], n.escape, n.ink, n.ghost, n.punchSquid, n.egiWater, n.hugWater, n.jet, n.fx);
     sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, n.surprise, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
+    // アタリチャレンジ：海の中を隠す幕（水中のまとまりのすぐ上）と、糸を水面より上だけにする切り抜き（2026-10-04）
+    sc.fog = svgEl('rect', { class: 'ika-eg-blindfog', x: String(SCENE.pierRight), y: String(SCENE.surface + 2), width: String(3 * W), height: String(2 * SCENE.H), fill: '#06121c', opacity: '0' });
+    sc.under.after(sc.fog);
+    const clip = svgEl('clipPath', { id: 'ika-eg-aboveclip' });
+    clip.append(svgEl('rect', { x: String(-W), y: String(-2 * SCENE.H), width: String(3 * W + SCENE.pierRight), height: String(2 * SCENE.H + SCENE.surface + 1) }));
+    svg.prepend(clip);
+    blindShown = null;
     paintEgi();
     paintAngler();   // 釣り人キャラ（2026-10-02）
     paintJado();   // 部品を作り直したら、エギ／アジの出し分けもやり直す（全画面にしたらヤエンでエギが映った：2026-09-28 ぱっぱ）
@@ -381,6 +389,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let bonusNote = null;   // ラストチャンス・救済の一言（着水の時に出す）
   function newGame() {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
+    if (settings.method !== 'egi') settings.blind = false;   // アタリチャレンジはエギングだけ
+    V.blindStats = { bites: 0, hooked: 0, lates: [] }; V.blindReveal = 0;
     s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
@@ -654,6 +664,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.live.classList.toggle('is-active', settings.mode === 'live');
     el.practice.classList.toggle('is-active', settings.mode === 'practice');
     el.playBeginner?.classList.toggle('is-active', settings.mode === 'beginner');
+    el.playBlind?.classList.toggle('is-active', Boolean(settings.blind));
+    el.live.classList.toggle('is-blind', Boolean(settings.blind));
     const sm = SEASON_MODES.find((m) => m.months.includes(settings.month));
     el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));
     syncMethod();
@@ -666,6 +678,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.exp.disabled = lock;
     el.playLive.disabled = lock || !settings.live || settings.live.conditions.safety === 'stop';
     el.playPractice.disabled = lock;
+    if (el.playBlind) el.playBlind.disabled = lock;
     el.locked.hidden = !lock;
     syncMethod();
     syncEgiPick();   // エギ・ロッド・ドラグ・仕掛けも、投げている間は押せない表示に（2026-10-01）
@@ -916,6 +929,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function usePractice({ open = true, user = true } = {}) {
     if (user) userPicked = true;
     settings.mode = 'practice';
+    settings.blind = false;
     guide = 0; showGuide();
     if (open) { el.practice.hidden = false; el.playPractice.setAttribute('aria-expanded', 'true'); }
     syncSetup();
@@ -927,6 +941,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const L = settings.live;
     if (!L || L.conditions.safety === 'stop') return;
     settings.mode = 'live';
+    settings.blind = false;
     guide = 0; showGuide();
     settings.month = L.month;
     settings.tod = L.tod;
@@ -989,6 +1004,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const nowMonth = new Date().getMonth() + 1;
     const m = SEASON_MODES.find((x) => x.months.includes(nowMonth)) ?? SEASON_MODES[0];
     settings.mode = 'beginner';
+    settings.blind = false;
     settings.month = m.month;
     settings.tod = m.tod;
     settings.cond = { ...settings.cond, expectation: 10, ...WIND_PRESET.calm, safety: 'ok' };
@@ -1007,6 +1023,22 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     newGame();
   }
   el.playBeginner?.addEventListener('click', () => { if (!started()) useBeginner(); });
+  // アタリチャレンジ：今日の萩の海（取れていなければ今の設定）で、海の中を隠す。エギングだけ
+  function useBlind() {
+    userPicked = true;
+    const L = settings.live;
+    if (L && L.conditions.safety !== 'stop') { settings.mode = 'live'; settings.month = L.month; settings.tod = L.tod; settings.cond = { ...L.conditions }; }
+    else if (settings.mode === 'beginner') settings.mode = 'practice';
+    settings.blind = true;
+    if (settings.method !== 'egi') { settings.method = 'egi'; writePref('ikabu.egi.method', 'egi'); }
+    guide = 0; showGuide();
+    el.practice.hidden = true; el.playPractice.setAttribute('aria-expanded', 'false');
+    syncSetup();
+    buildScene();
+    newGame();
+    callout(t(lang, TX.blind.start), '', 3600);
+  }
+  el.playBlind?.addEventListener('click', () => { if (!started()) useBlind(); });
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
   el.playPractice.addEventListener('click', () => {
     if (started()) return;
@@ -1292,8 +1324,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
             el.cueLabel.hidden = false;
           }
           // 手に伝わるアタリ（コン・走る）だけ震わせる。止まる・フケるは目で気づくアタリなので震わせない
-          if (e.kind === 'tap' || e.kind === 'run') feel.fire(e.kind);
-          else if (e.kind === 'heavy') feel.fire('run');
+          if (e.kind === 'tap' || e.kind === 'run') feel.fire(e.kind, { loud: settings.blind });
+          else if (e.kind === 'heavy') feel.fire('run', { loud: settings.blind });
+          if (settings.blind && V.blindStats) V.blindStats.bites += 1;
           syncBait();
           el.log.textContent = t(lang, TX.cue.kinds[e.kind]);
           break;
@@ -1385,6 +1418,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           if (!s.hooking?.gedo && !reduced) V.ink = { t0: now, x: V.hug.x + 6, y: Math.max(SCENE.surface + 24, V.hug.y + 26), under: true };
           callout(t(lang, e.lucky ? TX.msg.lucky : s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
           feel.fire('hook', { heavy: V.heavy });
+          if (settings.blind && V.blindStats && V.lastBite && !e.lucky) {
+            V.blindStats.hooked += 1;
+            if (Number.isFinite(e.late)) V.blindStats.lates.push(e.late);
+            const msg = TX.blind.hooked(lang, t(lang, TX.cue.names[V.lastBite.kind]), (e.late ?? 0).toFixed(1));
+            setTimeout(() => { if (s.phase === 'fight') callout(msg, 'good', 2600); }, 1300);
+          }
           break;
         case 'miss':
         case 'let-go':
@@ -1392,9 +1431,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.cueLabel.hidden = true;
           escapeSquid();
           callout(t(lang, e.type === 'miss' ? TX.msg.miss : TX.msg.letgo), 'bad');
+          if (settings.blind) V.blindReveal = now + 3.2;   // 答え合わせ：離れていくイカを見せる
           // 逃げた後：今のアタリが何だったかを教え、残りの気配を言う
           { const bite = V.lastBite; V.bite = null;
-            setTimeout(() => { if (s.phase === 'action' && bite) callout(TX.cue.lesson(lang, t(lang, TX.cue.names[bite.kind]))); }, 1500);
+            const lesson = bite && settings.blind
+              ? (e.type === 'miss' ? TX.blind.missed(lang, t(lang, TX.cue.names[bite.kind]), (e.late ?? 0).toFixed(1)) : TX.blind.letgo(lang, t(lang, TX.cue.names[bite.kind])))
+              : bite && TX.cue.lesson(lang, t(lang, TX.cue.names[bite.kind]));
+            setTimeout(() => { if (s.phase === 'action' && bite) callout(lesson); }, 1500);
             setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 3200); }
           break;
         case 'jet': {
@@ -1620,6 +1663,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.card.className = 'ika-egi-card';
     el.card.hidden = false;
   }
+  // アタリチャレンジの成績（投げ終わりのカード）。最高の「取れた割合」はこのブラウザに残す（アタリ3回以上の時だけ）
+  function blindSummary() {
+    if (!settings.blind || !V.blindStats) return '';
+    const B = V.blindStats;
+    if (!B.bites) return `<p class="ika-egi-blind-sum">🙈 ${t(lang, TX.blind.none)}</p>`;
+    const pct = Math.round((B.hooked / B.bites) * 100);
+    const avg = B.lates.length ? (B.lates.reduce((a, b) => a + b, 0) / B.lates.length).toFixed(1) : null;
+    const best = readPref('ikabu.egi.blindBest') ?? 0;
+    const fresh = B.bites >= 3 && pct > best;
+    if (fresh) writePref('ikabu.egi.blindBest', pct);
+    return `<p class="ika-egi-blind-sum">🙈 <b>${TX.blind.result(lang, B.hooked, B.bites)}</b>${avg ? `・${TX.blind.avg(lang, avg)}` : ''}${fresh ? ` <span class="ika-tag ika-tag--orange">${t(lang, TX.blind.newBest)}</span>` : ''}</p>${!fresh && best ? `<p class="ika-egi-card-note">${TX.blind.best(lang, best)}</p>` : ''}`;
+  }
   function finishSession() {
     const catches = s.catches;
     const before = rec.best;
@@ -1641,6 +1696,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${counted && total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
       ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, settings.mode === 'beginner' ? O.notCountedBeginner : O.notCounted)}</p>` : ''}
       ${list}${noEgi}
+      ${blindSummary()}
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
       ${s.gedo.length ? `<p class="ika-egi-card-note">${t(lang, TX.gedo.title)}: ${s.gedo.map((g) => `${TX.gedo.icon[g.id] ?? ''}${esc(t(lang, TX.gedo.names[g.id]))}`).join('、')}</p>` : ''}
@@ -2430,6 +2486,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       lineCtrl = mid;
     }
     sc.line.setAttribute('d', d);
+    // アタリチャレンジ：投げてから掛けるまで（沈下・誘い・アタリ）は海の中を隠し、糸も水面より上だけ。答え合わせの間は見せる
+    const blindHide = Boolean(settings.blind) && s?.method === 'egi' && ['sinking', 'action', 'signal'].includes(phase) && !(now < (V.blindReveal ?? 0));
+    if (blindHide !== blindShown) {
+      blindShown = blindHide;
+      sc.under.style.opacity = blindHide ? '0' : '';
+      sc.fog.setAttribute('opacity', blindHide ? '0.9' : '0');
+      if (blindHide) sc.line.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else sc.line.removeAttribute('clip-path');
+    }
     // ヤエン：竿先で道糸に掛け、糸を伝って滑り降りる針金の仕掛け（ヤエンの位置＝滑った距離 / 残りの距離）
     //   2026-09-28 ぱっぱ（図あり）：上に道糸を通す輪（ガイド）と前の曲げ、そこから下へぶら下がる長い腕、腕の下の端に上向きの掛け針3本。
     //   輪は糸の向きに合わせて回し、腕は重さで下へぶら下がる（届くとイカの下に針が入る）
