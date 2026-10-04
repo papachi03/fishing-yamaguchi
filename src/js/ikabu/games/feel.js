@@ -31,7 +31,7 @@ const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25�
 const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
 // reelSample：ぱっぱのリールの生音（2026-10-03）。巻いている間の「チリ…チリリ…」。
 //   1本のmp3に6つの音（短い2・中くらい3・長い1）を無音をはさんで並べてあり、読んだ後に無音で切り分ける
-const WAVE_VOL = 0.3;   // 波の音（ゲームの画面が出ている間ずっと・ドラグより小さく。2026-10-04）
+const WAVE_VOL = 0.18;   // 波の音（ゲームの画面が出ている間ずっと）。0.3 → 0.18（2026-10-04 ぱっぱ「かなり大きい。BGMよりわずかに大きいぐらい」＝聞こえの大きさ LUFS で BGM（-16.8×0.09）より約1.5dB上）
 const REEL_VOL = 0.1;   // ドラグのループより約8dB小さく（ぱっぱ：寄せている時は静かにチリリ。勢いよく糸が出る時のドラグは今の大きさ）
 export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null, waveSample = null } = {}) {
   const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null, reelUrl: reelSample, reel: null, reelLoading: null, waveUrl: waveSample, wave: null, waveLoading: null };
