@@ -1326,8 +1326,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
             el.cueLabel.hidden = false;
           }
           // 手に伝わるアタリ（コン・走る）だけ震わせる。止まる・フケるは目で気づくアタリなので震わせない
-          if (e.kind === 'tap' || e.kind === 'run') feel.fire(e.kind, { loud: settings.blind });
-          else if (e.kind === 'heavy') feel.fire('run', { loud: settings.blind });
+          // アタリチャレンジでは「走る」「ずっしり」の音（ポポポ）を鳴らさない：ほかのアタリに音が無いので、そこだけ音があると逆に不自然（2026-10-04 ぱっぱ）。振動（Android）は残す
+          if (e.kind === 'tap') feel.fire('tap', { loud: settings.blind });
+          else if (e.kind === 'run' || e.kind === 'heavy') feel.fire('run', { silent: settings.blind });
           if (settings.blind && V.blindStats) V.blindStats.bites += 1;
           syncBait();
           el.log.textContent = t(lang, TX.cue.kinds[e.kind]);

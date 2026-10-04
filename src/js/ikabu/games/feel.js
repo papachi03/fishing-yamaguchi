@@ -31,7 +31,7 @@ const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25�
 const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
 // reelSample：ぱっぱのリールの生音（2026-10-03）。巻いている間の「チリ…チリリ…」。
 //   1本のmp3に6つの音（短い2・中くらい3・長い1）を無音をはさんで並べてあり、読んだ後に無音で切り分ける
-const WAVE_VOL = 0.035;   // 0.18 → 0.07（ぱっぱ「やり取り中のBGMの4倍・波はエッセンス」）→ 0.035（同日「今の半分に」）＝ふだんは BGM より約12dB 下
+const WAVE_VOL = 0.02;   // 0.18 → 0.07（ぱっぱ「やり取り中のBGMの4倍・波はエッセンス」）→ 0.035（同日「今の半分に」）→ 0.02（同日「0.020でも良い」）
 const WAVE_DUCK = 0.35;  // やり取り中（BGM が3割に下がる間）は波も下げる＝下がった BGM より約5dB 下（聞こえの大きさ LUFS で比べた。波の音は素で -21.2・BGM は -16.8）
 const REEL_VOL = 0.1;   // ドラグのループより約8dB小さく（ぱっぱ：寄せている時は静かにチリリ。勢いよく糸が出る時のドラグは今の大きさ）
 export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null, waveSample = null } = {}) {
@@ -317,7 +317,7 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
   }
 
   function play(kind, opt = {}) {
-    if (!st.sound || !st.ctx) return;
+    if (!st.sound || !st.ctx || opt.silent) return;   // silent：振動だけ（音は鳴らさない）
     switch (kind) {
       // loud：アタリチャレンジ（海の中が見えない）では、手に来るアタリの音を少し聞き取りやすく（2026-10-04）
       case 'punch': { const k = opt.loud ? 1.8 : 1; blip({ type: 'noise', f0: 2400, dur: 0.02, vol: k }); blip({ type: 'noise', f0: 2400, dur: 0.02, at: 0.06, vol: k }); break; }
