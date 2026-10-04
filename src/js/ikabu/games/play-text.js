@@ -463,6 +463,18 @@ export const EGI_TEXT = {
     power: pair('力', 'Power'),
     fall: pair('フォール中', 'Falling'),
   },
+  // アタリチャレンジ（2026-10-04）
+  blind: {
+    start: pair('🙈 アタリチャレンジ：海の中は見えません。糸のたるみ・竿先・音でアタリを取ろう', '🙈 Bite challenge: you cannot see under the sea. Read the slack, the rod tip and the sounds'),
+    hooked: (lang, kind, sec) => (lang === 'en' ? `Answer: a “${kind}” bite. Hookset in ${sec}s` : `答え合わせ：「${kind}」のアタリ・合わせまで${sec}秒`),
+    missed: (lang, kind, sec) => (lang === 'en' ? `Answer: a “${kind}” bite. You struck after ${sec}s` : `答え合わせ：「${kind}」のアタリ・${sec}秒で合わせた`),
+    letgo: (lang, kind) => (lang === 'en' ? `Answer: a squid held it with a “${kind}” bite and let go` : `答え合わせ：イカが「${kind}」のアタリで抱いて、離していった`),
+    result: (lang, hit, all) => (lang === 'en' ? `Bites caught: ${hit} of ${all}` : `アタリ ${all}回中 ${hit}回 取れた`),
+    avg: (lang, sec) => (lang === 'en' ? `average hookset ${sec}s` : `合わせまでの平均 ${sec}秒`),
+    none: pair('アタリは来なかった。次の釣行で！', 'No bites this time. Next trip!'),
+    best: (lang, pct) => (lang === 'en' ? `Best rate: ${pct}%` : `これまでの最高：取れた割合 ${pct}%`),
+    newBest: pair('自己ベスト！', 'New best!'),
+  },
   msg: {
     punch: pair('イカパンチ…抱かせる間を', 'A punch… give it time to hug'),
     spooked: pair('パンチに合わせてしまった…警戒された', 'You struck at a punch… it got wary'),
@@ -482,18 +494,6 @@ export const EGI_TEXT = {
     kilo: pair('キロアップ！', 'Over a kilo!'),
     miss: pair('すっぽ抜け…', 'Missed the hookset…'),
     letgo: pair('離された…アワセが遅い', 'It let go. Too slow'),
-  },
-  // アタリチャレンジ（2026-10-04）
-  blind: {
-    start: pair('🙈 アタリチャレンジ：海の中は見えません。糸のたるみ・竿先・音でアタリを取ろう', '🙈 Bite challenge: you cannot see under the sea. Read the slack, the rod tip and the sounds'),
-    hooked: (lang, kind, sec) => (lang === 'en' ? `Answer: a “${kind}” bite. Hookset in ${sec}s` : `答え合わせ：「${kind}」のアタリ・合わせまで${sec}秒`),
-    missed: (lang, kind, sec) => (lang === 'en' ? `Answer: a “${kind}” bite. You struck after ${sec}s` : `答え合わせ：「${kind}」のアタリ・${sec}秒で合わせた`),
-    letgo: (lang, kind) => (lang === 'en' ? `Answer: a squid held it with a “${kind}” bite and let go` : `答え合わせ：イカが「${kind}」のアタリで抱いて、離していった`),
-    result: (lang, hit, all) => (lang === 'en' ? `Bites caught: ${hit} of ${all}` : `アタリ ${all}回中 ${hit}回 取れた`),
-    avg: (lang, sec) => (lang === 'en' ? `average hookset ${sec}s` : `合わせまでの平均 ${sec}秒`),
-    none: pair('アタリは来なかった。次の釣行で！', 'No bites this time. Next trip!'),
-    best: (lang, pct) => (lang === 'en' ? `Best rate: ${pct}%` : `これまでの最高：取れた割合 ${pct}%`),
-    newBest: pair('自己ベスト！', 'New best!'),
     jet: pair('ジェット噴射！', 'Jet!'),
     resist: pair('抵抗している！', 'It is fighting!'),
     break: pair('身切れ！', 'The hook tore out!'),
