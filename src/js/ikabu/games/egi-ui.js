@@ -1179,7 +1179,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         }
         case 'jerk':
           // 2段しゃくりの「遅れて上がる」分は、竿の振りをやり直さない（跳ね上がりが二度見えて違和感。10/2 ぱっぱ）。知らせだけ出す
-          if (e.delayed) { callout(t(lang, TX.cue.double)); if (guide === 2) { guide = 3; showGuide(); } setFallMode(null); break; }
+          // 遅れて届く知らせ（2段目が上がり切った）。その前に押し続けてテンションフォールに入っていたら表示を消さない（2026-10-04 ぱっぱ指摘）
+          if (e.delayed) { callout(t(lang, TX.cue.double)); if (guide === 2) { guide = 3; showGuide(); } setFallMode(s.tensionFall ? 'tension' : null); break; }
           V.jerkAt = now;
           V.jerkKind = e.kind;
           V.jerkDouble = e.double;
