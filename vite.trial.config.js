@@ -31,6 +31,9 @@ export default defineConfig(async (env) => {
           // 2026-10-01 写真部（投稿フォーム・🎫1枚）
           'ikabu-gallery': resolve(__dirname, 'ikabu/gallery.html'),
           'ikabu-en-gallery': resolve(__dirname, 'ikabu/en/gallery.html'),
+          // 2026-10-04 LINEスタンプ（あそび場TOPのスタンプの帯から行く）
+          'ikabu-studio': resolve(__dirname, 'ikabu/studio.html'),
+          'ikabu-en-studio': resolve(__dirname, 'ikabu/en/studio.html'),
         },
       },
     },
