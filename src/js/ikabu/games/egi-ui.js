@@ -1121,7 +1121,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     node.textContent = value;
   }
   let calloutTimer = 0;
-  function callout(text, tone = '', ms = 1700) {
+  // blindOk：アタリチャレンジ中でも出してよい一言（合わせに失敗した時とその答え合わせだけ。2026-10-04 ぱっぱ）
+  function callout(text, tone = '', ms = 1700, { blindOk = false } = {}) {
+    if (settings.blind && !blindOk && s && !['ready', 'result', 'over'].includes(s.phase)) { el.log.textContent = text; return; }   // 画面には出さない（読み上げ用の記録だけ残す）
     ms = Math.max(ms, 1200 + [...String(text)].length * 95);   // 読み切れる長さに（体験版の感想「消えるのが早い」2026-10-01）
     el.callout.textContent = text;
     el.callout.className = `ika-egi-callout${tone ? ` is-${tone}` : ''}`;
@@ -1434,14 +1436,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           el.flash.hidden = true;
           el.cueLabel.hidden = true;
           escapeSquid();
-          callout(t(lang, e.type === 'miss' ? TX.msg.miss : TX.msg.letgo), 'bad');
+          callout(t(lang, e.type === 'miss' ? TX.msg.miss : TX.msg.letgo), 'bad', 1700, { blindOk: true });
           if (settings.blind) V.blindReveal = now + 3.2;   // 答え合わせ：離れていくイカを見せる
           // 逃げた後：今のアタリが何だったかを教え、残りの気配を言う
           { const bite = V.lastBite; V.bite = null;
             const lesson = bite && settings.blind
               ? (e.type === 'miss' ? TX.blind.missed(lang, t(lang, TX.cue.names[bite.kind]), (e.late ?? 0).toFixed(1)) : TX.blind.letgo(lang, t(lang, TX.cue.names[bite.kind])))
               : bite && TX.cue.lesson(lang, t(lang, TX.cue.names[bite.kind]));
-            setTimeout(() => { if (s.phase === 'action' && bite) callout(lesson); }, 1500);
+            setTimeout(() => { if (s.phase === 'action' && bite) callout(lesson, '', 1700, { blindOk: true }); }, 1500);
             setTimeout(() => { if (s.phase === 'action') callout(e.squidLeft > 0 ? TX.msg.squidLeft(lang, e.squidLeft) : t(lang, TX.msg.squidGone)); }, 3200); }
           break;
         case 'jet': {
