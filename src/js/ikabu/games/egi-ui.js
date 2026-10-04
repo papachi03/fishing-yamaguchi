@@ -665,6 +665,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.practice.classList.toggle('is-active', settings.mode === 'practice');
     el.playBeginner?.classList.toggle('is-active', settings.mode === 'beginner');
     el.playBlind?.classList.toggle('is-active', Boolean(settings.blind));
+    el.playLive?.classList.toggle('is-active', settings.mode === 'live' && !settings.blind);
+    el.playPractice?.classList.toggle('is-active', settings.mode === 'practice' && !settings.blind);
     el.live.classList.toggle('is-blind', Boolean(settings.blind));
     const sm = SEASON_MODES.find((m) => m.months.includes(settings.month));
     el.seasons?.querySelectorAll('[data-season]').forEach((b) => b.setAttribute('aria-pressed', String(settings.mode === 'practice' && b.dataset.season === sm?.key)));

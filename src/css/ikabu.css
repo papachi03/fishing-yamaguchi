@@ -3453,3 +3453,14 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
 .ika-eg-blindfog { transition: opacity 0.45s ease; pointer-events: none; }
 .ika-eg-under { transition: opacity 0.45s ease; }
 .ika-egi-blind-sum { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: #e9edf8; color: #1c2f6e; font-size: 14px; line-height: 1.6; }
+
+/* ---------- エギングのメニュー：GPT のデザインボタン（2026-10-04）。前の .ika-egi-live-actions .ika-btn の枠・色は消す ---------- */
+.ika-egi-live-actions .ika-btn.ika-egi-playimg { display: grid; justify-items: stretch; gap: 2px; width: 100%; max-width: 440px; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--ika-ink); text-align: left; transition: transform 0.12s ease, filter 0.2s ease; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg:hover:not(:disabled) { transform: translateY(-2px); }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+.ika-egi-playimg-img { display: block; width: 100%; height: auto; }
+.ika-egi-playimg-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg small { display: block; padding: 0 14px 4px; font-weight: 700; font-size: 12.5px; line-height: 1.5; color: var(--ika-sea); opacity: 1; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active .ika-egi-playimg-img { filter: drop-shadow(0 0 6px #ffd84a) drop-shadow(0 0 2px #ffd84a); }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active small::before { content: '✓ '; color: #e0662a; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active, .ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active:hover { background: none; color: var(--ika-ink); }

@@ -274,10 +274,11 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       <p class="ika-egi-setup-label ika-egi-live-pick">${t(lang, T.live.pick)}</p>
       <div class="ika-egi-live-actions">
         <!-- 並び順：初心者練習 → 今日の萩の海 → 季節 → アタリチャレンジ（2026-10-04 ぱっぱ） -->
-        <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner"><b>${t(lang, T.live.playBeginner)}</b><small>${t(lang, T.live.playBeginnerSub)}</small></button>
-        <button type="button" class="ika-btn ika-btn--primary" id="ika-egi-play-live" disabled><b>${t(lang, T.live.playLive)}</b><small>${t(lang, T.live.playLiveSub)}</small></button>
-        <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice"><b>${t(lang, T.live.playPractice)}</b><small>${t(lang, T.live.playPracticeSub)}</small></button>
-        <button type="button" class="ika-btn ika-egi-play-blind" id="ika-egi-play-blind"><b>${t(lang, T.live.playBlind)}</b><small>${t(lang, T.live.playBlindSub)}</small></button>
+        <!-- ボタンの見た目は GPT で作った絵（2026-10-04）。題名は絵の中の文字・<b> は読み上げ用 -->
+        <button type="button" class="ika-btn ika-egi-playimg ika-egi-play-beginner" id="ika-egi-play-beginner"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/beginner.webp')}" alt="" width="900" height="309" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playBeginner)}</b><small>${t(lang, T.live.playBeginnerSub)}</small></button>
+        <button type="button" class="ika-btn ika-egi-playimg" id="ika-egi-play-live" disabled><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/live.webp')}" alt="" width="900" height="245" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playLive)}</b><small>${t(lang, T.live.playLiveSub)}</small></button>
+        <button type="button" class="ika-btn ika-egi-playimg" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/season.webp')}" alt="" width="900" height="212" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playPractice)}</b><small>${t(lang, T.live.playPracticeSub)}</small></button>
+        <button type="button" class="ika-btn ika-egi-playimg ika-egi-play-blind" id="ika-egi-play-blind"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/blind.webp')}" alt="" width="900" height="311" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playBlind)}</b><small>${t(lang, T.live.playBlindSub)}</small></button>
       </div>
       <!-- 季節を選んで遊ぶ：ボタンのすぐ下に開く（2026-09-29 ぱっぱ） -->
       <div class="ika-egi-practice" id="ika-egi-practice" hidden>
