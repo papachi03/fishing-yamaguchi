@@ -2784,7 +2784,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   ジェットの直後と、糸の張りが強い（抵抗がある）時だけ、今までのドラグ「ジーー」
     const resist = reeling && s.tension >= RESIST_TENSION;
     feel.drag(yRun || jetRun || resist);
-    feel.ambient(true);   // 波の音：ゲームの画面が出ている間（毎フレーム呼んでよい。画面の外・裏のタブでは stop() が止める）
+    feel.ambient(true, { duck: phase === 'fight' });   // 波の音（やり取り中は BGM と一緒に下げる）：ゲームの画面が出ている間（毎フレーム呼んでよい。画面の外・裏のタブでは stop() が止める）
     // ジェットの「ジー！」の後は抵抗が少し残る：その後に巻いたら「チリリリ」を1回だけ、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
     //   抵抗が残るのはジェットから JET_RESIST 秒まで
     // ヤエン：寄せている間（押していて、イカが抵抗していない時）もリールの「チリ… チリ…」（2026-10-03 ぱっぱ）

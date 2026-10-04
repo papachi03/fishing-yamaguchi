@@ -31,7 +31,8 @@ const SAMPLE_VOL = 0.25;      // ループ（巻き取り中）。0.55 → 0.25�
 const ZIP_VOL = 0.4;          // しゃくりの「ジッ！」
 // reelSample：ぱっぱのリールの生音（2026-10-03）。巻いている間の「チリ…チリリ…」。
 //   1本のmp3に6つの音（短い2・中くらい3・長い1）を無音をはさんで並べてあり、読んだ後に無音で切り分ける
-const WAVE_VOL = 0.18;   // 波の音（ゲームの画面が出ている間ずっと）。0.3 → 0.18（2026-10-04 ぱっぱ「かなり大きい。BGMよりわずかに大きいぐらい」＝聞こえの大きさ LUFS で BGM（-16.8×0.09）より約1.5dB上）
+const WAVE_VOL = 0.07;   // 0.18 → 0.07（2026-10-04 ぱっぱ「やり取り中のBGMの4倍に感じる。波はエッセンス、主張しない音量」＝ふだんは BGM より約6dB 下）
+const WAVE_DUCK = 0.35;  // やり取り中（BGM が3割に下がる間）は波も下げる＝下がった BGM より約5dB 下（聞こえの大きさ LUFS で比べた。波の音は素で -21.2・BGM は -16.8）
 const REEL_VOL = 0.1;   // ドラグのループより約8dB小さく（ぱっぱ：寄せている時は静かにチリリ。勢いよく糸が出る時のドラグは今の大きさ）
 export function createFeel({ vibrate = true, sound = false, dragSample = null, reelSample = null, waveSample = null } = {}) {
   const st = { vibrate, sound, ctx: null, sampleUrl: dragSample, sample: null, sampleLoading: null, reelUrl: reelSample, reel: null, reelLoading: null, waveUrl: waveSample, wave: null, waveLoading: null };
@@ -219,7 +220,8 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
   // 波の音：ambient(true) でループを鳴らし、ambient(false) で止める（何度呼んでもよい）。
   //   mp3 は頭と終わりにわずかな無音が付くので、0.06 秒ずつ内側をループにする（波の音なら切れ目は聞こえない）
   let waveNode = null;
-  function ambient(on) {
+  let waveDucked = false;
+  function ambient(on, { duck = false } = {}) {
     const ctx = st.ctx;
     if (!on || !st.sound || !ctx || !st.wave) {
       if (waveNode && ctx) {
@@ -229,11 +231,15 @@ export function createFeel({ vibrate = true, sound = false, dragSample = null, r
       waveNode = null;
       return;
     }
-    if (waveNode) return;
+    if (waveNode) {
+      if (duck !== waveDucked) { waveDucked = duck; const t = ctx.currentTime; waveNode.g.gain.cancelScheduledValues(t); waveNode.g.gain.setTargetAtTime(WAVE_VOL * (duck ? WAVE_DUCK : 1), t, 0.4); }
+      return;
+    }
+    waveDucked = duck;
     const t = ctx.currentTime;
     const src = ctx.createBufferSource(); src.buffer = st.wave; src.loop = true;
     src.loopStart = 0.06; src.loopEnd = Math.max(1, st.wave.duration - 0.06);
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(WAVE_VOL, t, 0.6);   // ふわっと入る
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.setTargetAtTime(WAVE_VOL * (duck ? WAVE_DUCK : 1), t, 0.6);   // ふわっと入る
     src.connect(g).connect(ctx.destination); src.start(t, 0.06 + Math.random() * 40);   // 毎回ちがう所から
     waveNode = { src, g };
   }
