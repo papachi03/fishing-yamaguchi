@@ -2054,8 +2054,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (kbTimer) { clearTimeout(kbTimer); kbTimer = 0; doPress(); doRelease(); return; }   // 素早いタップ＝しゃくり
     doRelease();
   });
+  // フォールの種類の表示を、今の状態から決める（毎コマ）。前は出来事で付け外ししていて、2段しゃくりの遅れた知らせで消えたり、
+  //   ふつうのしゃくりの後のフリーフォールが出なかったりした（2026-10-04 ぱっぱ）
+  function syncFallMode() {
+    const falling = s && s.method === 'egi' && (s.phase === 'sinking' || s.phase === 'action') && s.depth < s.bottom - 0.02 && !V.cast;
+    setFallMode(falling ? (s.tensionFall ? 'tension' : 'free') : null);
+  }
   // フォールの種類の表示
   function setFallMode(mode) {
+    if (V.fallMode === mode && el.fallmode.hidden === !mode) return;   // 変わった時だけ書き換える（毎コマ呼ぶので）
     V.fallMode = mode;
     el.fallmode.hidden = !mode;
     if (mode) { el.fallmode.textContent = t(lang, TX.fall[mode]); el.fallmode.dataset.mode = mode; }
@@ -2222,6 +2229,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         if (ev.length) onEvents(ev);
         if (s.method === 'yaen') { syncSide(); syncAji(); }   // 寄せて45度に入ったら「ヤエン投入」に変える（出来事が無くても）
         syncJadoLift();
+        syncFallMode();
       }
       draw(dt);
     }
