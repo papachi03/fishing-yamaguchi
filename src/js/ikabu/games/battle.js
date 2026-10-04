@@ -104,6 +104,7 @@ const P = (st, side) => st.players[side];
 // 最初の手札：自分の最初のターンの潮で出せるイカが1枚も無ければ配り直す（最大10回）。2026-10-01 ぱっぱ「前列に出せないと詰む」
 //   潮は先攻1・後攻2（追い風）。前は両方「潮2以下」で判定していたので、先攻の手札がコスト2のイカだけでも配り直さなかった（2026-10-04 ぱっぱ指摘）
 //   10回で出なければ、山札の中のいちばん安いイカを手札のいちばん高いカードと入れ替える（山札に1枚あれば必ず出せる）
+//   配り直した時は p.shiodome＝true（画面で「潮止まり・仕切り直し」と知らせる。2026-10-04 ぱっぱの名付け）
 export const MULLIGAN_MAX_COST = 2;
 export const firstTide = (st, side) => 1 + (side !== st.first ? TAILWIND_TIDE : 0);
 function dealStart(st, side, rnd) {
@@ -111,11 +112,12 @@ function dealStart(st, side, rnd) {
   const ok = (x) => x.card.kind === 'squid' && x.card.cost <= max;
   for (let tries = 0; tries < 10; tries++) {
     for (let i = 0; i < START_HAND; i++) draw(st, side);
-    if (p.hand.some(ok)) return;
+    if (p.hand.some(ok)) { p.shiodome = tries > 0; return; }
     if (tries === 9) break;
     p.deck.push(...p.hand.splice(0));   // 戻して混ぜ直す
     for (let i = p.deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p.deck[i], p.deck[j]] = [p.deck[j], p.deck[i]]; }
   }
+  p.shiodome = true;
   const cheap = p.deck.filter(ok).sort((a, b) => a.card.cost - b.card.cost)[0];
   if (!cheap) return;   // 山札にも無い（そういうデッキ）
   const high = [...p.hand].sort((a, b) => b.card.cost - a.card.cost)[0];

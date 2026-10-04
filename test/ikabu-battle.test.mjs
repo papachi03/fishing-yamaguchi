@@ -37,6 +37,7 @@ test('最初の手札には、自分の最初のターンの潮（先攻1・後�
       assert.ok(hand.some((x) => x.card.kind === 'squid' && x.card.cost <= tide), `${first}先攻 ${side} seed m${i}`);
       assert.equal(p.hand.length + p.deck.length, DECK_SIZE);   // カードが増えも減りもしない
     }
+    for (const side of ['me', 'cpu']) assert.equal(typeof st.players[side].shiodome, 'boolean');   // 配り直したかの印（画面の「潮止まり」）
     const fp = st.players[first];   // 先攻は潮1で実際に前列へ出せる
     assert.equal(fp.tide, 1);
     assert.ok(fp.hand.some((x) => x.card.kind === 'squid' && costOf(st, first, x) <= fp.tide), `先攻が出せない seed m${i}`);
