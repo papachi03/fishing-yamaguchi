@@ -195,7 +195,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
 
   const egiPrev = { me: null, cpu: null };   // 最初は必ず描く（5→5で描かれずエギが消えた：2026-10-01 ぱっぱ）
   const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
-  const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.flags.settle != null ? 'settle' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
+  const stateOf = (x, side) => (x.shield ? 'shield' : x.flags.settle != null ? 'settle' : x.sick && side === st.active ? 'sick' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
   function cardHTML(x, side, row) {
     if (!x) return '<div class="ika-bt-slot"></div>';
     const hidden = row === 'back' && side === 'cpu';
