@@ -473,6 +473,7 @@ export const EGI_TEXT = {
     avg: (lang, sec) => (lang === 'en' ? `average hookset ${sec}s` : `合わせまでの平均 ${sec}秒`),
     none: pair('アタリは来なかった。次の釣行で！', 'No bites this time. Next trip!'),
     best: (lang, pct) => (lang === 'en' ? `Best rate: ${pct}%` : `これまでの最高：取れた割合 ${pct}%`),
+    season: pair('下の季節モードから春夏秋冬も選べます（選ばなければ今日の萩の海）', 'You can also pick a season below (otherwise today’s Hagi sea)'),
     newBest: pair('自己ベスト！', 'New best!'),
   },
   msg: {

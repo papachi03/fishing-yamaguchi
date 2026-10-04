@@ -273,9 +273,10 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
       <p class="ika-egi-live-notice" id="ika-egi-live-notice" hidden></p>
       <p class="ika-egi-setup-label ika-egi-live-pick">${t(lang, T.live.pick)}</p>
       <div class="ika-egi-live-actions">
+        <!-- 並び順：初心者練習 → 今日の萩の海 → 季節 → アタリチャレンジ（2026-10-04 ぱっぱ） -->
+        <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner"><b>${t(lang, T.live.playBeginner)}</b><small>${t(lang, T.live.playBeginnerSub)}</small></button>
         <button type="button" class="ika-btn ika-btn--primary" id="ika-egi-play-live" disabled><b>${t(lang, T.live.playLive)}</b><small>${t(lang, T.live.playLiveSub)}</small></button>
         <button type="button" class="ika-btn" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice"><b>${t(lang, T.live.playPractice)}</b><small>${t(lang, T.live.playPracticeSub)}</small></button>
-        <button type="button" class="ika-btn ika-egi-play-beginner" id="ika-egi-play-beginner"><b>${t(lang, T.live.playBeginner)}</b><small>${t(lang, T.live.playBeginnerSub)}</small></button>
         <button type="button" class="ika-btn ika-egi-play-blind" id="ika-egi-play-blind"><b>${t(lang, T.live.playBlind)}</b><small>${t(lang, T.live.playBlindSub)}</small></button>
       </div>
       <!-- 季節を選んで遊ぶ：ボタンのすぐ下に開く（2026-09-29 ぱっぱ） -->

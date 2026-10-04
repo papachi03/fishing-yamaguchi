@@ -928,8 +928,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let userPicked = false;
   function usePractice({ open = true, user = true } = {}) {
     if (user) userPicked = true;
-    settings.mode = 'practice';
-    settings.blind = false;
+    settings.mode = 'practice';   // アタリチャレンジ（settings.blind）はここでは外さない：季節の欄で季節を選んでもチャレンジを続ける（2026-10-04 ぱっぱ）
     guide = 0; showGuide();
     if (open) { el.practice.hidden = false; el.playPractice.setAttribute('aria-expanded', 'true'); }
     syncSetup();
@@ -1032,17 +1031,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     settings.blind = true;
     if (settings.method !== 'egi') { settings.method = 'egi'; writePref('ikabu.egi.method', 'egi'); }
     guide = 0; showGuide();
-    el.practice.hidden = true; el.playPractice.setAttribute('aria-expanded', 'false');
+    el.practice.hidden = false; el.playPractice.setAttribute('aria-expanded', 'true');   // 季節も選べるように、季節の欄を開いておく
     syncSetup();
     buildScene();
     newGame();
-    callout(t(lang, TX.blind.start), '', 3600);
+    callout(`${t(lang, TX.blind.start)}　${t(lang, TX.blind.season)}`, '', 4200);
   }
   el.playBlind?.addEventListener('click', () => { if (!started()) useBlind(); });
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
   el.playPractice.addEventListener('click', () => {
     if (started()) return;
-    if (settings.mode === 'practice' && !el.practice.hidden) { el.practice.hidden = true; el.playPractice.setAttribute('aria-expanded', 'false'); return; }
+    if (settings.mode === 'practice' && !el.practice.hidden && !settings.blind) { el.practice.hidden = true; el.playPractice.setAttribute('aria-expanded', 'false'); return; }
+    settings.blind = false;
     usePractice();
   });
 
