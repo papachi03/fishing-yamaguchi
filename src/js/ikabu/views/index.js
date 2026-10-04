@@ -35,8 +35,8 @@ const ENTRY = {
     desc: pair('エギングゲームと「墨つなぎ」。釣りに行けない日のために。', 'An eging game and Ink Link, for the days you cannot get to the water.'),
   },
   studio: {
-    title: pair('イカしたことば', 'Ink-redible words'),
-    desc: pair('ダジャレのスタンプと、これから始まる動画・写真の部活動。', 'Squid-pun stickers and the next chapter of our photo and video adventures.'),
+    title: pair('LINEスタンプ', 'LINE stickers'),
+    desc: pair('イカがダジャレで動くスタンプ3セット。10月10日発売。', 'Three sets of animated squid-pun stickers. On sale October 10.'),
   },
 };
 

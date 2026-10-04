@@ -1,108 +1,76 @@
-// studio：スタンプとSNS。render(lang) は HTML 文字列を返すだけ（DOM・window に触らない）。操作は無い。
-// SNS はどちらも「準備中」。実在しないアカウントへのリンクは置かない
+// studio：LINEスタンプ（2026-10-04 作り直し。前は「スタンプとSNS」で試作8点・SNSは準備中）。
+// render(lang) は HTML 文字列を返すだけ（DOM・window に触らない）。発売日・LINE STORE の住所は ../stamps.js にまとめてある
 import { t, pair, esc, assetHref } from '../i18n.js';
-import { puns } from '../data.js';
+import { LINE_ADD_URL } from '../games/links.js';
+import { STAMP_SETS, STAMP_PUNS, STAMP_RELEASE, STAMP_COPYRIGHT } from '../stamps.js';
 import { pageHead, sectionHead, noteHTML } from './parts.js';
+import { gameTilesHTML } from './games.js';
 
 export const HEAD = {
   num: '07',
-  eyebrow: 'STICKERS, STORIES & LITTLE JOKES',
-  title: pair('イカしたことばを、世界へ。', 'A little ink. A little wit.'),
-  desc: pair('紺とオレンジのイカが、会話にも登場。スタンプ試作と、ダジャレの解説、これからの発信。', 'Our navy-and-orange squid joins the conversation. Sticker concepts, pun explanations and the stories we want to tell.'),
+  eyebrow: 'LINE STICKERS',
+  crumb: pair('LINEスタンプ', 'LINE stickers'),
+  title: pair('イカしたスタンプ、<br class="sp-only" />3セット同時発売。', 'Three sticker sets,<br class="sp-only" /> all at once.'),
+  desc: pair('山口イカ部のイカが、ダジャレを言いながら動くLINEスタンプ。毎日のあいさつに、山口の言葉に、釣り仲間への返事に。', 'Animated LINE stickers of the Yamaguchi Ika-bu squid, each with a pun. For everyday greetings, Yamaguchi words and replies to your fishing friends.'),
 };
 
-const SHEETS = [
-  {
-    file: '/assets/ikabu/stickers-vol1.webp',
-    vol: 'VOL. 1',
-    alt: pair('第1弾スタンプ試作8点。「いかが？」「いかしてる！」「いからないで！」「まぁ、いっか。」「いかんせん、眠い。」「もう、いかん。」「いかないで！」「いかほど？」', 'Eight volume-one sticker concepts with Japanese squid puns: ikaga?, ikashiteru!, ikaranaide!, maa ikka, ikansen nemui, mou ikan, ikanaide!, ikahodo?'),
-    title: pair('イカの言葉で、ごあいさつ。', 'A squid has something to say.'),
-    body: pair('「いからないで！」「まぁ、いっか。」<br />いつもの会話に、ちょっとイカした返しを。', '“Ika-ranaide!” means “Don’t get angry,” with ika, squid, hidden inside. “Maa, ikka” means “Oh well.” Japanese wordplay is part of the fun.'),
-    tag: pair('LINEスタンプ：販売準備前のデザイン案', 'LINE stickers: design concepts, not on sale'),
-  },
-  {
-    file: '/assets/ikabu/stickers-vol2.webp',
-    vol: 'VOL. 2',
-    alt: pair('第2弾・山口の地名ダジャレスタンプ試作8点。「防府く絶倒！」「萩れよく、いこう！」「絶好長州！」「ふくみ笑い。」「ふくざつな気持ち。」「おいでませ、すみ家へ。」「ぶち、イカん予感。」「関門だらけじゃ！」', 'Eight volume-two sticker concepts playing on Yamaguchi place names: Hōfu, Hagi, Chōshū, fugu (Shimonoseki’s pufferfish), the Kanmon strait and the local word buchi.'),
-    title: pair('地名まで、ダジャレに。', 'Even the place names join in.'),
-    body: pair('「防府く絶倒！」「絶好長州！」<br />山口を知ると、もうひとつ笑える。', '“Hōfu-ku zettō” folds the city of Hōfu into a phrase for helpless laughter. Chōshū is the historical name of the region, and fuku is what Shimonoseki calls its famous pufferfish.'),
-    tag: pair('第2弾：ご当地ネタを展開', 'Volume two: a local twist'),
-  },
-];
-
-const SOCIAL = [
-  {
-    mark: 'YouTube',
-    title: pair('一杯のイカ、海から食卓まで。', 'One squid, from coast to kitchen.'),
-    body: pair('まずは「3分でわかるイカの下処理」「山口の海の一日」「墨つなぎの連鎖チャレンジ」。日本語音声＋英語字幕の短い動画を企画中。', 'Planned episodes: a three-minute squid preparation guide, a day on Yamaguchi’s coast, and an Ink Link combo challenge. Japanese audio with English subtitles.'),
-    small: pair('チャンネルはまだ開設していません。公開後にここから案内します。', 'The channel has not launched yet. Its link will appear here when ready.'),
-  },
-  {
-    mark: 'Instagram',
-    title: pair('写真一枚と、イカした一言。', 'One picture. One ink-redible line.'),
-    body: pair('海の写真、食卓の一皿、ダジャレのスタンプ。日本語と英語の短い説明を添えて、釣りをしない人にも届ける投稿を企画中。', 'Coastal photographs, a plate from the kitchen and a squid-pun sticker. Short captions in Japanese and English for anglers and non-anglers alike.'),
-    small: pair('部のアカウントはまだ開設していません。投稿写真の募集も準備中です。', 'The club account has not launched yet. A member-photo submission process is also being planned.'),
-  },
-];
+function setHTML(lang, s) {
+  const grid = s.words.map((w, i) => {
+    const no = String(i + 1).padStart(2, '0');
+    return `<li class="ika-stk-item"><img src="${assetHref(`/assets/ikabu/stamps/${s.id}/${no}.webp`)}" alt="${esc(t(lang, w))}" width="200" height="200" loading="lazy" decoding="async" /></li>`;   // 言葉は絵の中にあるので下には書かない（alt に残す）
+  }).join('');
+  const btn = s.storeUrl
+    ? `<a class="ika-btn ika-btn--primary ika-stk-buy" href="${esc(s.storeUrl)}" target="_blank" rel="noopener">${t(lang, 'LINE STOREで見る', 'See it on LINE STORE')}</a>`
+    : `<span class="ika-stk-soon">${t(lang, STAMP_RELEASE)}</span>`;
+  return `
+    <article class="ika-sheet ika-stk-set" id="${s.id}">
+      <div class="ika-stk-top">
+        <span class="ika-sheet-vol">${s.vol}</span>
+        <h2>${t(lang, s.title)}</h2>
+        <p>${t(lang, s.desc)}</p>
+      </div>
+      <ul class="ika-stk-grid">${grid}</ul>
+      <div class="ika-stk-foot">${btn}<span class="ika-stk-meta">${t(lang, '動くスタンプ・8種類', 'Animated · 8 stickers')}</span></div>
+    </article>`;
+}
 
 export function render(lang) {
-  const sheets = SHEETS.map(
-    (s) => `
-    <article class="ika-sheet">
-      <figure class="ika-sheet-figure">
-        <img src="${assetHref(s.file)}" alt="${esc(t(lang, s.alt))}" width="1536" height="1024" loading="lazy" decoding="async" />
-        <span class="ika-sheet-vol">${s.vol}</span>
-      </figure>
-      <h2>${t(lang, s.title)}</h2>
-      <p>${t(lang, s.body)}</p>
-      <span class="ika-tag">${t(lang, s.tag)}</span>
-    </article>`
-  ).join('');
-
-  const punCards = puns
-    .map(
-      (p) => `
+  const sets = STAMP_SETS.map((s) => setHTML(lang, s)).join('');
+  const punCards = STAMP_PUNS.map((p) => `
     <article class="ika-pun">
       <p class="ika-pun-jp" lang="ja">${esc(p.jp)}</p>
       <p class="ika-pun-en" lang="en">${esc(p.en)}</p>
       <p class="ika-pun-note">${t(lang, p.note)}</p>
-    </article>`
-    )
-    .join('');
-
-  const social = SOCIAL.map(
-    (s) => `
-    <article class="ika-social">
-      <span class="ika-tag ika-tag--orange">${t(lang, '開設準備中', 'In preparation')}</span>
-      <p class="ika-social-mark">${s.mark}</p>
-      <h3>${t(lang, s.title)}</h3>
-      <p>${t(lang, s.body)}</p>
-      <small>${t(lang, s.small)}</small>
-    </article>`
-  ).join('');
+    </article>`).join('');
+  const jump = STAMP_SETS.map((s) => `<a href="#${s.id}">${s.vol}</a>`).join('');
 
   return `${pageHead(lang, HEAD)}
   <section class="ika-section ika-studio-section">
     <div class="wrap">
-      <div class="ika-sheets">${sheets}</div>
+      <nav class="ika-stk-jump" aria-label="${t(lang, 'セットへ移動', 'Jump to a set')}"><span class="ika-stk-soon">${t(lang, STAMP_RELEASE)}</span>${jump}</nav>
+      <div class="ika-stk-sets">${sets}</div>
       ${noteHTML(lang, {
         label: pair('スタンプについて', 'About the stickers'),
-        html: `<p>${t(lang, 'キャラクターは AI 生成をもとに部で整えたデザイン案です。販売前に地域ブランド名の扱いや権利を確認します。', 'The character artwork is a club design concept developed from AI-generated drafts. Rights and the use of regional brand names will be checked before anything goes on sale.')}</p>`,
+        html: `<p>${t(lang, 'LINEのスタンプショップで「山口イカ部」と探すと見つかります。キャラクターはAIで作った絵をもとに、部で整えたデザインです。', 'Search “Yamaguchi Ika-bu” in the LINE sticker shop. The character was refined by the club from AI-generated drafts.')}</p><p class="ika-stk-copy">${STAMP_COPYRIGHT}</p>`,
       })}
     </div>
   </section>
 
   <section class="ika-section ika-section--tint">
     <div class="wrap">
-      ${sectionHead(lang, { num: 'PUN', en: 'INK-REDIBLE WORDS', title: pair('ダジャレの仕組み', 'How the puns work'), note: pair('「イカ」は日本語のいろいろな言葉に隠れています。海外の部員にも笑ってもらえるように、種明かしを。', 'The word ika hides inside all sorts of Japanese phrases. Here is how each one works, so overseas members can laugh along.') })}
-      <div class="ika-puns">${punCards}</div>
+      ${sectionHead(lang, { num: 'PLAY', en: 'MEET THEM IN THE GAMES', title: pair('スタンプのイカたちと、遊ぼう。', 'Play with the squid from the stickers.'), note: pair('どれも無料。スマホで今すぐ遊べます。', 'All free. Play right now on your phone.') })}
+      ${gameTilesHTML(lang)}
+      <div class="ika-cta ika-stk-line">
+        <a class="ika-btn ika-btn--sea" href="${LINE_ADD_URL}" target="_blank" rel="noopener">${t(lang, '公式LINEで友だちになる', 'Add our official LINE')}</a>
+        <a class="ika-btn ika-btn--ink" href="https://www.instagram.com/child_daddy_o3z/" target="_blank" rel="noopener">${t(lang, 'Instagramをフォロー', 'Follow on Instagram')}</a>
+      </div>
     </div>
   </section>
 
   <section class="ika-section">
     <div class="wrap">
-      ${sectionHead(lang, { num: 'SOON', en: 'COMING TO YOUR FEED', title: pair('海の一日を、短い物語に。', 'Small stories from the coast.'), note: pair('どちらも準備中。開設したら、ここに本物のリンクを置きます。', 'Both are in preparation. Real links will appear here once they launch.') })}
-      <div class="ika-socials">${social}</div>
+      ${sectionHead(lang, { num: 'PUN', en: 'INK-REDIBLE WORDS', title: pair('ダジャレの仕組み', 'How the puns work'), note: pair('「イカ」は日本語のいろいろな言葉に隠れています。海外の部員にも笑ってもらえるように、種明かしを。', 'The word ika hides inside all sorts of Japanese phrases. Here is how each one works, so overseas members can laugh along.') })}
+      <div class="ika-puns">${punCards}</div>
     </div>
   </section>`;
 }

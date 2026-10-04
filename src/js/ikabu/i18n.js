@@ -40,7 +40,7 @@ export const SECTIONS = [
   { page: 'atlas', num: '04', label: pair('世界のイカ', 'Squid atlas'), en: 'ATLAS' },
   { page: 'gallery', num: '05', label: pair('写真部', 'Gallery'), en: 'PHOTO' },
   { page: 'play', num: '06', label: pair('イカ部のあそび場', 'Play'), en: 'PLAY' },
-  { page: 'studio', num: '07', label: pair('スタンプとSNS', 'Stickers & social'), en: 'STUDIO' },
+  { page: 'studio', num: '07', label: pair('LINEスタンプ', 'LINE stickers'), en: 'STICKERS' },
 ];
 
 // recipe（1品のページ）はナビ上は recipes の子として扱う
