@@ -10,6 +10,8 @@ const mk = (opts = {}) => newGame({ myDeck: starterDeck(CARDS), cpuDeck: starter
 // 手札に好きなカードを足す（テスト用）
 // 潮をたっぷりに（ターンの始めに tideMax から回復するので tideMax を上げる）
 const rich = (st) => { for (const s of ['me', 'cpu']) { st.players[s].tideMax = 9; st.players[s].tide = 8; } return st; };
+// 着底（出したイカは次の相手の番まで防御+2）を外す。攻撃と防御の比べ方そのものを確かめるテスト用（着底は ikabu-battle-guard.test.mjs で確かめる）
+const calm = (x) => { x.buffs = x.buffs.filter((b) => !(b.stat === 'def' && b.n === 2 && b.expires !== Infinity)); delete x.flags.settle; return x; };
 const give = (st, side, name) => { const c = byName(name); const x = { uid: 9000 + Math.random(), no: c.no, card: c, buffs: [], sick: true, skipNext: false, skipThis: false, attacked: false, shield: false, resting: false, faceDown: false, flags: {} }; st.players[side].hand.push(x); return x; };
 
 test('134枚すべてに効果の型がある（効果なしのイカは空の配列）', () => {
@@ -74,7 +76,7 @@ test('攻撃と防御の比べ：＞釣る／＝バラシ／＜弾かれて次�
   play(st, 'me', me1);
   endTurn(st);
   const cpu1 = give(st, 'cpu', 'コウイカ');    // 2/4・相手のターンは防御+1
-  play(st, 'cpu', cpu1);
+  play(st, 'cpu', cpu1); calm(cpu1);
   endTurn(st);
   // 自分のターン：スルメ(4) vs コウイカ(4+1=5) → 弾かれる
   const r1 = attack(st, 'me', me1, cpu1);
@@ -96,7 +98,7 @@ test('攻撃と防御の比べ：＞釣る／＝バラシ／＜弾かれて次�
 test('バラシ：攻撃＝防御で両方残る。同じマークのイカがいるとテクニックは潮1安い', () => {
   const st = rich(mk());
   const a = give(st, 'me', 'スルメイカ'); play(st, 'me', a); endTurn(st);
-  const b = give(st, 'cpu', 'スルメイカ'); play(st, 'cpu', b); endTurn(st);
+  const b = give(st, 'cpu', 'スルメイカ'); play(st, 'cpu', b); calm(b); endTurn(st);
   const r = attack(st, 'me', a, b);
   assert.equal(r.result, 'tie');
   assert.ok(st.players.me.front.includes(a) && st.players.cpu.front.includes(b));
@@ -167,7 +169,7 @@ test('CPUの手：イカを出す→釣れる相手を攻撃→トラップを�
 test('潮しゃくり：潮2で攻撃+1（このターン・1体1回）。守りの疲れ：弾かれるたびに受けたイカの防御-1（ずっと）', () => {
   const st = rich(mk());
   const a = give(st, 'me', 'スルメイカ'); play(st, 'me', a); endTurn(st);
-  const b = give(st, 'cpu', 'コウイカ'); play(st, 'cpu', b); endTurn(st);   // 2/4・相手のターンは防御+1 → 5
+  const b = give(st, 'cpu', 'コウイカ'); play(st, 'cpu', b); calm(b); endTurn(st);   // 2/4・相手のターンは防御+1 → 5
   // 4 vs 5 → 弾かれる → コウイカの防御が1下がる（ずっと）
   assert.equal(attack(st, 'me', a, b).result, 'blocked');
   assert.equal(statOf(st, b, 'def'), 4);

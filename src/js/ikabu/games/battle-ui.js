@@ -58,6 +58,8 @@ const TUTOR = [
     ja: 'ようこそ、イカ部カードバトルへ！\nまずは手札のイカをタップして\n「前列に出す」。\n左上の数字が「潮」（コスト）。\nターンごとに1ずつ増えるよ', en: 'Welcome! Tap a squid in your hand and play it to the front row. The number on the card is its tide cost; you gain 1 tide per turn.' },
   { id: 'tailwind', pic: 'wink', when: (st) => st.active === 'me' && st.players.me.tailwind,
     ja: '後攻は「追い風」！\n自分の最初の2ターンは潮が+1。\n先攻より1歩早く強いイカを出せるよ', en: 'Second player gets a tailwind: +1 tide on your first two turns. Play a strong squid a step early.' },
+  { id: 'settle', pic: 'wink', when: (st) => st.active === 'me' && st.players.me.front.some((x) => x && x.flags.settle != null),
+    ja: '出したイカは「着底」！\n次の相手の番が終わるまで\n防御+2。\nすぐには釣られにくいよ', en: 'A squid you play is "settled": +2 DEF until the end of your opponent\'s next turn, so it is harder to catch right away.' },
   { id: 'end', pic: 'point', when: (st) => st.active === 'me' && st.players.me.summoned,
     ja: '出したターンのイカは攻撃できない。\n右の丸い「ターン終了」で\n相手の番へ。\n手札は毎ターン1枚引けるよ', en: 'A squid cannot attack the turn it was played. Tap the round End Turn button on the right. You draw a card every turn.' },
   { id: 'attack', pic: 'point', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
@@ -103,7 +105,7 @@ const TX = {
   pickDiscard: (lang, n) => (lang === 'en' ? `Choose ${n} card${n > 1 ? 's' : ''} to discard (納竿)` : `捨てるカードを${n}枚選んでください（納竿）`),
   discardGo: ['捨てる', 'Discard'],
   again: ['もう一度', 'Play again'], close: ['閉じる', 'Close'],
-  state: { sick: ['出たばかり', 'new'], tired: ['バラシ', 'tired'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },   // バラシ＝弾かれて次の番は休み（カードの説明の言葉にそろえた 2026-10-03）
+  state: { settle: ['着底 防御+2', 'Settled DEF+2'], sick: ['出たばかり', 'new'], tired: ['バラシ', 'tired'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },   // バラシ＝弾かれて次の番は休み（カードの説明の言葉にそろえた 2026-10-03）
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
   kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
   noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
@@ -193,7 +195,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
 
   const egiPrev = { me: null, cpu: null };   // 最初は必ず描く（5→5で描かれずエギが消えた：2026-10-01 ぱっぱ）
   const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
-  const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
+  const stateOf = (x, side) => (x.shield ? 'shield' : x.sick && side === st.active ? 'sick' : x.flags.settle != null ? 'settle' : x.skipThis ? 'tired' : x.attacked && side === st.active ? 'attacked' : '');
   function cardHTML(x, side, row) {
     if (!x) return '<div class="ika-bt-slot"></div>';
     const hidden = row === 'back' && side === 'cpu';

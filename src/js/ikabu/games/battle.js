@@ -13,6 +13,8 @@ export const FRONT = 3, BACK = 3, EGI = 5, HAND_MAX = 7, TIDE_MAX = 8, DECK_SIZE
 export const DECK_RULE = { squid: [12, 15], tech: [9, 12], trap: [4, 6], copies: 2, SSR: 2, UR: 1 };
 export const NIGHT = ['ケンサキ', 'ヤリ', 'アカ', 'ホタル'];
 export const SHAKURI_COST = 2, SHAKURI_ATK = 1, WEAR_DEF = 1;
+// 着底：前列に出たイカは、次の相手の番の終わりまで防御+2（2026-10-04 ぱっぱ。押されている側が出したイカがすぐ釣られて、逆転できなかった）
+export const SETTLE_DEF = 2;
 export const TAILWIND_TURNS = 2, TAILWIND_TIDE = 1;   // 後攻の追い風：自分の最初の2ターンは潮+1（2026-10-01 自動対戦で先攻71%→54%）
 const other = (side) => (side === 'me' ? 'cpu' : 'me');
 // 夜のイカ・夜のテクニック（2026-10-03）：名前の文字で決めると「真冬の大槍」（ヤリイカ）が漏れ、「常夜灯」「ナイトエギング」などの夜の技が
@@ -178,6 +180,8 @@ export function statOf(st, x, stat) {
   return Math.max(0, v);
 }
 export const ownerOf = (st, x) => (P(st, 'me').front.includes(x) || P(st, 'me').back.includes(x) || P(st, 'me').hand.includes(x) ? 'me' : 'cpu');
+// 着底の印（flags.settle）は防御+2と同じく、次の相手の番の終わりに外れる（endTurn の flags の掃除）
+const settle = (st, x) => { buff(st, x, 'def', SETTLE_DEF, 'oppTurnEnd'); x.flags.settle = st.turn + 1; };
 const buff = (st, x, stat, n, until) => {
   if (!x) return;
   const expires = until === 'forever' ? Infinity : until === 'oppTurnEnd' ? st.turn + 1 : until === 'nextTurn' ? st.turn + 2 : st.turn;
@@ -245,7 +249,7 @@ function run(st, side, acts, ctx) {
       case 'tutor': { const i = me.deck.findIndex((x) => x.card.name === a.name); if (i >= 0) me.hand.push(...me.deck.splice(i, 1)); break; }
       case 'tutorSquid': { let n = a.n ?? 1; for (let i = 0; i < me.deck.length && n > 0; i++) { const x = me.deck[i]; if (x.card.kind === 'squid' && (a.maxCost == null || x.card.cost <= a.maxCost)) { me.hand.push(...me.deck.splice(i, 1)); i--; n--; } } break; }
       case 'peekPick': { const top = me.deck.slice(0, a.n); if (top.length) { const best = top.reduce((m, x) => (x.card.cost > m.card.cost ? x : m), top[0]); me.deck.splice(me.deck.indexOf(best), 1); me.hand.push(best); } break; }
-      case 'summonFromDeck': { const slot = me.front.indexOf(null); const i = me.deck.findIndex((x) => x.card.kind === 'squid' && x.card.cost <= a.maxCost); if (slot >= 0 && i >= 0) { const x = me.deck.splice(i, 1)[0]; x.sick = true; me.front[slot] = x; } break; }
+      case 'summonFromDeck': { const slot = me.front.indexOf(null); const i = me.deck.findIndex((x) => x.card.kind === 'squid' && x.card.cost <= a.maxCost); if (slot >= 0 && i >= 0) { const x = me.deck.splice(i, 1)[0]; x.sick = true; me.front[slot] = x; settle(st, x); } break; }
       case 'revealTrap': { const i = en.back.findIndex((x) => x && x.card.kind === 'trap'); if (i >= 0) { en.grave.push(en.back[i]); en.back[i] = null; say(st, 'トラップを見破った！'); } break; }
       case 'changeMark': {   // 2026-10-03：前は効果なしだった。選んだマーク（ctx.mark）に変える。CPU・選ばなかった時は手札のテクニックに多いマーク
         const m = MARK_IDS.includes(ctx.mark) ? ctx.mark : favoriteMark(me, targets[0]);
@@ -317,6 +321,7 @@ export function play(st, side, x, { target = null, mark = null } = {}) {
   if (x.card.kind === 'squid') {
     x.sick = true; x.attacked = false; x.skipNext = false; x.skipThis = false;
     p.front[p.front.indexOf(null)] = x; p.summoned = true;
+    settle(st, x);
     say(st, `${x.card.name}を出した`);
     run(st, side, effectsOf(st, x.no).filter((e) => e.when === 'enter'), ctx);
     fireTraps(st, other(side), 'enemySquidEnter', { entered: x });

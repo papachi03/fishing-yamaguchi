@@ -71,3 +71,20 @@ test('CPU：次の番で釣られそうな自分のイカを、守りのテク�
   st.players.me.front[0] = inst('アカイカ');
   assert.equal(cpuNext(st, 'cpu').type, 'end');
 });
+
+test('着底：前列に出したイカは、次の相手の番の終わりまで防御+2（自分の次の番に戻る）', () => {
+  const st = clean(mk());
+  const x = give(st, 'me', 'ジンドウイカ（ヒイカ）');
+  const d0 = x.card.def;
+  assert.equal(play(st, 'me', x).ok, true);
+  assert.equal(statOf(st, x, 'def'), d0 + 2);
+  assert.ok(x.flags.settle != null);
+  toCpuTurn(st);
+  assert.equal(statOf(st, x, 'def'), d0 + 2);                 // 相手の番も防御+2
+  const foe = onField(st, 'cpu', 'ヤリイカ');                  // 攻撃4 は 防御4 を釣れない
+  const r = attack(st, 'cpu', foe, x);
+  assert.notEqual(r.result, 'catch');
+  endTurn(st);
+  assert.equal(x.flags.settle, undefined);                      // 自分の次の番には外れる
+  assert.ok(statOf(st, x, 'def') <= d0);                        // （弾いた時の守りの疲れで-1になることはある）
+});

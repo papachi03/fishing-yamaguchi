@@ -2997,6 +2997,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-atk, .ika-bt-def { position: absolute; bottom: -6px; min-width: 20px; padding: 1px 4px; border-radius: 999px; font-family: var(--font-varsity); font-weight: 800; font-size: 13px; text-align: center; color: #fff; text-shadow: 0 1px 0 #000; }
 .ika-bt-atk { left: -6px; background: #d9432b; } .ika-bt-def { right: -6px; background: #2b6cb0; }
 .ika-bt-state { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: #0b1a2a; color: #ffd166; font-style: normal; font-size: 10px; font-weight: 900; white-space: nowrap; }
+.ika-bt-state.is-settle { background: #b45309; color: #fff; }
 .ika-bt-state.is-shield { background: #138c96; color: #fff; } .ika-bt-state.is-set { background: #7c3aed; color: #fff; } .ika-bt-state.is-tired { background: #6b7280; color: #fff; } .ika-bt-state.is-attacked { background: #374151; color: #cbd5e1; }
 /* 両側の情報：エギ（ライフ）と数字 */
 .ika-bt-side { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; font-size: 12px; font-weight: 900; pointer-events: none; }
