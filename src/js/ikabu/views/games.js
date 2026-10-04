@@ -19,8 +19,10 @@ export const HEAD = {
   lead: pair('遊ぶとチケット🎫がたまり、ガチャでカードが引けます。記録はこのブラウザにだけ残ります。', 'Play to earn 🎫 and pull cards in the gacha. Records stay in this browser.'),
 };
 
+// 絵（2026-10-04）：ゲームの場面と題名のデザイン文字（GPT・ikabu-research/games-cards）。題名の文字は絵の中にあるので、下の名前は読み上げ用に残して見えなくする
 const tile = (lang, x) => `
-        <a class="ika-play-card ika-play-card--${x.cls}" href="${pageHref(x.page, lang)}">
+        <a class="ika-play-card ika-play-card--${x.cls} ika-play-card--pic" href="${pageHref(x.page, lang)}">
+          <span class="ika-play-card-pic"><img src="${assetHref(`/assets/ikabu/games-cards/${x.cls}.webp`)}" alt="" width="960" height="640" loading="lazy" decoding="async" /></span>
           <span class="ika-play-card-tag">${t(lang, x.tag)}</span>
           <span class="ika-play-card-no">${x.no}</span>
           <span class="ika-play-card-name">${t(lang, x.name)}</span>
