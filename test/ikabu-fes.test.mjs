@@ -69,7 +69,10 @@ test('フェスの限定カードは同じレア度の中で3倍出やすい。�
 });
 
 test('限定カードもデッキの決まりはそのまま（UR1・SSR2・同名2）', () => {
+  // 限定カード（123 ウェーブの主＝イカのUR）はスターターのイカと入れ替える（後ろを削るとトラップが決まりの枚数を割る：2026-10-04 スターター組み替えで発覚）
   const d = starterDeck(CARDS);
-  assert.equal(checkDeck([...d.slice(0, 28), 123, 123], CARDS).ok, false);   // UR2枚
-  assert.equal(checkDeck([...d.slice(0, 29), 123], CARDS).ok, true);
+  const squids = d.filter((no) => CARDS.find((c) => c.no === no).kind === 'squid');
+  const without = (k) => { const out = [...d]; for (const no of squids.slice(-k)) out.splice(out.lastIndexOf(no), 1); return out; };
+  assert.equal(checkDeck([...without(2), 123, 123], CARDS).ok, false);   // UR2枚
+  assert.equal(checkDeck([...without(1), 123], CARDS).ok, true);
 });
