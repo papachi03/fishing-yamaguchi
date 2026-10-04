@@ -5,6 +5,7 @@ import { EGI_TEXT, M3_TEXT, HUB_TEXT } from '../games/play-text.js';
 import { tileImg } from '../games/marks.js';
 import { RARE } from '../games/match3.js';
 import { certsHTML, ticketsHTML } from './play.js';
+import { STAMP_PICKS, STAMP_RELEASE } from '../stamps.js';
 
 const TILES = [
   { page: 'egi', no: '01', name: EGI_TEXT.name, desc: EGI_TEXT.tagline, tag: HUB_TEXT.flagship, cls: 'egi' },
@@ -38,6 +39,10 @@ export function render(lang) {
       <h1 class="ika-games-title">${t(lang, HEAD.title)}</h1>
       <p class="ika-games-lead">${t(lang, HEAD.lead)}</p>
       <div class="ika-play-cards ika-games-tiles">${TILES.map((x) => tile(lang, x)).join('')}</div>
+      <a class="ika-stk-band" href="${pageHref('studio', lang)}">
+        <span class="ika-stk-band-imgs">${STAMP_PICKS.map(([v, n]) => `<img src="${assetHref(`/assets/ikabu/stamps/${v}/${n}.webp`)}" alt="" width="200" height="200" loading="lazy" decoding="async" />`).join('')}</span>
+        <span class="ika-stk-band-text"><b>${t(lang, 'イカ部のLINEスタンプ', 'Ika-bu LINE stickers')}</b><span>${t(lang, STAMP_RELEASE)}</span><span class="ika-stk-band-go">${t(lang, 'スタンプを見る', 'See the stickers')} <span aria-hidden="true">→</span></span></span>
+      </a>
       ${ticketsHTML(lang)}
       ${certsHTML(lang)}
       <p class="ika-play-note">${t(lang, '先行版です。URLはほかの方に送らないでくださいね。', 'Early access. Please do not share the URL.')}</p>

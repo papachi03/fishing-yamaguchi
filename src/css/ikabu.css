@@ -3422,3 +3422,27 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
   .ika-stk-grid { gap: 6px; }
   .ika-stk-item { padding: 3px; }
 }
+
+/* ---------- TOPのNEW帯・あそび場TOPのスタンプ帯（2026-10-04） ---------- */
+.ika-news { padding: clamp(26px, 4vw, 44px) 0 0; }
+.ika-news-inner { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(14px, 2vw, 22px); }
+.ika-news-card { position: relative; display: grid; align-content: start; gap: 8px; padding: 22px 22px 20px; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); background: var(--ika-white); box-shadow: 6px 6px 0 var(--ika-orange); color: var(--ika-ink); text-decoration: none; }
+.ika-news-card--game { background: var(--ika-sea); color: var(--ika-white); box-shadow: 6px 6px 0 var(--ika-ink); }
+.ika-news-tag { justify-self: start; padding: 3px 12px; border-radius: 999px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-varsity); font-weight: 800; font-size: 13px; letter-spacing: 0.16em; }
+.ika-news-stamps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ika-news-stamps img { width: 100%; height: auto; aspect-ratio: 1; display: block; background: #eef6f6; border-radius: 10px; }
+.ika-news-title { font-family: var(--font-maru); font-weight: 900; font-size: clamp(19px, 2.2vw, 24px); line-height: 1.35; }
+.ika-news-card--stamp .ika-news-title { color: var(--ika-sea); }
+.ika-news-desc { font-size: 14px; line-height: 1.7; }
+.ika-news-go { margin-top: 4px; font-weight: 900; font-size: 15px; }
+.ika-news-card:hover { transform: translate(-1px, -1px); }
+.ika-stk-band { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 12px 16px; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); background: var(--ika-white); box-shadow: 5px 5px 0 var(--ika-orange); color: var(--ika-ink); text-decoration: none; }
+.ika-stk-band-imgs { display: flex; gap: 4px; flex: none; }
+.ika-stk-band-imgs img { width: 56px; height: 56px; display: block; }
+.ika-stk-band-text { display: grid; gap: 2px; font-weight: 800; font-size: 14px; color: var(--ika-sea); }
+.ika-stk-band-text b { font-family: var(--font-maru); font-weight: 900; font-size: 17px; color: var(--ika-ink); }
+.ika-stk-band-go { color: var(--ika-ink); font-weight: 900; }
+@media (max-width: 760px) {
+  .ika-news-inner { grid-template-columns: 1fr; }
+  .ika-stk-band { flex-direction: column; align-items: flex-start; }
+}

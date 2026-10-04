@@ -1,6 +1,7 @@
 // イカ部トップ。render(lang) は HTML 文字列を返すだけ（DOM・window に触らない）。
 // 部員の掲示板の「本物の投稿」だけはブラウザで後から差し替える（pages/index.js）。
 import { t, pair, esc, pageHref, assetHref, SECTIONS } from '../i18n.js';
+import { STAMP_PICKS, STAMP_RELEASE } from '../stamps.js';
 import { sectionHead } from './parts.js';
 import { HERO_ANIM, sceneSVG } from '../hero-scene.js';
 import { vlogs } from '../../data/vlogs.js';
@@ -141,8 +142,8 @@ export function render(lang) {
           'A squid-lovers’ club started by an angler living in Yamaguchi. Fish them, cook them, or just admire them. Secret spots stay secret, and a blank day still counts.'
         )}</p>
         <div class="ika-cta">
-          <a class="ika-btn ika-btn--primary" href="#join">${t(lang, '入部する', 'Join the club')}</a>
-          <a class="ika-btn ika-btn--ghost" href="#activities">${t(lang, '部活動を見る', 'See the activities')}</a>
+          <a class="ika-btn ika-btn--primary" href="${pageHref('games', lang)}">${t(lang, 'ゲームで遊ぶ', 'Play the games')}</a>
+          <a class="ika-btn ika-btn--ghost" href="#join">${t(lang, '入部する', 'Join the club')}</a>
         </div>
         <!-- ステッカーは文字の列の中（竿・糸・釣れたイカ・投げ直しの軌道にかからない場所） -->
         <p class="ika-hero-badges" aria-hidden="true">
@@ -172,6 +173,25 @@ export function render(lang) {
         <li><span class="ika-rule-num">${t(lang, '二', '02')}</span><span>${t(lang, '釣れなくても、部員。', 'No catch? Still a member.')}</span></li>
         <li><span class="ika-rule-num">${t(lang, '三', '03')}</span><span>${t(lang, 'ダジャレは、減点しない。', 'Puns are never penalized.')}</span></li>
       </ol>
+    </div>
+  </section>
+
+  <!-- ===== NEW：LINEスタンプとゲーム（2026-10-04） ===== -->
+  <section class="ika-news" aria-label="${t(lang, 'お知らせ', 'News')}">
+    <div class="wrap ika-news-inner">
+      <a class="ika-news-card ika-news-card--stamp" href="${pageHref('studio', lang)}">
+        <span class="ika-news-tag">NEW</span>
+        <span class="ika-news-stamps">${STAMP_PICKS.map(([v, n]) => `<img src="${assetHref(`/assets/ikabu/stamps/${v}/${n}.webp`)}" alt="" width="200" height="200" loading="lazy" decoding="async" />`).join('')}</span>
+        <span class="ika-news-title">${t(lang, 'LINEスタンプ 3セット', 'Three LINE sticker sets')}</span>
+        <span class="ika-news-desc">${t(lang, STAMP_RELEASE)}${t(lang, '。イカがダジャレで動きます', '. Animated squid puns')}</span>
+        <span class="ika-news-go">${t(lang, 'スタンプを見る', 'See the stickers')} <span aria-hidden="true">→</span></span>
+      </a>
+      <a class="ika-news-card ika-news-card--game" href="${pageHref('games', lang)}">
+        <span class="ika-news-tag">PLAY</span>
+        <span class="ika-news-title">${t(lang, '無料で遊べる、4つのゲーム', 'Four free games')}</span>
+        <span class="ika-news-desc">${t(lang, 'エギング「しゃくって抱かせろ！」・墨つなぎ・ガチャ・カードバトル。遊ぶと🎫がたまる', 'Egging, Ink Link, gacha and card battles. Earn 🎫 as you play')}</span>
+        <span class="ika-news-go">${t(lang, 'あそび場へ', 'To the playground')} <span aria-hidden="true">→</span></span>
+      </a>
     </div>
   </section>
 

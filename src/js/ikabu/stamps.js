@@ -4,6 +4,8 @@
 import { pair } from './i18n.js';
 
 export const STAMP_RELEASE = pair('2026年10月10日 発売', 'On sale October 10, 2026');
+// TOP・あそび場TOP の帯に出す4つ（[セット, 番号]）
+export const STAMP_PICKS = [['vol1', '01'], ['vol3', '03'], ['vol2', '01'], ['vol3', '06']];
 export const STAMP_COPYRIGHT = '(C)2026 Yamaguchi Ika-bu';
 
 export const STAMP_SETS = [
