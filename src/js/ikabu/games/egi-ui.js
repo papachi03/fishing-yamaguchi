@@ -16,7 +16,7 @@ import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
-const RESIST_TENSION = 70;   // 糸の張りがこれ以上で「抵抗がある」＝ドラグ「ジーー」（ゲージが赤くなる80の少し手前）
+const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
 import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
@@ -2792,8 +2792,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const reeling = phase === 'fight' && Boolean(s.pressing);
     // 2026-10-03 ぱっぱ（感想「巻いている時はドラグを鳴らさないで」も受けて）：ふつうに巻いている間はリールの生音「チリ…チリリ…」。
     //   ジェットの直後と、糸の張りが強い（抵抗がある）時だけ、今までのドラグ「ジーー」
-    const resist = reeling && s.tension >= RESIST_TENSION;
-    feel.drag(yRun || jetRun || resist);
+    // 2026-10-04 ぱっぱ：前は張りが RESIST_TENSION を超えるとドラグを鳴らしていたが、押し続けるだけで張りが上がり、イカが抵抗していないのに「ジーー」が鳴って不自然。
+    //   本物のドラグはイカが走って糸が出る時だけ＝ジェットの直後（とヤエンの走り）だけ鳴らす。張りの高さはゲージの色で分かる
+    const resist = false;
+    feel.drag(yRun || jetRun);
     feel.ambient(true, { duck: phase === 'fight' });   // 波の音（やり取り中は BGM と一緒に下げる）：ゲームの画面が出ている間（毎フレーム呼んでよい。画面の外・裏のタブでは stop() が止める）
     // ジェットの「ジー！」の後は抵抗が少し残る：その後に巻いたら「チリリリ」を1回だけ、それからゆっくり「チリ… チリ…」（2026-10-03 ぱっぱ）。
     //   抵抗が残るのはジェットから JET_RESIST 秒まで
