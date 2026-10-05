@@ -146,6 +146,7 @@ export default defineConfig({
         invite: resolve(__dirname, 'invite.html'),
         'guides/autumn-eging': resolve(__dirname, 'guides/autumn-eging.html'),
         'guides/family-sabiki': resolve(__dirname, 'guides/family-sabiki.html'),
+        'guides/yaen-beginner': resolve(__dirname, 'guides/yaen-beginner.html'),
       },
     },
   },
