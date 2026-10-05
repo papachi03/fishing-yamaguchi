@@ -17,9 +17,9 @@ test('guidesForSpecies：魚種名に「イカ」を含む釣行だけ秋エギ�
 test('guidesForMonth：季節の合う記事だけ。homeGuides は合う月が無ければ全記事に落ちる', () => {
   assert.ok(guidesForMonth(10).some((g) => g.slug === 'autumn-eging'));
   assert.ok(!guidesForMonth(5).some((g) => g.slug === 'autumn-eging'));
-  assert.equal(guidesForMonth(3).length, 0);
+  assert.equal(guidesForMonth(2).length, 0);   // 2026-10-05 ヤエンを春(3〜5月)にも出すので、記事の無い月は1・2月
   assert.deepEqual(homeGuides(10), guidesForMonth(10));
-  assert.equal(homeGuides(3).length, guides.length);
+  assert.equal(homeGuides(2).length, guides.length);
 });
 
 test('guideCardsHTML：href・タイトル・写真・帯・リードが入る。1本なら is-single', () => {
