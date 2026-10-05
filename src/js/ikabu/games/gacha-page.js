@@ -215,7 +215,10 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   for (let i = 0; i < FISH.length; i++) sc.fish[i].append(swimmingSquid({ species: FISH[i], len: 62 + i * 10, colors: speciesColors(FISH[i]) }));
   if (lang === 'ja') for (const k of Object.keys(CO_SIZE)) { const im = new Image(); im.src = assetHref(`/assets/ikabu/gacha/co_${k}.webp`); im.decode?.().catch(() => {}); }   // 演出の文字の絵を先読み
   // エギに寄って抱くイカ（fish[1]）を、台本の hook（種類・大きさ）で描き直す（2026-10-05 前は毎回ケンサキ）
-  const setHookFish = (hook) => { sc.fish[1].replaceChildren(swimmingSquid({ species: hook.species, len: hook.len, colors: speciesColors(hook.species) })); };
+  let hookLen = 72;
+  const setHookFish = (hook) => { hookLen = hook.len; sc.fish[1].replaceChildren(swimmingSquid({ species: hook.species, len: hook.len, colors: speciesColors(hook.species) })); };
+  // スマホの縦長では舞台の x 80〜820 しか見えない。抱いたイカの体がそこを出るなら、エギの左側から抱く（大きなアオリが右端で切れた 2026-10-05）
+  const VIS_R = 800;
   const audio = createGachaAudio({ on: readJSON(KEY_SOUND) ?? true, href: assetHref });
   el.sound.setAttribute('aria-pressed', String(audio.on));
   el.sound.textContent = audio.on ? '🔊' : '🔇';
@@ -313,7 +316,8 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
         f.x += (f.tx - f.x) * f.k * dt * 0.06; f.y += (f.ty - f.y) * f.k * dt * 0.06;
         f.dir = f.tx > f.x ? 1 : -1;
       } else if (f.mode === 'hooked') {   // 掛かった：エギのそばで暴れる
-        f.x = V.egi.x + 34 + jx + Math.sin(now / 70) * 10; f.y = V.egi.y + 6 + jy; f.dir = -1;
+        const left = i === 1 && V.egi.x + 34 + hookLen * 1.3 > VIS_R;
+        f.x = V.egi.x + (left ? -34 : 34) + jx + Math.sin(now / 70) * 10; f.y = V.egi.y + 6 + jy; f.dir = left ? 1 : -1;
       }
       const sway = Math.sin(now / 500 + f.ph) * 6;
       sc.fish[i].setAttribute('transform', `translate(${f1(f.x)} ${f1(f.y)}) rotate(${f1((f.dir === 1 ? 90 : -90) + sway)})`);
