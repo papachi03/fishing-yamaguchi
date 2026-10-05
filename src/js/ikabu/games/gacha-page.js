@@ -29,7 +29,9 @@ const S = {
   sinkTo: 1250,
   fishBox: { x0: 360, x1: 860, y0: 760, y1: 1420 },
 };
-const FISH = ['aori', 'kensaki', 'yari', 'kouika'];   // 泳ぐイカ（エギングの泳ぐモデル。2026-09-30 ぱっぱ：図鑑の絵は浮く）
+const FISH = ['aori', 'kensaki', 'yari', 'kouika'];
+// 演出の文字の絵の大きさ（読み込み前から高さを決めるため）
+const CO_SIZE = { bara: [819, 202], boss: [900, 265], goldink: [900, 234], jiai: [900, 225], kiloup: [900, 210], lamp: [900, 167], landed: [717, 277], nabura: [875, 239], now: [595, 228], q: [259, 238], rainbow: [668, 257], runaway: [900, 219], still: [900, 197] };   // 泳ぐイカ（エギングの泳ぐモデル。2026-09-30 ぱっぱ：図鑑の絵は浮く）
 const f1 = (v) => (Math.round(v * 10) / 10).toString();
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -211,6 +213,9 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   };
 
   for (let i = 0; i < FISH.length; i++) sc.fish[i].append(swimmingSquid({ species: FISH[i], len: 62 + i * 10, colors: speciesColors(FISH[i]) }));
+  if (lang === 'ja') for (const k of Object.keys(CO_SIZE)) { const im = new Image(); im.src = assetHref(`/assets/ikabu/gacha/co_${k}.webp`); im.decode?.().catch(() => {}); }   // 演出の文字の絵を先読み
+  // エギに寄って抱くイカ（fish[1]）を、台本の hook（種類・大きさ）で描き直す（2026-10-05 前は毎回ケンサキ）
+  const setHookFish = (hook) => { sc.fish[1].replaceChildren(swimmingSquid({ species: hook.species, len: hook.len, colors: speciesColors(hook.species) })); };
   const audio = createGachaAudio({ on: readJSON(KEY_SOUND) ?? true, href: assetHref });
   el.sound.setAttribute('aria-pressed', String(audio.on));
   el.sound.textContent = audio.on ? '🔊' : '🔇';
@@ -335,9 +340,14 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
   }
   let calloutTimer = 0;
   // key があれば絵（assets/ikabu/gacha/co_<key>.webp）、無ければ文字。英語は文字のまま
+  //   2026-10-05 iPhone で「常夜灯に群れが…」の直後の「？」が下から真ん中へ跳んだ：絵の大きさ（width/height）を書いて読み込み前から高さを決め、
+  //   画面を開いた時に先読みし、文字が替わるたびに is-on を外して動きを最初からやり直す
   function callout(text, kind = '', ms = 1400, key = null) {
-    if (key && lang === 'ja') el.callout.innerHTML = `<img src="${assetHref(`/assets/ikabu/gacha/co_${key}.webp`)}" alt="${esc(text)}" decoding="async" />`;
+    const size = CO_SIZE[key];
+    if (key && lang === 'ja') el.callout.innerHTML = `<img src="${assetHref(`/assets/ikabu/gacha/co_${key}.webp`)}" alt="${esc(text)}"${size ? ` width="${size[0]}" height="${size[1]}"` : ''} decoding="sync" />`;
     else el.callout.textContent = text;
+    el.callout.className = 'ika-gc-callout';
+    void el.callout.offsetWidth;   // 動きを最初から
     el.callout.className = `ika-gc-callout is-on ${kind}${key ? ' is-img' : ''}`;
     clearTimeout(calloutTimer); calloutTimer = setTimeout(() => el.callout.classList.remove('is-on'), ms);
   }
@@ -430,6 +440,7 @@ export function mountGachaPage(root, { lang = 'ja' } = {}) {
 
   /* ----- 演出の本番 ----- */
   async function runShow(results, plan, n) {
+    if (plan.hook) setHookFish(plan.hook);
     setPhase('cast');
     audio.preload(['rise', 'splash', 'drag', 'don', 'flip', plan.top === 'SSR' || plan.top === 'UR' ? 'thunder' : 'flip', plan.top === 'UR' ? 'fanfare' : 'flip']);
     el.hint.textContent = t(lang, ...TX.castHint);

@@ -8,6 +8,17 @@ import { omen, rank } from './gacha.js';
 
 export const FIGHT_MS = { normal: 2000, kiloUp: 4200, runaway: 6000 };
 export const REVEAL_MS = { N: 700, R: 800, SR: 2000, SSR: 4600, UR: 7000 };
+// エギを抱くイカ（2026-10-05 ぱっぱ「毎回ケンサキなので、SR高確率なら抱くイカの種類を変える」）
+export const HOOK_OTHERS = ['kensaki', 'yari', 'surume', 'kouika'];
+export function hookOf(top, rnd = Math.random) {
+  const r = rank(top);
+  const other = () => ({ species: HOOK_OTHERS[Math.min(HOOK_OTHERS.length - 1, Math.floor(rnd() * HOOK_OTHERS.length))], len: 72 });
+  if (r >= rank('UR')) return { species: 'aori', len: 112 };
+  if (r >= rank('SSR')) return { species: 'aori', len: 100 };
+  if (r >= rank('SR')) return rnd() < 0.75 ? { species: 'aori', len: 88 } : other();
+  const fake = r >= rank('R') ? 0.1 : 0.05;
+  return rnd() < fake ? { species: 'aori', len: 76 } : other();
+}
 export const FIGHT_TEXT = {
   kiloUp: ['キロアップだ！', 'A kilo-up!'],
   runaway: ['止まらない…！', "It won't stop…"],
@@ -33,6 +44,7 @@ export function planShow(results, rnd = Math.random, { firstToday = false, reduc
     boss: firstToday,           // その日の最初：部長が顔を出す
     reveals,
     totalRevealMs: reveals.reduce((s, x) => s + x.ms, 0),
+    hook: hookOf(top, rnd),     // 抱くイカ（最後に引く＝ほかの予感の乱数の順番を変えない）
   };
 }
 

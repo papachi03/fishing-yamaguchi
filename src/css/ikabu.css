@@ -2761,8 +2761,10 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-gc-tension { width: min(88%, 380px); height: 12px; border-radius: 6px; background: rgba(0,0,0,0.5); border: 2px solid #ffd166; overflow: hidden; }
 .ika-gc-tension i { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, #4dc3ff, #ffe94d 60%, #ff4d4d); transition: width 0.12s; }
 /* 大きな文字 */
-.ika-gc-callout { position: absolute; z-index: 6; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(0.6); margin: 0; font-family: var(--font-gc); font-weight: 800; letter-spacing: 0.04em; font-size: clamp(30px, 9vw, 48px); line-height: 1.2; color: #fff; text-align: center; white-space: normal; width: 92%; -webkit-text-stroke: 2px #0b1a2a; paint-order: stroke fill; text-shadow: 0 4px 0 #0b1a2a, 0 0 24px rgba(0,0,0,0.6); opacity: 0; pointer-events: none; }
-.ika-gc-callout.is-on { animation: ika-gc-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+.ika-gc-callout { position: absolute; z-index: 6; left: 50%; top: 42%; translate: -50% -50%; scale: 0.6; margin: 0; font-family: var(--font-gc); font-weight: 800; letter-spacing: 0.04em; font-size: clamp(30px, 9vw, 48px); line-height: 1.2; color: #fff; text-align: center; white-space: normal; width: 92%; -webkit-text-stroke: 2px #0b1a2a; paint-order: stroke fill; text-shadow: 0 4px 0 #0b1a2a, 0 0 24px rgba(0,0,0,0.6); opacity: 0; pointer-events: none; }
+.ika-gc-callout.is-on { animation: ika-gc-callpop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+/* 2026-10-05 iPhone で「？」が下から真ん中へ跳んだ：動かすのは scale と opacity だけ（位置の translate は動きに入れない） */
+@keyframes ika-gc-callpop { 0% { opacity: 0; scale: 0.4; } 100% { opacity: 1; scale: 1; } }
 @keyframes ika-gc-pop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .ika-gc-callout.is-q { font-size: clamp(90px, 30vw, 160px); color: #ffd166; }
 .ika-gc-callout.is-warn { color: #ffb37a; }
