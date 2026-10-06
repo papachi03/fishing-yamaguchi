@@ -26,7 +26,8 @@ import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
 import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
-import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX } from './egi-scene.js';
+import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX, setDepthMax } from './egi-scene.js';
+import { DEPTHS } from './egi.js';
 import { svgEl, egiShape, ART, speciesColors } from '../squid-art.js';
 import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
 import { rodPathD, lerp } from '../hero-scene.js';
@@ -69,7 +70,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), playBlind: q('ika-egi-play-blind'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
-    pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'),
+    pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'), depthPick: q('ika-egi-depthpick'), depthNote: q('ika-egi-depth-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
@@ -106,7 +107,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
     bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami',
     aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live',   // ヤエンのアジ（2026-09-28 案B）
-    tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one' };   // テーラーのタナ（2026-09-28）
+    tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one',   // テーラーのタナ（2026-09-28）
+    depth: DEPTHS.includes(readPref('ikabu.egi.depth')) ? readPref('ikabu.egi.depth') : 'normal' };   // 釣り場の水深（2026-10-06）
+  const depthMaxOf = (d) => (d === 'deep' ? 18 : 12);   // 画面の縦に入れる深さ（深場の底 16m まで入るように）
+  setDepthMax(depthMaxOf(settings.depth));
   // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
   const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
   const feel = createFeel({ vibrate: readPref('ikabu.egi.vibrate') ?? true, sound: readPref('ikabu.egi.sound') ?? true, dragSample: assetHref('/assets/ikabu/audio/gacha/se_drag.mp3'), reelSample: assetHref('/assets/ikabu/audio/reel-click.mp3'), waveSample: assetHref('/assets/ikabu/audio/wave-loop.mp3') });   // 波の音（2026-10-04）   // ドラグ音は本物（2026-09-30）   // 音は最初からオン（2026-09-27 ぱっぱ：気づかない人が多い。消したい人が探してオフにする）
@@ -395,7 +399,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
     if (settings.method !== 'egi') settings.blind = false;   // アタリチャレンジはエギングだけ
     V.blindStats = { bites: 0, hooked: 0, lates: [] }; V.blindReveal = 0;
-    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana });
+    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana, depth: settings.depth });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
@@ -771,7 +775,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (el.rodNote) el.rodNote.textContent = t(lang, TX.tackle.rodNote[tk.rod]);
     if (el.dragNote) el.dragNote.textContent = t(lang, TX.tackle.dragNote[tk.drag]);
     const e = settings.egi;
-    const vals = { rod: t(lang, TX.tackle.rods[tk.rod]), drag: t(lang, TX.tackle.drags[tk.drag]), egi: `${TX.egi.current(lang, e.size, typeName(e.type))}${e.rig === 'rattle' ? `・${t(lang, TX.tackle.rigs.rattle)}` : ''}` };
+    el.depthPick?.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.depth === settings.depth)));
+    if (el.depthNote) el.depthNote.textContent = t(lang, TX.tackle.depthNote[settings.depth]);
+    const vals = { depth: t(lang, TX.tackle.depths[settings.depth]), rod: t(lang, TX.tackle.rods[tk.rod]), drag: t(lang, TX.tackle.drags[tk.drag]), egi: `${TX.egi.current(lang, e.size, typeName(e.type))}${e.rig === 'rattle' ? `・${t(lang, TX.tackle.rigs.rattle)}` : ''}` };
     el.tk?.querySelectorAll('[data-tk-val]').forEach((b) => { b.textContent = vals[b.dataset.tkVal] ?? ''; });
   }
   function chooseTackle(patch) {
@@ -784,6 +790,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.rod?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rod]'); if (b) chooseTackle({ rod: b.dataset.rod }); });
   el.drag?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-drag]'); if (b) chooseTackle({ drag: b.dataset.drag }); });
+  // 水深：投げる前・釣り終わりだけ替えられる（舞台を描き直すので、投げている最中は替えない）
+  el.depthPick?.addEventListener('click', (e) => {
+    const b = e.target.closest('.ika-chip[data-depth]');
+    if (!b || !DEPTHS.includes(b.dataset.depth)) return;
+    if (s && !['ready', 'result', 'over'].includes(s.phase)) { callout(t(lang, TX.tackle.depthBusy), '', 2200, { blindOk: true }); return; }
+    settings.depth = b.dataset.depth;
+    writePref('ikabu.egi.depth', settings.depth);
+    setDepthMax(depthMaxOf(settings.depth));
+    if (s) s.depthPref = settings.depth;
+    buildScene();
+    syncTackle();
+  });
   const chooseRig = (rig) => { chooseEgi({ rig }); writePref('ikabu.egi.rig', settings.egi.rig); };
   el.pickRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) chooseRig(b.dataset.rig); });
   el.popRig?.addEventListener('click', (e) => { const b = e.target.closest('.ika-chip[data-rig]'); if (b) chooseRig(b.dataset.rig); });   // 舞台のエギを押した窓からも（2026-10-01 深夜 ぱっぱ）
@@ -2499,9 +2517,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle), true);
           sc.nodes.hugWater.style.filter = '';
           const big = h.weight >= 1000;
-          if (h.nushi) callout(TX.msg.nushiReveal(lang, speciesName(lang, h.id)), 'good', 3200);
-          else if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good');
-          else callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good');
+          // 正体が分かる瞬間は、アタリチャレンジでも出す（2026-10-06 アンケート#38「実釣でも見えた瞬間に高揚する」）
+          if (h.nushi) callout(TX.msg.nushiReveal(lang, speciesName(lang, h.id)), 'good', 3200, { blindOk: true });
+          else if (h.boss) callout(TX.msg.bossReveal(lang, speciesName(lang, h.id)), 'good', 1700, { blindOk: true });
+          else callout(TX.msg.reveal(lang, speciesName(lang, h.id), big) + (big ? ` ${t(lang, TX.msg.kilo)}` : ''), 'good', 1700, { blindOk: true });
           if (big) feel.fire('hook', { heavy: V.heavy });
         }
         if (!inked && !h.gedo && depth <= 1.0) {

@@ -227,17 +227,19 @@ export function seasonCardsHTML(lang) {
 }
 
 // タックルのリボン（2026-10-01）：ロッド／ドラグ／エギの3つの札。押した札の中身だけ下に開く（量が多くても縦に伸びない）
-export function tackleRibbonHTML(lang, { month = 9, tod = 'evening', tackle = DEFAULT_TACKLE, egi = DEFAULT_EGI } = {}) {
+export function tackleRibbonHTML(lang, { month = 9, tod = 'evening', tackle = DEFAULT_TACKLE, egi = DEFAULT_EGI, depth = 'normal' } = {}) {
   const T = EGI_TEXT.tackle;
   const tab = (key, label, value) => `<button type="button" class="ika-egi-tk-tab" data-tk-tab="${key}" aria-expanded="${String(key === 'egi')}" aria-controls="ika-egi-tk-${key}"><span class="ika-egi-tk-tab-name">${label}</span><b class="ika-egi-tk-tab-val" data-tk-val="${key}">${value}</b></button>`;
   const rods = RODS.map((k) => `<button type="button" class="ika-chip" data-rod="${k}" aria-pressed="${String(k === tackle.rod)}">${t(lang, T.rods[k])}</button>`).join('');
+  const depths = ['shallow', 'normal', 'deep'].map((k) => `<button type="button" class="ika-chip" data-depth="${k}" aria-pressed="${String(k === depth)}">${t(lang, T.depths[k])}</button>`).join('');
   const drags = DRAGS.map((k) => `<button type="button" class="ika-chip" data-drag="${k}" aria-pressed="${String(k === tackle.drag)}">${t(lang, T.drags[k])}<small>${t(lang, T.dragTag[k])}</small></button>`).join('');
   return `
     <div class="ika-egi-tk" id="ika-egi-tk">
       <div class="ika-egi-tk-tabs" role="tablist">
         ${tab('rod', t(lang, T.rod), t(lang, T.rods[tackle.rod]))}
         ${tab('drag', t(lang, T.drag), t(lang, T.drags[tackle.drag]))}
-        ${tab('egi', t(lang, EGI_TEXT.egi.title), EGI_TEXT.egi.current(lang, egi.size, t(lang, EGI_TEXT.egi.types[egi.type])))}
+        ${tab('egi', t(lang, T.egiTab), EGI_TEXT.egi.current(lang, egi.size, t(lang, EGI_TEXT.egi.types[egi.type])))}
+        ${tab('depth', t(lang, T.depthTab), t(lang, T.depths[depth]))}
       </div>
       <div class="ika-egi-tk-panel" id="ika-egi-tk-rod" data-tk-panel="rod" hidden>
         <div class="ika-chips ika-chips--small" id="ika-egi-rod" role="group" aria-label="${t(lang, T.rod)}">${rods}</div>
@@ -246,6 +248,10 @@ export function tackleRibbonHTML(lang, { month = 9, tod = 'evening', tackle = DE
       <div class="ika-egi-tk-panel" id="ika-egi-tk-drag" data-tk-panel="drag" hidden>
         <div class="ika-chips ika-chips--small ika-egi-drags" id="ika-egi-drag" role="group" aria-label="${t(lang, T.drag)}">${drags}</div>
         <p class="ika-egi-cue-note" id="ika-egi-drag-note">${t(lang, T.dragNote[tackle.drag])}</p>
+      </div>
+      <div class="ika-egi-tk-panel" id="ika-egi-tk-depth" data-tk-panel="depth" hidden>
+        <div class="ika-chips ika-chips--small" id="ika-egi-depthpick" role="group" aria-label="${t(lang, T.depthTab)}">${depths}</div>
+        <p class="ika-egi-cue-note" id="ika-egi-depth-note">${t(lang, T.depthNote[depth])}</p>
       </div>
       <div class="ika-egi-tk-panel" id="ika-egi-tk-egi" data-tk-panel="egi">
         <div class="ika-egi-pick" id="ika-egi-pick">${egiPickerHTML(lang, { month, tod, egi })}</div>
@@ -365,6 +371,10 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <p>${t(lang, T.tips.lureBody)}</p>
         <h4>${t(lang, T.tips.moveTitle)}</h4>
         <p>${t(lang, T.tips.moveBody)}</p>
+        <h4>${t(lang, T.tips.bossTitle)}</h4>
+        <p>${t(lang, T.tips.bossBody)}</p>
+        <h4>${t(lang, T.tips.gearTitle)}</h4>
+        <p>${t(lang, T.tips.gearBody)}</p>
       </details>
       <p class="ika-egi-live-source" id="ika-egi-live-source">${t(lang, T.live.source)}</p>
     </div>

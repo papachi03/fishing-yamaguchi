@@ -1637,7 +1637,7 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-count { display: grid; justify-items: end; padding: 6px 12px; background: rgba(255, 255, 255, 0.92); border-radius: 10px; text-align: right; min-width: 96px; transition: background 0.2s; }
 .ika-egi-count-label { font-family: var(--font-maru); font-weight: 900; font-size: 11px; color: var(--ika-sea); }
 .ika-egi-count-num { font-family: var(--font-varsity); font-weight: 800; font-size: 30px; line-height: 1; color: var(--ika-ink); }
-.ika-egi-count-depth { font-size: 11px; color: var(--ika-ink-soft); }
+.ika-egi-count-depth { font-size: 15px; font-weight: 700; color: var(--ika-ink-soft); }   /* 11px→15px（2026-10-06 アンケート#38） */
 .ika-egi-count.is-bottom .ika-egi-count-depth { color: var(--ika-orange-deep); font-weight: 700; }
 .ika-egi-count.is-warn { background: var(--ika-orange); }
 .ika-egi-count.is-warn .ika-egi-count-depth, .ika-egi-count.is-warn .ika-egi-count-label { color: var(--ika-ink); }
@@ -2176,7 +2176,8 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
   .ika-egi-casts i, .ika-egi-egis i { width: 7px; height: 14px; }
   /* 右上の箱は小さく・少し透かして、うしろの竿とイカが見えるように（ダディ指定 2026-09-25） */
   .ika-egi-count { padding: 3px 8px; min-width: 0; background: rgba(255, 255, 255, 0.72); }
-  .ika-egi-count-label, .ika-egi-count-depth { font-size: 9.5px; }
+  .ika-egi-count-label { font-size: 9.5px; }
+  .ika-egi-count-depth { font-size: 13px; }
   .ika-egi-count-num { font-size: 19px; }
   .ika-egi-fallmode { margin-top: 2px; padding: 1px 6px; font-size: 9px; }
   .ika-egi-windnote { margin-top: 2px; font-size: 9.5px; max-width: 10em; }
@@ -3222,10 +3223,10 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-egi-zone--tackle .ika-egi-setup-label, .ika-egi-zone--field .ika-egi-live-head .ika-egi-setup-label { color: var(--ika-sea); }
 /* リボン：3つの札。開いている札だけ色が付く */
 .ika-egi-tk { --zone: var(--ika-orange-deep, #d9531e); display: grid; gap: 8px; }   /* 全画面の窓へ移しても色が付くように、区画の色を札自身にも持たせる */
-.ika-egi-tk-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: start; }
-.ika-egi-tk-tab { display: grid; gap: 2px; min-height: 48px; padding: 6px 8px; border: 2px solid var(--zone); border-radius: 10px; background: var(--ika-white); color: var(--ika-ink); font: inherit; text-align: left; cursor: pointer; }
+.ika-egi-tk-tabs { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.9fr); gap: 6px; align-items: start; }
+.ika-egi-tk-tab { display: grid; gap: 2px; min-height: 48px; padding: 6px 6px; border: 2px solid var(--zone); border-radius: 10px; background: var(--ika-white); color: var(--ika-ink); font: inherit; text-align: left; cursor: pointer; }
 .ika-egi-tk-tab-name { font-family: var(--font-maru); font-weight: 900; font-size: 11.5px; color: var(--zone); }
-.ika-egi-tk-tab-val { font-family: var(--font-maru); font-weight: 900; font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
+.ika-egi-tk-tab-val { font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; }   /* 札が4つで細いので「ふつ／う」と切れないように（2026-10-06） */
 .ika-egi-tk-tab[aria-expanded='true'] { background: var(--zone); color: #fff; box-shadow: 3px 3px 0 var(--ika-ink); }
 .ika-egi-tk-tab[aria-expanded='true'] .ika-egi-tk-tab-name { color: #ffe9d9; }
 .ika-egi-tk-tab[aria-expanded='true']::after { content: '▲'; justify-self: end; font-size: 9px; margin-top: -2px; }

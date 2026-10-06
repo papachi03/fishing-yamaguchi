@@ -37,7 +37,10 @@ const f1 = (v) => (Math.round(v * 10) / 10).toString();
 const darker = (hex, k = 0.55) => '#' + hex.slice(1).match(/../g).map((h) => Math.round(parseInt(h, 16) * k).toString(16).padStart(2, '0')).join('');
 
 // 深さ（m）→ y、距離（m）→ x（幅 W のとき）
-export const depthY = (depth) => SCENE.surface + (depth / SCENE.maxDepth) * (SCENE.seabed - SCENE.surface);
+// 画面の縦に入れる深さ（深場は 18m を入れる。2026-10-06）
+let depthMax = SCENE.maxDepth;
+export const setDepthMax = (m) => { depthMax = m; };
+export const depthY = (depth) => SCENE.surface + (depth / depthMax) * (SCENE.seabed - SCENE.surface);
 export const distX = (dist, W) => SCENE.pierRight + (dist / SCENE.rangeM) * (W - SCENE.pierRight - 70);   // 右端に大物の胴が入る余白
 
 // 海底の線（世界の左端から右端まで、ゆるい起伏＋岩。堤防の後ろは堤防が隠す）

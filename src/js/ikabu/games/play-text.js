@@ -166,6 +166,16 @@ export const EGI_TEXT = {
       medium: pair('どちらでもない、ふつうの調子', 'The usual middle action'),
       soft: pair('穂先が繊細で「コン」でもしっかり曲がる。しなって寄せる力は弱く、ジェットを受け流せるがファイトは長い', 'A delicate tip bends even on a light knock. It pulls softly and absorbs jets, but fights take longer'),
     },
+    // 水深（2026-10-06 ぱっぱ：住んでいる所で海の深さが違う）
+    depthTab: pair('水深', 'Depth'),
+    egiTab: pair('エギ', 'Egi'),   // 札が4つになったので短く（2026-10-06）
+    depths: { shallow: pair('浅場', 'Shallow'), normal: pair('ふつう', 'Normal'), deep: pair('深場', 'Deep') },
+    depthNote: {
+      shallow: pair('底まで3〜5m。遠浅の浜や港の中。すぐ着底するので、根掛かりに注意', 'Bottom at 3–5 m. Shallow beaches and harbours. You hit bottom fast, so watch for snags'),
+      normal: pair('底まで5〜10m。よくある堤防', 'Bottom at 5–10 m. A typical pier'),
+      deep: pair('底まで10〜16m。沖向きの堤防や磯。着底まで長く待つ', 'Bottom at 10–16 m. Outer piers and rocks. A long wait to the bottom'),
+    },
+    depthBusy: pair('水深は、投げる前か釣り終わりに替えられます', 'Change the depth before casting or after the cast'),
     drag: pair('ドラグ', 'Drag'),
     drags: { tight: pair('締め', 'Tight'), normal: pair('ふつう', 'Normal'), loose: pair('ゆるめ', 'Loose') },
     dragTag: { tight: pair('取り込み優先', 'Land it fast'), normal: pair('バランス', 'Balanced'), loose: pair('駆け引き優先', 'Enjoy the fight') },
@@ -582,6 +592,11 @@ export const EGI_TEXT = {
     // ⑥（2026-09-28、誘いのスレ：Instagram のコメントから）
     lureTitle: pair('⑥ 同じ誘いばかりだと、イカが慣れる', '⑥ Squid get used to the same routine'),
     // ⑦（2026-09-29、ぱっぱ：動きで差をつける）
+    // ⑧⑨（2026-10-06 アンケート#37「ボスってどうやって釣るのですか？」「竿の種類を選べる機能」）
+    bossTitle: pair('⑧ ボスの釣り方', '⑧ How to catch a boss'),
+    bossBody: pair('ボスは<b>季節と時間が合った時だけ</b>、決まった深さに出る特大のイカ。どこに出るかは<b>図鑑のボスのヒント</b>を見よう。とても重いので、走ったら無理に巻かず、止まった時だけ寄せる長い勝負に。', 'A boss is a huge squid that appears only <b>in the right season and time</b>, at a set depth. Check the <b>boss hints in the guide</b>. It is very heavy: never force it while it runs, and reel only when it stops.'),
+    gearTitle: pair('⑨ 道具と釣り場を選ぶ', '⑨ Choose your gear and spot'),
+    gearBody: pair('ゲームの下の「タックル」の札で、<b>ロッド（竿の硬さ）・ドラグ・エギ・水深（浅場・ふつう・深場）</b>を選べる。自分がよく行く釣り場に合わせてみよう。', 'Use the “Tackle” tabs below the game to pick <b>rod, drag, egi and depth (shallow, normal, deep)</b>. Match them to the spot you usually fish.'),
     moveTitle: pair('⑦ 4つの動きを使い分ける', '⑦ Four moves to mix'),
     moveBody: pair('<b>しゃくり</b>（タップ）は上へ。<b>2段しゃくり</b>（テンポよく2回）は2回目でぐんと大きく上がり、長いフォールが作れる。<b>ダート</b>（上へスワイプ）は横へ大きく跳ぶ。<b>スラックジャーク</b>（テンポよく3〜5回の連打）は小刻みにチョンチョンと動いて、渋い時のイカに効く。連打しすぎは逆効果。',
                    'A <b>jerk</b> (tap) lifts the egi. A <b>double jerk</b> (two quick taps) jumps much higher on the second, giving you a long fall. A <b>dart</b> (swipe up) leaps sideways. A <b>slack jerk</b> (three to five quick taps in a row) twitches in place and works on sluggish squid. More than that just spooks them.'),

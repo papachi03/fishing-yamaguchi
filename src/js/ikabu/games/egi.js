@@ -491,13 +491,19 @@ export function signalWindows(cond, kind = 'run', light = false, easy = false) {
 }
 
 // ---------------- 状態 ----------------
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one', tackle } = {}) {
+// 釣り場の水深（2026-10-06 ぱっぱ：住んでいる所で海の深さが違う）。[いちばん浅い m, 幅 m]。エギは 1秒に約0.9m 沈むので、深場は着底まで10秒以上待つ
+export const DEPTHS = ['shallow', 'normal', 'deep'];
+export const DEPTH_RANGE = { shallow: [3, 2], normal: [5, 5], deep: [10, 6] };
+export const TAILOR_DEPTH = { shallow: [4, 2], normal: [6, 4], deep: [10, 6] };
+const pickBottom = (s, table) => { const [a, w] = table[s.depthPref] ?? table.normal; return a + Math.round(s.rand() * w); };
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one', tackle, depth = 'normal' } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
   const tk = normalizeTackle(tackle);
   const m = METHOD_IDS_ENGINE.includes(method) ? method : 'egi';
   return {
     tana: TANAS.includes(tana) ? tana : 'one',   // テーラーのタナ
+    depthPref: DEPTHS.includes(depth) ? depth : 'normal',   // 釣り場の水深（浅場・ふつう・深場）
     floats: [],        // テーラーのウキ3本
     aji: AJI.includes(aji) ? aji : 'live',   // ヤエンのアジ：活きアジ／死にアジ（ぱっぱ流）
     method: m,
@@ -933,7 +939,7 @@ function tailorCast(s) {
   s.hooking = null;
   s.setIdx = null;
   s.squid = s.easy ? Math.max(EASY.squid, sampleSquid(s)) : sampleSquid(s);
-  s.bottom = 6 + Math.round(s.rand() * 4);
+  s.bottom = pickBottom(s, TAILOR_DEPTH);
   s.depth = tanaDepth(s);
   s.watchFrom = s.t;
   s.floats = TAILOR_FLOATS.map((f, i) => ({ i, ...f, bait: 0, stage: 'idle', hold: null, until: 0, squid: null, readyAt: s.t }));
@@ -1205,7 +1211,7 @@ export function release(s) {
     s.castDist = Math.round((10 + s.power * 30) * SIZE_DIST[s.spec.size]);
     s.dist = s.castDist;
     s.depth = 0;
-    s.bottom = 5 + Math.round(s.rand() * 5);
+    s.bottom = pickBottom(s, DEPTH_RANGE);
     s.weed = s.method === 'jado' || s.method === 'yaen' ? null : makeWeed(s);   // 邪道・ヤエンは底に置く釣り（藻場は出さない）
     s.yaen = null;
     s.rock = s.method === 'jado' && s.rand() < ROCK_CHANCE;
