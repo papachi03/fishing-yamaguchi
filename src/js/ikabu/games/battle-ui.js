@@ -91,8 +91,8 @@ const TX = {
   practiceNote: ['初心者練習デッキのCPUと対戦します。練習なので記録と🎫には数えません。', 'Practice against the beginner CPU deck. Practice matches are not recorded and earn no 🎫.'],
   yourTurn: ['あなたの番', 'Your turn'], cpuTurn: ['相手の番', "CPU's turn"],
   firstNoAttack: ['先攻の最初のターンは攻撃できません', 'The first player cannot attack on turn 1'],
-  shiodome: ['🌊 潮止まり！ 出せるイカが無いので仕切り直し', '🌊 Slack tide! No squid to play, so the hand was redealt'],
-  shiodomeCpu: ['🌊 相手は潮止まりで仕切り直し', '🌊 Slack tide: the CPU redealt its hand'],
+  shiodome: ['🌊 潮止まり！ 手札を配り直し', '🌊 Slack tide! Hand redealt'],   // 短く（長いと折り返して部長イカの案内に隠れた 2026-10-07）
+  shiodomeCpu: ['🌊 相手は潮止まり', '🌊 CPU: slack tide'],
   tailwind: ['追い風 🌊+1（後攻の最初の2ターン）', 'Tailwind 🌊+1 (2nd player, first 2 turns)'],
   end: ['ターン終了', 'End turn'], quit: ['やめる', 'Quit'],
   put: ['前列に出す', 'Play'], use: ['使う', 'Use'], set: ['伏せる', 'Set'], cancel: ['やめる', 'Cancel'],
@@ -180,8 +180,10 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   // 部長イカの How to（練習だけ）
   const tutorEl = $('[data-tutor]'); const tutorShown = new Set(); let tutorOpen = false;
   tutorEl.querySelector('[data-tutor-ok]').addEventListener('click', () => { tutorEl.hidden = true; tutorOpen = false; tutor(); });
+  let tutorHoldUntil = 0;   // 潮止まりの知らせを出している間は、部長イカの案内を待たせる（重なって読めなかった 2026-10-07）
   function tutor() {
     if (!practice || tutorOpen || st.winner || !el.sheet.hidden) return;   // 窓（説明・納竿）が開いている間は出さない
+    if (performance.now() < tutorHoldUntil) return;
     const step = TUTOR.find((s) => !tutorShown.has(s.id) && s.when(st));
     if (!step) return;
     tutorShown.add(step.id); tutorOpen = true;
@@ -451,11 +453,12 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'battle', win, counted: !practice } }));
     return true;
   }
+  // 潮止まり：最初の手札に出せるイカが無く、配り直した時に知らせる（読めるように少し長く出し、部長イカの案内と相手の番はその後に）
+  const shio = [st.players.me.shiodome && t(lang, ...TX.shiodome), st.players.cpu.shiodome && t(lang, ...TX.shiodomeCpu)].filter(Boolean);
+  if (shio.length) tutorHoldUntil = performance.now() + 2600;
   render();
   if (import.meta.env.DEV) window.__bt = { st, render };   // 開発時の確認用
-  // 潮止まり：最初の手札に出せるイカが無く、配り直した時に知らせる（読めるように少し長く出し、相手の番はその後に始める）
-  const shio = [st.players.me.shiodome && t(lang, ...TX.shiodome), st.players.cpu.shiodome && t(lang, ...TX.shiodomeCpu)].filter(Boolean);
-  if (shio.length) callout(shio.join(' ／ '), 'is-good', 2600);
+  if (shio.length) { callout(shio.join('\n'), 'is-good', 2600); setTimeout(() => { if (!busy) tutor(); }, 2700); }
   if (st.active === 'cpu') setTimeout(cpuTurn, shio.length ? 2600 : 0);
   return { st, close };
 }

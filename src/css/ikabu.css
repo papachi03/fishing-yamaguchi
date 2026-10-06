@@ -3060,6 +3060,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-sheet-in div { display: flex; gap: 8px; } .ika-bt-sheet-in .ika-btn { padding: 8px 12px; font-size: 13px; }
 /* 一言 */
 .ika-bt-callout { position: absolute; z-index: 6; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.7); width: max-content; max-width: 90%; padding: 8px 18px; border-radius: 22px; background: #0b1a2a; color: #fff; font-weight: 900; font-size: 16px; text-align: center; line-height: 1.35; opacity: 0; pointer-events: none; }
+.ika-bt-callout { white-space: pre-line; }   /* 潮止まりの2つの知らせを2行に（2026-10-07） */
 .ika-bt-callout.is-on { animation: ika-gc-pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
 .ika-bt-callout.is-good { background: #f47321; } .ika-bt-callout.is-trap { background: #7c3aed; } .ika-bt-callout.is-no { background: #6b7280; }
 /* 勝敗 */
