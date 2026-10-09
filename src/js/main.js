@@ -30,6 +30,8 @@ const TABS = [
   { href: '/spots.html', label: 'Spots', icon: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11Zm0-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z' },
   // 吹き出し＋ペン: 「現地の声を投稿する」
   { href: '/reports.html', label: 'Reports', icon: 'M3 5h18v11h-9l-5 4v-4H3zM9 13l5-5 2 2-5 5-3 1z' },
+  // イカ（胴と足）: 山口イカ部（2026-10-10 正式リリース。スマホは上のメニューが隠れるので、ここからも行けるように）
+  { href: '/ikabu/', label: 'Ikabu', icon: 'M12 2c-3 3-4.5 6-4.5 10h9C16.5 8 15 5 12 2ZM7.5 12 5 16m4-4-1 7m3-7v8m2-8 1 7m2-7 2.5 4' },
 ];
 
 export function mountChrome(active = '') {
