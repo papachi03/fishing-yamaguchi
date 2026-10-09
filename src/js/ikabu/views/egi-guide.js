@@ -9,6 +9,7 @@ import { amazonUrl, rakutenUrl, AMAZON_DISCLOSURE } from '../../config/affiliate
 export const HEAD = {
   num: '06',
   eyebrow: "MEMBERS' PICK",
+  pr: AFFILIATE_ON,
   title: pair('部員おすすめ：新子シーズンのエギ選び', "Members' pick: choosing egi for young-squid season"),
   desc: pair('秋の新子（その年に生まれたアオリイカ）ねらいのエギを、号数と色で。ヤマシタ「エギ王K」とデュエル「パタパタ」から、時間帯別に選びました。', 'Egi for autumn’s young bigfin reef squid, by size and color. Picked from YAMASHITA Egi-O K and DUEL PataPata, by time of day.'),
 };
@@ -30,6 +31,7 @@ const egiArt = (e, i) => {
 const shopLinks = (lang, e) => {
   if (!AFFILIATE_ON) return '';
   return `<p class="ika-guide-shop">
+      <span class="ika-guide-shoppr">${t(lang, 'PR｜プロモーションのリンクです', 'PR | Promotional links')}</span>
       <a class="ika-guide-shopbtn ika-guide-shopbtn--amazon" href="${esc(amazonUrl(e))}" target="_blank" rel="sponsored noopener">${t(lang, 'Amazonで探す', 'Find on Amazon')}</a>
       <a class="ika-guide-shopbtn ika-guide-shopbtn--rakuten" href="${esc(rakutenUrl(e))}" target="_blank" rel="sponsored noopener">${t(lang, '楽天市場で探す', 'Find on Rakuten')}</a>
     </p>`;
@@ -80,7 +82,7 @@ export function render(lang) {
   <article class="ika-guide">
     <section class="ika-section ika-guide-top">
       <div class="wrap">
-        ${AFFILIATE_ON ? `<p class="ika-guide-pr">${t(lang, '広告', 'Ad')}｜${t(lang, 'この記事には広告（アフィリエイトリンク）が含まれます。', 'This article contains affiliate links.')}</p>` : ''}
+        ${AFFILIATE_ON ? `<p class="ika-guide-pr"><span class="ika-guide-prtag">PR</span>${t(lang, 'この記事にはプロモーション（アフィリエイトリンク）が含まれます。', 'This article contains promotions (affiliate links).')}</p>` : ''}
         ${videoHTML(lang)}
         ${noteHTML(lang, { label: pair('この記事について', 'About this article'), tone: 'orange', html: `<p>${t(lang, '山口イカ部の部員が、釣具屋さんで迷ったことから作った「候補」の一覧です。まだ実際の釣りで確かめたものではありません。釣れた色は「部員愛用」として書き足していきます。', 'A list of candidates put together by a club member who got lost in the tackle shop aisle. Not yet proven on the water; colors that catch will be marked as a member’s favorite.')}</p>` })}
       </div>

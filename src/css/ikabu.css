@@ -2498,7 +2498,10 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
    ========================================================================== */
 
 .ika-guide-top { padding-top: clamp(28px, 4vw, 48px); }
-.ika-guide-pr { margin-bottom: 14px; font-size: 12.5px; color: var(--ika-ink-soft); }
+.ika-guide-pr { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px 14px; border: 2px solid var(--ika-sea); border-radius: 10px; background: var(--ika-white); font-size: 14px; font-weight: 700; color: var(--ika-ink); }
+.ika-guide-prtag, .ika-page-pr { display: inline-block; padding: 1px 9px; border-radius: 6px; background: var(--ika-orange); color: var(--ika-ink); font-family: var(--font-maru); font-weight: 900; font-size: 13px; letter-spacing: .06em; line-height: 1.5; flex: none; }
+.ika-page-pr { margin-left: 10px; vertical-align: 1px; }
+.ika-guide-shoppr { flex: 1 1 100%; font-size: 12px; font-weight: 700; color: var(--ika-ink-soft); }
 .ika-yt { position: relative; aspect-ratio: 16 / 9; border: 3px solid var(--ika-sea); border-radius: var(--ika-radius); overflow: hidden; background: var(--ika-sea-deep); }
 .ika-yt iframe, .ika-yt-play { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .ika-yt-play { padding: 0; background: #000; cursor: pointer; }

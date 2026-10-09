@@ -28,14 +28,14 @@ export function noteHTML(lang, { label, html, tone = 'sea' }) {
 }
 
 // ページの見出し：パンくず＋英字の小見出し＋タイトル＋一言
-export function pageHead(lang, { eyebrow, title, desc, num, crumb }) {   // crumb：パンくずの短い名前（見出しが長い時。2026-10-04）
+export function pageHead(lang, { eyebrow, title, desc, num, crumb, pr }) {   // crumb：パンくずの短い名前（見出しが長い時。2026-10-04）／pr：広告を含む記事の「PR」の札（2026-10-10）
   return `
   <header class="ika-page-head">
     <div class="wrap">
       <nav class="ika-crumb" aria-label="${t(lang, '現在地', 'Breadcrumb')}">
         <a href="${pageHref('index', lang)}">${t(lang, 'イカ部トップ', 'Club home')}</a><span aria-hidden="true"> / </span><span>${t(lang, crumb ?? title)}</span>
       </nav>
-      <p class="ika-eyebrow">${num ? `<span class="ika-eyebrow-num">${num}</span>` : ''}${eyebrow}</p>
+      <p class="ika-eyebrow">${num ? `<span class="ika-eyebrow-num">${num}</span>` : ''}${eyebrow}${pr ? `<span class="ika-page-pr">PR</span>` : ''}</p>
       <h1 class="ika-page-title">${t(lang, title)}</h1>
       ${desc ? `<p class="ika-page-desc">${t(lang, desc)}</p>` : ''}
     </div>
