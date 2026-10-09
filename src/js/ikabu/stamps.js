@@ -14,7 +14,7 @@ export const STAMP_SETS = [
     vol: 'VOL. 1',
     title: pair('動く！イカしたダジャレ', 'Squid Puns! Animated'),
     desc: pair('「いかが？」「もう、いかん。」など、毎日のあいさつや返事に使える8種類。', 'Eight everyday greetings and replies, each with a squid pun hidden inside.'),
-    storeUrl: null,
+    storeUrl: 'https://line.me/S/sticker/36965902',
     words: [
       pair('いかが？', 'How about it?'), pair('いかしてる！', 'Looking sharp!'), pair('いからないで！', 'Don’t get angry!'), pair('まぁ、いっか。', 'Oh well.'),
       pair('いかんせん、眠い。', 'Sadly, so sleepy.'), pair('もう、いかん。', 'I’m done for.'), pair('いかないで！', 'Don’t go!'), pair('いかほど？', 'How much?'),
@@ -25,7 +25,7 @@ export const STAMP_SETS = [
     vol: 'VOL. 2',
     title: pair('動く！山口ご当地ダジャレ', 'Local Puns! Animated'),
     desc: pair('防府・萩・長州・ふく・関門…山口の言葉で、イカがダジャレを言いながら動きます。', 'Puns on places and words from Yamaguchi: Hōfu, Hagi, Chōshū, fuku and the Kanmon Strait.'),
-    storeUrl: null,
+    storeUrl: 'https://line.me/S/sticker/36965909',
     words: [
       pair('防府く絶倒！', 'Hōfu-ku zettō!'), pair('萩れよく、いこう！', 'Hagi-re yoku, ikō!'), pair('絶好長州！', 'Zekkō Chōshū!'), pair('ふくみ笑い。', 'Fuku-mi warai.'),
       pair('ふくざつな気持ち。', 'Fuku-zatsu na kimochi.'), pair('おいでませ、すみ家へ。', 'Oidemase, sumika e.'), pair('ぶち、イカん予感。', 'Buchi, ikan yokan.'), pair('関門だらけじゃ！', 'Kanmon darake ja!'),
@@ -36,7 +36,7 @@ export const STAMP_SETS = [
     vol: 'VOL. 3',
     title: pair('動く！毎日使えるイカ返事', 'Replies! Animated'),
     desc: pair('「飲みにイカない？」「イカ同文」「やるしかなイカ」など、誘う・了解・ほめる・はげます時に。', 'Invite, agree, praise, cheer up and calm down — eight squid-pun replies.'),
-    storeUrl: null,
+    storeUrl: 'https://line.me/S/sticker/36987873',
     words: [
       pair('飲みにイカない？', 'Drinks tonight?'), pair('イカせていただきます', 'I’ll be there.'), pair('イーカんじ！', 'Looking good!'), pair('納得イカない！', 'Not convinced!'),
       pair('イカ同文', 'Ditto.'), pair('いいじゃなイカ！', 'Not bad at all!'), pair('やるしかなイカ', 'Only one way: do it.'), pair('イカりを下ろして落ち着こ', 'Drop anchor and calm down.'),
