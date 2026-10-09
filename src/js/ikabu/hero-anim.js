@@ -10,7 +10,8 @@
 import { HERO_ANIM, TAU, lerp, bez, rodPose, rodPathD, lineD, waveD, computeViewBox, project } from './hero-scene.js';
 import { t } from './i18n.js';
 import { url } from '../base.js';
-import { svgEl, egiShape } from './squid-art.js';   // エギの絵はあそび場のゲームと共有
+import { svgEl, egiShape, ART } from './squid-art.js';
+import { huggingSquid } from './squid-art2.js';   // 釣り上げたイカはゲームと同じ第2版の絵   // エギの絵はあそび場のゲームと共有
 import { createPendulum, swingEase, flightPoint, headingDeg, trailingLineD } from './cast-physics.js';   // 投げの物理も共有
 
 const setAttrs = (e, attrs) => { for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); };
@@ -142,38 +143,9 @@ function collect(view, svg, cfg) {
   // 釣れたイカ。イカはエギを足（ゲソ）で抱くので、糸の先＝エギ＝足の側。胴は下に垂れる
   // （ぱっぱ指摘：頭から釣れ上がることはない）。原点が糸の結び目で、+y が下
   sc.catchG = svgEl('g', { class: 'ika-sc-catch', opacity: '0' });
-  const arm = (d, front) => {
-    // 紺の太線の上にアイボリーの細線を重ねて、縁取りのある足にする
-    const g = svgEl('g', { class: front ? 'ika-arm-front' : 'ika-arm-back' });
-    g.append(
-      svgEl('path', { d, fill: 'none', stroke: C.navy, 'stroke-width': '7', 'stroke-linecap': 'round' }),
-      svgEl('path', { d, fill: 'none', stroke: C.ivory, 'stroke-width': '3.6', 'stroke-linecap': 'round' }),
-    );
-    return g;
-  };
-  sc.catchG.append(
-    // 奥の足と、エギに巻きついた2本の長い触腕
-    arm('M-10,36 Q-16,20 -8,8', false),
-    arm('M10,36 Q16,20 8,8', false),
-    arm('M-5,36 Q-14,16 -2,2', false),
-    arm('M5,36 Q14,16 2,2', false),
-    egiShape(),
-    // 手前の足（エギを抱えこむ）
-    arm('M-7,37 Q-9,24 -3,16', true),
-    arm('M7,37 Q9,24 3,16', true),
-    arm('M-2,38 Q-3,28 1,20', true),
-    // ヒレ（胴の先の左右）
-    svgEl('path', { d: 'M-6,74 L-19,90 L-3,97 Z M6,74 L19,90 L3,97 Z', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.4', 'stroke-linejoin': 'round' }),
-    // 胴（下に垂れる）
-    svgEl('path', { d: 'M-12,44 Q-15,70 0,100 Q15,70 12,44 Z', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6', 'stroke-linejoin': 'round' }),
-    svgEl('path', { d: 'M-5,52 Q-6,70 -1,86', fill: 'none', stroke: C.navy, 'stroke-width': '2', 'stroke-linecap': 'round', opacity: '0.55' }),
-    // 頭と目
-    svgEl('ellipse', { cx: '0', cy: '41', rx: '12', ry: '8.5', fill: C.ivory, stroke: C.navy, 'stroke-width': '3.6' }),
-    svgEl('circle', { cx: '-5.5', cy: '41', r: '2.8', fill: C.navy }),
-    svgEl('circle', { cx: '5.5', cy: '41', r: '2.8', fill: C.navy }),
-    svgEl('circle', { cx: '-4.7', cy: '40.2', r: '0.9', fill: C.ivory }),
-    svgEl('circle', { cx: '6.3', cy: '40.2', r: '0.9', fill: C.ivory }),
-  );
+  // 2026-10-10 ぱっぱ指摘「HEROで釣り上げるイカが旧モデル」→ ゲームと同じ第2版の絵（squid-art2 の huggingSquid）に。
+  // 原点＝糸の結び目・+y が下・胴の長さ 56 は旧い手描きと同じ。色は HERO の白と紺
+  sc.catchG.append(huggingSquid({ species: 'aori', len: 56, colors: { ...ART, navy: C.navy, ivory: C.ivory } }));
   // 投げ直しで宙を飛ぶエギ（同じ形）
   sc.egiFly = svgEl('g', { class: 'ika-sc-egi', opacity: '0' });
   sc.egiFly.append(egiShape());
