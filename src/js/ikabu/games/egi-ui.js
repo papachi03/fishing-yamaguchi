@@ -1704,8 +1704,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 邪道エギング：エサがくたびれていたら付け直しを勧める
     const baitLow = s.method === 'jado' && s.baitLeft < 0.5;
     if (baitLow) html += `<p class="ika-egi-card-note ika-egi-card-bait">${t(lang, TX.bait.low)} <button type="button" class="ika-chip" data-rebait>${t(lang, TX.bait.rebait)}</button></p>`;
-    // シェア（2026-09-27）：釣れた時だけ。知り合い用のエギング単体ページには出さない
-    const canShare = why === 'landed' && !solo;
+    // シェア（2026-09-27）：釣れた時だけ。2026-10-10 正式公開で、エギング単体ページ（あそび場の入口）にも出す（ぱっぱ）
+    const canShare = why === 'landed';
     if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id) };
     el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, s.method === 'tailor' ? TX.tailor.btn.back : TX.btn.result)}</button>${s.method === 'yaen' || s.method === 'tailor' ? '' : `<button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button>`}${canShare ? shareButtonHTML(lang) : ''}</div>`;
     syncEgiPick();
@@ -1751,7 +1751,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       ${s.gedo.length ? `<p class="ika-egi-card-note">${t(lang, TX.gedo.title)}: ${s.gedo.map((g) => `${TX.gedo.icon[g.id] ?? ''}${esc(t(lang, TX.gedo.names[g.id]))}`).join('、')}</p>` : ''}
       ${counted ? `<p class="ika-egi-card-note ika-egi-over-level">${t(lang, TX.level.title)} Lv${levelOf(rec.points).level}${levelOf(rec.points).to == null ? '' : `・${TX.level.next(lang, levelOf(rec.points).need)}`}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
-      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${solo ? '' : shareButtonHTML(lang)}<a class="ika-btn ika-egi-card-btn" href="${solo ? pageHref('games', lang) : '#main'}">${t(lang, TX.btn.quit)}</a></div>`;   // 「やめる」（2026-09-30 ぱっぱ：もう一度しか無いとやめられず戸惑う）
+      <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${shareButtonHTML(lang)}<a class="ika-btn ika-egi-card-btn" href="${solo ? pageHref('games', lang) : '#main'}">${t(lang, TX.btn.quit)}</a></div>`;   // 「やめる」（2026-09-30 ぱっぱ：もう一度しか無いとやめられず戸惑う）
     lastShare = { kind: 'trip', catches: catches.slice() };
     if (counted) levelCheck(lvBefore);
     el.card.className = 'ika-egi-card ika-egi-card--over';

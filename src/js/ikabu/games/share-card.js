@@ -97,7 +97,7 @@ function collectSample(data, s) {
   };
   walk(data); walk(s);
   // 関数で作る文言のサンプル
-  parts.push(s.mantle(0), s.egi('', ''), s.seasonWith(''), s.cups(0), s.remain(0));
+  parts.push(s.mantle(0), s.egi('', ''), s.seasonWith(''), s.cups(0), s.reached(0), s.remain(0, 0));
   return parts.join('');
 }
 
