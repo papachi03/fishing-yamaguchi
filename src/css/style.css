@@ -1617,6 +1617,8 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 .yt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 26px); }
 @media (max-width: 900px) { .yt-grid { grid-template-columns: 1fr; } }
 .yt-card { display: block; min-width: 0; }
+.guide-videos { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(14px, 2vw, 22px); margin-top: 18px; }
+@media (max-width: 640px) { .guide-videos { grid-template-columns: 1fr; } }
 .yt-card figure { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--sumi); }
 .yt-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1); }
 .yt-card:hover img { transform: scale(1.04); }
@@ -1871,6 +1873,9 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
 }
 .guide-pr #affiliate-note-top { display: block; margin-top: 4px; }
 .guide-pr #affiliate-note-top:empty { display: none; }
+/* 道具のページとトップの道具の欄にも同じ PR 表示（2026-09-30 ステマ規制に合わせて「PR」の語を出す） */
+.tackle-pr { margin-bottom: 30px; }
+.gear-pr { margin: 0 0 18px; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.8; color: var(--paper-ink-dim); }
 
 /* 結論ボックス — 記事でいちばん最初に目に入る箱。墨地にアンバーの見出し */
 .guide-summary {

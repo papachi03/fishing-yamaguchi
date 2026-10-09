@@ -374,4 +374,10 @@
     <priority>0.6</priority>
   </url>
   <!-- ikabu:end -->
+  <url>
+    <loc>https://yamaguchifishing.com/guides/yaen-beginner.html</loc>
+    <lastmod>2026-10-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
