@@ -37,7 +37,7 @@ export function render(lang) {
   return `
   <section class="ika-section ika-games-top" id="top">
     <div class="wrap">
-      <p class="ika-eyebrow"><span class="ika-eyebrow-num">TOP</span>${t(lang, 'テストプレイ版', 'TEST PLAY')}</p>
+      <p class="ika-eyebrow"><span class="ika-eyebrow-num">TOP</span>PLAYGROUND</p>
       <h1 class="ika-games-title">${t(lang, HEAD.title)}</h1>
       <p class="ika-games-lead">${t(lang, HEAD.lead)}</p>
       <div class="ika-play-cards ika-games-tiles">${TILES.map((x) => tile(lang, x)).join('')}</div>

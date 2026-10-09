@@ -37,7 +37,7 @@ const PAGES = {
 };
 
 const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika Club' };
-export const NOINDEX = new Set(['games', 'gacha', 'cards']);   // 公開前のページ（テストプレイ版の入口）
+export const NOINDEX = new Set([]);   // 2026-10-10 正式公開で games・gacha・cards も検索に載せる（公開前は noindex だった）
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap';
 
