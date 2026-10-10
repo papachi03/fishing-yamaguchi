@@ -63,20 +63,21 @@ export function headerHTML(lang, page = 'index', { recipeId = null } = {}) {
   </div>`;
 }
 
-// 単独ページのヘッダー：ロゴ（リンクなし）・言語切替・YFJ だけ。部活動のメニューは出さない
+// 単独ページのヘッダー：ロゴ（イカ部TOPへ）・言語切替・1つ上の階へ戻るボタン。部活動のメニューは出さない
+// 2026-10-11 正式版：テストプレイのころはロゴにリンクが無くイカ部TOPへ行けなかった（ぱっぱ）
 function soloHeaderHTML(lang, page) {
   return `
   <div class="ika-header-bar">
     <div class="wrap ika-header-inner">
-      <span class="ika-brand"><img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika Club')}" width="600" height="219" /></span>
+      <a class="ika-brand" href="${pageHref('index', lang)}"><img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika Club')}" width="600" height="219" /></a>
       <div class="ika-header-tools">
         <div class="ika-lang" aria-label="Language">
           <a href="${pageHref(page, 'ja')}" lang="ja" data-lang="ja"${lang === 'ja' ? ' aria-current="true"' : ''}>日本語</a>
           <span aria-hidden="true">｜</span>
           <a href="${pageHref(page, 'en')}" lang="en" data-lang="en"${lang === 'en' ? ' aria-current="true"' : ''}>EN</a>
         </div>
-        ${page === 'games' ? `<a class="ika-yfj" href="${YFJ_PUBLIC}/" title="YAMAGUCHI FISHING JOURNAL" aria-label="YAMAGUCHI FISHING JOURNAL">
-          <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">YAMAGUCHI FISHING JOURNAL</span><span class="ika-yfj-short" aria-hidden="true">YFJ</span>
+        ${page === 'games' ? `<a class="ika-yfj ika-solo-back" href="${pageHref('index', lang)}">
+          <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">${t(lang, 'イカ部TOPへ', 'Club TOP')}</span><span class="ika-yfj-short" aria-hidden="true">${t(lang, 'イカ部TOP', 'Club TOP')}</span>
         </a>` : `<a class="ika-yfj ika-solo-back" href="${pageHref('games', lang)}">
           <span class="ika-yfj-arrow" aria-hidden="true">←</span><span class="ika-yfj-full">${t(lang, 'あそび場TOPへ', 'Back to TOP')}</span><span class="ika-yfj-short" aria-hidden="true">TOP</span>
         </a>`}
@@ -100,14 +101,14 @@ export function footerHTML(lang, page = 'index') {
         'A shared love of squid. Secret fishing spots can stay secret.'
       )}</p>
     </div>
-    ${solo ? '' : `<nav class="ika-footer-nav" aria-label="${t(lang, '部活動', 'Club sections')}">
+    ${`<nav class="ika-footer-nav" aria-label="${t(lang, '部活動', 'Club sections')}">
       <p class="ika-footer-head">CLUB ACTIVITIES</p>
       <ul>${nav}</ul>
     </nav>`}
     <div class="ika-footer-links">
       <p class="ika-footer-head">LINKS</p>
       <ul>
-        ${solo ? '' : `<li><a href="${pageHref('sources', lang)}">${t(lang, '写真と情報の出典', 'Sources & photo credits')}</a></li>`}
+        ${`<li><a href="${pageHref('sources', lang)}">${t(lang, '写真と情報の出典', 'Sources & photo credits')}</a></li>`}
         <li><a href="https://www.pref.yamaguchi.lg.jp/soshiki/108/21930.html" target="_blank" rel="noopener">${t(lang, '山口県の遊漁ルール ↗', 'Yamaguchi fishing rules ↗')}</a></li>
         <li><a href="${solo ? `${YFJ_PUBLIC}/` : assetHref(YFJ_HOME)}">YAMAGUCHI FISHING JOURNAL</a></li>
         <li><a href="${solo ? `${YFJ_PUBLIC}/reports.html` : assetHref('/reports.html')}">${t(lang, '現地の声（YFJ）', 'Field reports (YFJ)')}</a></li>
