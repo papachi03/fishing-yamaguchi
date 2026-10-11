@@ -48,7 +48,7 @@ const T = {
     chain: '最大チェイン', flashes: 'フラッシュ', newBadge: '称号',
   },
   en: {
-    gameEgi: 'Shakutte Dakasero!', gameSumi: 'Sumi Chain', club: 'Yamaguchi Ika Club',
+    gameEgi: 'Shakutte Dakasero!', gameSumi: 'Sumi Chain', club: 'Yamaguchi Ika-bu',
     site: 'yamaguchifishing.com/ikabu',
     live: "Today's Hagi sea", season: 'Season mode (practice)', seasonWith: (s) => `Season mode (practice) · ${s}`, beginner: 'Beginner practice',
     gameNote: 'Game record', mantle: (cm) => `Mantle ${cm} cm`, mantleLabel: 'Mantle',

@@ -131,7 +131,7 @@ export function render(lang) {
         <p class="ika-pennant"><span>EST. 2026</span><span>YAMAGUCHI, JAPAN</span></p>
         <h1 class="ika-title">
           <span class="ika-logo-patch">
-            <img class="ika-logo" src="${assetHref('/assets/ikabu/logo_1200.png')}" srcset="${assetHref('/assets/ikabu/logo_600.png')} 600w, ${assetHref('/assets/ikabu/logo_1200.png')} 1200w" sizes="(max-width: 760px) 70vw, 460px" alt="${t(lang, '山口イカ部 — YAMAGUCHI IKA CLUB', 'Yamaguchi Ika Club')}" width="1200" height="438" fetchpriority="high" />
+            <img class="ika-logo" src="${assetHref('/assets/ikabu/logo_1200.png')}" srcset="${assetHref('/assets/ikabu/logo_600.png')} 600w, ${assetHref('/assets/ikabu/logo_1200.png')} 1200w" sizes="(max-width: 760px) 70vw, 460px" alt="${t(lang, '山口イカ部 — YAMAGUCHI IKA-BU', 'Yamaguchi Ika-bu')}" width="1200" height="438" fetchpriority="high" />
           </span>
         </h1>
         <p class="ika-catch">${t(lang, '“釣り”でつながるコミュニティ', 'A community connected by fishing')}</p>

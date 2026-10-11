@@ -27,10 +27,10 @@ export function shareSummary(cards, owned = {}) {
 const TEXT = {
   title: (lang) => (lang === 'en' ? 'MY CARD BINDER' : 'MY CARD BINDER'),
   sub: (lang, s) => (lang === 'en' ? `${s.kinds} / ${s.all} kinds collected` : `${s.kinds} / ${s.all} 種類 あつめた`),
-  foot1: (lang) => (lang === 'en' ? 'Yamaguchi Ika Club — test play now open' : '山口イカ部 テストプレイ中'),
+  foot1: (lang) => (lang === 'en' ? 'Yamaguchi Ika-bu — test play now open' : '山口イカ部 テストプレイ中'),
   foot2: (lang) => (lang === 'en' ? `Join from the official LINE  ${LINE_ADD_URL}` : `公式LINEから参加 → ${LINE_ADD_URL}`),
-  file: (lang) => (lang === 'en' ? 'ika-club-binder.png' : 'イカ部バインダー.png'),
-  shareText: (lang) => (lang === 'en' ? `My Yamaguchi Ika Club card binder 🦑 Test play is open: ${LINE_ADD_URL}` : `山口イカ部のカードバインダー🦑 テストプレイ中、公式LINEから参加できます → ${LINE_ADD_URL}`),
+  file: (lang) => (lang === 'en' ? 'ika-bu-binder.png' : 'イカ部バインダー.png'),
+  shareText: (lang) => (lang === 'en' ? `My Yamaguchi Ika-bu card binder 🦑 Test play is open: ${LINE_ADD_URL}` : `山口イカ部のカードバインダー🦑 テストプレイ中、公式LINEから参加できます → ${LINE_ADD_URL}`),
 };
 
 const loadImg = (src) => new Promise((resolve, reject) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => reject(new Error(`image failed: ${src}`)); im.src = src; });

@@ -75,7 +75,7 @@ function recipePageHTML(lang, r) {
         </div>
       </div>
       ${foodSafetyHTML(lang)}
-      <p class="ika-print-only">${t(lang, '山口イカ部 イカ食堂 — yamaguchifishing.com/ikabu/', 'Yamaguchi Ika Club, The Ika Kitchen — yamaguchifishing.com/ikabu/en/')}</p>
+      <p class="ika-print-only">${t(lang, '山口イカ部 イカ食堂 — yamaguchifishing.com/ikabu/', 'Yamaguchi Ika-bu, The Ika Kitchen — yamaguchifishing.com/ikabu/en/')}</p>
     </div>
   </article>
   <section class="ika-section ika-section--tint ika-recipe-others">

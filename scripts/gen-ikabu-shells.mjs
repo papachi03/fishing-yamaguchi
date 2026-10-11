@@ -16,7 +16,7 @@ const OG_IMAGE = `${ORIGIN}/assets/ikabu/hero_original.png`;
 const PAGES = {
   index: {
     ja: ['山口イカ部 — イカが好き。それだけで、部員。', '山口在住の釣り人が始めた、イカ好きの部活。釣っても、食べても、眺めるだけでも部員。山口マップ、風と波、イカ食堂、世界のイカ図鑑、写真部、あそび場、スタンプ。'],
-    en: ['Yamaguchi Ika Club — Love squid? You are already a member.', 'A squid-lovers’ club started by an angler in Yamaguchi, Japan. Map, sea conditions, recipes, a squid atlas, a photo club, games and stickers.'],
+    en: ['Yamaguchi Ika-bu — Love squid? You are already a member.', 'A squid-lovers’ club started by an angler in Yamaguchi, Japan. Map, sea conditions, recipes, a squid atlas, a photo club, games and stickers.'],
   },
   map: { ja: ['山口マップ', '萩・長門・下関の遊漁船の公開案内と、須佐・特牛のイカの食文化スポットを地図に。ピンはエリアの目安で、釣り場そのものは示しません。'], en: ['Map', 'Public boat-trip information for Hagi, Nagato and Shimonoseki, plus squid food-culture stops in Susa and Kottoi. Pins mark areas, never exact fishing spots.'] },
   sea: { ja: ['風と波', '萩・長門・下関・下松・防府の天気、風速、突風、波高、潮汐と堤防の安全判定。ジャーナル本編の海況を部室から。'], en: ['Sea conditions', 'Weather, wind, gusts, wave height, tide and a breakwater safety guide for Hagi, Nagato, Shimonoseki, Kudamatsu and Hofu, from the journal’s sea page.'] },
@@ -25,8 +25,8 @@ const PAGES = {
   atlas: { ja: ['世界のイカ', 'アオリイカ、ケンサキイカ、ヤリイカからダイオウイカまで。沿岸から深海まで、山口→日本→世界の順に13種の入門図鑑。'], en: ['Squid atlas', 'From bigfin reef squid and swordtip squid to the giant squid. An introductory atlas of thirteen species, from Yamaguchi to Japan to the world.'] },
   gallery: { ja: ['写真部', '部員の釣果、山口の海、イカの姿、食卓。撮影者と出典を添えた参考アルバム。'], en: ['Gallery', 'Our catches, the Yamaguchi coast, squid life and the table. A reference album with photographers and sources credited.'] },
   play: { ja: ['イカ部のあそび場', 'エギングゲームと「墨つなぎ」。釣りに行けない日のために。'], en: ['Play', 'An eging game and Ink Link, for days you cannot get to the water.'] },
-  egi: { ja: ['しゃくって抱かせろ！ エギングゲーム', '山口イカ部のエギングゲーム。投げて、沈めて、しゃくって、フォールで抱かせる。今日の萩の風・波・潮で釣れ具合が変わります。スマホでそのまま遊べます。'], en: ['Jerk, fall, hug! — an eging game', 'The Yamaguchi Ika Club eging game. Cast, sink, jerk and let the squid hug on the fall. Today’s real wind, waves and tide in Hagi set the mood. Plays in your phone browser.'] },
-  sumi: { ja: ['墨つなぎ パズルゲーム', '山口イカ部のパズル「墨つなぎ」。同じイカを3つそろえて消す、毎日ちがう盤面。スマホでそのまま遊べます。'], en: ['Ink Link — a puzzle game', 'Ink Link, the Yamaguchi Ika Club puzzle. Match three squid to clear them, with a new board every day. Plays in your phone browser.'] },
+  egi: { ja: ['しゃくって抱かせろ！ エギングゲーム', '山口イカ部のエギングゲーム。投げて、沈めて、しゃくって、フォールで抱かせる。今日の萩の風・波・潮で釣れ具合が変わります。スマホでそのまま遊べます。'], en: ['Jerk, fall, hug! — an eging game', 'The Yamaguchi Ika-bu eging game. Cast, sink, jerk and let the squid hug on the fall. Today’s real wind, waves and tide in Hagi set the mood. Plays in your phone browser.'] },
+  sumi: { ja: ['墨つなぎ パズルゲーム', '山口イカ部のパズル「墨つなぎ」。同じイカを3つそろえて消す、毎日ちがう盤面。スマホでそのまま遊べます。'], en: ['Ink Link — a puzzle game', 'Ink Link, the Yamaguchi Ika-bu puzzle. Match three squid to clear them, with a new board every day. Plays in your phone browser.'] },
   'egi-guide': { ja: ['部員おすすめ：新子シーズンのエギ選び', '秋の新子（アオリイカ）ねらいのエギを、号数と色で。ヤマシタ「エギ王K」とデュエル「パタパタ」から、マズメ・日中・夜間の3タイプ別に部員が選んだ候補。'], en: ["Members' pick: egi for young-squid season", 'Egi for autumn’s young bigfin reef squid, by size and color. Picks from YAMASHITA Egi-O K and DUEL PataPata for dawn and dusk, daytime and night anglers.'] },
   studio: { ja: ['LINEスタンプ', '山口イカ部の動くLINEスタンプ3セット（イカしたダジャレ・山口ご当地ダジャレ・毎日使えるイカ返事）。2026年10月10日発売。ダジャレの解説と、イカ部のゲームへの入口。'], en: ['LINE stickers', 'Three sets of animated LINE stickers from Yamaguchi Ika-bu: squid puns, Yamaguchi puns and everyday replies. On sale October 10, 2026. How the puns work, and a way into the club games.'] },
   // テストプレイ版のTOP・ガチャ・カード（2026-09-30）。公開前なので検索には載せない（下の NOINDEX）
@@ -36,7 +36,7 @@ const PAGES = {
   sources: { ja: ['写真と情報の出典', '写真・地図・海況・生きものの出典一覧。AI生成のイラストと海況データの出どころについても。'], en: ['Sources & credits', 'Credits for photographs, maps, forecasts and wildlife information, plus notes on AI-generated artwork and where the sea data comes from.'] },
 };
 
-const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika Club' };
+const SITE = { ja: '山口イカ部', en: 'Yamaguchi Ika-bu' };
 export const NOINDEX = new Set([]);   // 2026-10-10 正式公開で games・gacha・cards も検索に載せる（公開前は noindex だった）
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap';

@@ -33,7 +33,7 @@ export function headerHTML(lang, page = 'index', { recipeId = null } = {}) {
   <div class="ika-header-bar">
     <div class="wrap ika-header-inner">
       <a class="ika-brand" href="${pageHref('index', lang)}">
-        <img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika Club')}" width="600" height="219" />
+        <img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika-bu')}" width="600" height="219" />
       </a>
       <nav class="ika-nav" id="ika-nav" aria-label="${t(lang, 'イカ部のメニュー', 'Club sections')}">
         <ul>${nav}</ul>
@@ -69,7 +69,7 @@ function soloHeaderHTML(lang, page) {
   return `
   <div class="ika-header-bar">
     <div class="wrap ika-header-inner">
-      <a class="ika-brand" href="${pageHref('index', lang)}"><img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika Club')}" width="600" height="219" /></a>
+      <a class="ika-brand" href="${pageHref('index', lang)}"><img src="${assetHref(LOGO)}" alt="${t(lang, '山口イカ部', 'Yamaguchi Ika-bu')}" width="600" height="219" /></a>
       <div class="ika-header-tools">
         <div class="ika-lang" aria-label="Language">
           <a href="${pageHref(page, 'ja')}" lang="ja" data-lang="ja"${lang === 'ja' ? ' aria-current="true"' : ''}>日本語</a>
@@ -116,7 +116,7 @@ export function footerHTML(lang, page = 'index') {
     </div>
   </div>
   <div class="wrap ika-footer-bottom">
-    <span>© Yamaguchi Ika Club / YAMAGUCHI FISHING JOURNAL</span>
+    <span>© 2026 Yamaguchi Ika-bu / YAMAGUCHI FISHING JOURNAL</span>
     <span>${t(lang, 'キャラクター・海のイラスト：AI生成。写真は各クレジット参照。', 'Character and hero illustration: AI-generated. Photography credited individually.')}</span>
   </div>`;
 }

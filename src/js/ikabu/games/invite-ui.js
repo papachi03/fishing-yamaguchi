@@ -18,9 +18,9 @@ export const INVITE_TEXT = {
   btn: (lang) => (lang === 'en' ? '📣 Invite a friend' : '📣 友だちに紹介する'),
   left: (lang, n) => (n > 0 ? (lang === 'en' ? `${n} more time${n > 1 ? 's' : ''}` : `あと ${n} 回`) : lang === 'en' ? 'All done. Thank you!' : '5回ぜんぶ使いました。ありがとう！'),
   share: (lang) => ({
-    title: lang === 'en' ? 'Yamaguchi Ika Club: test play' : '山口イカ部 テストプレイ',
+    title: lang === 'en' ? 'Yamaguchi Ika-bu: test play' : '山口イカ部 テストプレイ',
     text: lang === 'en'
-      ? `Yamaguchi Ika Club's games are in test play! Eging, puzzles and a card gacha 🦑 Join from the official LINE: ${LINE_ADD_URL}`
+      ? `Yamaguchi Ika-bu's games are in test play! Eging, puzzles and a card gacha 🦑 Join from the official LINE: ${LINE_ADD_URL}`
       : `山口イカ部のゲーム、テストプレイ中！エギング・パズル・カードガチャが遊べるよ🦑 公式LINEから参加できます → ${LINE_ADD_URL}`,
   }),
   done: (lang) => (lang === 'en' ? 'Thanks for sharing!' : '紹介ありがとう！'),
