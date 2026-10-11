@@ -218,7 +218,7 @@ function modeLabel(s, data) {
 
 function assetPaths(assetHref) {
   return {
-    logo: assetHref('/assets/ikabu/logo_600.png'),
+    logo: assetHref('/assets/ikabu/logo_600.png?v=20261011'),
     squid: (id) => assetHref(`/assets/ikabu/zukan/deform/${id}.webp`),
     tile: (n) => assetHref(`/assets/ikabu/tiles/${n}_256.webp`),
   };

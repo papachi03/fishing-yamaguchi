@@ -3,7 +3,7 @@
 // mountShell だけがブラウザで動き、殻が空のときに埋める＋メニュー・言語切替の操作を付ける。
 import { t, pageHref, recipeHref, recipeIdFromPath, assetHref, SECTIONS, navPageOf, esc } from './i18n.js';
 
-const LOGO = '/assets/ikabu/logo_600.png';
+const LOGO = '/assets/ikabu/logo_600.png?v=20261011';
 const YFJ_HOME = '/';
 
 // 単独で人に渡すページ（エギング専用ページ）。釣り仲間に試してもらう用で、イカ部の中身は見せない
