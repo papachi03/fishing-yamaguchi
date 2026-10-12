@@ -80,3 +80,37 @@ export function watchTilt(onTilt, k = 0.85) {
   addEventListener('devicemotion', onMotion);
   return () => removeEventListener('devicemotion', onMotion);
 }
+
+// 奥へ倒すとテンションフォール、の判定（2026-10-12 まれに入らない不具合の直し）。ゲームの画面から切り離して、テストで確かめられるようにした
+// 前の作り：着水して最初の1回の角度を基準にしていた → 投げた直後にスマホが動いていると基準がずれ、15度倒しても入らない／
+//   倒したまましゃくると「9度より起こすまで止める」ので、基準がずれているとその投げのあいだ効かなかった
+// update(角度, 時刻ms, 入ってよいか) → 'enter'（入る）／'exit'（終わる）／null
+export function makeTiltGate({ on = 15, off = 9, block = 800, steadyBand = 3, baseWait = 400, rearmWait = 600, driftWait = 1500 } = {}) {
+  let base = null, isOn = false, armed = true, blockUntil = 0, ref = null, since = 0;
+  return {
+    get on() { return isOn; },
+    reset() { base = null; isOn = false; armed = true; blockUntil = 0; ref = null; since = 0; },
+    engineEnded() { if (isOn) { isOn = false; armed = false; } },   // ボタンや振りでしゃくった等で、エンジン側が終えた
+    block(now) { blockUntil = now + block; if (isOn) { isOn = false; armed = false; } },   // 振った直後は入らない
+    update(p, now, canEnter = () => true) {
+      if (ref == null || Math.abs(p - ref) > steadyBand) { ref = p; since = now; }
+      const steady = now - since;
+      if (base == null) { if (steady >= baseWait) base = p; return null; }   // 角度が落ち着いてから基準を取る
+      if (isOn) {
+        if (p - base < off) { isOn = false; return 'exit'; }
+        return null;
+      }
+      let d = p - base;
+      if (d < 0) { base = p; d = 0; }   // 基準より起こした＝そこを新しい基準に
+      if (!armed) {
+        if (d < off) armed = true;
+        else if (steady >= rearmWait) { base = p; armed = true; }   // 落ち着いた所を新しい基準にして再開
+        return null;
+      }
+      if (d > 0 && d < off && steady >= driftWait) { base = p; d = 0; }   // 持ち方のゆっくりしたずれを吸収
+      if (now < blockUntil) return null;
+      if (d >= on && canEnter()) { isOn = true; return 'enter'; }
+      return null;
+    },
+  };
+}

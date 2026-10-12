@@ -16,9 +16,9 @@ import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
 import { holdFall, setTiltFall } from './egi.js';
-import { watchTilt } from './shake.js';
+import { watchTilt, makeTiltGate } from './shake.js';
 const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内に押したら 0.25 秒待って、しゃくりかテンションフォールか見分ける（2026-10-04）
-const TILT = { on: 15, off: 9, block: 800 };       // 奥へ倒す角度（度）：15 度で入る・9 度未満で終わる。振り上げた後 0.8 秒は入らない
+// 奥へ倒す角度の判定は shake.js の makeTiltGate（15 度で入る・9 度未満で終わる・振った後 0.8 秒は入らない）
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
 const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
@@ -911,25 +911,20 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function onShake() {
     // しゃくり（沈下・フォール）とアワセ（合図）の時だけ。巻いている時（ファイト）に振っても何もしない
     if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) return;
-    if (tilt.on) { tilt.on = false; tilt.armed = false; tilt.blockUntil = performance.now() + TILT.block; }   // 倒したまま振り上げた＝しゃくり・合わせ（エンジン側でもテンションフォールが終わる）
+    tilt.block(performance.now());   // 振った直後は倒しても入らない。倒したまま振り上げた＝しゃくり・合わせ（エンジン側でもテンションフォールが終わる）
     doPress();
     doRelease();
   }
   // スマホを奥へ倒すとテンションフォール（2026-10-04 ぱっぱ）。基準は着水してからの最初の角度（人によって持つ角度が違うので）
-  const tilt = { base: null, on: false, armed: true, blockUntil: 0 };
+  // 2026-10-12：まれに入らない不具合 → 基準は角度が落ち着いてから取る・起こしたら基準を合わせる・止めた後も落ち着けば再開（makeTiltGate）
+  const tilt = makeTiltGate();
   let stopTilt = null;
   function onTilt(p) {
-    if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) { tilt.base = null; tilt.on = false; tilt.armed = true; return; }
-    if (tilt.base == null) { tilt.base = p; return; }
-    if (tilt.on && !s.tiltFall) { tilt.on = false; tilt.armed = false; }   // ボタンでしゃくった等でエンジン側が終えた
-    const d = p - tilt.base;
-    if (tilt.on) {
-      if (d < TILT.off) { tilt.on = false; setTiltFall(s, false); onEvents(s.events.splice(0)); setButton(); }
-      return;
-    }
-    if (!tilt.armed) { if (d < TILT.off) tilt.armed = true; return; }
-    if (performance.now() < tilt.blockUntil) return;
-    if (d >= TILT.on && setTiltFall(s, true)) { tilt.on = true; onEvents(s.events.splice(0)); setButton(); }
+    if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) { tilt.reset(); return; }
+    if (tilt.on && !s.tiltFall) tilt.engineEnded();   // ボタンでしゃくった等でエンジン側が終えた
+    const ev = tilt.update(p, performance.now(), () => setTiltFall(s, true));
+    if (ev === 'exit') setTiltFall(s, false);
+    if (ev) { onEvents(s.events.splice(0)); setButton(); }
   }
   async function setShake(on, ask) {
     if (on && ask && (await requestShakePermission()) !== 'granted') { callout(t(lang, TX.feel.shakeDenied), '', 3600); on = false; }
@@ -938,7 +933,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     stopShake = on ? watchShake(onShake) : null;
     stopTilt?.();
     stopTilt = on ? watchTilt(onTilt) : null;
-    tilt.base = null; tilt.on = false; tilt.armed = true;
+    tilt.reset();
     writePref('ikabu.egi.shake', on);
     syncFeel();
   }
