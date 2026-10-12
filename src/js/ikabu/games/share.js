@@ -13,14 +13,18 @@ export const shareUrl = (lang, game) => `${ORIGIN}/ikabu/${lang === 'en' ? 'en/'
 const TAG = '#山口イカ部';
 
 // 一言（純粋関数・テストあり）
-export function egiCatchText(lang, { name, weightG, practice }) {
-  return t(lang, `しゃくって抱かせろ！で${name} ${weightG.toLocaleString()}gを釣った🦑${practice ? '（季節モード）' : ''} ${TAG}`,
-    `Caught a ${weightG.toLocaleString()} g ${name} in Shakutte Dakasero! 🦑${practice ? ' (season mode)' : ''} ${TAG}`);
+export function egiCatchText(lang, { name, weightG, practice, blind = false }) {
+  // アタリチャレンジ（海の中を見ずに糸と竿先だけで取る）は、季節モードより先に書く（2026-10-12）
+  const tagJa = blind ? '（🙈アタリチャレンジ）' : practice ? '（季節モード）' : '';
+  const tagEn = blind ? ' (🙈 Bite Challenge)' : practice ? ' (season mode)' : '';
+  return t(lang, `しゃくって抱かせろ！で${name} ${weightG.toLocaleString()}gを釣った🦑${tagJa} ${TAG}`,
+    `Caught a ${weightG.toLocaleString()} g ${name} in Shakutte Dakasero! 🦑${tagEn} ${TAG}`);
 }
-export function egiTripText(lang, { count, biggest }) {
-  if (!count) return t(lang, `しゃくって抱かせろ！でボウズ…でも部員🦑 ${TAG}`, `Blanked in Shakutte Dakasero!… still a member 🦑 ${TAG}`);
-  return t(lang, `しゃくって抱かせろ！で${count}杯🦑 最大は${biggest.name} ${biggest.weightG.toLocaleString()}g ${TAG}`,
-    `${count} squid in Shakutte Dakasero! 🦑 Biggest: ${biggest.name} ${biggest.weightG.toLocaleString()} g ${TAG}`);
+export function egiTripText(lang, { count, biggest, blind = false }) {
+  const ja = blind ? '（🙈アタリチャレンジ）' : '', en = blind ? ' (🙈 Bite Challenge)' : '';
+  if (!count) return t(lang, `しゃくって抱かせろ！でボウズ…でも部員🦑${ja} ${TAG}`, `Blanked in Shakutte Dakasero!… still a member 🦑${en} ${TAG}`);
+  return t(lang, `しゃくって抱かせろ！で${count}杯🦑 最大は${biggest.name} ${biggest.weightG.toLocaleString()}g${ja} ${TAG}`,
+    `${count} squid in Shakutte Dakasero! 🦑 Biggest: ${biggest.name} ${biggest.weightG.toLocaleString()} g${en} ${TAG}`);
 }
 export function sumiText(lang, { score, daily, dayLabel }) {
   return t(lang, `墨つなぎで${score.toLocaleString()}点！${daily ? `（今日の一戦 ${dayLabel}）` : ''} ${TAG}`,

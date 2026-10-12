@@ -6,6 +6,10 @@ test('エギング：釣れた1杯の一言。季節モードは（季節モー�
   assert.equal(egiCatchText('ja', { name: 'アオリイカ', weightG: 1820, practice: false }), 'しゃくって抱かせろ！でアオリイカ 1,820gを釣った🦑 #山口イカ部');
   assert.match(egiCatchText('ja', { name: 'アオリイカ', weightG: 1820, practice: true }), /（季節モード）/);
   assert.match(egiCatchText('en', { name: 'Bigfin reef squid', weightG: 1820, practice: true }), /season mode/);
+  // アタリチャレンジで釣った時は、季節モードより先に書く（2026-10-12）
+  assert.match(egiCatchText('ja', { name: 'アオリイカ', weightG: 1820, practice: true, blind: true }), /（🙈アタリチャレンジ）/);
+  assert.doesNotMatch(egiCatchText('ja', { name: 'アオリイカ', weightG: 1820, practice: true, blind: true }), /季節モード/);
+  assert.match(egiTripText('ja', { count: 3, biggest: { name: 'アオリイカ', weightG: 900 }, blind: true }), /アタリチャレンジ/);
 });
 
 test('エギング：釣行のまとめ。0杯は「ボウズ…でも部員」', () => {

@@ -1916,7 +1916,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function shareEgi(button) {
     if (!lastShare) return;
     const practice = settings.mode !== 'live';
-    const common = { mode: settings.mode === 'beginner' ? 'beginner' : practice ? 'season' : 'live', seasonLabel: settings.mode === 'practice' ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
+    // アタリチャレンジは「今日の萩の海」か「季節」の上に重ねる遊び方。画像には上の層（アタリチャレンジ）を出す（2026-10-12 ぱっぱ）
+    const mode = settings.blind ? 'blind' : settings.mode === 'beginner' ? 'beginner' : practice ? 'season' : 'live';
+    const common = { mode, seasonLabel: settings.mode === 'practice' ? t(lang, SEASON[seasonOf(settings.month)]) : '', dateLabel: dateLabel() };
     const opts = { lang, assetHref, variant: SHARE_VARIANT };
     let text, draw;
     if (lastShare.kind === 'catch') {
@@ -1925,13 +1927,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const eg = settings.egi;
       const data = { ...common, speciesId: c.id, speciesName: name, mantleCm: c.mantle, weightG: c.weight, firstCatch: first && !practice,
         egi: { size: t(lang, `${eg.size}号`, `#${eg.size}`), colorName: t(lang, TX.egi.colors[eg.color]), colorHex: EGI_COLOR_HEX[eg.color] } };
-      text = egiCatchText(lang, { name, weightG: c.weight, practice });
+      text = egiCatchText(lang, { name, weightG: c.weight, practice, blind: Boolean(settings.blind) });
       draw = async () => (await import('./share-card.js')).drawEgiCatchCard(data, opts);
     } else {
       const cs = lastShare.catches;
       const big = cs.length ? cs.reduce((a, b) => (b.weight > a.weight ? b : a)) : null;
       const biggest = big ? { speciesId: big.id, speciesName: speciesName(lang, big.id), weightG: big.weight } : null;
-      text = egiTripText(lang, { count: cs.length, biggest: biggest && { name: biggest.speciesName, weightG: biggest.weightG } });
+      text = egiTripText(lang, { count: cs.length, biggest: biggest && { name: biggest.speciesName, weightG: biggest.weightG }, blind: Boolean(settings.blind) });
       draw = async () => (await import('./share-card.js')).drawEgiTripCard({ ...common, count: cs.length, biggest }, opts);
     }
     openShareView({ lang, button, draw, text, url: shareUrl(lang, 'egi') });

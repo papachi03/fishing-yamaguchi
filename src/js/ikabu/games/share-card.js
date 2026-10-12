@@ -23,6 +23,7 @@ const M = 48; // 安全マージン
 const C = {
   sea: '#00616B', deep: '#00454D', seaLine: '#138c96',
   orange: '#F47321', orangeDeep: '#d95f12', orangeLight: '#ffb37a',
+  gold: '#ffd76a', goldDeep: '#ecba46',   // アタリチャレンジの札（2026-10-12）
   ivory: '#F5EEDC', ink: '#16233A', inkSoft: '#41585c', white: '#ffffff', mist: '#e8f6f7',
 };
 
@@ -38,6 +39,7 @@ const T = {
     gameEgi: 'しゃくって抱かせろ！', gameSumi: '墨つなぎ', club: '山口イカ部',
     site: 'yamaguchifishing.com/ikabu',
     live: '今日の萩の海', season: '季節モード（練習）', seasonWith: (s) => `季節モード（練習）・${s}`, beginner: '初心者練習',
+    blind: 'アタリチャレンジ', blindWith: (s) => `アタリチャレンジ・${s}`, blindSub: '海の中を見ずに釣った', challenge: 'CHALLENGE',
     gameNote: 'ゲームの記録', mantle: (cm) => `胴長 ${cm}cm`, mantleLabel: '胴長',
     egi: (size, color) => `エギ ${size} ${color}`, egiLabel: 'エギ',
     first: '初ゲット！', catchLabel: '釣果',
@@ -51,6 +53,7 @@ const T = {
     gameEgi: 'Shakutte Dakasero!', gameSumi: 'Sumi Chain', club: 'Yamaguchi Ika-bu',
     site: 'yamaguchifishing.com/ikabu',
     live: "Today's Hagi sea", season: 'Season mode (practice)', seasonWith: (s) => `Season mode (practice) · ${s}`, beginner: 'Beginner practice',
+    blind: 'Bite Challenge', blindWith: (s) => `Bite Challenge · ${s}`, blindSub: 'Caught without seeing below', challenge: 'CHALLENGE',
     gameNote: 'Game record', mantle: (cm) => `Mantle ${cm} cm`, mantleLabel: 'Mantle',
     egi: (size, color) => `Egi ${size} ${color}`, egiLabel: 'Egi',
     first: 'First catch!', catchLabel: 'Catch',
@@ -97,7 +100,7 @@ function collectSample(data, s) {
   };
   walk(data); walk(s);
   // 関数で作る文言のサンプル
-  parts.push(s.mantle(0), s.egi('', ''), s.seasonWith(''), s.cups(0), s.reached(0), s.remain(0, 0));
+  parts.push(s.mantle(0), s.egi('', ''), s.seasonWith(''), s.blindWith(''), s.cups(0), s.reached(0), s.remain(0, 0));
   return parts.join('');
 }
 
@@ -212,6 +215,7 @@ function makeCanvas() {
 
 function modeLabel(s, data) {
   if (data.mode === 'beginner') return s.beginner;   // 🔰初心者練習（2026-09-27）
+  if (data.mode === 'blind') return data.seasonLabel ? s.blindWith(data.seasonLabel) : s.blind;   // 🙈アタリチャレンジ（2026-10-12 ぱっぱ：高難度で釣った達成感が出るように）
   if (data.mode === 'season') return data.seasonLabel ? s.seasonWith(data.seasonLabel) : s.season;
   return s.live;
 }
@@ -268,10 +272,28 @@ const A = {
     if (dateLabel) text(ctx, dateLabel, M, CARD_H - 66, { size: 24, weight: 700, family: F.varsity, color: 'rgba(255,255,255,0.9)', letter: 1 });
   },
   modeTag(ctx, s, data, x, y) {
+    if (data.mode === 'blind') {   // C案（2026-10-12 ぱっぱ）：金の地の大きな札＋「海の中を見ずに釣った」
+      const w = pill(ctx, modeLabel(s, data), x, y, { bg: C.gold, fg: C.ink, size: 30, weight: 900, h: 58, border: C.white });
+      text(ctx, s.blindSub, x + w + 18, y + 39, { size: 24, weight: 700, family: F.maru, color: C.gold, maxWidth: 700 - (x + w + 18) });
+      return w;
+    }
     if (data.mode !== 'live') return pill(ctx, modeLabel(s, data), x, y, { bg: C.orange, fg: C.ink, size: 26 });
     return pill(ctx, modeLabel(s, data), x, y, { bg: C.white, fg: C.sea, size: 26 });
   },
 };
+
+// アタリチャレンジで釣った時だけ、右上の角に金の「CHALLENGE」の帯を斜めに（C案・2026-10-12 ぱっぱ）
+function challengeBand(ctx, label) {
+  ctx.save();
+  ctx.translate(CARD_W, 0); ctx.rotate(Math.PI / 4);
+  const d = 150, h = 58, w = 520;
+  ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
+  ctx.fillStyle = C.goldDeep; ctx.fillRect(-w / 2, d - h / 2, w, h);
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = C.ink; ctx.fillRect(-w / 2, d - h / 2 + 5, w, 3); ctx.fillRect(-w / 2, d + h / 2 - 8, w, 3);
+  text(ctx, label, 0, d + 2, { size: 30, weight: 800, family: F.varsity, color: C.ink, align: 'center', baseline: 'middle', letter: 4 });
+  ctx.restore();
+}
 
 /* ---------- Variant B：チケット（アイボリーの半券） ---------- */
 const B = {
@@ -306,6 +328,7 @@ const B = {
   },
   modeTag(ctx, s, data, xRight, yMid) {
     const label = modeLabel(s, data);
+    if (data.mode === 'blind') return pill(ctx, label, xRight, yMid - 24, { bg: C.goldDeep, fg: C.ink, size: 24, align: 'right', h: 48 });
     if (data.mode !== 'live') return pill(ctx, label, xRight, yMid - 24, { bg: C.ink, fg: C.white, size: 24, align: 'right', h: 48 });
     return pill(ctx, label, xRight, yMid - 24, { bg: C.white, fg: C.sea, size: 24, align: 'right', h: 48 });
   },
@@ -342,9 +365,10 @@ const Cv = {
     ctx.translate(0, 0); ctx.rotate(-Math.PI / 12);
     ctx.font = font(700, 26, F.maru);
     const w = Math.max(ctx.measureText(label).width + 140, 420);
-    ctx.fillStyle = season ? C.orange : C.white;
+    const blind = data.mode === 'blind';
+    ctx.fillStyle = blind ? C.ink : season ? C.orange : C.white;
     ctx.fillRect(-100, 92, w + 60, 52);
-    ctx.fillStyle = season ? C.ink : C.sea; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = blind ? C.gold : season ? C.ink : C.sea; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(label, w / 2 - 50, 118);
     ctx.restore();
   },
@@ -389,6 +413,7 @@ export async function drawEgiCatchCard(data, { lang = 'ja', assetHref = (p) => p
       drawContain(ctx, logo, 790, 430, 300, 110);
     });
     if (data.firstCatch) pill(ctx, s.first, 700, 44, { bg: C.orange, fg: C.ink, size: 30, weight: 900, h: 60, rotate: -0.12, border: C.white });
+    if (data.mode === 'blind') challengeBand(ctx, s.challenge);
   } else if (key === 'B') {
     V.bg(ctx);
     const tx = 40, ty = 40, tw = CARD_W - 80, th = CARD_H - 80, stub = 400;
@@ -473,6 +498,7 @@ export async function drawEgiTripCard(data, { lang = 'ja', assetHref = (p) => p,
       if (squid) drawContain(ctx, logo, 790, 430, 300, 110);
       else text(ctx, s.club, 940, 470, { size: 32, weight: 900, family: F.maru, color: C.sea, align: 'center' });
     });
+    if (data.mode === 'blind') challengeBand(ctx, s.challenge);
   } else if (key === 'B') {
     V.bg(ctx);
     const tx = 40, ty = 40, tw = CARD_W - 80, th = CARD_H - 80, stub = 400;
