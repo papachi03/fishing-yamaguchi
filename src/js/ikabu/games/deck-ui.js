@@ -9,6 +9,7 @@ import { starterDeck, DECK_RULE } from './battle.js';
 import { KEY_DECK, DECK_SLOTS, normalizeStore, availableCopies, addCard, removeCard, summary, recommendDeck } from './deck.js';
 import { KIND_ORDER, KIND_LABEL } from './binder.js';
 import { tierOf } from './gacha-show.js';
+import { isSecret, isUpcoming } from './fes.js';
 
 const cardSrc = (no) => assetHref(`/assets/ikabu/cards/card_${String(no).padStart(3, '0')}_240.webp`);
 const TX = {
@@ -94,7 +95,8 @@ export function openDeck({ lang = 'ja' } = {}) {
     const uniq = [...new Set(deck)].map((n) => byNo.get(n)).filter(Boolean).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.no - b.no);
     el.deck.innerHTML = uniq.map((c) => `<div class="ika-dk-poolcell"><button type="button" class="ika-dk-card" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)} ×${count(c.no)}"><img src="${cardSrc(c.no)}" alt="" width="240" height="360" loading="lazy" />${costBadge(c)}<i>×${count(c.no)}</i></button>${infoBtn(c, lang)}</div>`).join('') || `<p class="ika-dk-note">—</p>`;
     // 使えるカード
-    const pool = CARDS.filter((c) => (kind === 'all' || c.kind === kind)).sort((a, b) => ((avail[b.no] ?? 0) > 0) - ((avail[a.no] ?? 0) > 0) || a.no - b.no);
+    // 持っていないシークレットと「まだ始まっていないフェス」のカードは出さない（バインダーと同じ決まり。2026-10-12 ぱっぱ：未公開の初夏のカードが見えていた）
+    const pool = CARDS.filter((c) => (kind === 'all' || c.kind === kind) && ((avail[c.no] ?? 0) > 0 || !(isSecret(c) || isUpcoming(c)))).sort((a, b) => ((avail[b.no] ?? 0) > 0) - ((avail[a.no] ?? 0) > 0) || a.no - b.no);
     el.pool.innerHTML = pool.map((c) => { const a = avail[c.no] ?? 0, h = count(c.no); return `<div class="ika-dk-poolcell"><button type="button" class="ika-dk-card${a ? '' : ' is-none'}${h > 0 ? ' is-in' : ''}" data-no="${c.no}" data-tier="${tierOf(c.rarity)}" aria-label="${esc(c.name)}"><img src="${cardSrc(c.no)}" alt="" width="240" height="360" loading="lazy" />${costBadge(c)}<i>${h}/${a}</i></button>${infoBtn(c, lang)}</div>`; }).join('');
   }
   const modal = document.createElement('div'); modal.className = 'ika-bd-modal'; modal.hidden = true;
