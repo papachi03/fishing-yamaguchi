@@ -9,7 +9,9 @@ import { createRush, rushSwap, rushFlash, rushHint, rushTick, rushDragStep, rush
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
-import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
+import { M3_TEXT as TX, MARKS, RARE_NAME, EGI_TEXT } from './play-text.js';
+import { ANGLERS, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler, rushFaceSrc, ANGLERS_EVENT } from './anglers.js';
+import { readTickets, writeTickets } from './tickets.js';
 import { recordM3, recordRush, backfillRush, emptyM3, KEY_M3, readRecord, writeRecord } from './records.js';
 import { t, assetHref } from '../i18n.js';
 import { openShareView, shareButtonHTML, shareUrl, sumiText, SHARE_VARIANT } from './share.js';
@@ -343,7 +345,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
     stopRushClock();
     el.wrap.querySelector('.ika-m3-start')?.remove();
     waitingStart = false;
-    if (isRush()) { mood = 'calm'; setMood('calm'); }
+    if (isRush()) { mood = 'calm'; setMood('calm'); el.say.textContent = t(lang, TX.rush.charTap); }   // スタート前は「タップでキャラを選べる」
     if (el.goalLabel) el.goalLabel.textContent = `${t(lang, TX.hud.today)} ${goals.goal.toLocaleString()}`;
     recorded = false;
     goalSaid = false;
@@ -366,6 +368,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   function showRushStart() {
     busy = true; waitingStart = true;
     syncHud();
+    if (el.say) el.say.textContent = t(lang, TX.rush.charTap);   // スタート前は「イカをタップでキャラを選べる」（2026-10-13）
     const ov = document.createElement('div');
     ov.className = 'ika-m3-start';
     ov.innerHTML = `<button type="button" class="ika-btn ika-btn--primary ika-m3-start-btn">▶ ${t(lang, TX.rush.start)}</button><p>${t(lang, TX.rush.startNote)}</p>`;
@@ -375,6 +378,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
       sfx.unlock?.();
       ov.classList.add('is-go');
       waitingStart = false;
+      closeCharPop(); setMood('calm');   // キャラ一覧を閉じ、吹き出しを「よゆう」に戻す
       ov.querySelector('button').disabled = true;
       const target = el.rush && !el.rush.hidden ? el.rush : el.wrap;
       const header = document.getElementById('ika-header');
@@ -397,13 +401,81 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
 
   /* ---------- 墨のがれ：イカの表情・次の墨・墨メーター（2026-09-29） ---------- */
   // 焦り専用の表情（2026-09-29 ChatGPTで描いた rush-*.webp。汗・涙は絵に描き込み済み）
-  const FACE = { calm: 'wink', worry: 'rush-worry', panic: 'rush-panic', doom: 'rush-doom', relief: 'rush-relief', drown: 'rush-doom' };
+  // 2026-10-13 キャラはエギングと共通（anglers.js）。表情の絵は rushFaceSrc がキャラごとに返す
   function setMood(m, { say = true } = {}) {
     if (!el.squid) return;
     el.squid.dataset.mood = m;
-    el.face.src = assetHref(`/assets/ikabu/mascot/${FACE[m] ?? 'wink'}.webp`);
-    if (say) el.say.textContent = t(lang, TX.rush.moods[m] ?? TX.rush.moods.calm);
+    el.face.src = assetHref(rushFaceSrc(readAnglers().current, m));
+    if (say) el.say.textContent = waitingStart ? t(lang, TX.rush.charTap) : t(lang, TX.rush.moods[m] ?? TX.rush.moods.calm);   // スタート前は「タップでキャラを選べる」のまま
   }
+
+  /* ---------- 墨のがれ：イカをタップしてキャラを選ぶ（2026-10-13 ぱっぱ・エギングと共通の一覧） ----------
+     遊んでいる最中は開かない（スタート前・終わった後だけ）。一覧の見た目はエギングの .ika-egi-anglerpop を使い、画面の真ん中に浮かせる */
+  const canPickChar = () => isRush() && (waitingStart || !g || g.over);
+  let charPop = null, charAsk = null;
+  const AT = EGI_TEXT.angler;
+  const escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function renderCharPop() {
+    const rec = readAnglers(); const have = readTickets().n;
+    const cards = ANGLERS.map((a) => {
+      const owned = rec.owned.includes(a.id); const cur = rec.current === a.id;
+      const btn = cur ? `<span class="ika-egi-ang-state">${t(lang, AT.using)}</span>`
+        : owned ? `<button type="button" class="ika-chip" data-ang-use="${a.id}">${t(lang, AT.use)}</button>`
+        : charAsk === a.id ? `<button type="button" class="ika-chip ika-egi-ang-yes" data-ang-buy="${a.id}">${AT.confirm(lang, a.cost)}</button>`
+        : `<button type="button" class="ika-chip" data-ang-ask="${a.id}"${have < a.cost ? ' aria-disabled="true"' : ''} aria-label="${escH(t(lang, AT.names[a.id]))} ${AT.buy(lang, a.cost)}">${AT.buy(lang, a.cost)}</button>`;
+      return `<div class="ika-egi-ang${cur ? ' is-cur' : ''}${owned ? '' : ' is-locked'}"><img src="${assetHref(rushFaceSrc(a.id, 'calm'))}" alt="" width="64" height="64" decoding="async"><b>${escH(t(lang, AT.names[a.id]))}</b>${btn}</div>`;
+    }).join('');
+    charPop.innerHTML = `<p class="ika-egi-colorpop-title">${t(lang, TX.rush.charTitle)}<small>${AT.have(lang, have)}</small></p><div class="ika-egi-ang-grid">${cards}</div><p class="ika-egi-colorpop-why">${t(lang, TX.rush.charNote)}</p><button type="button" class="ika-btn ika-egi-ang-close">${t(lang, AT.close)}</button>`;
+  }
+  function openCharPop() {
+    if (!canPickChar()) return;
+    if (!charPop) {
+      charPop = document.createElement('div');
+      charPop.className = 'ika-egi-anglerpop ika-m3-charpop';
+      charPop.setAttribute('role', 'dialog');
+      charPop.setAttribute('aria-label', t(lang, TX.rush.charTitle));
+      root.append(charPop);
+      charPop.addEventListener('click', onCharPop);
+    }
+    charAsk = null; renderCharPop(); charPop.hidden = false;
+  }
+  function closeCharPop() { if (charPop) charPop.hidden = true; }
+  function onCharPop(e) {
+    if (e.target.closest('.ika-egi-ang-close')) { closeCharPop(); return; }
+    const use = e.target.closest('[data-ang-use]');
+    if (use) {
+      const r = useAngler(readAnglers(), use.dataset.angUse);
+      if (r.ok) { writeAnglers(r.rec); dispatchEvent(new CustomEvent(ANGLERS_EVENT)); }
+      renderCharPop(); return;
+    }
+    const ask = e.target.closest('[data-ang-ask]');
+    if (ask) {
+      const a = anglerOf(ask.dataset.angAsk); const have = readTickets().n;
+      if (have < a.cost) { callout(AT.short(lang, a.cost - have), 'bad'); return; }
+      charAsk = a.id; renderCharPop(); return;
+    }
+    const buy = e.target.closest('[data-ang-buy]');
+    if (buy) {
+      const r = buyAngler(readAnglers(), readTickets(), buy.dataset.angBuy, { day: utcDay() });
+      charAsk = null;
+      if (r.ok) {
+        writeAnglers(r.rec); writeTickets(r.tickets);
+        dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
+        dispatchEvent(new CustomEvent(ANGLERS_EVENT));
+        callout(AT.got(lang, t(lang, AT.names[buy.dataset.angBuy])), 'good');
+      } else if (r.why === 'tickets') callout(AT.short(lang, anglerOf(buy.dataset.angBuy).cost - readTickets().n), 'bad');
+      renderCharPop();
+    }
+  }
+  if (el.squid) {
+    el.squid.setAttribute('role', 'button');
+    el.squid.setAttribute('tabindex', '0');
+    el.squid.setAttribute('aria-label', t(lang, TX.rush.charTap));
+    el.squid.addEventListener('click', openCharPop);
+    el.squid.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCharPop(); } });
+  }
+  // もう一方のゲーム（エギング）や、この一覧でキャラが替わった：今の表情のまま絵だけ替える
+  addEventListener(ANGLERS_EVENT, () => { if (el.squid && el.face) el.face.src = assetHref(rushFaceSrc(readAnglers().current, el.squid.dataset.mood || 'calm')); });
   const moodOf = (p) => (p >= 0.8 ? 'doom' : p >= 0.5 ? 'panic' : p >= 0.25 ? 'worry' : 'calm');
   const flows = new Map();   // 列 → 流れの部品（穴がある間だけ）
   function syncFlows() {

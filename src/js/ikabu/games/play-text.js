@@ -137,7 +137,7 @@ export const EGI_TEXT = {
   angler: {
     title: pair('釣り人を選ぶ', 'Choose your angler'),
     note: pair('見た目だけが変わります（釣れ方は同じ）', 'Looks only. It does not change your catch'),
-    names: { shiro: pair('部長（白イカ）', 'The Captain'), aori: pair('アオリイカ', 'Bigfin reef squid'), kouika: pair('コウイカ', 'Golden cuttlefish'), mongo: pair('モンゴウイカ', 'Pharaoh cuttlefish'), yari: pair('ヤリイカ', 'Spear squid'), kensaki: pair('ケンサキイカ', 'Swordtip squid') },
+    names: { shiro: pair('部長（白イカ）', 'The Captain'), aori: pair('アオリイカ', 'Bigfin reef squid'), kouika: pair('コウイカ', 'Golden cuttlefish'), mongo: pair('モンゴウイカ', 'Pharaoh cuttlefish'), yari: pair('ヤリイカ', 'Spear squid'), kensaki: pair('ケンサキイカ', 'Swordtip squid'), mimi: pair('ミミイカ', 'Bobtail squid'), dango: pair('ダンゴイカ', 'Dumpling squid'), hawaii: pair('ハワイミミイカ', 'Hawaiian bobtail squid'), hime: pair('ヒメイカ', 'Pygmy squid') },
     using: pair('使用中', 'In use'),
     use: pair('使う', 'Use'),
     buy: (lang, n) => `🎫${n}`,
@@ -775,6 +775,9 @@ export const M3_TEXT = {
     flush: pair('ドバッ！', 'Whoosh!'),
     stuck: pair('手詰まり！ 混ぜ直し', 'Stuck! Reshuffle'),
     moods: { calm: pair('よゆう', 'Easy'), worry: pair('ん…？', 'Hmm…'), panic: pair('やばい！', 'Uh-oh!'), doom: pair('たすけて！', 'Help!'), relief: pair('ふぅ', 'Phew') },
+    charTap: pair('イカをタップでキャラを選べる', 'Tap the squid to change character'),   // 2026-10-13 キャラ一覧（エギングと共通）
+    charTitle: pair('キャラを選ぶ', 'Choose your squid'),
+    charNote: pair('見た目だけが変わります（遊び方は同じ）。エギングの釣り人と共通です', 'Looks only. Shared with your angler in the eging game'),
     overTitle: pair('飲み込まれた…', 'Swallowed…'),
     overSub: pair('でも部員', 'Still a member'),
     bestTurns: pair('自己ベスト', 'Your best'),

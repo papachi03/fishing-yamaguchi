@@ -34,7 +34,7 @@ import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
-import { ANGLERS, ANGLER_BASE_H, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler } from './anglers.js';
+import { ANGLERS, ANGLER_BASE_H, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler, ANGLERS_EVENT } from './anglers.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
 import { utcDay } from './rng.js';
@@ -746,7 +746,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const T = TX.angler;
     if (e.target.closest('.ika-egi-ang-close')) { el.anglerPop.hidden = true; return; }
     const use = e.target.closest('[data-ang-use]');
-    if (use) { const r = useAngler(anglerRec, use.dataset.angUse); if (r.ok) { anglerRec = r.rec; writeAnglers(anglerRec); paintAngler(); } renderAnglerPop(); return; }
+    if (use) { const r = useAngler(anglerRec, use.dataset.angUse); if (r.ok) { anglerRec = r.rec; writeAnglers(anglerRec); paintAngler(); dispatchEvent(new CustomEvent(ANGLERS_EVENT)); } renderAnglerPop(); return; }
     const ask = e.target.closest('[data-ang-ask]');
     if (ask) {
       const a = anglerOf(ask.dataset.angAsk); const have = readTickets().n;
@@ -761,11 +761,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         anglerRec = r.rec; writeAnglers(anglerRec); writeTickets(r.tickets);
         dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
         paintAngler();
+        dispatchEvent(new CustomEvent(ANGLERS_EVENT));
         callout(T.got(lang, t(lang, T.names[buy.dataset.angBuy])), 'good');
       } else if (r.why === 'tickets') callout(T.short(lang, anglerOf(buy.dataset.angBuy).cost - readTickets().n), 'bad');
       renderAnglerPop();
     }
   });
+  // 墨のがれ（同じページ）でキャラを替えた・入手した時も、舞台の釣り人をそろえる（2026-10-13 キャラは2つのゲームで共通）
+  addEventListener(ANGLERS_EVENT, () => { anglerRec = readAnglers(); paintAngler(); if (el.anglerPop && !el.anglerPop.hidden) renderAnglerPop(); });
 
   /* ---------- タックル（ロッド・ドラグ）とリボン（2026-10-01） ---------- */
   function syncTackle() {

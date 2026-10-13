@@ -15,9 +15,26 @@ export const ANGLERS = [
   { id: 'mongo', cost: 10, src: '/assets/ikabu/anglers/mongo.webp', jet: '/assets/ikabu/anglers/mongo_jet.webp', padTop: 110 },
   { id: 'yari', cost: 10, src: '/assets/ikabu/anglers/yari.webp', jet: '/assets/ikabu/anglers/yari_jet.webp', padTop: 110 },
   { id: 'kensaki', cost: 10, src: '/assets/ikabu/anglers/kensaki.webp', jet: '/assets/ikabu/anglers/kensaki_jet.webp', padTop: 110 },
+  // かわいい系4体（2026-10-13 ぱっぱ：カードで人気のミミイカの仲間。ChatGPT で描いたスライム風。リールの位置は白イカに合わせて置いた）
+  { id: 'mimi', cost: 10, src: '/assets/ikabu/anglers/mimi.webp', jet: '/assets/ikabu/anglers/mimi_jet.webp' },
+  { id: 'dango', cost: 10, src: '/assets/ikabu/anglers/dango.webp', jet: '/assets/ikabu/anglers/dango_jet.webp' },
+  { id: 'hawaii', cost: 10, src: '/assets/ikabu/anglers/hawaii.webp', jet: '/assets/ikabu/anglers/hawaii_jet.webp' },
+  { id: 'hime', cost: 10, src: '/assets/ikabu/anglers/hime.webp', jet: '/assets/ikabu/anglers/hime_jet.webp' },
 ];
 export const DEFAULT_ANGLER = 'shiro';
 export const anglerOf = (id) => ANGLERS.find((a) => a.id === id) ?? ANGLERS[0];
+
+// 墨のがれの舞台のイカ（2026-10-13 ぱっぱ：キャラはエギングと共通。一度入手すれば両方で使える）
+// 表情は5つ（calm ふつう／worry 心配／panic 焦り／doom ピンチ／relief ほっと）。部長は前からの mascot の絵
+export const RUSH_MOODS = ['calm', 'worry', 'panic', 'doom', 'relief'];
+const SHIRO_RUSH = { calm: 'mascot/wink', worry: 'mascot/rush-worry', panic: 'mascot/rush-panic', doom: 'mascot/rush-doom', relief: 'mascot/rush-relief' };
+export function rushFaceSrc(id, mood) {
+  const m = RUSH_MOODS.includes(mood) ? mood : mood === 'drown' ? 'doom' : 'calm';
+  const a = anglerOf(id);
+  return a.id === DEFAULT_ANGLER ? `/assets/ikabu/${SHIRO_RUSH[m]}.webp` : `/assets/ikabu/rush-chars/${a.id}_${m}.webp`;
+}
+// キャラを替えた・入手した時に、同じページのもう一方のゲーム（エギング⇔墨のがれ）へ知らせる
+export const ANGLERS_EVENT = 'ikabu:anglers';
 
 export const emptyAnglers = () => ({ owned: [DEFAULT_ANGLER], current: DEFAULT_ANGLER });
 export function normalizeAnglers(rec) {
