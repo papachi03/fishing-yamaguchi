@@ -85,7 +85,7 @@ export function watchTilt(onTilt, k = 0.85) {
 // 前の作り：着水して最初の1回の角度を基準にしていた → 投げた直後にスマホが動いていると基準がずれ、15度倒しても入らない／
 //   倒したまましゃくると「9度より起こすまで止める」ので、基準がずれているとその投げのあいだ効かなかった
 // update(角度, 時刻ms, 入ってよいか) → 'enter'（入る）／'exit'（終わる）／null
-export function makeTiltGate({ on = 15, off = 9, block = 800, steadyBand = 3, baseWait = 400, rearmWait = 600, driftWait = 1500 } = {}) {
+export function makeTiltGate({ on = 15, off = 9, block = 800, steadyBand = 3, baseWait = 400, rearmWait = 600, driftWait = 1500, raiseWait = 200 } = {}) {
   let base = null, isOn = false, armed = true, blockUntil = 0, ref = null, since = 0;
   return {
     get on() { return isOn; },
@@ -101,7 +101,9 @@ export function makeTiltGate({ on = 15, off = 9, block = 800, steadyBand = 3, ba
         return null;
       }
       let d = p - base;
-      if (d < 0) { base = p; d = 0; }   // 基準より起こした＝そこを新しい基準に
+      // 基準より起こした＝そこを新しい基準に。ただし起こした角度で止まった時だけ（2026-10-13 ぱっぱ：振ってしゃくると一瞬起きた角度が基準になり、
+      //   ふだんの持ち方に戻すだけでテンションフォールに入って抜けなかった）
+      if (d < 0) { if (steady >= raiseWait) base = p; d = 0; }
       if (!armed) {
         if (d < off) armed = true;
         else if (steady >= rearmWait) { base = p; armed = true; }   // 落ち着いた所を新しい基準にして再開
