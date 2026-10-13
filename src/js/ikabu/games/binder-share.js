@@ -1,10 +1,13 @@
 // バインダーのシェア（2026-10-01 ぱっぱ：引いたカードを見せびらかせる場所＝招待の代わりにもなる）。
 //   ・持っているカードから「レア度の高い順」に12枚を選び、1080×1350（Instagram の 4:5）の画像を canvas で描く
 //   ・スマホは共有画面（navigator.share の files）、PC は保存（download）
-//   ・画像の下に「山口イカ部 テストプレイ中・公式LINE」を入れて、見た人が来られるようにする
+//   ・画像の下に「山口イカ部｜無料で遊べるイカ釣りゲーム・公式LINE」を入れて、見た人が来られるようにする（テストプレイ版だけ「テストプレイ中」。2026-10-13 ぱっぱ：本番で「テストプレイ中」と出ていた）
 //   ・🎫は付けない（2026-10-01 時点・ぱっぱ未決定）
 import { RARITY_ORDER, rank } from './gacha.js';
 import { LINE_ADD_URL } from './links.js';
+
+// テストプレイ版か（views/trial-notice.js と同じ印。画面の部品を読み込まないよう、ここでも直接見る）
+const IS_TRIAL = typeof __IKABU_TRIAL__ !== 'undefined' && __IKABU_TRIAL__ === true;   // eslint-disable-line no-undef
 
 export const SHARE_W = 1080, SHARE_H = 1350, SHARE_MAX = 12;
 
@@ -27,10 +30,14 @@ export function shareSummary(cards, owned = {}) {
 const TEXT = {
   title: (lang) => (lang === 'en' ? 'MY CARD BINDER' : 'MY CARD BINDER'),
   sub: (lang, s) => (lang === 'en' ? `${s.kinds} / ${s.all} kinds collected` : `${s.kinds} / ${s.all} 種類 あつめた`),
-  foot1: (lang) => (lang === 'en' ? 'Yamaguchi Ika-bu — test play now open' : '山口イカ部 テストプレイ中'),
+  foot1: (lang, trial = IS_TRIAL) => (trial
+    ? (lang === 'en' ? 'Yamaguchi Ika-bu — test play now open' : '山口イカ部 テストプレイ中')
+    : (lang === 'en' ? 'Yamaguchi Ika-bu — free squid fishing games' : '山口イカ部｜無料で遊べるイカ釣りゲーム')),
   foot2: (lang) => (lang === 'en' ? `Join from the official LINE  ${LINE_ADD_URL}` : `公式LINEから参加 → ${LINE_ADD_URL}`),
   file: (lang) => (lang === 'en' ? 'ika-bu-binder.png' : 'イカ部バインダー.png'),
-  shareText: (lang) => (lang === 'en' ? `My Yamaguchi Ika-bu card binder 🦑 Test play is open: ${LINE_ADD_URL}` : `山口イカ部のカードバインダー🦑 テストプレイ中、公式LINEから参加できます → ${LINE_ADD_URL}`),
+  shareText: (lang, trial = IS_TRIAL) => (trial
+    ? (lang === 'en' ? `My Yamaguchi Ika-bu card binder 🦑 Test play is open: ${LINE_ADD_URL}` : `山口イカ部のカードバインダー🦑 テストプレイ中、公式LINEから参加できます → ${LINE_ADD_URL}`)
+    : (lang === 'en' ? `My Yamaguchi Ika-bu card binder 🦑 Free squid fishing games — join from the official LINE: ${LINE_ADD_URL}` : `山口イカ部のカードバインダー🦑 無料で遊べるイカ釣りゲーム、公式LINEから参加できます → ${LINE_ADD_URL}`)),
 };
 
 const loadImg = (src) => new Promise((resolve, reject) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => reject(new Error(`image failed: ${src}`)); im.src = src; });
@@ -93,7 +100,7 @@ export async function makeShareImage({ cards, owned, lang = 'ja', assetHref }) {
       }
     }
   }
-  // 足もと：テストプレイ中・公式LINE
+  // 足もと：無料で遊べるイカ釣りゲーム（テストプレイ版はテストプレイ中）・公式LINE
   g.textAlign = 'center';
   g.fillStyle = '#ffd166'; g.font = '800 34px "Kaisei Tokumin", "Shippori Mincho B1", serif';
   g.fillText(TEXT.foot1(lang), SHARE_W / 2, SHARE_H - 128);
