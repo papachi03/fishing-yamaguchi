@@ -31,7 +31,7 @@ test('🎫が足りなければ手に入らない。持っているキャラは�
 });
 test('持っていないキャラには替えられない。知らない値は部長に戻る', () => {
   assert.equal(useAngler(emptyAnglers(), 'mongo').ok, false);
-  assert.deepEqual(normalizeAnglers({ owned: ['xxx'], current: 'xxx' }), { owned: ['shiro'], current: 'shiro' });
+  assert.deepEqual(normalizeAnglers({ owned: ['xxx'], current: 'xxx' }), { owned: ['shiro'], current: 'shiro', colors: {}, color: {} });   // 2026-10-13 色違いの欄が増えた
 });
 test('かわいい系4体も🎫10枚で手に入る', () => {
   for (const id of ['mimi', 'dango', 'hawaii', 'hime']) {

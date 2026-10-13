@@ -145,6 +145,10 @@ export const EGI_TEXT = {
     have: (lang, n) => (lang === 'en' ? `You have 🎫${n}` : `持っている🎫 ${n}枚`),
     short: (lang, n) => (lang === 'en' ? `Not enough 🎫 (need ${n})` : `🎫が足りません（あと${n}枚）`),
     got: (lang, name) => (lang === 'en' ? `${name} joined!` : `${name}が仲間になった！`),
+    // 色違い（2026-10-13）：持っているキャラの下の色の丸
+    colors: { orig: pair('元の色', 'Original'), pink: pair('ピンク', 'Pink'), mint: pair('ミント', 'Mint'), purple: pair('むらさき', 'Purple') },
+    colorBuy: (lang, n) => (lang === 'en' ? `Get 🎫${n}` : `🎫${n}で入手`),
+    colorGot: (lang, name, color) => (lang === 'en' ? `${name} (${color}) unlocked!` : `${name}の${color}を手に入れた！`),
     tap: pair('釣り人をタップでキャラを選べる', 'Tap the angler to change character'),
     close: pair('閉じる', 'Close'),
   },

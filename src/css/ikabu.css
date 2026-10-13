@@ -3270,6 +3270,13 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-egi-ang-yes { background: var(--ika-orange); color: #fff; border-color: var(--ika-orange-deep); }
 .ika-egi-ang-state { font-family: var(--font-maru); font-weight: 900; font-size: 12px; color: var(--ika-orange-deep); padding: 4px 0; }
 .ika-egi-ang-close { justify-self: end; min-height: 36px; padding: 4px 16px; font-size: 13px; }
+/* 色違いの丸（2026-10-13・持っているキャラの下。元の色・ピンク・ミント・むらさき） */
+.ika-ang-cols { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 4px; }   /* 4つが1列に並ぶ幅（スマホ390pxの3列で確かめた） */
+.ika-ang-col { position: relative; width: 21px; height: 21px; padding: 0; border-radius: 50%; border: 2px solid var(--ika-ink); background: var(--c); cursor: pointer; }
+.ika-ang-col.is-on { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ika-orange); }
+.ika-ang-col.is-locked { opacity: 0.55; }
+.ika-ang-col i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 11px; }
+.ika-ang-colbuy { min-height: 26px; padding: 2px 8px; border-radius: 13px; border: 2px solid var(--ika-orange-deep); background: var(--ika-orange); color: #fff; font-family: var(--font-maru); font-weight: 900; font-size: 11px; cursor: pointer; }
 .ika-eg-angler { cursor: pointer; }
 /* 縦画面の舞台は低いので、一覧は小さく詰める（全画面の時は大きく） */
 .ika-egi-anglerpop { gap: 6px; padding: 8px 10px; top: 6px; max-height: calc(100% - 12px); }

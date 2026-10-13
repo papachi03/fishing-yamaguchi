@@ -34,7 +34,8 @@ import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
-import { ANGLERS, ANGLER_BASE_H, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler, ANGLERS_EVENT } from './anglers.js';
+import { ANGLER_BASE_H, anglerOf, readAnglers, anglerSrc, anglerJet, colorOf, ANGLERS_EVENT } from './anglers.js';
+import { anglerPopHTML, anglerPopClick } from './angler-pop.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
 import { utcDay } from './rng.js';
@@ -715,59 +716,32 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     for (const box of [el.pickRig, el.popRig]) box?.querySelectorAll('.ika-chip').forEach((b) => { b.setAttribute('aria-pressed', String(b.dataset.rig === (e.rig ?? 'normal'))); b.disabled = !canPick; });
     syncTackle();
   }
-  /* ---------- 釣り人キャラ（2026-10-02）：一覧・🎫で入手・使う ---------- */
+  /* ---------- 釣り人キャラ（2026-10-02）：一覧・🎫で入手・使う。2026-10-13〜 色違いと、一覧の中身は angler-pop.js（墨のがれと共通） ---------- */
   let anglerRec = readAnglers();
-  let anglerAsk = null;   // 🎫を使う前の「使う？」を出しているキャラ
+  let anglerAsk = null;   // 🎫を使う前の「入手する？」を出しているもの（'aori' や 'aori:pink'）
+  const curColor = () => colorOf(anglerRec, anglerRec.current);
   function paintAngler() {
     const im = sc?.svg?.querySelector('.ika-eg-angler');
     if (!im) return;
     const a = anglerOf(anglerRec.current); const B = SCENE.squidBox;
     const extra = B.h * (a.padTop ?? 0) / ANGLER_BASE_H;   // 上に足した余白の分だけ、上へ伸ばして置く（竿の握りの位置は変えない）
-    im.setAttribute('href', assetHref(a.src)); im.dataset.face = 'normal';
+    im.setAttribute('href', assetHref(anglerSrc(a.id, curColor()))); im.dataset.face = 'normal';
     im.setAttribute('y', String(B.y - extra)); im.setAttribute('height', String(B.h + extra));
-    if (a.jet) { const pre = new Image(); pre.src = assetHref(a.jet); }   // 驚いた顔は先に読んでおく（初めてのジェットで一瞬消えないように）
+    if (a.jet) { const pre = new Image(); pre.src = assetHref(anglerJet(a.id, curColor())); }   // 驚いた顔は先に読んでおく（初めてのジェットで一瞬消えないように）
   }
   function renderAnglerPop() {
     if (!el.anglerPop) return;
-    const T = TX.angler; const have = readTickets().n;
-    const cards = ANGLERS.map((a) => {
-      const owned = anglerRec.owned.includes(a.id); const cur = anglerRec.current === a.id;
-      const btn = cur ? `<span class="ika-egi-ang-state">${t(lang, T.using)}</span>`
-        : owned ? `<button type="button" class="ika-chip" data-ang-use="${a.id}">${t(lang, T.use)}</button>`
-        : anglerAsk === a.id ? `<button type="button" class="ika-chip ika-egi-ang-yes" data-ang-buy="${a.id}">${T.confirm(lang, a.cost)}</button>`
-        : `<button type="button" class="ika-chip" data-ang-ask="${a.id}"${have < a.cost ? ' aria-disabled="true"' : ''} aria-label="${t(lang, T.names[a.id])} ${T.buy(lang, a.cost)}">${T.buy(lang, a.cost)}</button>`;
-      return `<div class="ika-egi-ang${cur ? ' is-cur' : ''}${owned ? '' : ' is-locked'}"><img src="${assetHref(a.src)}" alt="" width="64" height="72" decoding="async"><b>${esc(t(lang, T.names[a.id]))}</b>${btn}</div>`;
-    }).join('');
-    el.anglerPop.innerHTML = `<p class="ika-egi-colorpop-title">${t(lang, T.title)}<small>${T.have(lang, have)}</small></p><div class="ika-egi-ang-grid">${cards}</div><p class="ika-egi-colorpop-why">${t(lang, T.note)}</p><button type="button" class="ika-btn ika-egi-ang-close">${t(lang, T.close)}</button>`;
+    el.anglerPop.innerHTML = anglerPopHTML({ lang, title: t(lang, TX.angler.title), note: t(lang, TX.angler.note), ask: anglerAsk, face: anglerSrc });
   }
   function openAnglerPop() { anglerAsk = null; renderAnglerPop(); el.anglerPop.hidden = false; }
   el.anglerPop?.addEventListener('pointerdown', (e) => e.stopPropagation());
   el.anglerPop?.addEventListener('click', (e) => {
-    const T = TX.angler;
-    if (e.target.closest('.ika-egi-ang-close')) { el.anglerPop.hidden = true; return; }
-    const use = e.target.closest('[data-ang-use]');
-    if (use) { const r = useAngler(anglerRec, use.dataset.angUse); if (r.ok) { anglerRec = r.rec; writeAnglers(anglerRec); paintAngler(); dispatchEvent(new CustomEvent(ANGLERS_EVENT)); } renderAnglerPop(); return; }
-    const ask = e.target.closest('[data-ang-ask]');
-    if (ask) {
-      const a = anglerOf(ask.dataset.angAsk); const have = readTickets().n;
-      if (have < a.cost) { callout(T.short(lang, a.cost - have), 'bad'); return; }
-      anglerAsk = a.id; renderAnglerPop(); return;
-    }
-    const buy = e.target.closest('[data-ang-buy]');
-    if (buy) {
-      const r = buyAngler(anglerRec, readTickets(), buy.dataset.angBuy, { day: utcDay() });
-      anglerAsk = null;
-      if (r.ok) {
-        anglerRec = r.rec; writeAnglers(anglerRec); writeTickets(r.tickets);
-        dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
-        paintAngler();
-        dispatchEvent(new CustomEvent(ANGLERS_EVENT));
-        callout(T.got(lang, t(lang, T.names[buy.dataset.angBuy])), 'good');
-      } else if (r.why === 'tickets') callout(T.short(lang, anglerOf(buy.dataset.angBuy).cost - readTickets().n), 'bad');
-      renderAnglerPop();
-    }
+    const r = anglerPopClick(e, { lang, ask: anglerAsk, callout });
+    if (r.close) { el.anglerPop.hidden = true; return; }
+    anglerAsk = r.ask ?? null;
+    renderAnglerPop();   // 入手・着替えの時は ANGLERS_EVENT で舞台もそろう（下）
   });
-  // 墨のがれ（同じページ）でキャラを替えた・入手した時も、舞台の釣り人をそろえる（2026-10-13 キャラは2つのゲームで共通）
+  // キャラ・色が替わった（この一覧・墨のがれ どちらでも）：舞台の釣り人をそろえる（2026-10-13 キャラは2つのゲームで共通）
   addEventListener(ANGLERS_EVENT, () => { anglerRec = readAnglers(); paintAngler(); if (el.anglerPop && !el.anglerPop.hidden) renderAnglerPop(); });
 
   /* ---------- タックル（ロッド・ドラグ）とリボン（2026-10-01） ---------- */
@@ -2688,13 +2662,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         const hop = -Math.sin(Math.min(1, jk * 3) * Math.PI) * 6;
         ang?.setAttribute('transform', `translate(${f1(shake)} ${f1(hop)})`);
         const a = anglerOf(anglerRec.current);
-        if (ang && a.jet && ang.dataset.face !== 'jet') { ang.setAttribute('href', assetHref(a.jet)); ang.dataset.face = 'jet'; }   // 驚いた顔
+        if (ang && a.jet && ang.dataset.face !== 'jet') { ang.setAttribute('href', assetHref(anglerJet(a.id, curColor()))); ang.dataset.face = 'jet'; }   // 驚いた顔
         const pop = jk < 0.15 ? jk / 0.15 : 1;
         n.surprise.setAttribute('transform', `translate(${f1(B.x + B.w * 0.98)} ${f1(B.y + B.h * 0.36 - 6 * pop)}) scale(${(0.8 + 0.6 * pop).toFixed(2)})`);   // 頭の右横（縦画面だと頭の上は舞台の外になる）
         n.surprise.setAttribute('opacity', String(jk > 0.8 ? (1 - jk) / 0.2 : 1));
       } else {
         if (ang?.getAttribute('transform')) ang.setAttribute('transform', '');
-        if (ang && ang.dataset.face === 'jet') { ang.setAttribute('href', assetHref(anglerOf(anglerRec.current).src)); ang.dataset.face = 'normal'; }
+        if (ang && ang.dataset.face === 'jet') { ang.setAttribute('href', assetHref(anglerSrc(anglerRec.current, curColor()))); ang.dataset.face = 'normal'; }
         n.surprise.setAttribute('opacity', '0');
       }
     }
