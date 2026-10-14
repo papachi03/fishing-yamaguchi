@@ -4,9 +4,10 @@
 import { t, esc, assetHref } from '../i18n.js';
 import { utcDay } from './rng.js';
 import CARDS from './cards-data.json';
-import { CHAPTERS, CHARS, BATTLES_CH1, deckNos, RULE_TEXT } from './story-data.js';
-import { SCRIPT_CH1, PROLOGUE, EPILOGUE, CALLS } from './story-script.js';
-import { readStory, writeStory, heroName, fillName, cleanName, nextBattle, canPlay, isCleared, hintReady, recordWin, recordLoss, chapterCleared, NAME_MAX, STORY_TICKETS } from './story.js';
+import { CHAPTERS, CHARS, BATTLES_BY_CH, deckNos, RULE_TEXT } from './story-data.js';
+import { SCRIPTS, CALLS } from './story-script.js';
+import { readStory, writeStory, heroName, fillName, cleanName, nextBattle, canPlay, isCleared, hintReady, recordWin, recordLoss, chapterCleared, markChapterCleared, NAME_MAX, STORY_TICKETS } from './story.js';
+import { IS_TRIAL } from '../views/trial-notice.js';   // 試遊版だけ（本番には出ない）
 import { openBattle } from './battle-ui.js';
 import { createGachaAudio } from './gacha-audio.js';
 import { readJSON, writeJSON } from './records.js';
@@ -20,9 +21,12 @@ const STORY_AUDIO = {
   don: { src: '/assets/ikabu/audio/gacha/se_don.mp3', volume: 0.7 },                                                            // 「勝負だ！」でVS
 };
 const KEY_SOUND = 'ikabu.battle.sound';   // 対戦の🔊と同じ切替
-const TENSE_BATTLES = new Set([8, 9]);
+// 章ごと：緊張の曲を流す戦／プロローグを見たかの記録（このブラウザだけ）／エピローグの背景（2026-10-15 第2章を足して章ごとに）
+const TENSE_BATTLES = { 1: new Set([8, 9]), 2: new Set([3, 8, 9]) };
+const KEY_SEEN_CH = { 1: 'ikabu.story.seen', 2: 'ikabu.story.seen.ch2' };
+const EPILOGUE_BG = { 1: 'bushitsu', 2: 'iso_yoake' };
+const openChapters = (story) => CHAPTERS.filter((c) => c.count > 0 && (c.id === 1 || chapterCleared(story, c.id - 1, CHAPTERS[c.id - 2].count)));
 
-const KEY_SEEN = 'ikabu.story.seen';   // プロローグを見たか（このブラウザだけ）
 const charSrc = (id, face) => assetHref(`/assets/ikabu/story/chars/${id}_${face}.webp`);
 const bgSrc = (id) => assetHref(`/assets/ikabu/story/bg/${id}.webp`);
 const nameOf = (lang, id, hero) => fillName(t(lang, ...(CHARS[id]?.name ?? ['', ''])), hero);
@@ -46,7 +50,10 @@ const TX = {
   ruleOk: ['わかった', 'OK'],
   stars: (n) => '★'.repeat(n) + '☆'.repeat(5 - n),
   gotTickets: (lang, n) => (lang === 'en' ? `🎫 +${n} (first clear)` : `🎫 ${n}枚ゲット！（初クリア）`),
-  chapterDone: ['第1章 クリア！ 正式部員証を手に入れた', 'Chapter 1 cleared! You earned full membership'],
+  chapterDone: { 1: ['第1章 クリア！ 正式部員証を手に入れた', 'Chapter 1 cleared! You earned full membership'], 2: ['第2章 クリア！ エリート章を手に入れた', 'Chapter 2 cleared! You earned the elite badge'] },
+  trialSkip: ['🧪 試遊版だけ：第1章をクリアしたことにする（🎫は増えません）', '🧪 Trial only: mark chapter 1 as cleared (no tickets)'],
+  trialSkipped: ['第1章をクリアしたことにしました。第2章が開きました', 'Chapter 1 marked as cleared. Chapter 2 is open'],
+  lockedCh: (lang, n) => (lang === 'en' ? `🔒 Clear chapter ${n} to unlock` : `🔒 第${n}章をクリアすると開きます`),
 };
 
 export function mountStoryButton(root, { lang = 'ja' } = {}) {
@@ -54,8 +61,8 @@ export function mountStoryButton(root, { lang = 'ja' } = {}) {
   const btn = document.createElement('button');
   btn.type = 'button'; btn.className = 'ika-story-entry'; btn.setAttribute('data-story-open', '');
   const sync = () => {
-    const s = readStory(); const n = nextBattle(s, 1, CHAPTERS[0].count);
-    btn.innerHTML = `<span class="ika-story-entry-tag">${t(lang, 'NEW', 'NEW')}</span><b>📖 ${t(lang, ...TX.title)}</b><small>${n ? t(lang, `第1章 ・ 第${n}戦まで進行中`, `Chapter 1 · battle ${n}`) : t(lang, '第1章 クリア済み', 'Chapter 1 cleared')}</small>`;
+    const s = readStory(); const chs = openChapters(s); const c = chs[chs.length - 1]; const n = nextBattle(s, c.id, c.count);
+    btn.innerHTML = `<span class="ika-story-entry-tag">${t(lang, 'NEW', 'NEW')}</span><b>📖 ${t(lang, ...TX.title)}</b><small>${n ? t(lang, `第${c.id}章 ・ 第${n}戦まで進行中`, `Chapter ${c.id} · battle ${n}`) : t(lang, `第${c.id}章 クリア済み`, `Chapter ${c.id} cleared`)}</small>`;
   };
   sync();
   btn.addEventListener('click', () => openStory({ lang, onClose: sync }));
@@ -77,23 +84,27 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
   function list() {
     story = readStory();
     const hero = heroName(story);
-    const ch1 = CHAPTERS[0];
-    const nxt = nextBattle(story, 1, ch1.count);
-    ov.innerHTML = `<div class="ika-st-list">
-      <header class="ika-st-head"><button type="button" class="ika-st-close" data-close aria-label="${t(lang, '閉じる', 'Close')}">×</button><button type="button" class="ika-st-sound" data-sound aria-pressed="${audio.on}">${audio.on ? '🔊' : '🔇'}</button><h2>📖 ${t(lang, ...TX.title)}</h2><p>${esc(fillName(t(lang, ...TX.lead), hero))}</p></header>
-      <form class="ika-st-nameform" data-name-form><label>${t(lang, ...TX.nameLabel)}<input type="text" name="name" maxlength="${NAME_MAX}" value="${esc(story.name ?? '')}" placeholder="アオ" autocomplete="off"></label><button type="button" class="ika-btn" data-name-save>${t(lang, ...TX.nameSave)}</button></form>
-      <section class="ika-st-ch is-open">
-        <h3><span class="ika-st-chno">${t(lang, '第1章', 'Ch. 1')}</span>${t(lang, ...ch1.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...ch1.goal)}</small></h3>
-        <ol class="ika-st-battles">${BATTLES_CH1.map((b) => {
-          const done = isCleared(story, 1, b.i), ok = canPlay(story, 1, b.i, ch1.count);
+    const opened = new Set(openChapters(story).map((c) => c.id));
+    const chapterHTML = (c) => {
+      const head = `<h3><span class="ika-st-chno">${t(lang, `第${c.id}章`, `Ch. ${c.id}`)}</span>${t(lang, ...c.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...c.goal)}</small></h3>`;
+      if (c.count === 0) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">🚧 ${t(lang, ...TX.wip)}</p></section>`;
+      if (!opened.has(c.id)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">${TX.lockedCh(lang, c.id - 1)}</p>${IS_TRIAL && c.id === 2 ? `<button type="button" class="ika-btn" data-trial-skip>${t(lang, ...TX.trialSkip)}</button>` : ''}</section>`;
+      const nxt = nextBattle(story, c.id, c.count);
+      return `<section class="ika-st-ch is-open">${head}
+        <ol class="ika-st-battles">${BATTLES_BY_CH[c.id].map((b) => {
+          const done = isCleared(story, c.id, b.i), ok = canPlay(story, c.id, b.i, c.count);
           return `<li class="ika-st-b${done ? ' is-done' : ''}${nxt === b.i ? ' is-next' : ''}${ok ? '' : ' is-locked'}">
-            <button type="button" ${ok ? `data-battle="${b.i}"` : 'disabled'}>
+            <button type="button" ${ok ? `data-ch="${c.id}" data-battle="${b.i}"` : 'disabled'}>
               <img class="ika-st-b-face" src="${ok ? charSrc(b.foe, 'normal') : ''}" alt="" ${ok ? '' : 'hidden'} />
               <span class="ika-st-b-body"><b>${t(lang, `第${b.i}戦`, `Battle ${b.i}`)}　${ok ? esc(nameOf(lang, b.foe, hero)) : '？？？'}</b><small>${ok ? `${t(lang, ...b.rank)} ・ ${t(lang, ...b.place)}` : '　'}</small><i>${TX.stars(b.stars)}</i></span>
               <span class="ika-st-b-state">${done ? t(lang, ...TX.cleared) : nxt === b.i ? t(lang, ...TX.next) : t(lang, ...TX.locked)}</span>
             </button></li>`; }).join('')}</ol>
-      </section>
-      ${CHAPTERS.slice(1).map((c) => `<section class="ika-st-ch is-wip"><h3><span class="ika-st-chno">${t(lang, `第${c.id}章`, `Ch. ${c.id}`)}</span>${t(lang, ...c.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...c.goal)}</small></h3><p class="ika-st-wip">🚧 ${t(lang, ...TX.wip)}</p></section>`).join('')}
+      </section>`;
+    };
+    ov.innerHTML = `<div class="ika-st-list">
+      <header class="ika-st-head"><button type="button" class="ika-st-close" data-close aria-label="${t(lang, '閉じる', 'Close')}">×</button><button type="button" class="ika-st-sound" data-sound aria-pressed="${audio.on}">${audio.on ? '🔊' : '🔇'}</button><h2>📖 ${t(lang, ...TX.title)}</h2><p>${esc(fillName(t(lang, ...TX.lead), hero))}</p></header>
+      <form class="ika-st-nameform" data-name-form><label>${t(lang, ...TX.nameLabel)}<input type="text" name="name" maxlength="${NAME_MAX}" value="${esc(story.name ?? '')}" placeholder="アオ" autocomplete="off"></label><button type="button" class="ika-btn" data-name-save>${t(lang, ...TX.nameSave)}</button></form>
+      ${CHAPTERS.map(chapterHTML).join('')}
     </div>`;
     ov.querySelector('[data-close]').addEventListener('click', close);
     ov.querySelector('[data-sound]').addEventListener('click', (e) => { audio.setOn(!audio.on); writeJSON(KEY_SOUND, audio.on); e.currentTarget.textContent = audio.on ? '🔊' : '🔇'; e.currentTarget.setAttribute('aria-pressed', String(audio.on)); if (audio.on) { audio.unlock(); audio.bgm('talk'); } });
@@ -101,7 +112,8 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     const saveName = () => { const v = ov.querySelector('input[name=name]').value; story = { ...readStory(), name: cleanName(v) === 'アオ' && !v.trim() ? '' : cleanName(v) }; writeStory(story); list(); };
     ov.querySelector('[data-name-save]').addEventListener('click', saveName);
     ov.querySelector('[data-name-form]').addEventListener('submit', (e) => { e.preventDefault(); saveName(); });
-    ov.querySelectorAll('[data-battle]').forEach((b) => b.addEventListener('click', () => startBattle(Number(b.dataset.battle))));
+    ov.querySelectorAll('[data-battle]').forEach((b) => b.addEventListener('click', () => startBattle(Number(b.dataset.ch), Number(b.dataset.battle))));
+    ov.querySelector('[data-trial-skip]')?.addEventListener('click', () => { if (!IS_TRIAL) return; writeStory(markChapterCleared(readStory(), 1, CHAPTERS[0].count, { day: utcDay() })); list(); banner(t(lang, ...TX.trialSkipped), 2600); });
   }
 
   // 会話：lines を1行ずつ。タップで次へ、「とばす」で終わり。終わったら done()
@@ -127,7 +139,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
       const who = l.who === 'ao' ? 'me' : (l.who === foeId ? 'foe' : 'other');
       if (hasFoe && who === 'foe') fo.hidden = false;   // 相手は初めて話した時から出る（プロローグの間は出ない）
       if (callOut && i >= lines.length - 2) { if (vs.hidden) audio.se('don'); fo.hidden = !hasFoe; vs.hidden = false; }   // 掛け声（最後の2行）でVS＋ドン
-      if (l.who === 'nyudo') audio.bgm('ending2', { xfade: 0.3 });   // エピローグ：四天王の登場で曲の後半へ
+      if (l.who === 'nyudo' || l.bgm) audio.bgm(l.bgm ?? 'ending2', { xfade: 0.3 });   // エピローグ：四天王の登場（第2章は行の bgm）で曲の後半へ
       me.classList.toggle('is-dim', who !== 'me' && l.who !== 'narr');
       fo.classList.toggle('is-dim', who !== 'foe' && l.who !== 'narr');
       if (who === 'me') me.querySelector('img').src = charSrc('ao', l.face);
@@ -155,56 +167,59 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     if (!rule) return done();
     const r = RULE_TEXT[rule];
     const d = document.createElement('div'); d.className = 'ika-st-rule';
-    const markOf = { night: 'star', summerNight: 'sun' }[rule];   // その場のルールが効くマーク（絵で見せる）
+    const markOf = { night: 'star', summerNight: 'sun', sarashi: 'sun', tidepool: 'sun', moba: 'wave' }[rule];   // その場のルールが効くマーク（絵で見せる）
     d.innerHTML = `<div class="ika-st-rule-in"><b>${t(lang, ...r.title)}</b>${markOf ? `<img class="ika-st-rule-mark" src="${assetHref(`/assets/ikabu/tiles/${markOf}_128.webp`)}" alt="" width="56" height="56" />` : ''}<p>${t(lang, ...r.body)}</p><p class="ika-st-rule-note">${markOf ? t(lang, 'カードの左上の印・カードを押した説明で、マークが分かります', 'The mark shows at the top-left of each card and in the card details') : ''}</p><button type="button" class="ika-btn ika-btn--primary" data-ok>${t(lang, ...TX.ruleOk)}</button></div>`;
     ov.appendChild(d);
     d.querySelector('[data-ok]').addEventListener('click', () => { d.remove(); done(); });
   }
 
-  function startBattle(i) {
-    const b = BATTLES_CH1.find((x) => x.i === i);
+  function startBattle(ch, i) {
+    const b = BATTLES_BY_CH[ch].find((x) => x.i === i);
+    const sc = SCRIPTS[ch];
+    const keySeen = KEY_SEEN_CH[ch];
     story = readStory();
     const hero = heroName(story);
     const foeName = nameOf(lang, b.foe, hero);
-    const seen = (() => { try { return localStorage.getItem(KEY_SEEN) === '1'; } catch { return false; } })();
-    const pre = i === 1 && !seen ? [...PROLOGUE, ...SCRIPT_CH1[1].before] : SCRIPT_CH1[i].before;
-    audio.bgm(TENSE_BATTLES.has(i) ? 'tense' : 'talk', { xfade: 1.2 });
+    const seen = (() => { try { return localStorage.getItem(keySeen) === '1'; } catch { return false; } })();
+    const pre = i === 1 && !seen ? [...sc.prologue, ...sc.script[1].before] : sc.script[i].before;
+    audio.bgm(TENSE_BATTLES[ch]?.has(i) ? 'tense' : 'talk', { xfade: 1.2 });
     const calls = [{ who: 'ao', face: 'attack', text: CALLS.start[0] }, { who: b.foe, face: 'attack', text: CALLS.start[1] }];
     ov.querySelector('.ika-st-list')?.classList.add('is-hidden');
     talk({ lines: [...pre, ...calls], bg: b.bg, foe: b.foe, hero, callOut: true, done: () => {
-      if (i === 1) { try { localStorage.setItem(KEY_SEEN, '1'); } catch {} }
+      if (i === 1) { try { localStorage.setItem(keySeen, '1'); } catch {} }
       ruleCard(b.rule, () => {
         audio.stopBgm(0.4);   // 対戦は対戦の曲（battle-ui.js）
         openBattle({ lang, story: {
           foeName, stage: b.stage, cpuDeck: deckNos(b.deck), myDeck: b.myDeck ? deckNos(b.myDeck) : null, cpuEgi: b.cpuEgi, brain: b.brain, rule: b.rule,
-          onEnd: (win) => afterBattle(b, win, hero),
+          onEnd: (win) => afterBattle(ch, b, win, hero),
         } });
       });
     } });
   }
 
-  function afterBattle(b, win, hero) {
+  function afterBattle(ch, b, win, hero) {
+    const sc = SCRIPTS[ch], last = BATTLES_BY_CH[ch].length, chap = CHAPTERS[ch - 1];
     if (win === null) { audio.bgm('talk'); list(); return; }   // やめた
     story = readStory();
     let lines, toast = '';
     if (win) {
-      const r = recordWin(story, 1, b.i, { day: utcDay() });
+      const r = recordWin(story, ch, b.i, { day: utcDay() });
       story = r.story; writeStory(story);
       if (r.got) { dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'story', amount: r.got, counted: true, tickets: true } })); toast = TX.gotTickets(lang, r.got); }
-      lines = [{ who: 'ao', face: 'attack', text: CALLS.win }, ...SCRIPT_CH1[b.i].win];
-      if (b.i === BATTLES_CH1.length && r.first) lines = [...lines, ...EPILOGUE];
-      audio.bgm(b.i === BATTLES_CH1.length && r.first ? 'ending' : 'talk', { xfade: 1 });
+      lines = [{ who: 'ao', face: 'attack', text: CALLS.win }, ...sc.script[b.i].win];
+      if (b.i === last && r.first) lines = [...lines, ...sc.epilogue];
+      audio.bgm(b.i === last && r.first ? 'ending' : 'talk', { xfade: 1 });
     } else {
-      const r = recordLoss(story, 1, b.i);
+      const r = recordLoss(story, ch, b.i);
       story = r.story; writeStory(story);
       audio.bgm('talk', { xfade: 1 });
-      lines = [...SCRIPT_CH1[b.i].lose, ...(r.hint ? SCRIPT_CH1[b.i].hint.map((l) => ({ ...l, text: `💡 ${l.text}` })) : [])];
+      lines = [...sc.script[b.i].lose, ...(r.hint ? sc.script[b.i].hint.map((l) => ({ ...l, text: `💡 ${l.text}` })) : [])];
     }
-    talk({ lines, bg: b.i === BATTLES_CH1.length && win ? 'bushitsu' : b.bg, foe: b.foe, hero, done: () => {
+    talk({ lines, bg: b.i === last && win ? EPILOGUE_BG[ch] : b.bg, foe: b.foe, hero, done: () => {
       audio.bgm('talk', { xfade: 1.5 });
       list();
       if (toast) banner(toast);
-      if (win && chapterCleared(story, 1, CHAPTERS[0].count) && b.i === BATTLES_CH1.length) banner(t(lang, ...TX.chapterDone), 3600);
+      if (win && chapterCleared(story, ch, chap.count) && b.i === last) banner(t(lang, ...TX.chapterDone[ch]), 3600);
     } });
   }
   function banner(text, ms = 2200) {

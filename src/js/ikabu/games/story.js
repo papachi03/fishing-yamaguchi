@@ -67,3 +67,9 @@ export function mergeStory(a, b) {
   for (const k of Object.keys(b.tickets ?? {})) r.tickets[k] = true;
   return r;
 }
+// 試遊版だけ：章の全部の戦を「勝ったこと」にする（第2章を見るため。2026-10-15 ぱっぱ）。🎫の印は付けない＝🎫は増えない。もう勝っている戦の日付はそのまま
+export function markChapterCleared(story, ch, count, { day }) {
+  const s = { ...emptyStory(), ...story, cleared: { ...(story?.cleared ?? {}) } };
+  for (let i = 1; i <= count; i++) if (!s.cleared[key(ch, i)]) s.cleared[key(ch, i)] = day;
+  return s;
+}

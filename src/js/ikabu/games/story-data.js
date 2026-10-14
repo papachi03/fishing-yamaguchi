@@ -4,7 +4,7 @@
 //   絵：public/assets/ikabu/story/{chars,bg,stage}
 export const CHAPTERS = [
   { id: 1, title: ['萩の堤防・候補生編', 'Hagi Pier: Rookie Arc'], goal: ['正式部員証', 'Full membership'], count: 9 },
-  { id: 2, title: ['磯・エリート昇格編', 'Rocky Shore: Elite Arc'], goal: ['エリート章', 'Elite badge'], count: 0, wip: true },
+  { id: 2, title: ['磯・エリート昇格編', 'Rocky Shore: Elite Arc'], goal: ['エリート章', 'Elite badge'], count: 9 },   // 2026-10-15（設計：ikabu-research/cardbattle/story/第2章_台本と設計.md）
   { id: 3, title: ['夜の漁港・四天王（前編）', 'Night Harbor: Big Four I'], goal: ['四天王の印', 'Big Four seal'], count: 0, wip: true },
   { id: 4, title: ['嵐の外海・四天王（後編）〜部長', 'Stormy Sea: Big Four II'], goal: ['部長の推薦状', "Captain's letter"], count: 0, wip: true },
   { id: 5, title: ['深海の門・名誉会長', 'Gate of the Deep'], goal: ['山口イカ部 名誉部員証', 'Honorary membership'], count: 0, wip: true },
@@ -21,6 +21,13 @@ export const CHARS = {
   yarisuke: { name: ['ヤリスケ', 'Yarisuke'], squid: ['ヤリイカ', 'Spear squid'] },
   surume: { name: ['スルメ姐さん', 'Surume'], squid: ['スルメイカ', 'Flying squid'] },
   akatsuki: { name: ['アカツキ', 'Akatsuki'], squid: ['アカイカ', 'Neon flying squid'] },
+  // 第2章（2026-10-15）
+  tobio: { name: ['トビオ', 'Tobio'], squid: ['トビイカ', 'Flying squid'] },
+  hanabi: { name: ['ハナビ', 'Hanabi'], squid: ['ハナイカ', 'Flamboyant cuttlefish'] },
+  tsume: { name: ['ツメ', 'Tsume'], squid: ['ツメイカ', 'Hooked squid'] },
+  haru: { name: ['ハル', 'Haru'], squid: ['アオリイカ', 'Bigfin reef squid'] },
+  hirobi: { name: ['ヒロビ', 'Hirobi'], squid: ['ヒロビレイカ', 'Bigfin squid'] },
+  iwao: { name: ['イワオ', 'Iwao'], squid: ['コブシメ', 'Broadclub cuttlefish'] },
   // 顔見せだけ（立ち絵なし・名前の札だけ）
   nyudo: { name: ['大入道', 'Nyudo'] }, yurei: { name: ['ユウレイ', 'Yurei'] }, akuma: { name: ['赤い悪魔', 'Red Devil'] }, sodemaru: { name: ['ソデマル', 'Sodemaru'] },
   unknown: { name: ['？？？', '???'] }, narr: { name: ['', ''] },
@@ -49,6 +56,29 @@ export const BATTLES_CH1 = [
   { i: 9, foe: 'akatsuki', rank: ['エリート・試験官', 'Elite examiner'], stars: 5, place: ['イカ部の部室', 'Club room'], bg: 'bushitsu', stage: 'bushitsu', cpuEgi: 5, brain: 3, rule: 'exam',
     deck: { squid: [15, 15, 31, 31, 34, 34, 12, 12, 38, 38, 25, 25, 48, 17], tech: [67, 67, 84, 84, 68, 68, 69, 70, 72, 53, 53], trap: [103, 103, 108, 108, 116] } },
 ];
+// 第2章「磯・エリート昇格編」の9戦（2026-10-15）。相手のエギは全部5・考える力は全部 Lv3。難しさはデッキと場のルールで上げる
+export const BATTLES_CH2 = [
+  { i: 1, foe: 'tobio', rank: ['エリート', 'Elite'], stars: 3, place: ['磯の入口・白い波', 'Rocky shore entrance'], bg: 'iso_sarashi', stage: 'iso', cpuEgi: 5, brain: 3, rule: 'sarashi',
+    deck: { squid: [12, 12, 25, 25, 4, 4, 38, 38, 15, 15, 1, 1, 31, 24], tech: [53, 53, 59, 59, 68, 68, 70, 70, 69, 72, 65], trap: [101, 101, 103, 108, 99] } },
+  { i: 2, foe: 'hanabi', rank: ['エリート', 'Elite'], stars: 3, place: ['磯の潮だまり', 'Tide pool'], bg: 'iso_shiodamari', stage: 'iso', cpuEgi: 5, brain: 3, rule: 'tidepool',
+    deck: { squid: [31, 31, 25, 25, 4, 4, 38, 38, 12, 12, 15, 15, 34], tech: [69, 69, 70, 70, 68, 68, 75, 75, 53, 53, 84, 84], trap: [101, 108, 103, 116, 116] } },
+  { i: 3, foe: 'raigo', rank: ['ライバル', 'Rival'], stars: 4, place: ['ゴロタ浜', 'Boulder beach'], bg: 'iso_gorota', stage: 'wareme', cpuEgi: 5, brain: 3, rule: null,
+    deck: { squid: [13, 13, 33, 33, 24, 24, 27, 27, 3, 3, 8, 8, 10, 17], tech: [54, 54, 57, 58, 82, 82, 74, 80, 65, 65, 91], trap: [99, 99, 104, 113, 113] } },
+  { i: 4, foe: 'tsume', rank: ['エリート', 'Elite'], stars: 4, place: ['岩の割れ目', 'Rock crevice'], bg: 'iso_wareme', stage: 'wareme', cpuEgi: 5, brain: 3, rule: 'crevice',
+    deck: { squid: [40, 40, 16, 16, 28, 28, 29, 29, 6, 6, 18, 18, 35], tech: [51, 51, 77, 77, 65, 79, 83, 83, 62, 62, 66], trap: [109, 109, 106, 106, 117, 117] } },
+  { i: 5, foe: 'haru', rank: ['エリート', 'Elite'], stars: 4, place: ['磯の藻場', 'Seaweed bed'], bg: 'iso_moba', stage: 'moba', cpuEgi: 5, brain: 3, rule: 'moba',
+    deck: { squid: [14, 14, 48, 48, 17, 17, 30, 30, 11, 11, 3, 3, 47, 32], tech: [54, 54, 56, 56, 73, 73, 81, 81, 87, 89, 60], trap: [105, 105, 111, 111, 96] } },
+  { i: 6, foe: 'hirobi', rank: ['エリート', 'Elite'], stars: 4, place: ['夜の磯', 'Rocky shore at night'], bg: 'iso_yoru', stage: 'iso_yoru', cpuEgi: 5, brain: 3, rule: 'night',
+    deck: { squid: [32, 32, 41, 41, 39, 39, 43, 43, 36, 36, 30, 30, 19], tech: [54, 54, 76, 76, 85, 81, 81, 56, 56, 60, 60, 86], trap: [105, 105, 107, 107, 96] } },
+  { i: 7, foe: 'kouji', rank: ['修行', 'Training'], stars: 5, place: ['夜の修行場', 'Training rocks at night'], bg: 'iso_yoru', stage: 'iso_yoru', cpuEgi: 5, brain: 3, rule: null,
+    deck: { squid: [3, 3, 21, 21, 11, 11, 17, 17, 14, 14, 33, 33, 19], tech: [54, 54, 73, 73, 81, 81, 87, 60, 60, 89, 93], trap: [96, 105, 105, 111, 115, 115] } },
+  { i: 8, foe: 'raigo', rank: ['ライバル', 'Rival'], stars: 5, place: ['嵐の前の磯', 'Before the storm'], bg: 'iso_arashi', stage: 'arashi', cpuEgi: 5, brain: 3, rule: 'rough',
+    deck: { squid: [13, 13, 33, 33, 17, 17, 24, 24, 27, 27, 44, 19, 10, 10], tech: [54, 54, 82, 82, 74, 80, 57, 58, 91, 93, 65], trap: [99, 99, 104, 110, 113] } },
+  { i: 9, foe: 'iwao', rank: ['磯の主・最終試験', 'Shore master exam'], stars: 5, place: ['嵐の磯', 'Storm on the rocks'], bg: 'iso_arashi', stage: 'arashi', cpuEgi: 5, brain: 3, rule: 'stormExam',
+    deck: { squid: [17, 17, 33, 33, 19, 19, 3, 3, 21, 21, 11, 11, 46], tech: [54, 54, 73, 73, 81, 81, 89, 89, 93, 87, 56], trap: [105, 105, 111, 111, 115, 115] } },
+];
+// 章ごとの戦の一覧
+export const BATTLES_BY_CH = { 1: BATTLES_CH1, 2: BATTLES_CH2 };
 export const deckNos = (d) => [...d.squid, ...d.tech, ...d.trap];
 
 // 場のルールの説明（対戦の前の会話の後に1枚出す）
@@ -57,4 +87,10 @@ export const RULE_TEXT = {
   summerNight: { title: ['場のルール：夏の夜', 'Field: Summer night'], body: ['太陽マークのテクニックは潮1安い（おたがい）', 'Sun techniques cost 1 less tide (both sides)'] },
   rough: { title: ['場のルール：荒れた天候', 'Field: Rough weather'], body: ['後列に4枚まで伏せられる（おたがい）', 'Up to 4 cards in the back row (both sides)'] },
   exam: { title: ['場のルール：昇格試験', 'Field: Exam'], body: ['試験官が先攻', 'The examiner goes first'] },
+  // 第2章（2026-10-15）
+  sarashi: { title: ['場のルール：白波', 'Field: Whitewater'], body: ['太陽マークのイカは攻撃+1（おたがい）', 'Sun squids get +1 ATK (both sides)'] },
+  tidepool: { title: ['場のルール：潮だまり', 'Field: Tide pool'], body: ['太陽マークのテクニックは潮1安い（おたがい）', 'Sun techniques cost 1 less tide (both sides)'] },
+  crevice: { title: ['場のルール：岩の割れ目', 'Field: Crevice'], body: ['後列に4枚まで伏せられる（おたがい）', 'Up to 4 cards in the back row (both sides)'] },
+  moba: { title: ['場のルール：藻場', 'Field: Seaweed bed'], body: ['波マークのイカは防御+1（おたがい）', 'Wave squids get +1 DEF (both sides)'] },
+  stormExam: { title: ['場のルール：嵐の試験', 'Field: Storm exam'], body: ['試験官が先攻・後列に4枚まで伏せられる（おたがい）', 'The examiner goes first; up to 4 back-row cards (both sides)'] },
 };

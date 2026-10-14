@@ -194,3 +194,61 @@ test('攻撃＝防御は「互角」（「バラシ」はカードの説明ど�
   assert.ok(src.includes("'互角！ どちらも残った'"));
   assert.ok(!src.includes("'バラシ！ どちらも残った'"));
 });
+
+// 第2章「磯・エリート昇格編」（2026-10-15）：デッキ・絵・台本がそろっている／新しい場のルールが効く
+import { BATTLES_CH2, BATTLES_BY_CH, RULE_TEXT } from '../src/js/ikabu/games/story-data.js';
+import { SCRIPT_CH2, PROLOGUE_CH2, EPILOGUE_CH2, SCRIPTS } from '../src/js/ikabu/games/story-script.js';
+test('第2章：9人の相手のデッキが規則どおりで、立ち絵・背景・盤面・台本がそろっている', () => {
+  assert.equal(BATTLES_CH2.length, 9);
+  assert.equal(CHAPTERS[1].count, 9);
+  assert.equal(BATTLES_BY_CH[2], BATTLES_CH2);
+  assert.equal(SCRIPTS[2].script, SCRIPT_CH2);
+  for (const b of BATTLES_CH2) {
+    const r = checkDeck(deckNos(b.deck), CARDS);
+    assert.deepEqual(r, { ok: true, errors: [] }, `第${b.i}戦 ${b.foe}: ${r.errors.join('／')}`);
+    assert.ok(CHARS[b.foe], b.foe);
+    assert.ok(SCRIPT_CH2[b.i]?.before?.length && SCRIPT_CH2[b.i].win?.length && SCRIPT_CH2[b.i].lose?.length && SCRIPT_CH2[b.i].hint?.length, `第${b.i}戦の台本`);
+    for (const f of ['normal', 'attack', 'lose']) assert.ok(existsSync(new URL(`../public/assets/ikabu/story/chars/${b.foe}_${f}.webp`, import.meta.url)), `${b.foe}_${f}`);
+    assert.ok(existsSync(new URL(`../public/assets/ikabu/story/bg/${b.bg}.webp`, import.meta.url)), b.bg);
+    assert.ok(existsSync(new URL(`../public/assets/ikabu/story/stage/${b.stage}.webp`, import.meta.url)), b.stage);
+    if (b.rule) assert.ok(RULE_TEXT[b.rule], `場のルールの説明 ${b.rule}`);
+  }
+  assert.ok(existsSync(new URL('../public/assets/ikabu/story/bg/iso_yoake.webp', import.meta.url)), 'エピローグの背景');
+  for (const line of [...PROLOGUE_CH2, ...EPILOGUE_CH2, ...Object.values(SCRIPT_CH2).flatMap((x) => [...x.before, ...x.win, ...x.lose, ...x.hint])]) {
+    assert.ok(CHARS[line.who], line.who);
+    assert.ok(!/\{(?!name\})/.test(line.text), line.text);
+  }
+});
+test('第2章は第1章を全部勝つと開く（それまでは第1章だけ）', () => {
+  let s = emptyStory();
+  for (let i = 1; i <= 8; i++) s = recordWin(s, 1, i, { day: '2026-10-15' }).story;
+  assert.equal(chapterCleared(s, 1, 9), false);
+  s = recordWin(s, 1, 9, { day: '2026-10-15' }).story;
+  assert.equal(chapterCleared(s, 1, 9), true);
+  assert.equal(nextBattle(s, 2, 9), 1);
+  assert.equal(canPlay(s, 2, 2, 9), false);
+});
+test('第2章の場のルール：白波＝太陽のイカの攻撃+1、潮だまり＝太陽の技が潮-1、割れ目＝後列4、藻場＝波のイカの防御+1、嵐の試験＝相手が先攻・後列4', () => {
+  const sara = mk({ rule: 'sarashi' });
+  assert.equal(statOf(sara, onField(sara, 'cpu', 'ケンサキイカ'), 'atk'), 4);   // 太陽 3/3 → 4
+  assert.equal(statOf(sara, onField(sara, 'cpu', 'ヤリイカ', 1), 'atk'), 4);   // 星 4/1 はそのまま
+  const pool = mk({ rule: 'tidepool' });
+  assert.equal(costOf(pool, 'me', give(pool, 'me', 'ダート')), 0);
+  assert.equal(costOf(pool, 'me', give(pool, 'me', 'しゃくり')), 1);
+  assert.equal(mk({ rule: 'crevice' }).players.cpu.back.length, 4);
+  const moba = mk({ rule: 'moba' });
+  assert.equal(statOf(moba, onField(moba, 'cpu', 'ハリイカ'), 'def'), 4);   // 波 3/3（効果なし） → 防御4
+  assert.equal(statOf(moba, onField(moba, 'cpu', 'ケンサキイカ', 1), 'def'), 3);
+  const storm = mk({ rule: 'stormExam', first: 'me' });
+  assert.equal(storm.first, 'cpu'); assert.equal(storm.players.me.back.length, 4);
+});
+import { markChapterCleared } from '../src/js/ikabu/games/story.js';
+test('試遊版だけ：第1章をクリアしたことにすると第2章が開き、🎫の印は付かない。もう勝っていた戦の日付はそのまま', () => {
+  let s = recordWin(emptyStory(), 1, 3, { day: '2026-10-01' }).story;
+  s = markChapterCleared(s, 1, 9, { day: '2026-10-15' });
+  assert.equal(chapterCleared(s, 1, 9), true);
+  assert.equal(s.cleared['ch1-3'], '2026-10-01');
+  assert.equal(s.cleared['ch1-9'], '2026-10-15');
+  assert.deepEqual(Object.keys(s.tickets), ['ch1-3']);
+  assert.equal(nextBattle(s, 2, 9), 1);
+});

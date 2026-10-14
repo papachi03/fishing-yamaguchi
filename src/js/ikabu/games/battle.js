@@ -91,6 +91,8 @@ const player = (nos, byNo, rnd, { egi = EGI, back = BACK } = {}) => {
 //   night：星のイカの攻撃+1 ／ summerNight：太陽のテクニックが潮1安い ／ rough：後列の枠が4 ／ exam：相手（cpu）が先攻
 export const FIELD_RULES = {
   night: { back: BACK }, summerNight: { back: BACK }, rough: { back: 4 }, exam: { back: BACK, first: 'cpu' },
+  // 第2章（2026-10-15）：白波＝太陽のイカの攻撃+1／潮だまり＝太陽の技が潮-1／割れ目＝後列4／藻場＝波のイカの防御+1／嵐の試験＝相手が先攻＋後列4
+  sarashi: { back: BACK }, tidepool: { back: BACK }, crevice: { back: 4 }, moba: { back: BACK }, stormExam: { back: 4, first: 'cpu' },
 };
 export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = `${Date.now()}`, cpuEgi = EGI, rule = null }) {
   const byNo = new Map(cards.map((c) => [c.no, c]));
@@ -177,6 +179,8 @@ export function statOf(st, x, stat) {
   if (stat === 'def' && passive(st, x, 'defOnEnemyTurn') && ownerOf(st, x) !== st.active) v += effectsOf(st, x.no).find((e) => e.do === 'defOnEnemyTurn').n;
   if (stat === 'atk' && x.flags.zeroAtk) return 0;
   if (stat === 'atk' && st.rule === 'night' && markOf(x) === 'star') v += 1;   // 場のルール「夜」
+  if (stat === 'atk' && st.rule === 'sarashi' && markOf(x) === 'sun' && x.card.kind === 'squid') v += 1;   // 場のルール「白波」
+  if (stat === 'def' && st.rule === 'moba' && markOf(x) === 'wave' && x.card.kind === 'squid') v += 1;   // 場のルール「藻場」
   return Math.max(0, v);
 }
 export const ownerOf = (st, x) => (P(st, 'me').front.includes(x) || P(st, 'me').back.includes(x) || P(st, 'me').hand.includes(x) ? 'me' : 'cpu');
@@ -192,7 +196,7 @@ export function costOf(st, side, x) {
   let c = x.card.cost;
   if (x.card.kind === 'tech') {
     if (p.front.some((f) => f && markOf(f) === x.card.mark)) c -= 1;   // 同じマークのイカがいると潮1安い（イカのマークはカラーチェンジで変わる）
-    if (st.rule === 'summerNight' && x.card.mark === 'sun') c -= 1;   // 場のルール「夏の夜」
+    if ((st.rule === 'summerNight' || st.rule === 'tidepool') && x.card.mark === 'sun') c -= 1;   // 場のルール「夏の夜」「潮だまり」
     for (const f of p.front) if (f) for (const e of effectsOf(st, f.no)) if (e.when === 'passive' && e.do === 'techCheaper' && (e.only === 'all' || (e.only === 'night' && isNight(x.card)))) { c -= e.n; break; }
   }
   return Math.max(0, c);
