@@ -3257,6 +3257,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* ---------- 釣り人キャラの一覧（2026-10-02）：舞台の釣り人をタップで開く ---------- */
 .ika-egi-anglerpop { position: absolute; z-index: 6; left: 50%; top: 10px; transform: translateX(-50%); width: min(460px, 94%); max-height: calc(100% - 20px); overflow: auto; overscroll-behavior: contain; display: grid; gap: 8px; padding: 12px 14px; background: var(--ika-white); border: 3px solid var(--ika-sea); border-radius: 14px; box-shadow: 4px 4px 0 var(--ika-sea); cursor: auto; }
 .ika-egi-anglerpop[hidden] { display: none; }
+.ika-egi-anglerpop { touch-action: pan-y; -webkit-overflow-scrolling: touch; }   /* 舞台は touch-action: none。一覧の中だけ指で上下に動かせるように（2026-10-15 部員の指摘） */
 .ika-egi-anglerpop .ika-egi-colorpop-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .ika-egi-anglerpop .ika-egi-colorpop-title small { font-weight: 700; font-size: 12px; color: var(--ika-orange-deep); }
 .ika-egi-ang-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

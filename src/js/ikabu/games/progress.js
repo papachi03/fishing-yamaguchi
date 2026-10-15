@@ -29,6 +29,15 @@ export function levelOf(points = 0) {
 }
 
 // 1杯のポイント
+// 遊び方ごとの経験値の倍率（2026-10-15 ぱっぱ）：今日の萩の海＝1倍、今日の萩の海のハード（海の中が見えない）＝1.5倍、
+//   季節モードのアタリチャレンジ＝0.3倍（経験値だけ。図鑑・自己ベストには入らない）、それ以外の練習＝0
+export const POINT_RATE = { live: 1, hard: 1.5, blindPractice: 0.3 };
+export function pointRate({ mode, blind = false } = {}) {
+  if (mode === 'live') return blind ? POINT_RATE.hard : POINT_RATE.live;
+  if (mode === 'practice' && blind) return POINT_RATE.blindPractice;
+  return 0;
+}
+export const ratedPoints = (n, rate) => Math.round(n * rate);
 export const catchPoints = (c, { fresh = false } = {}) => POINTS.catch + Math.floor((c.weight ?? 0) / 100) * POINTS.per100g + (fresh ? POINTS.fresh : 0);
 
 // 釣り方。months＝リアルタイムで使える月、seasons＝季節モードで使える季節（egi.js の SEASON_MODES の key）。
