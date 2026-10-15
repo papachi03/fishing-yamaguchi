@@ -286,6 +286,12 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-btn ika-egi-playimg" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/season.webp')}" alt="" width="900" height="212" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playPractice)}</b><small>${t(lang, T.live.playPracticeSub)}</small></button>
         <button type="button" class="ika-btn ika-egi-playimg ika-egi-play-blind" id="ika-egi-play-blind"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/blind.webp')}" alt="" width="900" height="311" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playBlind)}</b><small>${t(lang, T.live.playBlindSub)}</small></button>
       </div>
+      <!-- 今日の萩の海の遊び方：ふつう／ハード（海の中が見えない・経験値1.5倍）。今日の萩の海を選んでいる時だけ出す（2026-10-15 ぱっぱ） -->
+      <div class="ika-egi-hard" id="ika-egi-hard" hidden>
+        <p class="ika-egi-setup-label">${t(lang, T.live.hardLabel)}</p>
+        <div class="ika-chips" role="group" aria-label="${t(lang, T.live.hardLabel)}"><button type="button" class="ika-chip" data-hard="0" aria-pressed="true">${t(lang, T.live.hardNormal)}</button><button type="button" class="ika-chip" data-hard="1" aria-pressed="false">${t(lang, T.live.hardOn)}</button></div>
+        <p class="ika-egi-cue-note">${t(lang, T.live.hardNote)}</p>
+      </div>
       <!-- 季節を選んで遊ぶ：ボタンのすぐ下に開く（2026-09-29 ぱっぱ） -->
       <div class="ika-egi-practice" id="ika-egi-practice" hidden>
         <p class="ika-egi-setup-label">${t(lang, T.seasons.title)}</p>

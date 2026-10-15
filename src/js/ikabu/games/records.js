@@ -1,7 +1,7 @@
 // あそび場の記録（このブラウザだけに残る）。localStorage は読めない・書けない環境があるので必ず try/catch で包む。
 // バッジの判定は純粋関数（node --test で試せる）。
 import { GOAL } from './match3.js';
-import { POINTS, catchPoints } from './progress.js';
+import { POINTS, catchPoints, ratedPoints } from './progress.js';
 
 export const KEY_EGI = 'ikabu.egi.v1';
 export const KEY_M3 = 'ikabu.sumi.v1';
@@ -176,7 +176,7 @@ const dayOf = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).pad
 
 // 釣り上げた1杯を、その場で記録に足す（2026-09-27：釣行の途中でページを閉じても消えないように）。
 // tripTotal＝この釣行でここまでに釣った合計（自己ベストもその場で更新）。初めての種なら fresh=true
-export function recordEgiCatch(rec, c, { counted = true, date = new Date(), tripTotal = c.weight } = {}) {
+export function recordEgiCatch(rec, c, { counted = true, date = new Date(), tripTotal = c.weight, rate = 1 } = {}) {   // rate：経験値の倍率（progress.js の pointRate）
   const r = rec ?? emptyEgi();
   if (!counted) return { rec: r, fresh: false, points: 0 };
   const fresh = !r.species[c.id];
@@ -188,13 +188,13 @@ export function recordEgiCatch(rec, c, { counted = true, date = new Date(), trip
   if (!r.bestOne || c.weight > r.bestOne.weight) r.bestOne = { id: c.id, weight: c.weight, mantle: c.mantle };
   if (c.nushi) { r.nushi = r.nushi ?? {}; r.nushi[c.id] = r.nushi[c.id] ?? dayOf(date); }
   r.best = Math.max(r.best, tripTotal);
-  const points = catchPoints(c, { fresh });
+  const points = ratedPoints(catchPoints(c, { fresh }), rate);
   r.points = (r.points ?? 0) + points;
   return { rec: r, fresh, points };
 }
 
 // 外道（カサゴ・海藻・長靴など）を1つ記録に足す。図鑑とは別。初めてなら fresh=true
-export function recordGedo(rec, g, { counted = true, date = new Date() } = {}) {
+export function recordGedo(rec, g, { counted = true, date = new Date(), rate = 1 } = {}) {
   const r = rec ?? emptyEgi();
   if (!counted) return { rec: r, fresh: false, points: 0 };
   r.gedo = r.gedo ?? {};
@@ -202,19 +202,28 @@ export function recordGedo(rec, g, { counted = true, date = new Date() } = {}) {
   if (fresh) r.gedo[g.id] = { count: 0, weight: 0, first: dayOf(date) };
   r.gedo[g.id].count += 1;
   r.gedo[g.id].weight = Math.max(r.gedo[g.id].weight, g.weight ?? 0);
-  r.points = (r.points ?? 0) + POINTS.gedo;
-  return { rec: r, fresh, points: POINTS.gedo };
+  const points = ratedPoints(POINTS.gedo, rate);
+  r.points = (r.points ?? 0) + points;
+  return { rec: r, fresh, points };
 }
 
 // 釣行を終えた（釣果は1杯ずつ記録済み）：釣行の数と自己ベストだけ
-export function recordEgiTrip(rec, catches, { counted = true } = {}) {
+export function recordEgiTrip(rec, catches, { counted = true, rate = 1 } = {}) {
   const r = rec ?? emptyEgi();
   const total = catches.reduce((sum, c) => sum + c.weight, 0);
   if (!counted) return { rec: r, total, counted: false, points: 0 };
   r.sessions += 1;
   r.best = Math.max(r.best, total);
-  r.points = (r.points ?? 0) + POINTS.trip;   // 最後まで釣った（ボウズでも）
-  return { rec: r, total, counted: true, points: POINTS.trip };
+  const points = ratedPoints(POINTS.trip, rate);
+  r.points = (r.points ?? 0) + points;   // 最後まで釣った（ボウズでも）
+  return { rec: r, total, counted: true, points };
+}
+
+// 経験値だけ足す（季節モードのアタリチャレンジ：図鑑・自己ベスト・釣行の数には入れない。2026-10-15 ぱっぱ）
+export function addEgiPoints(rec, n) {
+  const r = rec ?? emptyEgi();
+  r.points = (r.points ?? 0) + Math.max(0, Math.round(n));
+  return r;
 }
 
 // 1釣行の結果（catches = [{ id, weight, mantle }]）を記録に足す。初めて釣った種の id を返す。
