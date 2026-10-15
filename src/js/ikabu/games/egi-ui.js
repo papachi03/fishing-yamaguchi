@@ -1971,6 +1971,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   };
   const onDown = (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (el.anglerPop && !el.anglerPop.hidden && e.target.closest?.('.ika-egi-anglerpop')) return;   // キャラ一覧の中は一覧が受け持つ（2026-10-15）
     if (s?.method === 'tailor' && s.phase === 'tailor' && !e.target.closest?.('.ika-egi-btn, .ika-egi-tailorbtns, a, details, .ika-egi-fullbtn, .ika-egi-bgmbtn')) {
       const svg = sc?.svg;
       const m = svg?.getScreenCTM?.();
@@ -2067,7 +2068,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 色選びの窓（.ika-egi-colorpop）は除く：touchstart を止めるとスマホでは click が起きず、色のボタンが押せなくなる（ぱっぱ指摘 2026-09-25）
   // 結果・まとめのカード（.ika-egi-card）の中も除く：止めると指でカードの中をスクロールできず、下のボタンに届かない（ぱっぱ指摘 2026-09-25）
   // 全画面ボタン（.ika-egi-fullbtn）も除く：止めると指で押した時に click が起きず、全画面・横画面モードに入れなかった（2026-09-27）
-  const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) e.preventDefault(); };
+  // 2026-10-15 部員の指摘：スマホでキャラ一覧の中が押せない・動かせない → 一覧の窓（.ika-egi-anglerpop）も除外に入れた
+  const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-anglerpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) e.preventDefault(); };
   for (const node of [el.btn, el.dartBtn, el.stage]) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());
