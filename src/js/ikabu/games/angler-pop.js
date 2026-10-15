@@ -2,7 +2,7 @@
 //   ・キャラを🎫10で入手・使う（前からの動き）
 //   ・持っているキャラの下に色の丸（元の色・ピンク・ミント・むらさき）。持っている色はタップで着替え、持っていない色は🎫5で入手
 //   見た目は ikabu.css の .ika-egi-anglerpop / .ika-egi-ang / .ika-ang-cols
-import { ANGLERS, COLORS, COLOR_COST, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler, buyColor, useColor, colorOf, ANGLERS_EVENT } from './anglers.js';
+import { ANGLERS, COLORS, COLOR_COST, anglerOf, readAnglers, writeAnglers, buyAngler, useAngler, buyColor, useColor, colorOf, lookOf, sexOf, useSex, FEMALE, SEX_ANGLER, ANGLERS_EVENT } from './anglers.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { EGI_TEXT } from './play-text.js';
 import { t, esc, assetHref } from '../i18n.js';
@@ -21,7 +21,15 @@ export function anglerPopHTML({ lang, title, note, ask, face }) {
       : ask === a.id ? `<button type="button" class="ika-chip ika-egi-ang-yes" data-ang-buy="${a.id}">${T.confirm(lang, a.cost)}</button>`
       : `<button type="button" class="ika-chip" data-ang-ask="${a.id}"${have < a.cost ? ' aria-disabled="true"' : ''} aria-label="${esc(t(lang, T.names[a.id]))} ${T.buy(lang, a.cost)}">${T.buy(lang, a.cost)}</button>`;
     let cols = '';
-    if (owned) {
+    // 部長：オス／メスの切り替え（2026-10-16 ぱっぱ：最初から無料。色違いはオスだけなので、メスの時は色の丸を出さない）
+    const female = a.id === SEX_ANGLER && sexOf(rec) === FEMALE;
+    if (a.id === SEX_ANGLER) {
+      cols += `<div class="ika-ang-sex" role="group" aria-label="${esc(t(lang, T.sexLabel))}">${['', FEMALE].map((s) => {
+        const on = cur && (s === FEMALE) === female;
+        return `<button type="button" class="ika-ang-sexbtn${on ? ' is-on' : ''}" data-sex="${s}" aria-pressed="${on}">${esc(t(lang, s ? T.sexF : T.sexM))}</button>`;
+      }).join('')}</div>`;
+    }
+    if (owned && !female) {
       const dots = ['', ...COLORS].map((c) => {
         const mine = c === '' || rec.colors[a.id]?.includes(c);
         const on = mine && col === c;
@@ -30,9 +38,9 @@ export function anglerPopHTML({ lang, title, note, ask, face }) {
         if (!mine && ask === key) return `<button type="button" class="ika-ang-colbuy" data-col-buy="${key}">${T.colorBuy(lang, COLOR_COST)}</button>`;
         return `<button type="button" class="ika-ang-col${on ? ' is-on' : ''}${mine ? '' : ' is-locked'}" style="--c:${SWATCH[c]}" data-col-${mine ? 'use' : 'ask'}="${key}" aria-pressed="${on}" aria-label="${name}${mine ? '' : ` 🎫${COLOR_COST}`}">${mine ? '' : '<i>🎫</i>'}</button>`;
       }).join('');
-      cols = `<div class="ika-ang-cols">${dots}</div>`;
+      cols += `<div class="ika-ang-cols">${dots}</div>`;
     }
-    return `<div class="ika-egi-ang${cur ? ' is-cur' : ''}${owned ? '' : ' is-locked'}"><img src="${assetHref(face(a.id, owned ? col : ''))}" alt="" width="64" height="64" decoding="async"><b>${esc(t(lang, T.names[a.id]))}</b>${btn}${cols}</div>`;
+    return `<div class="ika-egi-ang${cur ? ' is-cur' : ''}${owned ? '' : ' is-locked'}"><img src="${assetHref(face(a.id, owned ? lookOf(rec, a.id) : ''))}" alt="" width="64" height="64" decoding="async"><b>${esc(t(lang, T.names[a.id]))}</b>${btn}${cols}</div>`;
   }).join('');
   return `<p class="ika-egi-colorpop-title">${title}<small>${T.have(lang, have)}</small></p><div class="ika-egi-ang-grid">${cards}</div><p class="ika-egi-colorpop-why">${note}</p><button type="button" class="ika-btn ika-egi-ang-close">${t(lang, T.close)}</button>`;
 }
@@ -42,6 +50,8 @@ export function anglerPopClick(e, { lang, ask, callout }) {
   if (e.target.closest('.ika-egi-ang-close')) return { close: true, ask: null };
   const fire = () => dispatchEvent(new CustomEvent(ANGLERS_EVENT));
   const tk = () => dispatchEvent(new CustomEvent('ikabu:tickets', { detail: { got: 0, why: [] } }));
+  const sexBtn = e.target.closest('[data-sex]');
+  if (sexBtn) { const r = useSex(readAnglers(), sexBtn.dataset.sex); if (r.ok) { writeAnglers(r.rec); fire(); } return { ask: null, changed: r.ok }; }
   const use = e.target.closest('[data-ang-use]');
   if (use) { const r = useAngler(readAnglers(), use.dataset.angUse); if (r.ok) { writeAnglers(r.rec); fire(); } return { ask: null, changed: r.ok }; }
   const aAsk = e.target.closest('[data-ang-ask]');

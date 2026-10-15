@@ -149,6 +149,10 @@ export const EGI_TEXT = {
     colors: { orig: pair('元の色', 'Original'), pink: pair('ピンク', 'Pink'), mint: pair('ミント', 'Mint'), purple: pair('むらさき', 'Purple') },
     colorBuy: (lang, n) => (lang === 'en' ? `Get 🎫${n}` : `🎫${n}で入手`),
     colorGot: (lang, name, color) => (lang === 'en' ? `${name} (${color}) unlocked!` : `${name}の${color}を手に入れた！`),
+    // 部長のオス／メス（2026-10-16 ぱっぱ：最初から無料で切り替え）
+    sexLabel: pair('部長の見た目', "Captain's look"),
+    sexM: pair('オス', 'Male'),
+    sexF: pair('メス', 'Female'),
     tap: pair('釣り人をタップでキャラを選べる', 'Tap the angler to change character'),
     close: pair('閉じる', 'Close'),
   },

@@ -10,7 +10,7 @@ import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { utcDay } from './rng.js';
 import { tileImg, tileSymbol, tileSrc } from './marks.js';
 import { M3_TEXT as TX, MARKS, RARE_NAME } from './play-text.js';
-import { readAnglers, rushFaceSrc, colorOf as anglerColorOf, ANGLERS_EVENT } from './anglers.js';   // colorOf は match3.js（マークの色）と名前が重なるので付け替え
+import { readAnglers, rushFaceSrc, lookOf as anglerLookOf, ANGLERS_EVENT } from './anglers.js';   // colorOf は match3.js（マークの色）と名前が重なるので付け替え
 import { anglerPopHTML, anglerPopClick } from './angler-pop.js';
 import { recordM3, recordRush, backfillRush, emptyM3, KEY_M3, readRecord, writeRecord } from './records.js';
 import { t, assetHref } from '../i18n.js';
@@ -402,7 +402,7 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
   /* ---------- 墨のがれ：イカの表情・次の墨・墨メーター（2026-09-29） ---------- */
   // 焦り専用の表情（2026-09-29 ChatGPTで描いた rush-*.webp。汗・涙は絵に描き込み済み）
   // 2026-10-13 キャラはエギングと共通（anglers.js）。表情の絵は rushFaceSrc がキャラごとに返す（色違いも）
-  function lookFace(mood) { const rec = readAnglers(); return rushFaceSrc(rec.current, mood, anglerColorOf(rec, rec.current)); }   // 今のキャラ・色の表情
+  function lookFace(mood) { const rec = readAnglers(); return rushFaceSrc(rec.current, mood, anglerLookOf(rec, rec.current)); }   // 今のキャラ・色の表情
   function setMood(m, { say = true } = {}) {
     if (!el.squid) return;
     el.squid.dataset.mood = m;

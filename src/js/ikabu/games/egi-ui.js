@@ -34,7 +34,7 @@ import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
-import { ANGLER_BASE_H, anglerOf, readAnglers, anglerSrc, anglerJet, colorOf, ANGLERS_EVENT } from './anglers.js';
+import { ANGLER_BASE_H, anglerOf, readAnglers, anglerSrc, anglerJet, lookOf, ANGLERS_EVENT } from './anglers.js';
 import { anglerPopHTML, anglerPopClick } from './angler-pop.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
@@ -724,7 +724,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   /* ---------- 釣り人キャラ（2026-10-02）：一覧・🎫で入手・使う。2026-10-13〜 色違いと、一覧の中身は angler-pop.js（墨のがれと共通） ---------- */
   let anglerRec = readAnglers();
   let anglerAsk = null;   // 🎫を使う前の「入手する？」を出しているもの（'aori' や 'aori:pink'）
-  const curColor = () => colorOf(anglerRec, anglerRec.current);
+  const curColor = () => lookOf(anglerRec, anglerRec.current);   // 色、部長がメスなら 'f'（2026-10-16）
   function paintAngler() {
     const im = sc?.svg?.querySelector('.ika-eg-angler');
     if (!im) return;
