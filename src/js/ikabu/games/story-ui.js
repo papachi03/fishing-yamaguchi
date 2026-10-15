@@ -75,6 +75,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
   const close = () => { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); onClose?.(); };
 
   function list() {
+    document.documentElement.classList.add('is-battle');   // 対戦から戻った時も、サイトの帯を隠したままに（念のため）
     story = readStory();
     const hero = heroName(story);
     const ch1 = CHAPTERS[0];
