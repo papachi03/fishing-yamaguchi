@@ -1678,7 +1678,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (baitLow) html += `<p class="ika-egi-card-note ika-egi-card-bait">${t(lang, TX.bait.low)} <button type="button" class="ika-chip" data-rebait>${t(lang, TX.bait.rebait)}</button></p>`;
     // シェア（2026-09-27）：釣れた時だけ。2026-10-10 正式公開で、エギング単体ページ（あそび場の入口）にも出す（ぱっぱ）
     const canShare = why === 'landed';
-    if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id) };
+    if (canShare) lastShare = { kind: 'catch', c: s.catches[s.catches.length - 1], first: firstSpecies.includes(s.catches[s.catches.length - 1].id), method: s.method, aji: s.aji, bait: s.bait };   // 釣り方は釣れた時点のものを覚える（シェア画像の道具の行）
     el.card.innerHTML = `${html}<p class="ika-egi-card-cond">${esc(condLine())}</p><div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-next>${t(lang, s.method === 'tailor' ? TX.tailor.btn.back : TX.btn.result)}</button>${s.method === 'yaen' || s.method === 'tailor' ? '' : `<button type="button" class="ika-btn ika-egi-card-btn" data-egi>${t(lang, TX.egi.change)}</button>`}${canShare ? shareButtonHTML(lang) : ''}</div>`;
     syncEgiPick();
     el.card.className = 'ika-egi-card';
@@ -1903,7 +1903,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       const name = speciesName(lang, c.id);
       const eg = settings.egi;
       const data = { ...common, speciesId: c.id, speciesName: name, mantleCm: c.mantle, weightG: c.weight, firstCatch: first && !practice,
-        egi: { size: t(lang, `${eg.size}号`, `#${eg.size}`), colorName: t(lang, TX.egi.colors[eg.color]), colorHex: EGI_COLOR_HEX[eg.color] } };
+        egi: { size: t(lang, `${eg.size}号`, `#${eg.size}`), colorName: t(lang, TX.egi.colors[eg.color]), colorHex: EGI_COLOR_HEX[eg.color] },
+        method: lastShare.method ?? 'egi', ajiName: t(lang, lastShare.aji === 'live' ? TX.yaen.ajiLive : TX.yaen.ajiDead), baitName: TX.bait.names[lastShare.bait] ? t(lang, TX.bait.names[lastShare.bait]) : '' };
       text = egiCatchText(lang, { name, weightG: c.weight, practice, blind: Boolean(settings.blind) });
       draw = async () => (await import('./share-card.js')).drawEgiCatchCard(data, opts);
     } else {

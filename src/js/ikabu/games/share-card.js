@@ -34,6 +34,17 @@ const F = {
 };
 
 /* ---- 文言（ja / en） ------------------------------------------------- */
+// 釣った道具の書き方（2026-10-15 部員の指摘：ヤエンで釣ったのに「エギ3.5号オレンジ」と出た）
+//   data.method：'egi'（ふつう）／'jado'（邪道＝エギ＋エサ）／'yaen'（アジ）／'tailor'（テーラー）。釣れた時点の釣り方を egi-ui.js が渡す
+//   戻り：{ label（ラベル）, line（1行）, short（半券用の短い行）, hex（エギの色。ヤエン・テーラーは null＝色の丸を描かない） }
+export function gearOfCatch(data, lang = 'ja') {
+  const s = T[lang] || T.ja;
+  const size = data.egi?.size ?? '', color = data.egi?.colorName ?? '', hex = data.egi?.colorHex ?? null;
+  if (data.method === 'yaen') return { label: s.yaen, line: `${s.yaen} ${data.ajiName ?? ''}`.trim(), short: data.ajiName ?? '', hex: null };
+  if (data.method === 'tailor') return { label: s.tailor, line: `${s.tailor} ${s.tailorFloat}`, short: s.tailorFloat, hex: null };
+  if (data.method === 'jado' && data.baitName) return { label: s.egiLabel, line: `${s.egi(size, color)}＋${data.baitName}`, short: `${size} ${color}＋${data.baitName}`, hex };
+  return { label: s.egiLabel, line: s.egi(size, color), short: `${size} ${color}`, hex };
+}
 const T = {
   ja: {
     gameEgi: 'しゃくって抱かせろ！', gameSumi: '墨つなぎ', club: '山口イカ部',
@@ -42,6 +53,7 @@ const T = {
     blind: 'アタリチャレンジ', blindWith: (s) => `アタリチャレンジ・${s}`, blindSub: '海の中を見ずに釣った', challenge: 'CHALLENGE',
     gameNote: 'ゲームの記録', mantle: (cm) => `胴長 ${cm}cm`, mantleLabel: '胴長',
     egi: (size, color) => `エギ ${size} ${color}`, egiLabel: 'エギ',
+    yaen: 'ヤエン', tailor: 'テーラー', tailorFloat: '電気ウキ',
     first: '初ゲット！', catchLabel: '釣果',
     trip: '今回の釣果', cups: (n) => `${n}杯`, cupUnit: '杯', biggest: '最大',
     bouzu: 'ボウズ…でも部員', motto: '釣れなくても部員', bouzuSub: '海に立った、それでいい。',
@@ -56,6 +68,7 @@ const T = {
     blind: 'Bite Challenge', blindWith: (s) => `Bite Challenge · ${s}`, blindSub: 'Caught without seeing below', challenge: 'CHALLENGE',
     gameNote: 'Game record', mantle: (cm) => `Mantle ${cm} cm`, mantleLabel: 'Mantle',
     egi: (size, color) => `Egi ${size} ${color}`, egiLabel: 'Egi',
+    yaen: 'Yaen', tailor: 'Tailor', tailorFloat: 'Glowing float',
     first: 'First catch!', catchLabel: 'Catch',
     trip: 'This trip', cups: (n) => `${n} squid`, cupUnit: n => (n === 1 ? 'squid' : 'squid'), biggest: 'Biggest',
     bouzu: 'Blank… still a member', motto: 'No catch, still a member', bouzuSub: 'You stood by the sea. That counts.',
@@ -392,7 +405,8 @@ export async function drawEgiCatchCard(data, { lang = 'ja', assetHref = (p) => p
   const [logo, squid] = await Promise.all([loadImage(P.logo), loadImage(P.squid(data.speciesId)), loadFonts(collectSample(data, s))]);
   const { c, ctx } = makeCanvas();
   const V = pickVariant(variant);
-  const egiLine = s.egi(data.egi?.size ?? '', data.egi?.colorName ?? '');
+  const gear = gearOfCatch(data, lang);   // 釣った道具（釣り方で変わる）
+  const egiLine = gear.line;
   const key = String(variant || 'A').toUpperCase();
 
   if (key === 'A') {
@@ -404,8 +418,8 @@ export async function drawEgiCatchCard(data, { lang = 'ja', assetHref = (p) => p
     const n = bigNumber(ctx, data.weightG, 'g', M - 4, 420, { size: 210, color: C.orangeLight, maxWidth: 640 });
     text(ctx, s.mantle(data.mantleCm), M, 470, { size: 40, weight: 700, family: F.maru, color: C.white, maxWidth: 400 });
     // エギ
-    chip(ctx, M + 18, 512, 16, data.egi?.colorHex);
-    text(ctx, egiLine, M + 48, 523, { size: 30, weight: 700, family: F.maru, color: C.white, maxWidth: 560 });
+    if (gear.hex) chip(ctx, M + 18, 512, 16, gear.hex);
+    text(ctx, egiLine, gear.hex ? M + 48 : M, 523, { size: 30, weight: 700, family: F.maru, color: C.white, maxWidth: 560 });
     V.footer(ctx, s, logo, data.dateLabel);
     // 右：白いステッカーにイカ＋ロゴ
     V.sticker(ctx, 740, 60, 400, 510, 0.035, () => {
@@ -426,9 +440,9 @@ export async function drawEgiCatchCard(data, { lang = 'ja', assetHref = (p) => p
     text(ctx, s.mantleLabel, tx + 30, ty + 268, { size: 20, weight: 700, family: F.text, color: C.inkSoft });
     bigNumber(ctx, data.mantleCm, 'cm', tx + 28, ty + 340, { size: 84, color: C.sea, maxWidth: 300 });
     // エギ
-    text(ctx, s.egiLabel, tx + 30, ty + 386, { size: 20, weight: 700, family: F.text, color: C.inkSoft });
-    chip(ctx, tx + 48, ty + 418, 16, data.egi?.colorHex, C.mist);
-    text(ctx, `${data.egi?.size ?? ''} ${data.egi?.colorName ?? ''}`, tx + 76, ty + 428, { size: 28, weight: 700, family: F.maru, color: C.ink, maxWidth: stub - tx - 110 });
+    text(ctx, gear.label, tx + 30, ty + 386, { size: 20, weight: 700, family: F.text, color: C.inkSoft });
+    if (gear.hex) chip(ctx, tx + 48, ty + 418, 16, gear.hex, C.mist);
+    text(ctx, gear.short, gear.hex ? tx + 76 : tx + 30, ty + 428, { size: 28, weight: 700, family: F.maru, color: C.ink, maxWidth: stub - tx - 110 });
     text(ctx, s.site, tx + 30, ty + th - 28, { size: 18, weight: 500, family: F.text, color: C.inkSoft });
     if (data.firstCatch) pill(ctx, s.first, tx + 30, ty + 448, { bg: C.orange, fg: C.ink, size: 26, weight: 900, h: 52, rotate: -0.06 });
     // 本券（右）
@@ -451,8 +465,8 @@ export async function drawEgiCatchCard(data, { lang = 'ja', assetHref = (p) => p
     text(ctx, data.speciesName, M, 300, { size: 56, weight: 900, family: F.maru, color: C.white, maxWidth: 560 });
     bigNumber(ctx, data.weightG, 'g', M - 6, 468, { size: 200, color: C.white, maxWidth: 580 });
     text(ctx, s.mantle(data.mantleCm), M, 520, { size: 36, weight: 700, family: F.maru, color: C.orangeLight, maxWidth: 400 });
-    chip(ctx, M + 16, 562, 14, data.egi?.colorHex);
-    text(ctx, egiLine, M + 42, 572, { size: 28, weight: 700, family: F.maru, color: C.white, maxWidth: 500 });
+    if (gear.hex) chip(ctx, M + 16, 562, 14, gear.hex);
+    text(ctx, egiLine, gear.hex ? M + 42 : M, 572, { size: 28, weight: 700, family: F.maru, color: C.white, maxWidth: 500 });
     V.logoPlate(ctx, logo, s.site);
     if (data.firstCatch) pill(ctx, s.first, 760, 440, { bg: C.orange, fg: C.ink, size: 30, weight: 900, h: 60, rotate: -0.1, border: C.white, align: 'center' });
   }
