@@ -10,7 +10,7 @@
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
 import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE, canJadoLift } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS, pointRate, catchPoints, ratedPoints, POINTS } from './progress.js';
-import { createEgi, press, release, tick, dart, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
+import { createEgi, press, release, tick, dart, reelIn, canReelIn, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
@@ -91,7 +91,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), playBlind: q('ika-egi-play-blind'), playIso: q('ika-egi-play-isoba'), isoBox: q('ika-egi-iso'), hard: q('ika-egi-hard'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'), depthPick: q('ika-egi-depthpick'), depthNote: q('ika-egi-depth-note'),
-    cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
+    cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'), reelInBtn: q('ika-egi-reelin'),
     catches: q('ika-egi-catches'), records: q('ika-egi-records'), seasons: q('ika-egi-seasons'),
     zukanGrid: q('ika-egi-zukan-grid'), zukanCount: q('ika-egi-zukan-count'), zukanDetail: q('ika-egi-zukan-detail'),
     pickColor: q('ika-egi-color'), colorTip: q('ika-egi-colortip'), colorPop: q('ika-egi-colorpop'), colorPopChips: q('ika-egi-colorpop-chips'), colorPopWhy: q('ika-egi-colorpop-why'),
@@ -494,6 +494,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     { const n0 = tailor ? TAILOR_BAITS : CASTS;
       if (el.casts.children.length !== n0) el.casts.innerHTML = Array.from({ length: n0 }, () => '<i></i>').join(''); }
     el.dartBtn.hidden = tailor;   // 邪道エギングは「ふわっと」ボタンとして出す（2026-10-03 ぱっぱ）
+    if (el.reelInBtn) el.reelInBtn.hidden = yaen || tailor;   // 回収（2026-10-16）はエギと邪道だけ
     el.baitRow.hidden = !jado;
     if (jado) el.baitRow.querySelector('.ika-egi-stock-label').textContent = t(lang, TX.bait.left);
     ajiShown = null;
@@ -1223,6 +1224,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (jado && (key === 'sink' || (key === 'signal' && cue() === 'real'))) key = s.phase === 'sinking' ? 'jadoWait' : 'jadoDrag';
     if (s.method === 'tailor') { if (key === 'ready') key = 'tailor-ready'; else if (key === 'sink') key = 'tailor-watch'; else if (key === 'result') key = 'tailor-back'; }
     if (s.method === 'yaen' && key === 'sink') key = `yaen-${s.phase === 'yaen' && s.yaen?.reached ? 'set' : ['wait', 'run', 'draw', 'yaen'].includes(s.phase) ? s.phase : 'sink'}`;
+    if (el.reelInBtn) { const on = !frozen && canReelIn(s); if (el.reelInBtn.disabled === on) el.reelInBtn.disabled = !on; }   // 回収：沈下・誘いの間だけ（アタリの合図では押せない）
     if (last.btn === key) return;
     last.btn = key;
     el.btn.textContent = key.startsWith('tailor-') ? t(lang, TX.tailor.btn[key.slice(7)]) : key === 'yaen-wait' && s.aji === 'live' ? t(lang, TX.yaen.liveWait) : key.startsWith('yaen-') ? t(lang, TX.yaen.btn[key.slice(5)]) : key === 'jadoWait' ? t(lang, TX.jado.waitBottom) : key === 'jadoDrag' ? t(lang, TX.jado.drag) : t(lang, TX.btn[key === 'signal' && cue() === 'real' ? 'sink' : key]);
@@ -1641,6 +1643,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           syncStock();
           break;
         case 'recover':
+          if (e.manual) { callout(t(lang, TX.msg.reelIn)); break; }   // 回収ボタンで自分で巻いた（2026-10-16）
           if (signalsThisCast === 0 && ++dryCasts >= 3 && !tipsNudged && el.tips && !el.tips.open) {
             tipsNudged = true;
             setTimeout(() => callout(t(lang, TX.tips.nudge), 'good', 5000), 1800);
@@ -1788,7 +1791,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         ${tako ? `<div class="ika-egi-card-catch"><span class="ika-egi-gedo-icon is-big" aria-hidden="true">${gedoImg('tako')}</span><div><p class="ika-egi-card-name">${t(lang, TX.gedo.names.tako)}</p></div></div>` : ''}
         <p class="ika-egi-card-note">${t(lang, TX.yaen.note[why])}${tako && settings.mode === 'live' ? `（${t(lang, TX.gedo.added)}）` : ''}</p>`;
     } else {
-      const note = { weed: T.weedNote, snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
+      const note = { weed: T.weedNote, snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: s.manualRecover ? T.reelInNote : signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
     // 邪道エギング：エサがくたびれていたら付け直しを勧める
@@ -2191,7 +2194,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // 全画面ボタン（.ika-egi-fullbtn）も除く：止めると指で押した時に click が起きず、全画面・横画面モードに入れなかった（2026-09-27）
   // 2026-10-15 部員の指摘：スマホでキャラ一覧の中が押せない・動かせない → 一覧の窓（.ika-egi-anglerpop）も除外に入れた
   const noLongPress = (e) => { if (!e.target.closest('a, select, input, textarea, .ika-egi-card, details, .ika-egi-colorpop, .ika-egi-anglerpop, .ika-egi-fullbtn, .ika-egi-bgmbtn')) e.preventDefault(); };
-  for (const node of [el.btn, el.dartBtn, el.stage]) {
+  for (const node of [el.btn, el.dartBtn, el.reelInBtn, el.stage].filter(Boolean)) {
     node.addEventListener('touchstart', noLongPress, { passive: false });
     node.addEventListener('contextmenu', (e) => e.preventDefault());
   }
@@ -2319,6 +2322,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.dartBtn.addEventListener('pointerdown', (e) => { if (e.button === 0 || e.pointerType !== 'mouse') { e.preventDefault(); doDart(); } });
   el.dartBtn.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doDart(); } });
   el.dartBtn.addEventListener('click', (e) => e.preventDefault());
+  // 回収ボタン（2026-10-16 ぱっぱ・部員の要望）：押した瞬間に手元まで巻いて、この1投を終える
+  const doReelIn = () => { if (!s || frozen || !reelIn(s)) return; onEvents(s.events.splice(0)); setButton(); };
+  el.reelInBtn?.addEventListener('pointerdown', (e) => { if (e.button === 0 || e.pointerType !== 'mouse') { e.preventDefault(); doReelIn(); } });
+  el.reelInBtn?.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); doReelIn(); } });
+  el.reelInBtn?.addEventListener('click', (e) => e.preventDefault());
   // マウスのホイール上＝ダート（舞台とボタンの上。ダートできる時だけ画面のスクロールを止め、0.35秒に1回）
   let wheelAt = 0;
   const onWheel = (e) => {

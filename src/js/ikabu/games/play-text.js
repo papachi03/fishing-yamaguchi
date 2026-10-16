@@ -119,10 +119,13 @@ export const EGI_TEXT = {
   },
   gestures: {
     title: pair('操作', 'Controls'),
-    row: pair('タップ：しゃくり／2回：2段／押したまま：テンションフォール／ダート：ダートボタン・上へスワイプ', 'Tap: jerk / two taps: double / hold: tension fall / dart: Dart button or swipe up'),
+    row: pair('タップ：しゃくり／2回：2段／押したまま：テンションフォール／ダート：ダートボタン・上へスワイプ／回収：すぐ手元まで巻いて投げ直す', 'Tap: jerk / two taps: double / hold: tension fall / dart: Dart button or swipe up / Reel in: bring it straight back and recast'),
     keys: pair('PC：Space・Enter＝タップと長押し、ダート＝↑キー・ホイール上・上へ短くドラッグ', 'PC: Space or Enter = tap and hold; dart = ArrowUp, wheel up, or a short upward drag'),
     dart: pair('ダート', 'Dart'),
     dartHint: pair('大きく横へ跳ばす誘い（沈下・フォール中）', 'A big sideways dart (while sinking or falling)'),
+    // 回収ボタン（2026-10-16）：すぐ手元まで巻いて、この1投を終える
+    reelIn: pair('回収', 'Reel in'),
+    reelInHint: pair('すぐ手元まで巻いて投げ直す（この1投は使ったことになる）', 'Reel straight back and cast again (this cast still counts)'),
     // 全画面（ぱっぱ 2026-09-25：操作説明にあると親切）
     full: pair('全画面：スマホは横に倒すと全画面で遊べます。「⛶ 全画面」ボタンでも（PC は Esc で戻る）。Android は最初のタップで上下のバーも消えます。iPhone は Safari の決まりでバーが残りますが、共有メニューの「ホーム画面に追加」から開くとバーなしで遊べます',
       'Full screen: on a phone, turn it sideways to play full screen, or use the “⛶ Full screen” button (Esc to leave on a PC). On Android the first tap also hides the browser bars. On iPhone, Safari keeps its bars, but opening from “Add to Home Screen” gives you a bar-free screen'),
@@ -529,6 +532,7 @@ export const EGI_TEXT = {
       umitoranoo: pair('ウミトラノオの藻場！ 低めの藻。底まで落とさなければ大丈夫', 'Low weed bed! Fine as long as you stay off the bottom'),
     },
     recover: pair('回収。次はもう少し沖で', 'Retrieved. Try a longer cast'),
+    reelIn: pair('回収。投げ直そう', 'Reeled in. Cast again'),
     noSign: pair('この投げは気配なし… 投げる場所や時間を変えるのも手', 'No sign of squid on that cast… try another spot or time'),
     squidLeft: (lang, n) => (lang === 'en' ? `The squid moved off… (maybe ${n} more around)` : `イカが離れていった…（あと${n}匹いるかも）`),
     squidGone: pair('気配が消えた', 'The sign is gone'),
@@ -561,6 +565,7 @@ export const EGI_TEXT = {
     breakNote: pair('テンションの上限で身切れ。赤い帯に入る前にゆるめよう。', 'Max tension tears the hook out. Ease off before the red band.'),
     unhookedNote: pair('ゆるめっぱなしはバレる。ゼロに落ちる前に巻こう。', 'Constant slack lets it off. Reel before the gauge hits zero.'),
     recoverNote: pair('手前まで来た。飛距離が出ると、フォールの回数が増える。', 'Back at the pier. A longer cast means more falls.'),
+    reelInNote: pair('自分で巻いて回収した。投げる場所や沈める深さを変えてみよう。', 'You reeled it in. Try another spot or a different depth.'),
     noEgi: pair('エギが無くなった。今日はここまで。', 'Out of egi. That is the day.'),
   },
   over: {

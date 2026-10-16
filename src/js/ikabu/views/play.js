@@ -518,6 +518,8 @@ export const egiHTML = (lang, month, { solo = false } = {}) => {
               ${['green', 'red', 'orange'].map((c, i) => `<button type="button" class="ika-egi-tbtn" data-float="${i}" data-color="${c}" data-stage="idle"><span class="ika-egi-tbtn-dot" aria-hidden="true"></span><b>${t(lang, T.tailor.colors[c])}</b><small data-state>${t(lang, T.tailor.states.idle)}</small></button>`).join('')}
             </div>
             <div class="ika-egi-main-row">
+              <!-- 回収（2026-10-16）：すぐ手元まで巻いて投げ直す。ダートとは反対側（左）に置いて押し間違えないように -->
+              <button type="button" class="ika-egi-reelin" id="ika-egi-reelin" disabled title="${t(lang, T.gestures.reelInHint)}" aria-label="${t(lang, T.gestures.reelIn)}：${t(lang, T.gestures.reelInHint)}"><span class="ika-egi-dart-arrow" aria-hidden="true">⟲</span><span>${t(lang, T.gestures.reelIn)}</span></button>
               <button type="button" class="ika-egi-btn" id="ika-egi-btn" data-phase="ready">${t(lang, T.btn.ready)}</button>
               <button type="button" class="ika-egi-dart" id="ika-egi-dart" disabled title="${t(lang, T.gestures.dartHint)}" aria-label="${t(lang, T.gestures.dart)}：${t(lang, T.gestures.dartHint)}"><span class="ika-egi-dart-arrow" aria-hidden="true">↑</span><span>${t(lang, T.gestures.dart)}</span></button>
             </div>
