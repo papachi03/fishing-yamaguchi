@@ -1811,9 +1811,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const lvBefore = levelNow();
     const rate = pointRate(settings);
     const blindPractice = !counted && rate > 0;   // 季節モードのアタリチャレンジ（経験値だけ3割）
-    const { rec: r0, total } = recordEgiTrip(rec, catches, { counted, rate });
-    const r = blindPractice ? addEgiPoints(r0, ratedPoints(POINTS.trip, rate)) : r0;   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
-    const ticketOk = tripTicketOk(s);   // すぐ回収をくり返した釣行は🎫の数に入れない（2026-10-16 ぱっぱ）
+    // 投げてすぐ（10秒以内）の回収を3回以上した釣行は🎫・経験値（釣行の分）・釣行の数に入れない（2026-10-16 ぱっぱ：回収はファーミングのためではない。釣れた釣行はいつも数える）
+    const ticketOk = tripTicketOk(s);
+    const { rec: r0, total } = recordEgiTrip(rec, catches, { counted: counted && ticketOk, rate });
+    const r = blindPractice && ticketOk ? addEgiPoints(r0, ratedPoints(POINTS.trip, rate)) : r0;   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'egi', counted, tickets: true, noTickets: !ticketOk } }));   // チケット🎫は初心者練習・季節モードでも出す（10/2 ぱっぱ）。釣行の数・自己ベスト（counted）は今日の萩の海だけ
     const fresh = counted ? firstSpecies.slice() : [];
     rec = r;

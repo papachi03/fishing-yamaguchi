@@ -549,7 +549,8 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     phase: 'ready',
     t: 0,
     casts: m === 'tailor' ? TAILOR_BAITS : CASTS,   // テーラーはエサの数
-    quickReels: 0,   // すぐ回収した投げの数（reelIn）
+    reelIns: 0,   // 回収ボタンを使った数（reelIn）
+    quickReels: 0,   // そのうち、投げて10秒より前の回収（すぐ回収）の数
     egi: EGI_STOCK,
     pressing: false,
     pressAt: 0,
@@ -747,13 +748,16 @@ export function dart(s) {
 //   イカの反応が無くなった・キャストミスをやり直したい時のため。巻いている間に抱くことはしない（イカはフォールで抱く＝知識系の発信と合わせる）
 //   エギと邪道だけ。沈下・誘い（action）の間だけで、アタリの合図・ファイト中は押せない
 export const canReelIn = (s) => Boolean(s) && (s.method === 'egi' || s.method === 'jado') && (s.phase === 'sinking' || s.phase === 'action');
-// すぐ回収（2026-10-16 ぱっぱ：投げてすぐ回収をくり返して釣行を終わらせ、🎫を稼ぐのを防ぐ）：投げてから QUICK_REEL_SEC 秒より前の回収。
-//   1回の釣行で QUICK_REEL_MAX 投以上あれば、その釣行は🎫の数に入れない（イカが釣れた釣行はいつも数える）
+// すぐ回収（2026-10-16 ぱっぱ：回収は「反応が無い・キャストミスの投げ直し」のため。ファーミング＝投げてすぐ回収をくり返して
+//   釣行を早く終わらせ🎫・経験値を稼ぐ、のためではない）：投げてから QUICK_REEL_SEC 秒より前の回収を「すぐ回収」と数え、
+//   1回の釣行で QUICK_REEL_MAX 回以上なら、その釣行の🎫・経験値（釣行の分）・釣行の数は入れない。イカが釣れた釣行はいつも数える。
+//   ぱっぱ：「それでもファーミングが横行するなら厳しくしたい」→ 厳しくする時は、時間に関係なく回収を使った回数（reelIns）で決めればよい
 export const QUICK_REEL_SEC = 10;
 export const QUICK_REEL_MAX = 3;
 export const tripTicketOk = (s) => Boolean(s) && (s.catches.length > 0 || (s.quickReels ?? 0) < QUICK_REEL_MAX);
 export function reelIn(s) {
   if (!canReelIn(s)) return false;
+  s.reelIns = (s.reelIns ?? 0) + 1;
   if (s.t - (s.castAt ?? -Infinity) < QUICK_REEL_SEC) s.quickReels = (s.quickReels ?? 0) + 1;
   s.pressing = false;
   s.pendingLift = null;

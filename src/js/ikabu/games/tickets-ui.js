@@ -47,7 +47,7 @@ export function mountTicketEarn({ lang = 'ja', toast = true } = {}) {
   addEventListener('ikabu:game', (e) => {
     const d = e.detail ?? {};
     if (d.counted === false && d.tickets !== true) return;
-    if (d.noTickets) return;   // すぐ回収をくり返した釣行（エギング・2026-10-16 ぱっぱ）は🎫を出さない   // 記録に数えない釣行でも、tickets:true なら🎫は出す（10/2 ぱっぱ：初心者練習・季節モードでも）
+    if (d.noTickets) return;   // 投げてすぐの回収を3回以上した釣行（エギング・2026-10-16 ぱっぱ）は🎫を出さない   // 記録に数えない釣行でも、tickets:true なら🎫は出す（10/2 ぱっぱ：初心者練習・季節モードでも）
     apply((rec, day) => {
       let got = 0, why = [], r = rec;
       if (d.game === 'story') { const p = earnStory(r, d.amount ?? 0, { day }); return { rec: p.rec, got: p.got, why: p.why }; }   // ストーリーの初回クリア（2026-10-03）
