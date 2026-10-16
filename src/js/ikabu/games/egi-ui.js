@@ -27,10 +27,15 @@ import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
 import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX, setDepthMax, isoBottomSVG } from './egi-scene.js';
-// 磯場（2026-10-16 試遊版のテスト・ぱっぱ）：入口は試遊版、または手元の開発サーバーで ?isoba を付けた時だけ（本番には出さない）
-const ISO_ON = IS_TRIAL || (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('isoba'));
+// 磯場（2026-10-16）：Lv10 で解放・Lv13 でハード（progress.js の ISO_LEVEL）。入口はメニューの画像ボタン（views/play.js）
+const ISO_FREE = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('isoba');   // 確認用：手元で ?isoba を付けるとレベルに関係なく解放
 const ISO_TX = {
-  title: ['🪨 磯場（テスト）', '🪨 Rocky shore (test)'],
+  title: ['🪨 磯場', '🪨 Rocky shore'],
+  locked: (lang, lv, now) => (lang === 'en' ? `🔒 Unlocks at Lv${lv} (you are Lv${now})` : `🔒 Lv${lv}で解放（いま Lv${now}）`),
+  lockedSub: (lang, lv, now) => (lang === 'en' ? `🔒 Unlocks at Lv${lv} (you are Lv${now}). Boulders, weed and coral: count the fall.` : `🔒 Lv${lv}で解放（いま Lv${now}）。ゴロタ・藻・サンゴに根掛かる磯。カウントが命`),
+  openSub: ['ゴロタ・藻・サンゴに根掛かる磯。カウントが命（経験値1.8倍）', 'Boulders, weed and coral. Count the fall (1.8x exp)'],
+  unlocked: ['🪨 磯場が解放された！ 岩・藻・サンゴの磯でカウントを試そう', '🪨 Rocky shore unlocked! Count the fall among rocks, weed and coral'],
+  unlockedHard: ['🪨 磯場ハードが解放された！ 海が見えない磯（経験値2.4倍）', '🪨 Rocky shore HARD unlocked (2.4x exp)'],
   note: ['ゴロタ・藻・サンゴが点在し、底に当てると高い確率で根掛かる磯。投げた距離で底の深さが変わるので、カウントして底の手前でしゃくろう。地形は釣行（5投）ごとに変わる。', 'Boulders, weed and coral everywhere. The depth changes with distance, so count the fall and jerk just above the bottom. The terrain changes every trip.'],
   normal: ['磯場で釣る', 'Fish the rocks'], hard: ['磯場ハード（海が見えない）', 'Rocks HARD (blind)'], back: ['堤防に戻る', 'Back to the pier'],
   start: ['🪨 磯場。投げた距離で底が変わる。カウントして底の手前でしゃくろう', '🪨 Rocky shore. Count the fall and jerk just above the bottom'],
@@ -52,6 +57,7 @@ import { anglerPopHTML, anglerPopClick } from './angler-pop.js';
 import { readTickets, writeTickets } from './tickets.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
 import { utcDay } from './rng.js';
+import { ISO_LEVEL } from './progress.js';
 import { recommendedSizes } from './egi-advice.js';
 import { recordGedo } from './records.js';
 import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, addEgiPoints, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
@@ -82,7 +88,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     power: q('ika-egi-power'), tension: q('ika-egi-tension'), dist: q('ika-egi-dist'), reel: q('ika-egi-reel'), reelLabel: q('ika-egi-reel-label'), reelDelta: q('ika-egi-reel-delta'), main: root.querySelector('.ika-egi-main'), log: q('ika-egi-log'),
     setup: q('ika-egi-setup'), tod: q('ika-egi-tod'), month: q('ika-egi-month'), season: q('ika-egi-season'), hint: q('ika-egi-hint'), around: q('ika-egi-around'), locked: q('ika-egi-locked'),
     live: q('ika-egi-live'), liveBody: q('ika-egi-live-body'), liveTime: q('ika-egi-live-time'), liveNotice: q('ika-egi-live-notice'), liveSource: q('ika-egi-live-source'),
-    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), playBlind: q('ika-egi-play-blind'), hard: q('ika-egi-hard'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
+    playLive: q('ika-egi-play-live'), playPractice: q('ika-egi-play-practice'), playBeginner: q('ika-egi-play-beginner'), playBlind: q('ika-egi-play-blind'), playIso: q('ika-egi-play-isoba'), isoBox: q('ika-egi-iso'), hard: q('ika-egi-hard'), beginnerHint: q('ika-egi-beginner-hint'), tips: q('ika-egi-tips'), practice: q('ika-egi-practice'), exp: q('ika-egi-exp'), expOut: q('ika-egi-exp-out'), wind: q('ika-egi-wind'), mode: q('ika-egi-mode'), windnote: q('ika-egi-windnote'),
     pick: q('ika-egi-pick'), pickSize: q('ika-egi-size'), pickType: q('ika-egi-type'), pickIcon: q('ika-egi-pick-icon'), pickCurrent: q('ika-egi-pick-current'), pickTraits: q('ika-egi-pick-traits'), pickRec: q('ika-egi-pick-rec'),
     pickRig: q('ika-egi-rig'), popRig: q('ika-egi-colorpop-rig'), tk: q('ika-egi-tk'), anglerPop: q('ika-egi-anglerpop'), rod: q('ika-egi-rod'), drag: q('ika-egi-drag'), rodNote: q('ika-egi-rod-note'), dragNote: q('ika-egi-drag-note'), depthPick: q('ika-egi-depthpick'), depthNote: q('ika-egi-depth-note'),
     cueSetting: q('ika-egi-cue'), cueLabel: q('ika-egi-cue-label'), spec: q('ika-egi-spec'), fallmode: q('ika-egi-fallmode'), dartBtn: q('ika-egi-dart'),
@@ -625,9 +631,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     syncLevel();
     if (after <= before) return;
     setTimeout(() => callout(TX.level.up(lang, after), 'last', 2600), 1200);
-    unlockedBetween(before, after).forEach((id, i) => {
+    const ups = unlockedBetween(before, after);
+    ups.forEach((id, i) => {
       setTimeout(() => callout(`${TX.method.unlocked(lang, methodName(id))} ${t(lang, TX.method.unlockLine[id])}`, 'good', 5200), 4000 + i * 5400);
     });
+    // 磯場の解放（2026-10-16）
+    const isoUps = [[ISO_LEVEL.normal, ISO_TX.unlocked], [ISO_LEVEL.hard, ISO_TX.unlockedHard]].filter(([lv]) => before < lv && lv <= after);
+    isoUps.forEach(([, msg], i) => setTimeout(() => callout(t(lang, ...msg), 'good', 5200), 4000 + (ups.length + i) * 5400));
+    syncIso();
     syncMethod();
   }
   function syncLevel() {
@@ -683,6 +694,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       : `${t(lang, TX.live.modePractice)}：${t(lang, SEASON[seasonOf(settings.month)])}・${t(lang, TOD[settings.tod])}・${t(lang, TX.live.expectation)}★${Math.round(c.expectation)}・${t(lang, TX.live.wind)}${f1m(c.wind)}m`;
   };
   function syncSetup() {
+    if (typeof syncIso === 'function') syncIso();
     syncEgiPick();
     el.tod.querySelectorAll('.ika-chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tod === settings.tod)));
     el.month.value = String(settings.month);
@@ -697,7 +709,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     el.playBlind?.classList.toggle('is-active', Boolean(settings.blind) && settings.mode !== 'live');   // アタリチャレンジ＝季節モードで海が見えない（2026-10-15〜）
     el.playLive?.classList.toggle('is-active', settings.mode === 'live');
     if (el.hard) {   // 今日の萩の海の「ふつう／ハード」
-      el.hard.hidden = settings.mode !== 'live';
+      el.hard.hidden = settings.mode !== 'live' || settings.stage === 'isoba';
       el.hard.querySelectorAll('[data-hard]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.hard === '1') === Boolean(settings.blind))));
     }
     el.playPractice?.classList.toggle('is-active', settings.mode === 'practice' && !settings.blind);
@@ -969,6 +981,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   // user＝人が自分で選んだ（季節・時間帯などを押した）。そのあとに今日の萩の海のデータが届いても、勝手に切り替えない
   let userPicked = false;
   function usePractice({ open = true, user = true } = {}) {
+    settings.stage = 'pier';   // 磯場から戻る（2026-10-16）
     if (user) userPicked = true;
     settings.mode = 'practice';   // アタリチャレンジ（settings.blind）はここでは外さない：季節の欄で季節を選んでもチャレンジを続ける（2026-10-04 ぱっぱ）
     guide = 0; showGuide();
@@ -979,6 +992,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // 今日の萩の海の条件でゲームを作り直す
   function useLive() {
+    settings.stage = 'pier';   // 磯場から戻る（2026-10-16）
     const L = settings.live;
     if (!L || L.conditions.safety === 'stop') return;
     settings.mode = 'live';
@@ -1041,6 +1055,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     usePractice();
   });
   function useBeginner({ user = true } = {}) {
+    settings.stage = 'pier';   // 磯場から戻る（2026-10-16）
     if (user) userPicked = true;
     const nowMonth = new Date().getMonth() + 1;
     const m = SEASON_MODES.find((x) => x.months.includes(nowMonth)) ?? SEASON_MODES[0];
@@ -1066,6 +1081,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.playBeginner?.addEventListener('click', () => { if (!started()) useBeginner(); });
   // アタリチャレンジ：今日の萩の海（取れていなければ今の設定）で、海の中を隠す。エギングだけ
   function useBlind() {
+    settings.stage = 'pier';   // 磯場から戻る（2026-10-16）
     userPicked = true;
     // 2026-10-15〜 アタリチャレンジは季節モードの練習（経験値3割）。今日の萩の海で海を隠すのは「ハード」（経験値1.5倍・ぱっぱ）
     if (settings.mode !== 'practice') { const nowMonth = new Date().getMonth() + 1; const m = SEASON_MODES.find((x) => x.months.includes(nowMonth)) ?? SEASON_MODES[0]; settings.month = m.month; settings.tod = m.tod; }
@@ -1094,29 +1110,53 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   el.hard?.addEventListener('click', (e) => { const b = e.target.closest('[data-hard]'); if (b) setHard(b.dataset.hard === '1'); });
   // 磯場（2026-10-16 試遊版のテスト）：今日の萩の海の条件のまま、舞台だけ磯に。ハード＝海が見えない（アタリチャレンジと同じ見せ方）
-  if (ISO_ON && el.hard) {
-    el.hard.insertAdjacentHTML('afterend', `<div class="ika-egi-hard" id="ika-egi-iso"><p class="ika-egi-setup-label">${t(lang, ...ISO_TX.title)}</p>
-      <div class="ika-chips" role="group" aria-label="${t(lang, ...ISO_TX.title)}"><button type="button" class="ika-chip" data-iso="pier">${t(lang, ...ISO_TX.back)}</button><button type="button" class="ika-chip" data-iso="normal">${t(lang, ...ISO_TX.normal)}</button><button type="button" class="ika-chip" data-iso="hard">${t(lang, ...ISO_TX.hard)}</button></div>
-      <p class="ika-egi-cue-note">${t(lang, ...ISO_TX.note)}</p></div>`);
-    const isoBox = document.getElementById('ika-egi-iso');
-    const syncIso = () => isoBox.querySelectorAll('[data-iso]').forEach((b) => b.setAttribute('aria-pressed', String(settings.stage === 'isoba' ? (b.dataset.iso === (settings.blind ? 'hard' : 'normal')) : b.dataset.iso === 'pier')));
-    isoBox.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-iso]'); if (!b) return;
-      if (started()) { callout(t(lang, ...ISO_TX.busy), '', 2200, { blindOk: true }); return; }
-      userPicked = true;
-      settings.stage = b.dataset.iso === 'pier' ? 'pier' : 'isoba';
-      if (settings.stage === 'isoba') { settings.method = 'egi'; settings.blind = b.dataset.iso === 'hard'; if (settings.mode === 'beginner') settings.mode = 'practice'; }
-      else settings.blind = false;
-      setDepthMax(depthMaxOf(settings.depth));
-      guide = 0; showGuide();
-      syncSetup();
-      newGame();
-      buildScene();
-      syncIso();
-      if (settings.stage === 'isoba') callout(t(lang, ...(settings.blind ? ISO_TX.startHard : ISO_TX.start)), '', 4200);
-    });
-    syncIso();
+  // 磯場（2026-10-16）：Lv10 で解放・Lv13 でハード。ボタンは views/play.js（画像は GPT）。解放前は灰色＋🔒の札
+  const isoState = () => { const lv = levelNow(); return { lv, normal: ISO_FREE || lv >= ISO_LEVEL.normal, hard: ISO_FREE || lv >= ISO_LEVEL.hard }; };
+  function syncIso() {
+    if (!el.playIso) return;
+    const st = isoState(), on = settings.stage === 'isoba';
+    el.playIso.classList.toggle('is-locked', !st.normal);
+    el.playIso.classList.toggle('is-active', on);
+    el.playIso.setAttribute('aria-disabled', String(!st.normal));
+    const sub = el.playIso.querySelector('[data-iso-sub]');
+    if (sub) sub.textContent = st.normal ? t(lang, ...ISO_TX.openSub) : ISO_TX.lockedSub(lang, ISO_LEVEL.normal, st.lv);
+    if (el.isoBox) {
+      el.isoBox.hidden = !on;
+      el.isoBox.querySelectorAll('[data-iso]').forEach((b) => {
+        const hard = b.dataset.iso === 'hard';
+        b.setAttribute('aria-pressed', String(on && hard === Boolean(settings.blind)));
+        b.disabled = hard && !st.hard;
+        if (hard) b.textContent = st.hard ? t(lang, 'ハード・海が見えない（経験値2.4倍）', 'HARD: blind (2.4x exp)') : ISO_TX.locked(lang, ISO_LEVEL.hard, st.lv) + t(lang, '・海が見えない', ': blind');
+      });
+    }
   }
+  function enterIso(hard) {
+    userPicked = true;
+    settings.stage = 'isoba'; settings.method = 'egi'; settings.blind = hard;
+    if (settings.mode === 'beginner') settings.mode = 'practice';
+    writePref('ikabu.egi.method', 'egi');
+    setDepthMax(depthMaxOf(settings.depth));
+    guide = 0; showGuide();
+    syncSetup();
+    newGame();
+    buildScene();
+    syncIso();
+    callout(t(lang, ...(hard ? ISO_TX.startHard : ISO_TX.start)), '', 4200);
+  }
+  el.playIso?.addEventListener('click', () => {
+    if (started()) { callout(t(lang, ...ISO_TX.busy), '', 2200, { blindOk: true }); return; }
+    const st = isoState();
+    if (!st.normal) { callout(ISO_TX.locked(lang, ISO_LEVEL.normal, st.lv), '', 3000); return; }
+    enterIso(false);
+  });
+  el.isoBox?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-iso]'); if (!b) return;
+    if (started()) { callout(t(lang, ...ISO_TX.busy), '', 2200, { blindOk: true }); return; }
+    const st = isoState(), hard = b.dataset.iso === 'hard';
+    if (hard && !st.hard) { callout(ISO_TX.locked(lang, ISO_LEVEL.hard, st.lv), '', 3000); return; }
+    enterIso(hard);
+  });
+  syncIso();
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
   el.playPractice.addEventListener('click', () => {
     if (started()) return;

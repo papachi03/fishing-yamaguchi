@@ -3498,6 +3498,10 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
 .ika-egi-live-actions .ika-btn.ika-egi-playimg small { display: block; padding: 0 14px 4px; font-weight: 700; font-size: 12.5px; line-height: 1.5; color: var(--ika-sea); opacity: 1; }
 .ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active .ika-egi-playimg-img { filter: drop-shadow(0 0 6px #ffd84a) drop-shadow(0 0 2px #ffd84a); }
 .ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active small::before { content: '✓ '; color: #e0662a; }
+/* 磯場（2026-10-16）：レベルで解放。解放前は灰色の絵と🔒の札 */
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-locked .ika-egi-playimg-img { filter: grayscale(0.9) brightness(0.82); opacity: 0.85; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-locked small { color: #6b7d84; }
+.ika-egi-live-actions .ika-btn.ika-egi-playimg.is-locked:hover { transform: none; }
 .ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active, .ika-egi-live-actions .ika-btn.ika-egi-playimg.is-active:hover { background: none; color: var(--ika-ink); }
 
 /* ---------- あそび場TOPの入口カード：ゲームの場面の絵（2026-10-04） ---------- */

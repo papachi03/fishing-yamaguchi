@@ -50,6 +50,8 @@ export const METHODS = {
   tailor: { level: 8, months: [12, 1, 2, 3], seasons: ['winter'], ready: true },   // 2026-09-28 実装
 };
 export const METHOD_IDS = Object.keys(METHODS);
+// 磯場（2026-10-16）：Lv10 で磯場、Lv13 で磯場ハード（海が見えない）が解放
+export const ISO_LEVEL = { normal: 10, hard: 13 };
 
 // その釣り方が今使えるか。mode：'live'（今日の萩の海＝今の月で見る）／'practice'（季節モード＝選んだ季節で見る）／'beginner'（エギングだけ）
 //   'ok' 使える／'level' レベルが足りない／'season' 季節ではない／'soon' 準備中／'beginner' 初心者練習では使えない

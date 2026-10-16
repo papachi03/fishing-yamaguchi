@@ -285,6 +285,14 @@ export function egiSetupHTML(lang, { month = 9, tod = 'evening', solo = false } 
         <button type="button" class="ika-btn ika-egi-playimg" id="ika-egi-play-live" disabled><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/live.webp')}" alt="" width="900" height="245" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playLive)}</b><small>${t(lang, T.live.playLiveSub)}</small></button>
         <button type="button" class="ika-btn ika-egi-playimg" id="ika-egi-play-practice" aria-expanded="false" aria-controls="ika-egi-practice"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/season.webp')}" alt="" width="900" height="212" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playPractice)}</b><small>${t(lang, T.live.playPracticeSub)}</small></button>
         <button type="button" class="ika-btn ika-egi-playimg ika-egi-play-blind" id="ika-egi-play-blind"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/blind.webp')}" alt="" width="900" height="311" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, T.live.playBlind)}</b><small>${t(lang, T.live.playBlindSub)}</small></button>
+        <!-- 磯場（2026-10-16）：Lv10 で解放。ボタンの絵は GPT（menu-buttons/prompt_isoba.txt）。解放前は is-locked で灰色＋🔒の札（egi-ui.js の syncIso） -->
+        <button type="button" class="ika-btn ika-egi-playimg ika-egi-play-isoba" id="ika-egi-play-isoba"><img class="ika-egi-playimg-img" src="${assetHref('/assets/ikabu/egi-menu/isoba.webp')}" alt="" width="900" height="302" decoding="async" /><b class="ika-egi-playimg-name">${t(lang, '磯場で釣る', 'Rocky shore')}</b><small data-iso-sub>${t(lang, 'Lv10で解放。ゴロタ・藻・サンゴに根掛かる磯。カウントが命（経験値1.8倍）', 'Unlocks at Lv10. Boulders, weed and coral. Count the fall (1.8x exp)')}</small></button>
+      </div>
+      <!-- 磯場の遊び方：ふつう／ハード（海が見えない・Lv13）。磯場を選んでいる時だけ出す -->
+      <div class="ika-egi-hard" id="ika-egi-iso" hidden>
+        <p class="ika-egi-setup-label">${t(lang, '🪨 磯場の遊び方', '🪨 Rocky shore mode')}</p>
+        <div class="ika-chips" role="group" aria-label="${t(lang, '磯場の遊び方', 'Rocky shore mode')}"><button type="button" class="ika-chip" data-iso="normal" aria-pressed="true">${t(lang, 'ふつう（経験値1.8倍）', 'Normal (1.8x exp)')}</button><button type="button" class="ika-chip" data-iso="hard" aria-pressed="false">${t(lang, 'ハード・海が見えない（経験値2.4倍）', 'HARD: blind (2.4x exp)')}</button></div>
+        <p class="ika-egi-cue-note" data-iso-note>${t(lang, '投げた距離で底の深さが変わる。カウントして、岩や藻の手前でしゃくろう。地形は釣行ごとに変わる。', 'The depth changes with distance. Count the fall and jerk just above the rocks and weed. The terrain changes every trip.')}</p>
       </div>
       <!-- 今日の萩の海の遊び方：ふつう／ハード（海の中が見えない・経験値1.5倍）。今日の萩の海を選んでいる時だけ出す（2026-10-15 ぱっぱ） -->
       <div class="ika-egi-hard" id="ika-egi-hard" hidden>
