@@ -54,8 +54,9 @@ const TX = {
   stars: (n) => '★'.repeat(n) + '☆'.repeat(5 - n),
   gotTickets: (lang, n) => (lang === 'en' ? `🎫 +${n} (first clear)` : `🎫 ${n}枚ゲット！（初クリア）`),
   chapterDone: { 1: ['第1章 クリア！ 正式部員証を手に入れた', 'Chapter 1 cleared! You earned full membership'], 2: ['第2章 クリア！ エリート章を手に入れた', 'Chapter 2 cleared! You earned the elite badge'], 3: ['第3章 クリア！ 四天王の印を2つ手に入れた', 'Chapter 3 cleared! You earned two Big Four seals'] },
-  trialSkip: ['🧪 試遊版だけ：第1章をクリアしたことにする（🎫は増えません）', '🧪 Trial only: mark chapter 1 as cleared (no tickets)'],
-  trialSkipped: ['第1章をクリアしたことにしました。第2章が開きました', 'Chapter 1 marked as cleared. Chapter 2 is open'],
+  // 試遊版だけ：その章の前の章まで全部クリアしたことにする（2026-10-16 第2章にも足した・ぱっぱ）
+  trialSkip: (lang, n) => (lang === 'en' ? `🧪 Trial only: mark chapters up to ${n} as cleared (no tickets)` : n === 1 ? '🧪 試遊版だけ：第1章をクリアしたことにする（🎫は増えません）' : `🧪 試遊版だけ：第1〜${n}章をクリアしたことにする（🎫は増えません）`),
+  trialSkipped: (lang, n) => (lang === 'en' ? `Chapters up to ${n} marked as cleared. Chapter ${n + 1} is open` : `第${n === 1 ? 1 : `1〜${n}`}章をクリアしたことにしました。第${n + 1}章が開きました`),
   lockedCh: (lang, n) => (lang === 'en' ? `🔒 Clear chapter ${n} to unlock` : `🔒 第${n}章をクリアすると開きます`),
 };
 
@@ -92,7 +93,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     const chapterHTML = (c) => {
       const head = `<h3><span class="ika-st-chno">${t(lang, `第${c.id}章`, `Ch. ${c.id}`)}</span>${t(lang, ...c.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...c.goal)}</small></h3>`;
       if (!chapterReady(c)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">🚧 ${t(lang, ...TX.wip)}</p></section>`;
-      if (!opened.has(c.id)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">${TX.lockedCh(lang, c.id - 1)}</p>${IS_TRIAL && c.id === 2 ? `<button type="button" class="ika-btn" data-trial-skip>${t(lang, ...TX.trialSkip)}</button>` : ''}</section>`;
+      if (!opened.has(c.id)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">${TX.lockedCh(lang, c.id - 1)}</p>${IS_TRIAL && c.id >= 2 && chapterReady(c) ? `<button type="button" class="ika-btn" data-trial-skip="${c.id - 1}">${TX.trialSkip(lang, c.id - 1)}</button>` : ''}</section>`;
       const nxt = nextBattle(story, c.id, c.count);
       return `<section class="ika-st-ch is-open">${head}
         <ol class="ika-st-battles">${BATTLES_BY_CH[c.id].map((b) => {
@@ -117,7 +118,12 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     ov.querySelector('[data-name-save]').addEventListener('click', saveName);
     ov.querySelector('[data-name-form]').addEventListener('submit', (e) => { e.preventDefault(); saveName(); });
     ov.querySelectorAll('[data-battle]').forEach((b) => b.addEventListener('click', () => startBattle(Number(b.dataset.ch), Number(b.dataset.battle))));
-    ov.querySelector('[data-trial-skip]')?.addEventListener('click', () => { if (!IS_TRIAL) return; writeStory(markChapterCleared(readStory(), 1, CHAPTERS[0].count, { day: utcDay() })); list(); banner(t(lang, ...TX.trialSkipped), 2600); });
+    ov.querySelectorAll('[data-trial-skip]').forEach((b) => b.addEventListener('click', () => {
+      if (!IS_TRIAL) return;
+      const upTo = Number(b.dataset.trialSkip); let s = readStory();
+      for (let ch = 1; ch <= upTo; ch++) s = markChapterCleared(s, ch, CHAPTERS[ch - 1].count, { day: utcDay() });   // 前の章もまとめて（もう勝った戦の日付はそのまま）
+      writeStory(s); list(); banner(TX.trialSkipped(lang, upTo), 2600);
+    }));
   }
 
   // 会話：lines を1行ずつ。タップで次へ、「とばす」で終わり。終わったら done()
