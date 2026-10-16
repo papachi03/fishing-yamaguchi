@@ -549,6 +549,7 @@ export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening
     phase: 'ready',
     t: 0,
     casts: m === 'tailor' ? TAILOR_BAITS : CASTS,   // テーラーはエサの数
+    quickReels: 0,   // すぐ回収した投げの数（reelIn）
     egi: EGI_STOCK,
     pressing: false,
     pressAt: 0,
@@ -746,8 +747,14 @@ export function dart(s) {
 //   イカの反応が無くなった・キャストミスをやり直したい時のため。巻いている間に抱くことはしない（イカはフォールで抱く＝知識系の発信と合わせる）
 //   エギと邪道だけ。沈下・誘い（action）の間だけで、アタリの合図・ファイト中は押せない
 export const canReelIn = (s) => Boolean(s) && (s.method === 'egi' || s.method === 'jado') && (s.phase === 'sinking' || s.phase === 'action');
+// すぐ回収（2026-10-16 ぱっぱ：投げてすぐ回収をくり返して釣行を終わらせ、🎫を稼ぐのを防ぐ）：投げてから QUICK_REEL_SEC 秒より前の回収。
+//   1回の釣行で QUICK_REEL_MAX 投以上あれば、その釣行は🎫の数に入れない（イカが釣れた釣行はいつも数える）
+export const QUICK_REEL_SEC = 10;
+export const QUICK_REEL_MAX = 3;
+export const tripTicketOk = (s) => Boolean(s) && (s.catches.length > 0 || (s.quickReels ?? 0) < QUICK_REEL_MAX);
 export function reelIn(s) {
   if (!canReelIn(s)) return false;
+  if (s.t - (s.castAt ?? -Infinity) < QUICK_REEL_SEC) s.quickReels = (s.quickReels ?? 0) + 1;
   s.pressing = false;
   s.pendingLift = null;
   s.dist = 0;
@@ -1244,6 +1251,7 @@ export function release(s) {
     s.weedSeen = false;
     s.pendingLift = null;
     s.manualRecover = false;
+    s.castAt = s.t;   // 投げた時刻（すぐ回収の判定）
     s.bottomFor = 0;
     s.interest = 0.15;
     s.jerks = [];

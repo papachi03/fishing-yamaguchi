@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createEgi, press, release, tick, reelIn, canReelIn, CASTS } from '../src/js/ikabu/games/egi.js';
+import { createEgi, press, release, tick, reelIn, canReelIn, tripTicketOk, QUICK_REEL_SEC, QUICK_REEL_MAX, CASTS } from '../src/js/ikabu/games/egi.js';
 
 const calm = () => 0.99;
 const run = (s, seconds, step = 0.05) => { for (let t = 0; t < seconds - 1e-9; t += step) tick(s, step); };
@@ -69,4 +69,33 @@ test('画面：回収ボタンがあり、長押し対策の対象とし、押�
   assert.match(view, /id="ika-egi-reelin"/);
   assert.match(ui, /\[el\.btn, el\.dartBtn, el\.reelInBtn, el\.stage\]/);
   assert.match(ui, /el\.reelInBtn\?\.addEventListener\('pointerdown'/);
+});
+
+// すぐ回収（2026-10-16 ぱっぱ）：投げてすぐ回収をくり返した釣行は🎫の数に入れない
+const next = (s) => { press(s); release(s); run(s, 0.1); };   // 結果→次の構え
+test(`投げて${QUICK_REEL_SEC}秒より前の回収を数え、${QUICK_REEL_MAX}投以上なら🎫の数に入れない`, () => {
+  const s = createEgi({ seed: 'q1', rand: calm });
+  for (let i = 0; i < QUICK_REEL_MAX - 1; i++) { cast(s); run(s, 2); reelIn(s); next(s); }
+  assert.equal(s.quickReels, QUICK_REEL_MAX - 1);
+  assert.equal(tripTicketOk(s), true, 'キャストミスのやり直しが1〜2回なら数える');
+  cast(s); run(s, 2); reelIn(s);
+  assert.equal(s.quickReels, QUICK_REEL_MAX);
+  assert.equal(tripTicketOk(s), false);
+});
+test(`${QUICK_REEL_SEC}秒より後の回収は数えない。イカが釣れた釣行はいつも数える`, () => {
+  const s = createEgi({ seed: 'q2', rand: calm });
+  for (let i = 0; i < 4; i++) { cast(s); run(s, QUICK_REEL_SEC + 1); if (s.phase === 'sinking' || s.phase === 'action') reelIn(s); next(s); }
+  assert.equal(s.quickReels, 0);
+  assert.equal(tripTicketOk(s), true);
+  const q = createEgi({ seed: 'q3', rand: calm });
+  q.quickReels = QUICK_REEL_MAX + 1;
+  q.catches.push({ id: 'aori', weight: 300, mantle: 15 });
+  assert.equal(tripTicketOk(q), true);
+});
+test('画面：すぐ回収の釣行は🎫を出さず、まとめのカードに一言', () => {
+  const ui = readFileSync(new URL('../src/js/ikabu/games/egi-ui.js', import.meta.url), 'utf8');
+  const tk = readFileSync(new URL('../src/js/ikabu/games/tickets-ui.js', import.meta.url), 'utf8');
+  assert.match(ui, /noTickets: !ticketOk/);
+  assert.match(ui, /O\.quickReel/);
+  assert.match(tk, /if \(d\.noTickets\) return;/);
 });

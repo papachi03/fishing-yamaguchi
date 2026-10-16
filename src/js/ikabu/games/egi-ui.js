@@ -10,7 +10,7 @@
 //   ・根掛かりは底にいる時だけ。墨は水面まで寄せた時に吐く
 import { rebait, BAITS, AJI, yaenSideAction, yaenAji, yaenFresh, yaenRunning, tailorSet, TANAS, TAILOR_BAITS, YAEN_DIST, YAEN_CHASE, canJadoLift } from './egi.js';
 import { levelOf, methodState, nextSeasonMonth, unlockedBetween, METHODS, METHOD_IDS, pointRate, catchPoints, ratedPoints, POINTS } from './progress.js';
-import { createEgi, press, release, tick, dart, reelIn, canReelIn, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
+import { createEgi, press, release, tick, dart, reelIn, canReelIn, tripTicketOk, setEgi, speciesPool, seasonOf, SEASON_MODES, EGI_COLOR_HEX, colorFit, bestColors, clarityOf, moodOf, CASTS, SIGNAL_GOOD, DEFAULT_CONDITIONS, DEFAULT_EGI, normalizeEgi, normalizeTackle, setTackle, TACKLE, RODS, DRAGS, EGI_RIGS } from './egi.js';
 import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
@@ -1802,7 +1802,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const blindPractice = !counted && rate > 0;   // 季節モードのアタリチャレンジ（経験値だけ3割）
     const { rec: r0, total } = recordEgiTrip(rec, catches, { counted, rate });
     const r = blindPractice ? addEgiPoints(r0, ratedPoints(POINTS.trip, rate)) : r0;   // 釣果は釣れた時に保存済み。ここは釣行の数と自己ベスト
-    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'egi', counted, tickets: true } }));   // チケット🎫は初心者練習・季節モードでも出す（10/2 ぱっぱ）。釣行の数・自己ベスト（counted）は今日の萩の海だけ
+    const ticketOk = tripTicketOk(s);   // すぐ回収をくり返した釣行は🎫の数に入れない（2026-10-16 ぱっぱ）
+    dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'egi', counted, tickets: true, noTickets: !ticketOk } }));   // チケット🎫は初心者練習・季節モードでも出す（10/2 ぱっぱ）。釣行の数・自己ベスト（counted）は今日の萩の海だけ
     const fresh = counted ? firstSpecies.slice() : [];
     rec = r;
     saveRec();
@@ -1817,6 +1818,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       <p class="ika-egi-over-total"><span>${t(lang, O.total)}</span><b>${total.toLocaleString()} g</b>${counted && total > before && total > 0 ? `<span class="ika-tag ika-tag--orange">${t(lang, O.newBest)}</span>` : ''}</p>
       ${!counted && catches.length ? `<p class="ika-egi-live-notice">${t(lang, settings.mode === 'beginner' ? O.notCountedBeginner : blindPractice ? O.blindPractice : O.notCounted)}</p>` : ''}
       ${list}${noEgi}
+      ${ticketOk ? '' : `<p class="ika-egi-live-notice">${t(lang, O.quickReel)}</p>`}
       ${blindSummary()}
       <p class="ika-egi-card-note">${TX.egi.reviewColor(lang, bestColors({ tod: s.tod, cond: s.cond, mood: s.mood }).map((c) => t(lang, TX.egi.colors[c])).join('・'))}</p>
       ${fresh.length ? `<p class="ika-egi-card-note">${t(lang, O.zukan)}: ${fresh.map((id) => esc(speciesName(lang, id))).join(', ')} ${t(lang, 'を追加', 'added')}</p>` : ''}
