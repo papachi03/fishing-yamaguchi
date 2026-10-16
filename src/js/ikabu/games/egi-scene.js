@@ -165,7 +165,8 @@ function isoAshibaSVG(W, assetHref) {
   const pic = `<image class="ika-eg-ashiba" href="${assetHref('/assets/ikabu/isoba/ashiba.webp')}" x="${f1(ax)}" y="${f1(ay)}" width="${aw}" height="${f1(ah)}" preserveAspectRatio="none" />`;
   // 水に浸かる部分：海の色を半透明でかぶせる（水面より下の絵の範囲だけ）
   const wet = `<rect x="${f1(ax)}" y="${S.surface}" width="${aw}" height="${f1(yb - S.surface + 2)}" fill="#0a4f66" opacity="0.55" />`;
-  return wall + rock + pic + wet;
+  void wall;   // 岩壁の遠景はこの大きさだと足場の上で水平に切れて見える（2026-10-16 ぱっぱ）→ 出さない
+  return rock + pic + wet;
 }
 
 // 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）。stage＝'isoba' は磯場（足場と遠景を磯の絵に）
