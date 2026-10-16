@@ -2948,6 +2948,13 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .is-battle #ika-header, .is-battle #ika-footer { display: none !important; }
 .ika-bt [hidden] { display: none !important; }
 .ika-bt-entry { margin: 18px 0 8px; display: grid; gap: 6px; justify-items: start; }
+/* オンライン対戦の入口（試遊版だけ・2026-10-16） */
+.ika-bt-online { width: 100%; margin-top: 10px; padding: 12px 14px; border: 2px dashed rgba(255,209,102,0.55); border-radius: 14px; background: rgba(2,8,20,0.35); display: grid; gap: 6px; }
+.ika-bt-online-h { margin: 0; font-weight: 900; color: #ffd166; }
+.ika-bt-online-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ika-bt-online-code { width: 7em; padding: 8px 10px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.4); background: #fff; color: #0b1a2b; font-size: 18px; font-weight: 900; letter-spacing: 0.15em; text-align: center; }
+.ika-bt-online-msg { margin: 0; min-height: 1.4em; color: #fff; font-weight: 700; }
+.ika-bt-online-codeview { font-size: 28px; letter-spacing: 0.2em; color: #ffd166; }
 .ika-bt { position: fixed; z-index: 90; inset: 0; background: #020814; display: grid; place-items: center; font-family: var(--font-maru); color: #fff; user-select: none; -webkit-user-select: none; }
 .ika-bt-stage { position: relative; width: 100vw; width: 100dvw; height: 100vh; height: 100dvh; max-width: calc(100dvh * 9 / 16 + 40px); overflow: hidden; background: #071a33; }
 /* 盤＝背景画像と同じ 9:16 の層。画面の縦横比が違っても、枠は画像の%で置くのでずれない（cover と同じ切れ方） */
@@ -3029,6 +3036,8 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* 真ん中の潮目の帯 */
 .ika-bt-band { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px 28% 4px 12px; flex-wrap: wrap; text-align: center; background: rgba(2,8,20,0.55); font-size: 12.5px; font-weight: 900; pointer-events: none; }
 .ika-bt-turn { color: #ffd166; white-space: nowrap; } .ika-bt-msg { color: #fff; }
+/* オンライン対戦の持ち時間（2026-10-16） */
+.ika-bt-timer { color: #cfe3ea; font-variant-numeric: tabular-nums; white-space: nowrap; } .ika-bt-timer.is-low { color: #ff7a7a; }
 /* 手札とボタン */
 .ika-bt-actions { position: absolute; z-index: 3; right: 2%; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .ika-bt-side--me .ika-bt-nums { display: none; }

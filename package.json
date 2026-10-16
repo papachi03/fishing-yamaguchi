@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test \"test/*.test.mjs\" \"worker/reports/test/*.test.mjs\"",
+    "test": "node --test \"test/*.test.mjs\" \"worker/reports/test/*.test.mjs\" \"worker/battle/test/*.test.mjs\"",
     "dev:worker": "node worker/reports/dev-server.mjs",
     "build:worker": "esbuild worker/reports/src/index.js --bundle --format=esm --target=es2022 --charset=utf8 --outfile=worker/reports/dist/worker.js"
   },

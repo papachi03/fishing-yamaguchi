@@ -1,0 +1,19 @@
+# 山口イカ部カードバトル オンライン対戦（試遊版・2026-10-16）
+#   手元で動かす：worker/battle で  npx wrangler dev   → http://localhost:8787
+#   本番（試遊版用）に出す：CLOUDFLARE_ACCOUNT_ID=<account_id> npx wrangler deploy
+#   秘密の値は無い（account_id は環境変数で渡す）ので、このファイルは git に入れてよい
+name = "ikabu-battle"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "BattleRoom"
+
+# 無料プランで使える Durable Object は SQLite 型だけ（2026-10-16 確認）
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BattleRoom"]
+
+[observability]
+enabled = true

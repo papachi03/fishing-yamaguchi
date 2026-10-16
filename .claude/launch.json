@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ikabu-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5180", "--strictPort"],
+      "port": 5180
+    },
+    {
+      "name": "ikabu-worker",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["worker/reports/dev-server.mjs"],
+      "port": 8787
+    },
+    {
+      "name": "ikabu-battle",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler", "dev", "-c", "worker/battle/wrangler.toml", "--port", "8788"],
+      "port": 8788
+    }
+  ]
+}
