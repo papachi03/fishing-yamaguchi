@@ -19,8 +19,10 @@ import { createNet, mirror, isCode } from './battle-net.js';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 // オンライン対戦（2026-10-16 第1段階・試遊版だけ）の部屋のサーバー。手元は wrangler dev（launch.json の ikabu-battle-8788）
 const BATTLE_BASE = import.meta.env.DEV ? 'http://localhost:8788' : 'https://ikabu-battle.hoodhomies.workers.dev';
-// 入口を出す条件：試遊版、または手元の開発サーバーで ?online を付けた時（本番には出さない）
-const ONLINE_ON = IS_TRIAL || (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('online'));
+// 入口を出す条件（2026-10-16 ぱっぱ：開発段階なので、URLを教えた人とだけ対戦できるように）：
+//   試遊版か手元の開発サーバーで、URL に合言葉 ?online=tomodachi が付いている時だけ。本番の組み立てでは出さない
+const ONLINE_KEY = 'tomodachi';
+const ONLINE_ON = (IS_TRIAL || import.meta.env.DEV) && typeof location !== 'undefined' && new URLSearchParams(location.search).get('online') === ONLINE_KEY;
 // 曲（Suno・ぱっぱ 2026-10-01）：対戦中（前奏9秒→9〜66秒を繰り返す）／終盤（エギ残り2以下かターン8以降。6〜156秒を繰り返す）／勝ちのジングル
 const BATTLE_AUDIO = {
   battle: { src: '/assets/ikabu/audio/battle/bgm_battle.mp3', loop: true, loopStart: 9, loopEnd: 66, volume: 0.18 },
