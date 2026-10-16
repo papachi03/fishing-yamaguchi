@@ -86,25 +86,26 @@ export const BATTLES_CH2 = [
     deck: { squid: [48, 17, 44, 33, 19, 19, 30, 3, 39, 21, 30, 11, 46], tech: [54, 54, 73, 73, 81, 81, 89, 89, 93, 87, 56], trap: [105, 105, 111, 111, 115, 115] } },
 ];
 // 第3章「夜の漁港・四天王（前編）」の9戦（2026-10-16）。エギ5・Lv3 は第2章と同じ。四天王戦は「四天王が先攻」。第8戦の背景は沖の一文字（赤灯台へ続く堤防）を使う
+// 2026-10-16 山札切れ＝エギの数・トラップの選択が入った後に測り直し、第3・5〜9戦を目安（第2章を勝ち抜いた強さで 89/59/65/70/51/24%）に寄せた。看板のカード（ライゴのコウモリダコ・カギのカギイカ・ソデマルのソデイカなど）は残す（ikabu-research/sim/story_tune_greedy*.mjs）
 export const BATTLES_CH3 = [
   { i: 1, foe: 'hotaru', rank: ['部員', 'Member'], stars: 4, place: ['漁港の常夜灯', 'Harbor lamp'], bg: 'jouyatou', stage: 'jouyatou', cpuEgi: 5, brain: 3, rule: 'harbor',
     deck: { squid: [7, 7, 5, 5, 22, 22, 23, 23, 37, 37, 49, 49, 43], tech: [71, 71, 76, 76, 86, 85, 90, 67, 67, 61, 55], trap: [102, 102, 107, 107, 100, 112] } },
   { i: 2, foe: 'kenzaki', rank: ['エリート', 'Elite'], stars: 4, place: ['集魚灯の船だまり', 'Squid-boat lights'], bg: 'gyokou_gyotou', stage: 'shugyotou', cpuEgi: 5, brain: 3, rule: 'fishLight',
     deck: { squid: [4, 4, 15, 15, 34, 34, 5, 5, 22, 22, 49, 49, 23], tech: [68, 68, 71, 71, 90, 90, 70, 70, 69, 69, 67], trap: [101, 101, 108, 108, 116, 103] } },
   { i: 3, foe: 'raigo', rank: ['ライバル', 'Rival'], stars: 4, place: ['夜の岸壁', 'Quay at night'], bg: 'gyokou_ganpeki', stage: 'jouyatou', cpuEgi: 5, brain: 3, rule: null,
-    deck: { squid: [13, 13, 33, 33, 44, 44, 27, 27, 24, 24, 17, 17, 19], tech: [54, 54, 82, 82, 74, 74, 89, 91, 65, 65, 80], trap: [113, 113, 104, 104, 99, 110] } },
+    deck: { squid: [13, 13, 8, 9, 44, 44, 27, 27, 24, 24, 17, 17, 3], tech: [54, 54, 82, 82, 74, 74, 89, 91, 65, 65, 80], trap: [113, 113, 104, 104, 99, 110] } },
   { i: 4, foe: 'mizuhiki', rank: ['四天王の弟子', "Big Four's pupil"], stars: 5, place: ['船の陰', 'Shadow of the boats'], bg: 'gyokou_yami', stage: 'yami', cpuEgi: 5, brain: 3, rule: 'yamiyo',
     deck: { squid: [43, 43, 42, 49, 49, 37, 37, 22, 22, 5, 5, 36, 36, 7], tech: [86, 86, 67, 67, 81, 81, 82, 82, 61, 85], trap: [114, 114, 118, 118, 107, 112] } },
   { i: 5, foe: 'yurei', rank: ['四天王', 'Big Four'], stars: 5, place: ['夜霧の漁港の外れ', 'Harbor in the night fog'], bg: 'gyokou_kiri', stage: 'yami', cpuEgi: 5, brain: 3, rule: 'yureiNight',
-    deck: { squid: [42, 42, 43, 43, 49, 49, 34, 5, 5, 22, 22, 37, 37], tech: [61, 61, 67, 67, 86, 86, 93, 71, 71, 94, 84], trap: [117, 117, 103, 103, 114, 107] } },
+    deck: { squid: [42, 42, 43, 43, 49, 49, 34, 5, 5, 22, 22, 23, 23], tech: [61, 61, 67, 67, 86, 86, 93, 71, 71, 94, 84], trap: [117, 117, 103, 103, 114, 107] } },
   { i: 6, foe: 'tekagi', rank: ['四天王の弟子', "Big Four's pupil"], stars: 5, place: ['夜の荷揚げ場', 'Unloading dock'], bg: 'niage', stage: 'gyokou_soko', cpuEgi: 5, brain: 3, rule: 'quay',
-    deck: { squid: [18, 18, 40, 40, 28, 28, 29, 29, 16, 16, 20, 6, 35], tech: [83, 83, 65, 65, 77, 77, 79, 79, 52, 95, 51], trap: [117, 117, 106, 109, 109, 98] } },
+    deck: { squid: [18, 18, 40, 40, 28, 28, 29, 29, 16, 16, 20, 6, 35], tech: [83, 83, 65, 65, 77, 77, 79, 79, 66, 95, 51], trap: [117, 117, 106, 109, 109, 98] } },
   { i: 7, foe: 'kagi', rank: ['赤灯台の番人', 'Lighthouse keeper'], stars: 5, place: ['沖の一文字', 'Offshore breakwater'], bg: 'ichimonji', stage: 'gyokou_soko', cpuEgi: 5, brain: 3, rule: 'ichimonji',
-    deck: { squid: [35, 16, 16, 40, 40, 28, 28, 18, 18, 6, 6, 29, 29], tech: [83, 83, 77, 77, 65, 65, 62, 62, 52, 52, 79], trap: [117, 117, 109, 109, 106, 106] } },
+    deck: { squid: [35, 20, 16, 40, 40, 28, 28, 18, 18, 6, 6, 29, 29], tech: [83, 83, 77, 77, 65, 65, 62, 62, 52, 52, 79], trap: [117, 117, 98, 109, 106, 106] } },
   { i: 8, foe: 'raigo', rank: ['ライバル', 'Rival'], stars: 5, place: ['赤灯台へ続く堤防', 'Pier to the red lighthouse'], bg: 'ichimonji', stage: 'akatoudai', cpuEgi: 5, brain: 3, rule: 'rough',
-    deck: { squid: [44, 44, 33, 33, 13, 13, 17, 17, 19, 19, 27, 27, 46], tech: [82, 82, 86, 85, 89, 89, 91, 74, 84, 88, 65], trap: [113, 113, 104, 104, 115, 115] } },
+    deck: { squid: [44, 44, 33, 33, 1, 13, 17, 17, 19, 19, 27, 27, 46], tech: [82, 82, 86, 85, 89, 89, 91, 74, 84, 88, 65], trap: [113, 113, 104, 104, 115, 115] } },
   { i: 9, foe: 'sodemaru', rank: ['四天王', 'Big Four'], stars: 5, place: ['赤灯台の下', 'Under the red lighthouse'], bg: 'akatoudai', stage: 'akatoudai', cpuEgi: 5, brain: 3, rule: 'akatoudai',
-    deck: { squid: [20, 20, 45, 18, 18, 40, 40, 28, 28, 29, 29, 16, 16], tech: [83, 83, 77, 77, 65, 65, 79, 79, 63, 52, 52], trap: [117, 117, 109, 109, 106, 106] } },
+    deck: { squid: [20, 20, 45, 18, 18, 40, 40, 28, 28, 29, 29, 16, 16], tech: [83, 83, 77, 77, 65, 65, 79, 79, 63, 52, 52], trap: [98, 117, 109, 109, 106, 106] } },
 ];
 // 章ごとの戦の一覧
 export const BATTLES_BY_CH = { 1: BATTLES_CH1, 2: BATTLES_CH2, 3: BATTLES_CH3 };
