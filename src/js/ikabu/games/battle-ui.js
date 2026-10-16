@@ -202,7 +202,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
         <div class="ika-bt-row" data-row="me-back"></div>
       </div>
       <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-side-left"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-tide" data-tide="cpu"></div></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
-      <div class="ika-bt-band">${story?.rule && RULE_TEXT[story.rule] ? `<span class="ika-bt-rule">${({ night: '🌙', summerNight: '🎆', rough: '🌊', exam: '📝', sarashi: '🌊', tidepool: '☀️', crevice: '🪨', moba: '🌿', stormExam: '⛈️', harbor: '🏮', fishLight: '💡', yamiyo: '🌑', yureiNight: '👻', quay: '📦', ichimonji: '🧱', akatoudai: '🗼' })[story.rule] ?? ''}${t(lang, ...RULE_TEXT[story.rule].title).replace(/^場のルール：|^Field: /, '')}：${t(lang, ...RULE_TEXT[story.rule].body).replace(/（おたがい）| \(both sides\)/, '')}</span>` : ''}<span class="ika-bt-turn" data-turn></span>${online ? '<span class="ika-bt-timer" data-timer></span>' : ''}<span class="ika-bt-msg" data-msg></span></div>
+      <div class="ika-bt-band">${story?.rule && RULE_TEXT[story.rule] ? `<span class="ika-bt-rule" data-rule role="button" tabindex="0">${({ night: '🌙', summerNight: '🎆', rough: '🌊', exam: '📝', sarashi: '🌊', tidepool: '☀️', crevice: '🪨', moba: '🌿', stormExam: '⛈️', harbor: '🏮', fishLight: '💡', yamiyo: '🌑', yureiNight: '👻', quay: '📦', ichimonji: '🧱', akatoudai: '🗼' })[story.rule] ?? ''}${t(lang, ...RULE_TEXT[story.rule].title).replace(/^場のルール：|^Field: /, '')}<i class="ika-bt-rule-q">?</i></span>` : ''}<span class="ika-bt-turn" data-turn></span>${online ? '<span class="ika-bt-timer" data-timer></span>' : ''}<span class="ika-bt-msg" data-msg></span></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide="me"></div><div class="ika-bt-nums" data-nums="me"></div></div>
       <button type="button" class="ika-bt-scale" data-scale aria-label="${t(lang, 'カードの大きさ', 'Card size')}">⚙</button>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
@@ -268,6 +268,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     endTurn(st, { discard: a.discard }); return { ok: true };
   }
   // 持ち時間（オンラインだけ）：サーバーの締切まで何秒か
+  // 場のルールの札：押すと説明（帯には名前だけ出す 2026-10-16）
+  $('[data-rule]')?.addEventListener('click', () => { if (story?.rule && RULE_TEXT[story.rule]) callout(t(lang, ...RULE_TEXT[story.rule].body), 'is-good', 3600); });
   const timerEl = $('[data-timer]');
   const tickTimer = () => { if (!timerEl) return; const s = st.deadline ? Math.max(0, Math.ceil((st.deadline - Date.now()) / 1000)) : null; timerEl.textContent = s == null || st.winner ? '' : `⏱${s}`; timerEl.classList.toggle('is-low', s != null && s <= 10); };
   const timerId = online ? setInterval(tickTimer, 500) : 0;
