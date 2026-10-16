@@ -574,6 +574,8 @@ export const EGI_TEXT = {
     catches: pair('釣果', 'Catches'),
     bouzu: pair('ボウズ。でも部則二、釣れなくても部員。', 'Blanked. Rule two: still a member.'),
     bouzuSub: pair('夕マズメの秋、底までカウントして、しゃくりは2〜3回。', 'Try an autumn dusk, count to the bottom, and keep it to two or three jerks.'),
+    // すぐ回収をくり返した釣行（2026-10-16 ぱっぱ）
+    quickReel: pair('すぐ回収した投げが多かったので、今回は🎫の数に入りません。じっくり沈めて誘ってみよう', 'Too many casts were reeled straight back, so this trip does not count toward 🎫. Let it sink and work it.'),
     best: pair('自己ベスト', 'Personal best'),
     newBest: pair('自己ベスト更新！', 'New personal best!'),
     zukan: pair('マイ図鑑', 'My atlas'),
