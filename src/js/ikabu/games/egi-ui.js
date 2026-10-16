@@ -1584,16 +1584,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'isoOver': {
           if (settings.blind || e.group === V.isoLastGroup) break;   // ハードは見えないので知らせない。同じ種類が続く時は黙る
           V.isoLastGroup = e.group;
-          callout(t(lang, ISO_TX.over[e.group]), e.group === 'weed' ? '' : 'bad', 1800);
+          callout(t(lang, ...ISO_TX.over[e.group]), e.group === 'weed' ? '' : 'bad', 1800);
           break;
         }
         case 'isoFree':
-          callout(t(lang, ISO_TX.free), 'good', 1800);
+          callout(t(lang, ...ISO_TX.free), 'good', 1800);
           break;
         case 'snag':
           V.egi.mode = 'stuck';
           V.snagAt = now;
-          callout(t(lang, e.iso ? ISO_TX.snag[e.iso] : TX.msg.snag), 'bad');
+          callout(e.iso ? t(lang, ...ISO_TX.snag[e.iso]) : t(lang, TX.msg.snag), 'bad');
           syncStock();
           break;
         case 'recover':
