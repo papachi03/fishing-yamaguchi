@@ -75,7 +75,7 @@ const TUTOR = [
   { id: 'direct', pic: 'yatta', when: (st) => st.active === 'me' && !st.players.me.noAttack && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && !st.players.cpu.front.some(Boolean),
     ja: '相手の前列が空だ！\n自分のイカをタップして\n「ダイレクトアタック」。\n相手のエギを1個奪えるよ。\n5個ぜんぶ奪えば勝ち！', en: "The enemy front row is empty! Tap your squid and hit Direct Attack to take one of their egi. Take all five to win!" },
   { id: 'trap', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'trap' && canPlay(st, 'me', x).ok),
-    ja: 'トラップは後列に「伏せる」。\n相手が攻撃した時などに自動で開いて、\n1回使ったら捨て札へ。\n伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
+    ja: 'トラップは後列に「伏せる」。\n相手が攻撃した時などに「使う？」と聞かれ、\n開くか温存するか選べる。\n1回使ったら捨て札へ。\n伏せると相手は読めないよ', en: 'Traps are set face down in the back row. They open automatically, for example when the enemy attacks, and are used once.' },
   { id: 'tech', pic: 'point', when: (st) => st.active === 'me' && st.players.me.hand.some((x) => x.card.kind === 'tech' && canPlay(st, 'me', x).ok),
     ja: 'テクニックはその場で効く\n（攻撃+2など）。\n同じマークのイカが前列にいると\n潮1安くなるよ。\n攻撃の前に使うのがコツ', en: 'Techniques work instantly (e.g. +2 ATK). If a squid with the same mark is in your front row, they cost 1 less. Use them before attacking.' },
   { id: 'shakuri', pic: 'point', when: (st) => st.active === 'me' && st.players.me.tide >= SHAKURI_COST && st.players.me.front.some((x) => x && !x.sick && !x.attacked && !x.skipThis) && st.players.cpu.front.some(Boolean),
