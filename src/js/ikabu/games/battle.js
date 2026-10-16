@@ -1,7 +1,8 @@
 // イカ部カードバトルの頭脳（2026-09-30）。設計案 4章 v2。DOM に触らない（node --test で確かめる）。画面は battle-ui.js
 //   ・30枚デッキ／前列3・後列3／エギ5＝ライフ／潮＝コスト（ターンごとに最大+1・上限8・毎ターン回復）
 //   ・出したターンは攻撃できない（haste を除く）／攻撃 vs 防御：＞釣る・＝バラシ（両方残る）・＜弾かれる（次のターン攻撃できない）
-//   ・相手の前列が0体の時だけダイレクト（エギ1個）。奪われた側は1枚引く。エギ0か、山札が尽きて引けないと負け
+//   ・相手の前列が0体の時だけダイレクト（エギ1個）。奪われた側は1枚引く。エギ0で負け
+//   ・2026-10-16 ぱっぱ：山札が尽きて引けなくなったら、その時のエギの数で勝ち負け（多い方の勝ち。同じなら先に尽きた方の負け）。全モード共通
 //   ・先攻は最初のターン攻撃できない。同じマークのイカが前列にいると、そのマークのテクニックは潮1安い
 //   ・カードの効果は cards-effects.json（make_effects.py が effect の文から機械的に作る）
 //   2026-10-01 膠着の解消（ぱっぱ「終盤カードが減らないし攻撃補助が無いと詰む」）：
@@ -151,7 +152,7 @@ export function startTurn(st) {
   p.summoned = false; p.techUsed = 0; p.techLimit = null; p.noAttack = st.turn === 1;   // 先攻の最初のターンは攻撃できない
   for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.shakuri = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
   // 「攻撃されない」（ダート・ドリフト）は相手の番の終わりまで残す。前は相手の番の始めに外していて、自分の番にしか効かない空振りだった（2026-10-04 ぱっぱ）
-  if (!draw(st, side)) { finish(st, other(side)); return st; }
+  if (!draw(st, side)) { check(st); return st; }
   fireTraps(st, other(side), 'enemyTurnStart', {});
   return st;
 }
@@ -405,7 +406,15 @@ export function attack(st, side, x, target = null) {
 }
 function check(st) {
   if (st.winner) return;
-  for (const s of ['me', 'cpu']) { const p = P(st, s); if (p.egi <= 0 || p.lost) { finish(st, other(s)); return; } }
+  for (const s of ['me', 'cpu']) { if (P(st, s).egi <= 0) { finish(st, other(s)); return; } }
+  // 山札切れ：エギの多い方の勝ち。同じなら先に尽きた方（lost の付いた方）の負け
+  const out = ['me', 'cpu'].find((s) => P(st, s).lost === 'deck');
+  if (out) {
+    const mine = P(st, out).egi, theirs = P(st, other(out)).egi;
+    say(st, `山札が尽きた！ エギの数で勝負（${out === 'me' ? mine : theirs} 対 ${out === 'me' ? theirs : mine}）`);
+    st.deckOut = true;
+    finish(st, mine > theirs ? out : other(out));
+  }
 }
 
 /* ---------- CPU の手（読みやすい型） ---------- */

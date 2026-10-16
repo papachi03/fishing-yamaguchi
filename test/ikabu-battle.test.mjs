@@ -129,7 +129,7 @@ test('トラップ：根掛かりは相手の攻撃を止めて捨て札へ。1�
   assert.ok(st.players.cpu.front.includes(b));
 });
 
-test('エギ5個を全部奪われたら負け。山札が尽きて引けなくても負け', () => {
+test('エギ5個を全部奪われたら負け。山札が尽きてエギが同じなら、尽きた方の負け', () => {
   const st = mk();
   st.players.cpu.egi = 1; st.players.cpu.front = [null, null, null];
   rich(st);
@@ -142,6 +142,23 @@ test('エギ5個を全部奪われたら負け。山札が尽きて引けなく�
   st2.players.cpu.deck = [];
   endTurn(st2);   // CPUのターンの始めに引けない
   assert.equal(st2.winner, 'me');
+});
+
+test('山札が尽きたら、エギの多い方の勝ち（2026-10-16 ぱっぱ・全モード共通）', () => {
+  const st = mk();
+  st.players.cpu.deck = []; st.players.me.egi = 2;   // CPUが尽きたが、エギは CPU 5 対 わたし 2
+  endTurn(st);
+  assert.equal(st.winner, 'cpu');
+  assert.equal(st.deckOut, true);
+  assert.ok(st.log.some((l) => l.text.includes('エギの数で勝負')));
+  const st2 = mk();
+  st2.players.cpu.deck = []; st2.players.cpu.egi = 3;   // CPUが尽き、エギも CPU 3 対 わたし 5
+  endTurn(st2);
+  assert.equal(st2.winner, 'me');
+  const st3 = mk({ first: 'cpu' });
+  st3.players.me.deck = []; st3.players.cpu.egi = 1;   // わたしが尽きたが、エギは わたし 5 対 CPU 1
+  endTurn(st3);
+  assert.equal(st3.winner, 'me');
 });
 
 test('CPUの手：イカを出す→釣れる相手を攻撃→トラップを伏せる→終わり。試合が最後まで進む', () => {
