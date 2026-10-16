@@ -1088,7 +1088,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   el.hard?.addEventListener('click', (e) => { const b = e.target.closest('[data-hard]'); if (b) setHard(b.dataset.hard === '1'); });
   // 磯場（2026-10-16 試遊版のテスト）：今日の萩の海の条件のまま、舞台だけ磯に。ハード＝海が見えない（アタリチャレンジと同じ見せ方）
   // 磯場（2026-10-16）：Lv10 で解放・Lv13 でハード。ボタンは views/play.js（画像は GPT）。解放前は灰色＋🔒の札
-  const isoState = () => { const lv = levelNow(); return { lv, normal: ISO_FREE || lv >= ISO_LEVEL.normal, hard: ISO_FREE || lv >= ISO_LEVEL.hard }; };
+  // 試遊版だけ（2026-10-16 ぱっぱ）：「レベルに関係なく開く」ボタン。押すと通常・ハードとも開く（この端末に覚える）。本番には出ない
+  const ISO_TRIAL_KEY = 'ikabu.trial.isoOpen';
+  let isoTrialOpen = IS_TRIAL && Boolean(readPref(ISO_TRIAL_KEY));
+  const isoState = () => { const lv = levelNow(), free = ISO_FREE || isoTrialOpen; return { lv, normal: free || lv >= ISO_LEVEL.normal, hard: free || lv >= ISO_LEVEL.hard }; };
+  if (IS_TRIAL && el.playIso) {
+    const tb = document.createElement('button');
+    tb.type = 'button'; tb.className = 'ika-btn ika-egi-iso-trial';
+    tb.textContent = t(lang, '🧪 試遊版だけ：磯場をレベルに関係なく開く', '🧪 Trial only: open the rocky shore at any level');
+    tb.hidden = isoTrialOpen;
+    tb.addEventListener('click', () => { isoTrialOpen = true; writePref(ISO_TRIAL_KEY, true); tb.hidden = true; syncIso(); callout(t(lang, '磯場を開きました（試遊版だけ）', 'Rocky shore opened (trial only)'), 'good', 2200); });
+    el.playIso.insertAdjacentElement('afterend', tb);
+  }
   function syncIso() {
     if (!el.playIso) return;
     const st = isoState(), on = settings.stage === 'isoba';
