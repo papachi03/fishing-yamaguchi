@@ -189,11 +189,11 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, n.surprise, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     // アタリチャレンジ：海の中を隠す幕（水中のまとまりのすぐ上）と、糸を水面より上だけにする切り抜き（2026-10-04）
-    // 磯場ハードの幕は、水面85%→浅い所90%→中ほど97%→底100%のグラデーション（底にゴロタ・サンゴ・藻場があるか分かりづらいくらい）（ぱっぱ 10/16：実際の海も表層は見えるが深くなるほど見えない）。季節のアタリチャレンジは一定90%
+    // 磯場ハードの幕は、水面85%→浅い所90%→中ほど97%→底100%のグラデーション（底にゴロタ・サンゴ・藻場があるか分かりづらいくらい）（ぱっぱ 10/16：実際の海も表層は見えるが深くなるほど見えない）。季節のアタリチャレンジも同じ
     const fogGrad = svgEl('linearGradient', { id: 'ika-eg-foggrad', gradientUnits: 'userSpaceOnUse', x1: '0', y1: String(SCENE.surface), x2: '0', y2: String(SCENE.seabed) });
     for (const [off, op] of [['0', '0.85'], ['0.15', '0.9'], ['0.35', '0.97'], ['1', '1']]) fogGrad.append(svgEl('stop', { offset: off, 'stop-color': '#06121c', 'stop-opacity': op }));
     svg.querySelector('defs')?.append(fogGrad);
-    sc.fog = svgEl('rect', { class: 'ika-eg-blindfog', x: String(-W), y: String(SCENE.surface + 2), width: String(4 * W), height: String(2 * SCENE.H), fill: s?.field ? 'url(#ika-eg-foggrad)' : '#06121c', opacity: '0' });
+    sc.fog = svgEl('rect', { class: 'ika-eg-blindfog', x: String(-W), y: String(SCENE.surface + 2), width: String(4 * W), height: String(2 * SCENE.H), fill: 'url(#ika-eg-foggrad)', opacity: '0' });   // アタリチャレンジも同じグラデーションに統一（ぱっぱ 10/16）
     sc.under.after(sc.fog);
     const clip = svgEl('clipPath', { id: 'ika-eg-aboveclip' });
     clip.append(svgEl('rect', { x: String(-W), y: String(-2 * SCENE.H), width: String(3 * W + SCENE.pierRight), height: String(2 * SCENE.H + SCENE.surface + 1) }));
@@ -2632,7 +2632,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (blindHide !== blindShown) {
       blindShown = blindHide;
       sc.under.style.opacity = blindHide ? '0' : '';
-      sc.fog.setAttribute('opacity', blindHide ? (s?.field ? '1' : '0.9') : '0');   // 磯場ハードはグラデーション（塗りが90〜100%を持つ）、アタリチャレンジは90%のまま
+      sc.fog.setAttribute('opacity', blindHide ? '1' : '0');   // 幕の濃さはグラデーションの塗り（水面85%→底100%）が持つ
       if (blindHide) sc.line.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else sc.line.removeAttribute('clip-path');
       // 磯場：足場の絵と水に浸かる帯も、水面より上だけにする（幕の上に薄い帯が残って違和感：2026-10-16 ぱっぱ）
       for (const n of sc.svg.querySelectorAll('.ika-eg-ashiba, .ika-eg-isowet')) { if (blindHide) n.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else n.removeAttribute('clip-path'); }
