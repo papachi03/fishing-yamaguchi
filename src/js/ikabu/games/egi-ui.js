@@ -2628,7 +2628,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (blindHide !== blindShown) {
       blindShown = blindHide;
       sc.under.style.opacity = blindHide ? '0' : '';
-      sc.fog.setAttribute('opacity', blindHide ? '0.9' : '0');   // 磯場ハードもうっすら見える90%（ぱっぱ 10/16「90%ぐらいに」）
+      sc.fog.setAttribute('opacity', blindHide ? (s?.field ? '0.95' : '0.9') : '0');   // 磯場ハードは95%（ぱっぱ 10/16：90→95で見比べ）、アタリチャレンジは90%のまま
       if (blindHide) sc.line.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else sc.line.removeAttribute('clip-path');
       // 磯場：足場の絵と水に浸かる帯も、水面より上だけにする（幕の上に薄い帯が残って違和感：2026-10-16 ぱっぱ）
       for (const n of sc.svg.querySelectorAll('.ika-eg-ashiba, .ika-eg-isowet')) { if (blindHide) n.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else n.removeAttribute('clip-path'); }
