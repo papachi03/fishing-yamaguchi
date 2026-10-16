@@ -150,7 +150,7 @@ export function isoBottomSVG(field, W, assetHref = (p) => p) {
 }
 
 // 磯の足場（2026-10-16）：足場の絵を置き、その右端の輪郭（ISO_ASHIBA.edge）から水中の岩を続けて描く。水に浸かる所は海の色をかぶせる
-function isoAshibaSVG(W, assetHref) {
+function isoAshibaSVG(W, assetHref, which = 'all') {
   const S = SCENE;
   const aw = 360, ah = (aw * ISO_ASHIBA.h) / ISO_ASHIBA.w;   // 絵の大きさ（px）
   const ax = S.pierRight + 56 - aw, ay = S.pierTop - 42;      // 絵の左上。上の面が pierTop、右端が pierRight のやや右
@@ -166,6 +166,8 @@ function isoAshibaSVG(W, assetHref) {
   // 水に浸かる部分：海の色を半透明でかぶせる（水面より下の絵の範囲だけ）
   const wet = `<rect x="${f1(ax)}" y="${S.surface}" width="${aw}" height="${f1(yb - S.surface + 2)}" fill="#0a4f66" opacity="0.55" />`;
   void wall;   // 岩壁の遠景はこの大きさだと足場の上で水平に切れて見える（2026-10-16 ぱっぱ）→ 出さない
+  if (which === 'rock') return rock;        // 水中の岩：海底と同じ層（イカ・エギより後ろ）
+  if (which === 'pic') return pic + wet;     // 足場の絵と水に浸かる所：水面より上の層
   return rock + pic + wet;
 }
 
@@ -203,13 +205,14 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
   <rect class="ika-eg-searect" x="${-W}" y="${S.surface}" width="${3 * W}" height="${2 * S.H}" fill="url(#ika-eg-sea)" />
   <!-- 海底と岩（投げるたびに深さが変わるので egi-ui.js が書き換える） -->
   <g class="ika-eg-bottom">${iso && field ? isoBottomSVG(field, W, assetHref) : `<path class="ika-eg-seabed" d="${seabedD(bottom, W)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W)}`}</g>
+  ${iso ? isoAshibaSVG(W, assetHref, 'rock') : ''}
   <!-- 水中で動くもの（気配のイカ・エギ・抱いたイカ・墨）はここに入る -->
   <g class="ika-eg-under"></g>
   <!-- 水面 -->
   <path class="ika-eg-wave" d="M${S.pierRight},${S.surface} L${2 * W},${S.surface}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
   ${ripples}${splash}
   <!-- 堤防（水面の上は明るいコンクリート、水中は暗い壁） -->
-  ${iso ? isoAshibaSVG(W, assetHref) : `<rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
+  ${iso ? isoAshibaSVG(W, assetHref, 'pic') : `<rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
   <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="8" fill="#ece5d3" />
   <rect x="${S.pierRight - 6}" y="${S.pierTop}" width="6" height="${2 * S.H - S.pierTop}" fill="#1f3038" opacity="0.6" />
   ${lamp}`}
