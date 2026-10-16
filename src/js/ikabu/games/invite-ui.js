@@ -29,9 +29,9 @@ export const INVITE_TEXT = {
   copied: (lang) => (lang === 'en' ? 'Copied. Paste it to a friend in LINE.' : 'コピーしました。LINEで友だちに貼り付けて送ってください。'),
 };
 
-export function inviteHTML(lang) {
+export function inviteHTML(lang, { wrap = true } = {}) {
   const T = INVITE_TEXT;
-  return `<div class="wrap"><section class="ika-invite" id="ika-invite" aria-label="${T.title(lang)}">
+  const inner = `<section class="ika-invite" id="ika-invite" aria-label="${T.title(lang)}">
     <p class="ika-invite-title">${T.title(lang)}</p>
     <p class="ika-invite-lead">${T.lead(lang)}</p>
     <div class="ika-invite-row">
@@ -39,17 +39,20 @@ export function inviteHTML(lang) {
       <span class="ika-invite-left" data-invite-left></span>
     </div>
     <p class="ika-invite-msg" data-invite-msg role="status" aria-live="polite"></p>
-  </section></div>`;
+  </section>`;
+  return wrap ? `<div class="wrap">${inner}</div>` : inner;
 }
 
-// 試遊版は注意書き（.ika-trial-note）の直後、本番はあそび場TOPの直後に出す（2026-10-16 本番にも出す。trialOnly は前の作りとの互換）
+// 試遊版は注意書き（.ika-trial-note）の直後、本番は見出しの説明文（.ika-games-lead）の直後＝ゲーム一覧より上に出す
+//   （2026-10-16 本番にも出す。最初は TOP の節の後ろに置いたら、ゲーム一覧のずっと下になってぱっぱのスマホで見つからなかった）
 export function mountInvite(lang, { trialOnly = false } = {}) {
   if (trialOnly && !IS_TRIAL) return null;
   if (document.getElementById('ika-invite')) return null;
   const note = document.querySelector('.ika-trial-note')?.closest('.wrap');
-  const top = document.querySelector('.ika-games-top');
-  const anchor = note ?? top ?? document.querySelector('main');
-  anchor?.insertAdjacentHTML(note || top ? 'afterend' : 'afterbegin', inviteHTML(lang));
+  const lead = document.querySelector('.ika-games-lead');
+  if (note) note.insertAdjacentHTML('afterend', inviteHTML(lang));
+  else if (lead) lead.insertAdjacentHTML('afterend', inviteHTML(lang, { wrap: false }));   // すでに .wrap の中
+  else document.querySelector('main')?.insertAdjacentHTML('afterbegin', inviteHTML(lang));
   const root = document.getElementById('ika-invite');
   const btn = root.querySelector('[data-invite]');
   const left = root.querySelector('[data-invite-left]');
