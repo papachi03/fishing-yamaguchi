@@ -164,7 +164,7 @@ function isoAshibaSVG(W, assetHref, which = 'all') {
   const wall = `<image class="ika-eg-isowall" href="${assetHref('/assets/ikabu/isoba/wall.webp')}" x="-150" y="${S.pierTop - 150}" width="380" height="138" preserveAspectRatio="none" />`;
   const pic = `<image class="ika-eg-ashiba" href="${assetHref('/assets/ikabu/isoba/ashiba.webp')}" x="${f1(ax)}" y="${f1(ay)}" width="${aw}" height="${f1(ah)}" preserveAspectRatio="none" />`;
   // 水に浸かる部分：海の色を半透明でかぶせる（水面より下の絵の範囲だけ）
-  const wet = `<rect x="${f1(ax)}" y="${S.surface}" width="${aw}" height="${f1(yb - S.surface + 2)}" fill="#0a4f66" opacity="0.55" />`;
+  const wet = `<rect class="ika-eg-isowet" x="${f1(ax)}" y="${S.surface}" width="${aw}" height="${f1(yb - S.surface + 2)}" fill="#0a4f66" opacity="0.55" />`;
   void wall;   // 岩壁の遠景はこの大きさだと足場の上で水平に切れて見える（2026-10-16 ぱっぱ）→ 出さない
   if (which === 'rock') return rock;        // 水中の岩：海底と同じ層（イカ・エギより後ろ）
   if (which === 'pic') return pic + wet;     // 足場の絵と水に浸かる所：水面より上の層

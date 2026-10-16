@@ -189,7 +189,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     sc.air.append(n.entry, n.egiAir, n.hugAir, n.toolPole, n.tool, n.surprise, ...n.drips);
     sc.tailor = buildTailor(sc);   // テーラーのウキ・置き竿・糸（2026-09-28）
     // アタリチャレンジ：海の中を隠す幕（水中のまとまりのすぐ上）と、糸を水面より上だけにする切り抜き（2026-10-04）
-    sc.fog = svgEl('rect', { class: 'ika-eg-blindfog', x: String(SCENE.pierRight), y: String(SCENE.surface + 2), width: String(3 * W), height: String(2 * SCENE.H), fill: '#06121c', opacity: '0' });
+    sc.fog = svgEl('rect', { class: 'ika-eg-blindfog', x: String(-W), y: String(SCENE.surface + 2), width: String(4 * W), height: String(2 * SCENE.H), fill: '#06121c', opacity: '0' });
     sc.under.after(sc.fog);
     const clip = svgEl('clipPath', { id: 'ika-eg-aboveclip' });
     clip.append(svgEl('rect', { x: String(-W), y: String(-2 * SCENE.H), width: String(3 * W + SCENE.pierRight), height: String(2 * SCENE.H + SCENE.surface + 1) }));
@@ -2628,8 +2628,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (blindHide !== blindShown) {
       blindShown = blindHide;
       sc.under.style.opacity = blindHide ? '0' : '';
-      sc.fog.setAttribute('opacity', blindHide ? (s?.field ? '1' : '0.9') : '0');   // 磯場ハードは地形が透けないよう真っ暗
+      sc.fog.setAttribute('opacity', blindHide ? '0.9' : '0');   // 磯場ハードもうっすら見える90%（ぱっぱ 10/16「90%ぐらいに」）
       if (blindHide) sc.line.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else sc.line.removeAttribute('clip-path');
+      // 磯場：足場の絵と水に浸かる帯も、水面より上だけにする（幕の上に薄い帯が残って違和感：2026-10-16 ぱっぱ）
+      for (const n of sc.svg.querySelectorAll('.ika-eg-ashiba, .ika-eg-isowet')) { if (blindHide) n.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else n.removeAttribute('clip-path'); }
     }
     // ヤエン：竿先で道糸に掛け、糸を伝って滑り降りる針金の仕掛け（ヤエンの位置＝滑った距離 / 残りの距離）
     //   2026-09-28 ぱっぱ（図あり）：上に道糸を通す輪（ガイド）と前の曲げ、そこから下へぶら下がる長い腕、腕の下の端に上向きの掛け針3本。
