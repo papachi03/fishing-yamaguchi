@@ -25,7 +25,10 @@ const KEY_SOUND = 'ikabu.battle.sound';   // 対戦の🔊と同じ切替
 const TENSE_BATTLES = { 1: new Set([8, 9]), 2: new Set([3, 8, 9]), 3: new Set([3, 5, 8, 9]) };
 const KEY_SEEN_CH = { 1: 'ikabu.story.seen', 2: 'ikabu.story.seen.ch2', 3: 'ikabu.story.seen.ch3' };
 const EPILOGUE_BG = { 1: 'bushitsu', 2: 'iso_yoake', 3: 'akatoudai_yoake' };
-const openChapters = (story) => CHAPTERS.filter((c) => c.count > 0 && (c.id === 1 || chapterCleared(story, c.id - 1, CHAPTERS[c.id - 2].count)));
+// 第3章は組み込み済みだが、本番に出す時期は別に決める（2026-10-16）。それまでは試遊版と手元だけで開き、本番では「工事中」のまま
+const CHAPTER_GATE = { 3: IS_TRIAL || import.meta.env.DEV };
+const chapterReady = (c) => c.count > 0 && (CHAPTER_GATE[c.id] ?? true);
+const openChapters = (story) => CHAPTERS.filter((c) => chapterReady(c) && (c.id === 1 || chapterCleared(story, c.id - 1, CHAPTERS[c.id - 2].count)));
 
 const charSrc = (id, face) => assetHref(`/assets/ikabu/story/chars/${id}_${face}.webp`);
 const bgSrc = (id) => assetHref(`/assets/ikabu/story/bg/${id}.webp`);
@@ -88,7 +91,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     const opened = new Set(openChapters(story).map((c) => c.id));
     const chapterHTML = (c) => {
       const head = `<h3><span class="ika-st-chno">${t(lang, `第${c.id}章`, `Ch. ${c.id}`)}</span>${t(lang, ...c.title)}<small>${t(lang, 'ゴール', 'Goal')}：${t(lang, ...c.goal)}</small></h3>`;
-      if (c.count === 0) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">🚧 ${t(lang, ...TX.wip)}</p></section>`;
+      if (!chapterReady(c)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">🚧 ${t(lang, ...TX.wip)}</p></section>`;
       if (!opened.has(c.id)) return `<section class="ika-st-ch is-wip">${head}<p class="ika-st-wip">${TX.lockedCh(lang, c.id - 1)}</p>${IS_TRIAL && c.id === 2 ? `<button type="button" class="ika-btn" data-trial-skip>${t(lang, ...TX.trialSkip)}</button>` : ''}</section>`;
       const nxt = nextBattle(story, c.id, c.count);
       return `<section class="ika-st-ch is-open">${head}
