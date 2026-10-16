@@ -119,13 +119,13 @@ export const EGI_TEXT = {
   },
   gestures: {
     title: pair('操作', 'Controls'),
-    row: pair('タップ：しゃくり／2回：2段／押したまま：テンションフォール／ダート：ダートボタン・上へスワイプ／回収：すぐ手元まで巻いて投げ直す', 'Tap: jerk / two taps: double / hold: tension fall / dart: Dart button or swipe up / Reel in: bring it straight back and recast'),
+    row: pair('タップ：しゃくり／2回：2段／押したまま：テンションフォール／ダート：ダートボタン・上へスワイプ／回収：すぐ手元まで巻いて投げ直す（投げて10秒以内の回収を1回の釣行で3回以上すると🎫・経験値なし）', 'Tap: jerk / two taps: double / hold: tension fall / dart: Dart button or swipe up / Reel in: bring it straight back and recast (reeling in within 10 s of casting 3+ times in a trip earns no 🎫 or exp)'),
     keys: pair('PC：Space・Enter＝タップと長押し、ダート＝↑キー・ホイール上・上へ短くドラッグ', 'PC: Space or Enter = tap and hold; dart = ArrowUp, wheel up, or a short upward drag'),
     dart: pair('ダート', 'Dart'),
     dartHint: pair('大きく横へ跳ばす誘い（沈下・フォール中）', 'A big sideways dart (while sinking or falling)'),
     // 回収ボタン（2026-10-16）：すぐ手元まで巻いて、この1投を終える
     reelIn: pair('回収', 'Reel in'),
-    reelInHint: pair('すぐ手元まで巻いて投げ直す（この1投は使ったことになる）', 'Reel straight back and cast again (this cast still counts)'),
+    reelInHint: pair('すぐ手元まで巻いて投げ直す（この1投は使ったことになる。投げて10秒以内の回収を1回の釣行で3回以上すると🎫・経験値なし）', 'Reel straight back and cast again (this cast still counts; reeling in within 10 s of casting 3+ times in a trip earns no 🎫 or exp)'),
     // 全画面（ぱっぱ 2026-09-25：操作説明にあると親切）
     full: pair('全画面：スマホは横に倒すと全画面で遊べます。「⛶ 全画面」ボタンでも（PC は Esc で戻る）。Android は最初のタップで上下のバーも消えます。iPhone は Safari の決まりでバーが残りますが、共有メニューの「ホーム画面に追加」から開くとバーなしで遊べます',
       'Full screen: on a phone, turn it sideways to play full screen, or use the “⛶ Full screen” button (Esc to leave on a PC). On Android the first tap also hides the browser bars. On iPhone, Safari keeps its bars, but opening from “Add to Home Screen” gives you a bar-free screen'),
@@ -574,8 +574,8 @@ export const EGI_TEXT = {
     catches: pair('釣果', 'Catches'),
     bouzu: pair('ボウズ。でも部則二、釣れなくても部員。', 'Blanked. Rule two: still a member.'),
     bouzuSub: pair('夕マズメの秋、底までカウントして、しゃくりは2〜3回。', 'Try an autumn dusk, count to the bottom, and keep it to two or three jerks.'),
-    // すぐ回収をくり返した釣行（2026-10-16 ぱっぱ）
-    quickReel: pair('すぐ回収した投げが多かったので、今回は🎫の数に入りません。じっくり沈めて誘ってみよう', 'Too many casts were reeled straight back, so this trip does not count toward 🎫. Let it sink and work it.'),
+    // 投げてすぐ（10秒以内）の回収を3回以上した釣行（2026-10-16 ぱっぱ：回収はファーミングのためではない）
+    quickReel: pair('投げてすぐ（10秒以内）の回収が3回以上あったので、今回の釣行は🎫と経験値の数に入りません。回収はキャストミスや反応がない時の投げ直し用です', 'You reeled in within 10 s of casting 3+ times, so this trip earns no 🎫 or exp. Reel in is for recasting after a miscast or no bites.'),
     best: pair('自己ベスト', 'Personal best'),
     newBest: pair('自己ベスト更新！', 'New personal best!'),
     zukan: pair('マイ図鑑', 'My atlas'),
