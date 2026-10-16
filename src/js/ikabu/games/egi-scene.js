@@ -8,7 +8,7 @@
 //   舞台の地色が見えない＝空・海・堤防が必ず画面を埋める。
 import { t } from '../i18n.js';
 import { HERO_ANIM } from '../hero-scene.js';
-import { isoBottomAt, ISO_RANGE, ISO_PARTS, ISO_ART } from './isoba.js';
+import { isoBottomAt, isoSlopeAt, ISO_RANGE, ISO_PARTS, ISO_ART, ISO_ASHIBA } from './isoba.js';
 
 export const SCENE = {
   H: 620,
@@ -78,26 +78,29 @@ export function weedSVG(weed, bottom, X) {
   const [c, dark] = WEED_COLORS[weed.kind] ?? WEED_COLORS.amamo;
   const n = Math.max(4, Math.round((x1 - x0) / (weed.kind === 'amamo' ? 8 : 12)));   // アマモは密に
   const blades = [];
-  for (let i = 0; i < n; i++) {
-    const x = x0 + ((x1 - x0) * (i + 0.5)) / n;
+  for (let i = 0; i < n; i++) blades.push(weedBlade(weed.kind, i, x0 + ((x1 - x0) * (i + 0.5)) / n, yb, h, c, dark));
+  const rocks = WEEDS_ROCKY[weed.kind]
+    ? `<path d="M${f1(x0 - 10)},${f1(yb + 4)} Q${f1(x0 + (x1 - x0) * 0.3)},${f1(yb - 12)} ${f1((x0 + x1) / 2)},${f1(yb - 8)} Q${f1(x1 - (x1 - x0) * 0.2)},${f1(yb - 14)} ${f1(x1 + 10)},${f1(yb + 4)} Z" fill="#1d3d4a" stroke="#0b2a33" stroke-width="2.5"/>`
+    : '';
+  return `<g class="ika-eg-weed" data-kind="${weed.kind}">${rocks}${blades.join('')}</g>`;
+}
+// 海藻の1株（根元 x,yb・高さ h px）。揺れは CSS（.ika-eg-weed-blade）
+function weedBlade(kind, i, x, yb, h, c, dark) {
+  {
     const hh = h * (0.75 + 0.25 * Math.abs(Math.sin(i * 2.3)));
     const sw = (i % 2 ? 1 : -1) * 6;
     let d;
-    if (weed.kind === 'amamo') {
+    if (kind === 'amamo') {
       d = `<path d="M${f1(x)},${f1(yb)} Q${f1(x + sw)},${f1(yb - hh * 0.5)} ${f1(x - sw * 0.6)},${f1(yb - hh)}" fill="none" stroke="${i % 3 ? c : dark}" stroke-width="4.5" stroke-linecap="round"/>`;
-    } else if (weed.kind === 'hondawara') {
+    } else if (kind === 'hondawara') {
       const br = [0.35, 0.55, 0.75].map((k) => `<path d="M${f1(x)},${f1(yb - hh * k)} l${f1(sw * 1.3)},${f1(-hh * 0.12)}" stroke="${c}" stroke-width="2" stroke-linecap="round"/><circle cx="${f1(x + sw * 1.3)}" cy="${f1(yb - hh * k - hh * 0.12)}" r="2.2" fill="${dark}"/>`).join('');
       d = `<path d="M${f1(x)},${f1(yb)} L${f1(x + sw * 0.4)},${f1(yb - hh)}" stroke="${dark}" stroke-width="2.6" stroke-linecap="round"/>${br}`;
     } else {
       const fr = [0.3, 0.5, 0.7, 0.88].map((k) => `<path d="M${f1(x)},${f1(yb - hh * k)} l-5,-4 M${f1(x)},${f1(yb - hh * k)} l5,-4" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`).join('');
       d = `<path d="M${f1(x)},${f1(yb)} L${f1(x)},${f1(yb - hh)}" stroke="${dark}" stroke-width="2.2" stroke-linecap="round"/>${fr}`;
     }
-    blades.push(`<g class="ika-eg-weed-blade" style="animation-delay:${(-(i % 5) * 0.6).toFixed(1)}s">${d}</g>`);
+    return `<g class="ika-eg-weed-blade" style="animation-delay:${(-(i % 5) * 0.6).toFixed(1)}s">${d}</g>`;
   }
-  const rocks = WEEDS_ROCKY[weed.kind]
-    ? `<path d="M${f1(x0 - 10)},${f1(yb + 4)} Q${f1(x0 + (x1 - x0) * 0.3)},${f1(yb - 12)} ${f1((x0 + x1) / 2)},${f1(yb - 8)} Q${f1(x1 - (x1 - x0) * 0.2)},${f1(yb - 14)} ${f1(x1 + 10)},${f1(yb + 4)} Z" fill="#1d3d4a" stroke="#0b2a33" stroke-width="2.5"/>`
-    : '';
-  return `<g class="ika-eg-weed" data-kind="${weed.kind}">${rocks}${blades.join('')}</g>`;
 }
 const WEEDS_ROCKY = { hondawara: true, umitoranoo: true };
 
@@ -116,17 +119,53 @@ function moonSVG(cx, cy, r, light, sky, surface, W) {
 export function isoBottomSVG(field, W, assetHref = (p) => p) {
   const X = (m) => distX(m, W);
   const pxPerM = (SCENE.seabed - SCENE.surface) / depthMax;
+  const pxPerMx = (W - SCENE.pierRight - 70) / ISO_RANGE;   // 横の縮尺（距離→px）。傾きの角度を出すのに使う
   const pts = [];
-  for (let m = 0; m <= ISO_RANGE; m += 0.5) pts.push(`${f1(X(m))},${f1(depthY(isoBottomAt(field, m)))}`);
+  for (let m = 0; m <= ISO_RANGE; m += 0.25) pts.push(`${f1(X(m))},${f1(depthY(isoBottomAt(field, m)))}`);
   const y0 = depthY(isoBottomAt(field, 0)), yEnd = depthY(isoBottomAt(field, ISO_RANGE));
   const bed = `<path class="ika-eg-seabed" d="M${-W},${2 * SCENE.H} L${-W},${f1(y0)} L${pts.join(' L')} L${2 * W},${f1(yEnd)} L${2 * W},${2 * SCENE.H} Z" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />`;
-  const parts = field.parts.map((p) => {
-    const [aw, ah] = ISO_ART[p.kind];
-    const h = ISO_PARTS[p.kind].h * pxPerM * 1.15, w = (h * aw) / ah;
-    const yb = depthY(isoBottomAt(field, p.at));
-    return `<image class="ika-eg-isopart" data-kind="${p.kind}" href="${assetHref(`/assets/ikabu/isoba/${p.kind}.webp`)}" x="${f1(X(p.at) - w / 2)}" y="${f1(yb - h + 4)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none" />`;
-  }).join('');
-  return bed + parts;
+  // 斜面に合わせて置く：根元を底に、傾きの角度で回す（沖へ下る斜面＝右が下がる）
+  const angleAt = (m) => (Math.atan2(isoSlopeAt(field, m) * pxPerM, pxPerMx) * 180) / Math.PI * 0.6;   // 斜面の6割だけ傾ける（全部倒すと不自然）
+  const img = (kind, at, scale, sinkK = 0.14) => {
+    const [aw, ah] = ISO_ART[kind], P = ISO_PARTS[kind];
+    const h = P.vh * scale * pxPerM, w = (h * aw) / ah, sink = h * sinkK;   // 根元を少し埋める（斜面で角が浮かないように）
+    const x = X(at), yb = depthY(isoBottomAt(field, at));
+    return `<image class="ika-eg-isopart" data-kind="${kind}" href="${assetHref(`/assets/ikabu/isoba/${kind}.webp`)}" x="${f1(x - w / 2)}" y="${f1(yb - h + sink)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none" transform="rotate(${f1(angleAt(at))} ${f1(x)} ${f1(yb)})" />`;
+  };
+  // 藻場：今の海の藻場と同じ揺れる海藻を、斜面に沿って並べる（株ごとに根元の深さがちがう）
+  const weedBed = (p) => {
+    const [c, dark] = WEED_COLORS[p.kind] ?? WEED_COLORS.amamo;
+    const n = Math.max(5, Math.round(((X(p.to) - X(p.from)) / (p.kind === 'amamo' ? 7 : 11))));
+    const blades = [];
+    for (let i = 0; i < n; i++) {
+      const m = p.from + ((p.to - p.from) * (i + 0.5)) / n;
+      const hpx = p.height * pxPerM * (0.8 + 0.4 * Math.abs(Math.sin(i * 1.7 + p.at)));
+      blades.push(weedBlade(p.kind, i, X(m), depthY(isoBottomAt(field, m)), hpx, c, dark));
+    }
+    return `<g class="ika-eg-weed ika-eg-isoweed" data-kind="${p.kind}">${blades.join('')}</g>`;
+  };
+  const decor = (field.decor ?? []).map((d) => img(d.kind, d.at, d.scale, 0.2)).join('');
+  const parts = field.parts.map((p) => (p.group === 'weed' ? weedBed(p) : img(p.kind, p.at, p.scale))).join('');
+  return bed + decor + parts;
+}
+
+// 磯の足場（2026-10-16）：足場の絵を置き、その右端の輪郭（ISO_ASHIBA.edge）から水中の岩を続けて描く。水に浸かる所は海の色をかぶせる
+function isoAshibaSVG(W, assetHref) {
+  const S = SCENE;
+  const aw = 360, ah = (aw * ISO_ASHIBA.h) / ISO_ASHIBA.w;   // 絵の大きさ（px）
+  const ax = S.pierRight + 56 - aw, ay = S.pierTop - 42;      // 絵の左上。上の面が pierTop、右端が pierRight のやや右
+  const ex = (fy) => { const e = ISO_ASHIBA.edge; let p = e[0]; for (const q of e) { if (q[0] > fy) break; p = q; } return ax + p[1] * aw; };
+  // 水中の岩：水面の高さの輪郭から始めて絵の下端まで輪郭をなぞり、その下はギザギザに落として画面の底へ
+  const fSurf = (S.surface - ay) / ah;
+  const edgePts = ISO_ASHIBA.edge.filter((e) => e[0] >= fSurf).map((e) => `${f1(ax + e[1] * aw)},${f1(ay + e[0] * ah)}`);
+  const xb = ax + aw * 0.997, yb = ay + ah;
+  const jag = [[xb + 6, yb + 30], [xb - 8, yb + 70], [xb + 14, yb + 120], [xb - 4, yb + 190], [xb + 10, yb + 260], [xb - 10, 2 * S.H]].map(([x, y]) => `${f1(x)},${f1(y)}`);
+  const rock = `<path class="ika-eg-isorock" d="M${-W},${S.surface} L${f1(ex(fSurf))},${S.surface} L${edgePts.join(' L')} L${jag.join(' L')} L${-W},${2 * S.H} Z" fill="#163440" stroke="#0b2a33" stroke-width="3" stroke-linejoin="round" />`;
+  const wall = `<image class="ika-eg-isowall" href="${assetHref('/assets/ikabu/isoba/wall.webp')}" x="-150" y="${S.pierTop - 150}" width="380" height="138" preserveAspectRatio="none" />`;
+  const pic = `<image class="ika-eg-ashiba" href="${assetHref('/assets/ikabu/isoba/ashiba.webp')}" x="${f1(ax)}" y="${f1(ay)}" width="${aw}" height="${f1(ah)}" preserveAspectRatio="none" />`;
+  // 水に浸かる部分：海の色を半透明でかぶせる（水面より下の絵の範囲だけ）
+  const wet = `<rect x="${f1(ax)}" y="${S.surface}" width="${aw}" height="${f1(yb - S.surface + 2)}" fill="#0a4f66" opacity="0.55" />`;
+  return wall + rock + pic + wet;
 }
 
 // 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）。stage＝'isoba' は磯場（足場と遠景を磯の絵に）
@@ -169,9 +208,7 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
   <path class="ika-eg-wave" d="M${S.pierRight},${S.surface} L${2 * W},${S.surface}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
   ${ripples}${splash}
   <!-- 堤防（水面の上は明るいコンクリート、水中は暗い壁） -->
-  ${iso ? `<image class="ika-eg-isowall" href="${assetHref('/assets/ikabu/isoba/wall.webp')}" x="-170" y="${S.pierTop - 150}" width="400" height="145" preserveAspectRatio="none" />
-  <path d="M${-W},${S.surface} L${S.pierRight + 26},${S.surface} L${S.pierRight + 46},${S.surface + 60} L${S.pierRight + 20},${S.surface + 140} L${S.pierRight + 50},${2 * S.H} L${-W},${2 * S.H} Z" fill="#163440" stroke="#0b2a33" stroke-width="3" />
-  <image class="ika-eg-ashiba" href="${assetHref('/assets/ikabu/isoba/ashiba.webp')}" x="${S.pierRight + 40 - 330}" y="${S.pierTop - 38}" width="330" height="114" preserveAspectRatio="none" />` : `<rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
+  ${iso ? isoAshibaSVG(W, assetHref) : `<rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
   <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="8" fill="#ece5d3" />
   <rect x="${S.pierRight - 6}" y="${S.pierTop}" width="6" height="${2 * S.H - S.pierTop}" fill="#1f3038" opacity="0.6" />
   ${lamp}`}

@@ -17,7 +17,9 @@ test('地形：同じ種は同じ地形、日がちがえば別の地形。帯�
     assert.equal(f.zones[0].from, 0); assert.equal(f.zones[f.zones.length - 1].to, ISO_RANGE);
     for (let i = 1; i < f.zones.length; i++) assert.equal(f.zones[i].from, f.zones[i - 1].to, '帯のすき間なし');
     // 溝は深く、根は浅い
-    for (const z of f.zones) if (z.kind === 'mizo') assert.ok(z.d1 >= 6); else if (z.kind === 'ne') assert.ok(z.d1 <= 5);
+    for (const z of f.zones) if (z.kind === 'mizo') assert.ok(z.d1 >= z.d0 + 2, '溝は2m以上深くなる'); else if (z.kind === 'ne') assert.ok(z.d1 <= z.d0 - 1.5, '根は1.5m以上浅くなる');
+    // 斜面はなだらか（1m 進んで 0.9m 以上は深くならない）
+    for (let m = 0.5; m < ISO_RANGE; m += 0.5) assert.ok(Math.abs(isoBottomAt(f, m) - isoBottomAt(f, m - 0.5)) <= 0.45, `${d} ${m}m の傾き`);
     // 部品は帯の種類に合ったもの、砂地には無い
     for (const p of f.parts) { const z = isoZoneAt(f, p.at); assert.notEqual(z.kind, 'suna'); }
   }

@@ -4,6 +4,7 @@
 //   上手（カウント）：その距離の底をカウントして、底の0.8m手前でしゃくる。フォールも底の手前で切り上げる。アタリは0.3秒で合わせる
 //   1釣行＝5投（エギ3本）。釣れた数・失ったエギ・藻に掛かった回数・釣れた釣行の割合を平均する
 import { createEgi, press, release, tick } from '../src/js/ikabu/games/egi.js';
+import { isoPartOver } from '../src/js/ikabu/games/isoba.js';
 
 const TRIPS = Number(process.argv[2] ?? 150);
 const DAYS = ['2026-10-16', '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20'];
@@ -22,7 +23,9 @@ function trip(style, seed, stage, day) {
       if (good) {
         // 底の手前（0.8m）まで沈めてからしゃくる＝カウント。底が近いほど早めに
         let t = 0;
-        while ((s.phase === 'sinking' || s.phase === 'action') && s.depth < s.bottom - 0.8 && t < 6) { run(s, step); t += step; }
+        // 上手：見えている岩・藻の高さ分も含めて、その手前でしゃくる（磯場の肝）
+        const ceil = () => { const p = s.field ? isoPartOver(s.field, s.dist) : null; return s.bottom - (p ? p.h : 0) - 0.8; };
+        while ((s.phase === 'sinking' || s.phase === 'action') && s.depth < ceil() && t < 6) { run(s, step); t += step; }
         if (s.phase === 'sinking' || s.phase === 'action') { press(s); run(s, 0.1); release(s); }
       } else {
         run(s, s.phase === 'sinking' ? 2.0 : 3.0);
