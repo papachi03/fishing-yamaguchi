@@ -5,3 +5,6 @@ dist
 worker/reports/wrangler.toml
 dist-egi
 dist-trial
+
+# wrangler の作業用（対戦サーバー）
+worker/battle/.wrangler/
