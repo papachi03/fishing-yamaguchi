@@ -97,6 +97,8 @@ export const FIELD_RULES = {
   night: { back: BACK }, summerNight: { back: BACK }, rough: { back: 4 }, exam: { back: BACK, first: 'cpu' },
   // 第2章（2026-10-15）：白波＝太陽のイカの攻撃+1／潮だまり＝太陽の技が潮-1／割れ目＝後列4／藻場＝波のイカの防御+1／嵐の試験＝相手が先攻＋後列4
   sarashi: { back: BACK }, tidepool: { back: BACK }, crevice: { back: 4 }, moba: { back: BACK }, stormExam: { back: 4, first: 'cpu' },
+  // 第3章（2026-10-16）：夜の漁港・集魚灯・闇夜・幽霊の夜・荷揚げ場・沖の一文字・赤灯台
+  harbor: { back: BACK }, fishLight: { back: BACK }, yamiyo: { back: 4 }, yureiNight: { back: BACK, first: 'cpu' }, quay: { back: 4 }, ichimonji: { back: BACK }, akatoudai: { back: 4, first: 'cpu' },
 };
 export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = `${Date.now()}`, cpuEgi = EGI, rule = null }) {
   const byNo = new Map(cards.map((c) => [c.no, c]));
@@ -184,7 +186,10 @@ export function statOf(st, x, stat) {
   for (const b of x.buffs) if (b.stat === stat && (b.starts ?? 0) <= st.turn) v += b.n;
   if (stat === 'def' && passive(st, x, 'defOnEnemyTurn') && ownerOf(st, x) !== st.active) v += effectsOf(st, x.no).find((e) => e.do === 'defOnEnemyTurn').n;
   if (stat === 'atk' && x.flags.zeroAtk) return 0;
-  if (stat === 'atk' && st.rule === 'night' && markOf(x) === 'star') v += 1;   // 場のルール「夜」
+  if (stat === 'atk' && (st.rule === 'night' || st.rule === 'harbor' || st.rule === 'yureiNight') && markOf(x) === 'star') v += 1;   // 場のルール「夜」「夜の漁港」「幽霊の夜」
+  if (stat === 'atk' && st.rule === 'fishLight' && isNight(x.card) && x.card.kind === 'squid') v += 1;   // 「集魚灯」：夜のイカ（番号で決まる。カラーチェンジでは変わらない）
+  if (stat === 'def' && (st.rule === 'yamiyo' || st.rule === 'yureiNight') && markOf(x) === 'star' && x.card.kind === 'squid') v += 1;   // 「闇夜」「幽霊の夜」
+  if (stat === 'def' && (st.rule === 'ichimonji' || st.rule === 'akatoudai') && markOf(x) === 'anchor' && x.card.kind === 'squid') v += 1;   // 「沖の一文字」「赤灯台」
   if (stat === 'atk' && st.rule === 'sarashi' && markOf(x) === 'sun' && x.card.kind === 'squid') v += 1;   // 場のルール「白波」
   if (stat === 'def' && st.rule === 'moba' && markOf(x) === 'wave' && x.card.kind === 'squid') v += 1;   // 場のルール「藻場」
   return Math.max(0, v);
@@ -203,6 +208,7 @@ export function costOf(st, side, x) {
   if (x.card.kind === 'tech') {
     if (p.front.some((f) => f && markOf(f) === x.card.mark)) c -= 1;   // 同じマークのイカがいると潮1安い（イカのマークはカラーチェンジで変わる）
     if ((st.rule === 'summerNight' || st.rule === 'tidepool') && x.card.mark === 'sun') c -= 1;   // 場のルール「夏の夜」「潮だまり」
+    if (st.rule === 'harbor' && isNight(x.card)) c -= 1;   // 「夜の漁港」：夜のテクニックが潮1安い
     for (const f of p.front) if (f) for (const e of effectsOf(st, f.no)) if (e.when === 'passive' && e.do === 'techCheaper' && (e.only === 'all' || (e.only === 'night' && isNight(x.card)))) { c -= e.n; break; }
   }
   return Math.max(0, c);

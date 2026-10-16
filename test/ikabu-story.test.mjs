@@ -242,6 +242,67 @@ test('第2章の場のルール：白波＝太陽のイカの攻撃+1、潮だ�
   const storm = mk({ rule: 'stormExam', first: 'me' });
   assert.equal(storm.first, 'cpu'); assert.equal(storm.players.me.back.length, 4);
 });
+// 第3章「夜の漁港・四天王（前編）」（2026-10-16）：デッキ・絵・台本がそろっている／新しい場のルール7つが効く
+import { BATTLES_CH3 } from '../src/js/ikabu/games/story-data.js';
+import { SCRIPT_CH3, PROLOGUE_CH3, EPILOGUE_CH3 } from '../src/js/ikabu/games/story-script.js';
+test('第3章：9人の相手のデッキが規則どおりで、立ち絵・背景・盤面・台本・シルエットがそろっている', () => {
+  assert.equal(BATTLES_CH3.length, 9);
+  assert.equal(CHAPTERS[2].count, 9); assert.ok(!CHAPTERS[2].wip);
+  assert.equal(BATTLES_BY_CH[3], BATTLES_CH3);
+  assert.equal(SCRIPTS[3].script, SCRIPT_CH3);
+  for (const b of BATTLES_CH3) {
+    const r = checkDeck(deckNos(b.deck), CARDS);
+    assert.deepEqual(r, { ok: true, errors: [] }, `第${b.i}戦 ${b.foe}: ${r.errors.join('／')}`);
+    assert.ok(CHARS[b.foe]?.squid, b.foe);
+    assert.ok(SCRIPT_CH3[b.i]?.before?.length && SCRIPT_CH3[b.i].win?.length && SCRIPT_CH3[b.i].lose?.length && SCRIPT_CH3[b.i].hint?.length, `第${b.i}戦の台本`);
+    for (const f of ['normal', 'attack', 'lose']) assert.ok(existsSync(new URL(`../public/assets/ikabu/story/chars/${b.foe}_${f}.webp`, import.meta.url)), `${b.foe}_${f}`);
+    assert.ok(existsSync(new URL(`../public/assets/ikabu/story/bg/${b.bg}.webp`, import.meta.url)), b.bg);
+    assert.ok(existsSync(new URL(`../public/assets/ikabu/story/stage/${b.stage}.webp`, import.meta.url)), b.stage);
+    if (b.rule) assert.ok(RULE_TEXT[b.rule], `場のルールの説明 ${b.rule}`);
+    assert.equal(b.cpuEgi, 5); assert.equal(b.brain, 3);
+    for (const no of deckNos(b.deck)) assert.ok(no <= 120, `第${b.i}戦に期間限定カード ${no}`);
+  }
+  assert.ok(existsSync(new URL('../public/assets/ikabu/story/bg/akatoudai_yoake.webp', import.meta.url)), 'エピローグの背景');
+  for (const id of ['nyudo', 'akuma']) { assert.ok(CHARS[id].shadow); assert.ok(existsSync(new URL(`../public/assets/ikabu/story/chars/${id}_shadow.webp`, import.meta.url)), `${id}_shadow`); }
+  for (const line of [...PROLOGUE_CH3, ...EPILOGUE_CH3, ...Object.values(SCRIPT_CH3).flatMap((x) => [...x.before, ...x.win, ...x.lose, ...x.hint])]) {
+    assert.ok(CHARS[line.who], line.who);
+    assert.ok(!/\{(?!name\})/.test(line.text), line.text);
+  }
+  // 四天王戦は四天王が先攻。ユウレイ・ソデマルの立ち絵は3表情そろっている（第1・2章では名前の札だけだった）
+  assert.equal(BATTLES_CH3[4].rule, 'yureiNight'); assert.equal(BATTLES_CH3[8].rule, 'akatoudai');
+});
+test('第3章は第2章を全部勝つと開く', () => {
+  let s = emptyStory();
+  for (let i = 1; i <= 9; i++) s = recordWin(s, 1, i, { day: '2026-10-16' }).story;
+  for (let i = 1; i <= 8; i++) s = recordWin(s, 2, i, { day: '2026-10-16' }).story;
+  assert.equal(chapterCleared(s, 2, 9), false);
+  s = recordWin(s, 2, 9, { day: '2026-10-16' }).story;
+  assert.equal(chapterCleared(s, 2, 9), true);
+  assert.equal(nextBattle(s, 3, 9), 1);
+  assert.equal(canPlay(s, 3, 2, 9), false);
+});
+test('第3章の場のルール：夜の漁港＝星の攻撃+1と夜の技が潮-1、集魚灯＝夜のイカの攻撃+1、闇夜＝星の防御+1と後列4、幽霊の夜＝四天王が先攻・星の攻防+1、荷揚げ場＝後列4、一文字＝いかりの防御+1、赤灯台＝先攻・後列4・いかりの防御+1', () => {
+  const base = mk();
+  const atk0 = statOf(base, onField(base, 'cpu', 'ヤリイカ'), 'atk'), def0 = statOf(base, onField(base, 'cpu', 'ヤリイカ', 1), 'def'), anc0 = statOf(base, onField(base, 'cpu', 'ドスイカ', 2), 'def');
+  const cost0 = costOf(base, 'me', give(base, 'me', 'ナイトエギング'));
+  const harbor = mk({ rule: 'harbor' });
+  assert.equal(statOf(harbor, onField(harbor, 'cpu', 'ヤリイカ'), 'atk'), atk0 + 1);   // 星
+  assert.equal(statOf(harbor, onField(harbor, 'cpu', 'ドスイカ', 1), 'def'), anc0);     // いかりはそのまま
+  assert.equal(costOf(harbor, 'me', give(harbor, 'me', 'ナイトエギング')), cost0 - 1);   // 夜の技
+  const light = mk({ rule: 'fishLight' });
+  assert.equal(statOf(light, onField(light, 'cpu', 'ヤリイカ'), 'atk'), atk0 + 1);       // ヤリイカは夜のイカ
+  assert.equal(statOf(light, onField(light, 'cpu', 'ドスイカ', 1), 'atk'), 4);           // ドスイカ 4/5 は夜のイカではない
+  const yami = mk({ rule: 'yamiyo' });
+  assert.equal(statOf(yami, onField(yami, 'cpu', 'ヤリイカ'), 'def'), def0 + 1); assert.equal(yami.players.cpu.back.length, 4);
+  const ghost = mk({ rule: 'yureiNight', first: 'me' });
+  assert.equal(ghost.first, 'cpu'); assert.equal(ghost.players.me.back.length, 3);
+  assert.equal(statOf(ghost, onField(ghost, 'cpu', 'ヤリイカ'), 'atk'), atk0 + 1); assert.equal(statOf(ghost, onField(ghost, 'cpu', 'ヤリイカ', 1), 'def'), def0 + 1);
+  assert.equal(mk({ rule: 'quay' }).players.me.back.length, 4);
+  const ichi = mk({ rule: 'ichimonji' });
+  assert.equal(statOf(ichi, onField(ichi, 'cpu', 'ドスイカ'), 'def'), anc0 + 1); assert.equal(statOf(ichi, onField(ichi, 'cpu', 'ヤリイカ', 1), 'def'), def0);
+  const red = mk({ rule: 'akatoudai', first: 'me' });
+  assert.equal(red.first, 'cpu'); assert.equal(red.players.me.back.length, 4); assert.equal(statOf(red, onField(red, 'cpu', 'ドスイカ'), 'def'), anc0 + 1);
+});
 import { markChapterCleared } from '../src/js/ikabu/games/story.js';
 test('試遊版だけ：第1章をクリアしたことにすると第2章が開き、🎫の印は付かない。もう勝っていた戦の日付はそのまま', () => {
   let s = recordWin(emptyStory(), 1, 3, { day: '2026-10-01' }).story;

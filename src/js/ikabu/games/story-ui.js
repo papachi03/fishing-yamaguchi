@@ -22,9 +22,9 @@ const STORY_AUDIO = {
 };
 const KEY_SOUND = 'ikabu.battle.sound';   // 対戦の🔊と同じ切替
 // 章ごと：緊張の曲を流す戦／プロローグを見たかの記録（このブラウザだけ）／エピローグの背景（2026-10-15 第2章を足して章ごとに）
-const TENSE_BATTLES = { 1: new Set([8, 9]), 2: new Set([3, 8, 9]) };
-const KEY_SEEN_CH = { 1: 'ikabu.story.seen', 2: 'ikabu.story.seen.ch2' };
-const EPILOGUE_BG = { 1: 'bushitsu', 2: 'iso_yoake' };
+const TENSE_BATTLES = { 1: new Set([8, 9]), 2: new Set([3, 8, 9]), 3: new Set([3, 5, 8, 9]) };
+const KEY_SEEN_CH = { 1: 'ikabu.story.seen', 2: 'ikabu.story.seen.ch2', 3: 'ikabu.story.seen.ch3' };
+const EPILOGUE_BG = { 1: 'bushitsu', 2: 'iso_yoake', 3: 'akatoudai_yoake' };
 const openChapters = (story) => CHAPTERS.filter((c) => c.count > 0 && (c.id === 1 || chapterCleared(story, c.id - 1, CHAPTERS[c.id - 2].count)));
 
 const charSrc = (id, face) => assetHref(`/assets/ikabu/story/chars/${id}_${face}.webp`);
@@ -50,7 +50,7 @@ const TX = {
   ruleOk: ['わかった', 'OK'],
   stars: (n) => '★'.repeat(n) + '☆'.repeat(5 - n),
   gotTickets: (lang, n) => (lang === 'en' ? `🎫 +${n} (first clear)` : `🎫 ${n}枚ゲット！（初クリア）`),
-  chapterDone: { 1: ['第1章 クリア！ 正式部員証を手に入れた', 'Chapter 1 cleared! You earned full membership'], 2: ['第2章 クリア！ エリート章を手に入れた', 'Chapter 2 cleared! You earned the elite badge'] },
+  chapterDone: { 1: ['第1章 クリア！ 正式部員証を手に入れた', 'Chapter 1 cleared! You earned full membership'], 2: ['第2章 クリア！ エリート章を手に入れた', 'Chapter 2 cleared! You earned the elite badge'], 3: ['第3章 クリア！ 四天王の印を2つ手に入れた', 'Chapter 3 cleared! You earned two Big Four seals'] },
   trialSkip: ['🧪 試遊版だけ：第1章をクリアしたことにする（🎫は増えません）', '🧪 Trial only: mark chapter 1 as cleared (no tickets)'],
   trialSkipped: ['第1章をクリアしたことにしました。第2章が開きました', 'Chapter 1 marked as cleared. Chapter 2 is open'],
   lockedCh: (lang, n) => (lang === 'en' ? `🔒 Clear chapter ${n} to unlock` : `🔒 第${n}章をクリアすると開きます`),
@@ -137,14 +137,15 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     const vs = box.querySelector('.ika-st-vs');
     const show = () => {
       const l = lines[i];
-      const who = l.who === 'ao' ? 'me' : (l.who === foeId ? 'foe' : 'other');
-      if (hasFoe && who === 'foe') fo.hidden = false;   // 相手は初めて話した時から出る（プロローグの間は出ない）
+      const shadow = Boolean(CHARS[l.who]?.shadow);   // 影だけの人物（第4章の予告）は相手の枠に影で出す
+      const who = l.who === 'ao' ? 'me' : (l.who === foeId || shadow ? 'foe' : 'other');
+      if ((hasFoe || shadow) && who === 'foe') fo.hidden = false;   // 相手は初めて話した時から出る（プロローグの間は出ない）
       if (callOut && i >= lines.length - 2) { if (vs.hidden) audio.se('don'); fo.hidden = !hasFoe; vs.hidden = false; }   // 掛け声（最後の2行）でVS＋ドン
       if (l.who === 'nyudo' || l.bgm) audio.bgm(l.bgm ?? 'ending2', { xfade: 0.3 });   // エピローグ：四天王の登場（第2章は行の bgm）で曲の後半へ
       me.classList.toggle('is-dim', who !== 'me' && l.who !== 'narr');
       fo.classList.toggle('is-dim', who !== 'foe' && l.who !== 'narr');
       if (who === 'me') me.querySelector('img').src = charSrc('ao', l.face);
-      if (who === 'foe') fo.querySelector('img').src = charSrc(foeId, l.face);
+      if (who === 'foe') fo.querySelector('img').src = shadow ? charSrc(l.who, 'shadow') : charSrc(foeId, l.face);
       const label = l.who === 'narr' ? '' : nameOf(lang, l.who, hero);
       nm.textContent = label; nm.hidden = !label; nm.classList.toggle('is-foe', who !== 'me' && l.who !== 'narr');
       box.querySelector('[data-win]').classList.toggle('is-narr', l.who === 'narr');
@@ -168,7 +169,7 @@ export function openStory({ lang = 'ja', onClose = null } = {}) {
     if (!rule) return done();
     const r = RULE_TEXT[rule];
     const d = document.createElement('div'); d.className = 'ika-st-rule';
-    const markOf = { night: 'star', summerNight: 'sun', sarashi: 'sun', tidepool: 'sun', moba: 'wave' }[rule];   // その場のルールが効くマーク（絵で見せる）
+    const markOf = { night: 'star', summerNight: 'sun', sarashi: 'sun', tidepool: 'sun', moba: 'wave', harbor: 'star', yamiyo: 'star', yureiNight: 'star', ichimonji: 'anchor', akatoudai: 'anchor' }[rule];   // その場のルールが効くマーク（絵で見せる）
     d.innerHTML = `<div class="ika-st-rule-in"><b>${t(lang, ...r.title)}</b>${markOf ? `<img class="ika-st-rule-mark" src="${assetHref(`/assets/ikabu/tiles/${markOf}_128.webp`)}" alt="" width="56" height="56" />` : ''}<p>${t(lang, ...r.body)}</p><p class="ika-st-rule-note">${markOf ? t(lang, 'カードの左上の印・カードを押した説明で、マークが分かります', 'The mark shows at the top-left of each card and in the card details') : ''}</p><button type="button" class="ika-btn ika-btn--primary" data-ok>${t(lang, ...TX.ruleOk)}</button></div>`;
     ov.appendChild(d);
     d.querySelector('[data-ok]').addEventListener('click', () => { d.remove(); done(); });
