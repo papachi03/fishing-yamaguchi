@@ -79,6 +79,18 @@ export const isLimited = (c) => Boolean(c.limit);
 export const isUpcoming = (c, now = new Date()) => { const f = fesOf(c); return Boolean(f) && jst(now).date < f.from; };
 export const isSecret = (c) => Boolean(c.limit?.secret);
 export const fesOf = (c) => (c.limit?.fes ? fesById(c.limit.fes) : null);
+// 墨のかけらで交換できるか（2026-10-16 ぱっぱ）：ふつうのカード＝いつでも／フェスのカード＝開催中だけ／
+//   まだ始まっていないフェス・シークレット・そのほかの限定＝できない。戻り：{ ok, why: 'upcoming'|'ended'|'secret'|'limited' }
+export function exchangeState(c, now = new Date()) {
+  if (!c.limit) return { ok: true };
+  if (isSecret(c)) return { ok: false, why: 'secret' };
+  const f = fesOf(c);
+  if (!f) return { ok: false, why: 'limited' };
+  const { date } = jst(now);
+  if (date < f.from) return { ok: false, why: 'upcoming' };
+  if (date > f.until) return { ok: false, why: 'ended' };
+  return { ok: true };
+}
 
 // ガチャの抽選に入れるカード。banner：'normal' か フェスID
 export function gachaPool(cards, { banner = 'normal', tod = 'day' } = {}) {

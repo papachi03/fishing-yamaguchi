@@ -10,7 +10,7 @@ import { arrange, counts, SORTS, KIND_ORDER, KIND_LABEL } from './binder.js';
 import { readJSON, writeJSON } from './records.js';
 import { tierOf } from './gacha-show.js';
 import { makeShareImage, shareBlob } from './binder-share.js';
-import { isSecret, isUpcoming, fesOf, limitLabel, fesPeriod } from './fes.js';
+import { isSecret, isUpcoming, fesOf, limitLabel, fesPeriod, exchangeState } from './fes.js';
 
 const KEY_VIEW = 'ikabu.binder.view';
 const TX = {
@@ -33,6 +33,7 @@ const TX = {
   exchange: (lang, c) => (lang === 'en' ? `Exchange (${c} shards)` : `かけら ${c} 個で交換`),
   exchanged: ['交換しました！', 'Exchanged!'],
   notEnough: ['かけらが足りません', 'Not enough shards'],
+  noExchange: { upcoming: ['まだ交換できません', 'Not available yet'], secret: ['このカードは交換できません', 'This card cannot be exchanged'], limited: ['このカードは交換できません', 'This card cannot be exchanged'], ended: ['フェスが終わったので、交換できません', 'The festival is over, so this card cannot be exchanged'] },
   empty: ['まだカードがありません。ガチャで引いてみよう。', 'No cards yet. Try the gacha.'],
   hint: ['タップで大きく見る', 'Tap a card to enlarge'],
 };
@@ -115,6 +116,7 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
     const c = CARDS.find((x) => x.no === no); if (!c) return;
     const rec = readCards(); const n = rec.owned[no] ?? 0;
     const cost = SHARD_COST[c.rarity];
+    const ex = exchangeState(c);   // 未公開・シークレット・終わったフェスは交換できない（2026-10-16）
     el.body.innerHTML = `
       <div class="ika-bd-big" data-tier="${tierOf(c.rarity)}"><img src="${n ? cardSrc(no) : assetHref('/assets/ikabu/cards/card_back.webp')}" alt="${esc(c.name)}" width="600" height="900" decoding="async" /></div>
       <div class="ika-bd-info">
@@ -124,10 +126,11 @@ export function mountBinder(root, { lang = 'ja' } = {}) {
         ${!n && (isSecret(c) || isUpcoming(c)) ? `<p class="ika-bd-limnote">${t(lang, 'どこかで出会えるかも……', 'You might run into it somewhere…')}</p>` : ''}
         ${n ? `<p class="ika-bd-effect">${esc(c.effect)}</p>
         <p class="ika-bd-nums"><span>${t(lang, ...TX.cost)} ${c.cost}</span>${c.atk != null ? `<span>${t(lang, ...TX.atk)} ${c.atk}</span>` : ''}${c.def != null ? `<span>${t(lang, ...TX.def)} ${c.def}</span>` : ''}</p>` : ''}
-        <p class="ika-bd-actions"><button type="button" class="ika-btn" data-bd-exchange="${no}" ${rec.shards < cost ? 'aria-disabled="true"' : ''}>${TX.exchange(lang, cost)}</button><span class="ika-bd-msg" data-bd-msg></span></p>
+        <p class="ika-bd-actions">${ex.ok ? `<button type="button" class="ika-btn" data-bd-exchange="${no}" ${rec.shards < cost ? 'aria-disabled="true"' : ''}>${TX.exchange(lang, cost)}</button>` : `<span class="ika-bd-noex">${t(lang, ...TX.noExchange[ex.why])}</span>`}<span class="ika-bd-msg" data-bd-msg></span></p>
       </div>`;
     el.modal.hidden = false;
-    el.body.querySelector('[data-bd-exchange]').addEventListener('click', (ev) => {
+    el.body.querySelector('[data-bd-exchange]')?.addEventListener('click', (ev) => {
+      if (!exchangeState(c).ok) return;
       const r = exchange(readCards(), c);
       const msg = el.body.querySelector('[data-bd-msg]');
       if (!r.ok) { msg.textContent = t(lang, ...TX.notEnough); return; }
