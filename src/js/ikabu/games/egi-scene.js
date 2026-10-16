@@ -8,6 +8,7 @@
 //   舞台の地色が見えない＝空・海・堤防が必ず画面を埋める。
 import { t } from '../i18n.js';
 import { HERO_ANIM } from '../hero-scene.js';
+import { isoBottomAt, ISO_RANGE, ISO_PARTS, ISO_ART } from './isoba.js';
 
 export const SCENE = {
   H: 620,
@@ -110,8 +111,27 @@ function moonSVG(cx, cy, r, light, sky, surface, W) {
   return `${glow}<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${r}" fill="#fff3c4" />${off > 0.5 ? `<circle cx="${f1(cx - off)}" cy="${f1(cy - off * 0.25)}" r="${r}" fill="${sky}" />` : ''}${road}`;
 }
 
-// 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）
-export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom = 8, assetHref = (p) => p, moon = 0.5 } = {}) {
+// 磯場（2026-10-16 試遊版のテスト）：海底の線を地形（距離→深さ）から描き、部品（岩・サンゴ・藻）の絵を置く。
+//   部品の絵の高さ＝根掛かりの判定の高さ（ISO_PARTS.h）にそろえる（見た目より上を通れば掛からない＝カウントの答えが絵で分かる）
+export function isoBottomSVG(field, W, assetHref = (p) => p) {
+  const X = (m) => distX(m, W);
+  const pxPerM = (SCENE.seabed - SCENE.surface) / depthMax;
+  const pts = [];
+  for (let m = 0; m <= ISO_RANGE; m += 0.5) pts.push(`${f1(X(m))},${f1(depthY(isoBottomAt(field, m)))}`);
+  const y0 = depthY(isoBottomAt(field, 0)), yEnd = depthY(isoBottomAt(field, ISO_RANGE));
+  const bed = `<path class="ika-eg-seabed" d="M${-W},${2 * SCENE.H} L${-W},${f1(y0)} L${pts.join(' L')} L${2 * W},${f1(yEnd)} L${2 * W},${2 * SCENE.H} Z" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />`;
+  const parts = field.parts.map((p) => {
+    const [aw, ah] = ISO_ART[p.kind];
+    const h = ISO_PARTS[p.kind].h * pxPerM * 1.15, w = (h * aw) / ah;
+    const yb = depthY(isoBottomAt(field, p.at));
+    return `<image class="ika-eg-isopart" data-kind="${p.kind}" href="${assetHref(`/assets/ikabu/isoba/${p.kind}.webp`)}" x="${f1(X(p.at) - w / 2)}" y="${f1(yb - h + 4)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none" />`;
+  }).join('');
+  return bed + parts;
+}
+
+// 舞台の静止 SVG。tod は時間帯、W は幅、bottom は海底の深さ（m）。stage＝'isoba' は磯場（足場と遠景を磯の絵に）
+export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom = 8, assetHref = (p) => p, moon = 0.5, stage = 'pier', field = null } = {}) {
+  const iso = stage === 'isoba';
   const P = PALETTE[tod] ?? PALETTE.evening;
   const S = SCENE;
   const stops = (list) => list.map((c, i) => `<stop offset="${(i / (list.length - 1)) * 100}%" stop-color="${c}" />`).join('');
@@ -139,20 +159,22 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
     <linearGradient id="ika-eg-pier" gradientUnits="userSpaceOnUse" x1="0" y1="${S.pierTop}" x2="0" y2="${S.H}"><stop offset="0" stop-color="#d9d2c0" /><stop offset="${((S.surface - S.pierTop) / (S.H - S.pierTop)).toFixed(3)}" stop-color="#c4bcab" /><stop offset="${((S.surface - S.pierTop) / (S.H - S.pierTop) + 0.002).toFixed(3)}" stop-color="#5e6b70" /><stop offset="1" stop-color="#2c3d45" /></linearGradient>
   </defs>
   <rect class="ika-eg-skyrect" x="${-W}" y="${-2 * S.H}" width="${3 * W}" height="${2 * S.H + S.surface}" fill="url(#ika-eg-sky)" />
-  ${stars}${sun}${hills}
+  ${stars}${sun}${iso ? `<image class="ika-eg-isles" href="${assetHref('/assets/ikabu/isoba/islands.webp')}" x="${f1(W * 0.42)}" y="${S.surface - 40}" width="${f1(W * 0.5)}" height="44" preserveAspectRatio="none" opacity="0.9" />` : hills}
   <rect class="ika-eg-searect" x="${-W}" y="${S.surface}" width="${3 * W}" height="${2 * S.H}" fill="url(#ika-eg-sea)" />
   <!-- 海底と岩（投げるたびに深さが変わるので egi-ui.js が書き換える） -->
-  <g class="ika-eg-bottom"><path class="ika-eg-seabed" d="${seabedD(bottom, W)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W)}</g>
+  <g class="ika-eg-bottom">${iso && field ? isoBottomSVG(field, W, assetHref) : `<path class="ika-eg-seabed" d="${seabedD(bottom, W)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W)}`}</g>
   <!-- 水中で動くもの（気配のイカ・エギ・抱いたイカ・墨）はここに入る -->
   <g class="ika-eg-under"></g>
   <!-- 水面 -->
   <path class="ika-eg-wave" d="M${S.pierRight},${S.surface} L${2 * W},${S.surface}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
   ${ripples}${splash}
   <!-- 堤防（水面の上は明るいコンクリート、水中は暗い壁） -->
-  <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
+  ${iso ? `<image class="ika-eg-isowall" href="${assetHref('/assets/ikabu/isoba/wall.webp')}" x="-170" y="${S.pierTop - 150}" width="400" height="145" preserveAspectRatio="none" />
+  <path d="M${-W},${S.surface} L${S.pierRight + 26},${S.surface} L${S.pierRight + 46},${S.surface + 60} L${S.pierRight + 20},${S.surface + 140} L${S.pierRight + 50},${2 * S.H} L${-W},${2 * S.H} Z" fill="#163440" stroke="#0b2a33" stroke-width="3" />
+  <image class="ika-eg-ashiba" href="${assetHref('/assets/ikabu/isoba/ashiba.webp')}" x="${S.pierRight + 40 - 330}" y="${S.pierTop - 38}" width="330" height="114" preserveAspectRatio="none" />` : `<rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="${2 * S.H - S.pierTop}" fill="url(#ika-eg-pier)" />
   <rect x="${-W}" y="${S.pierTop}" width="${S.pierRight + W}" height="8" fill="#ece5d3" />
   <rect x="${S.pierRight - 6}" y="${S.pierTop}" width="6" height="${2 * S.H - S.pierTop}" fill="#1f3038" opacity="0.6" />
-  ${lamp}
+  ${lamp}`}
   <!-- 釣り人（HERO と同じイカ） -->
   <image class="ika-eg-angler" href="${assetHref(HERO_ANIM.layers.squid)}" x="${S.squidBox.x}" y="${S.squidBox.y}" width="${S.squidBox.w}" height="${S.squidBox.h}" preserveAspectRatio="none" />
   <!-- 竿・糸・空中のもの（egi-ui.js が描く） -->

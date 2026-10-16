@@ -31,8 +31,9 @@ export function levelOf(points = 0) {
 // 1杯のポイント
 // 遊び方ごとの経験値の倍率（2026-10-15 ぱっぱ）：今日の萩の海＝1倍、今日の萩の海のハード（海の中が見えない）＝1.5倍、
 //   季節モードのアタリチャレンジ＝0.3倍（経験値だけ。図鑑・自己ベストには入らない）、それ以外の練習＝0
-export const POINT_RATE = { live: 1, hard: 1.5, blindPractice: 0.3 };
-export function pointRate({ mode, blind = false } = {}) {
+export const POINT_RATE = { live: 1, hard: 1.5, blindPractice: 0.3, isoba: 1.8, isobaHard: 2.4 };   // 磯場（2026-10-16 試遊版のテスト・仮置き）
+export function pointRate({ mode, blind = false, stage = 'pier' } = {}) {
+  if (stage === 'isoba') return blind ? POINT_RATE.isobaHard : POINT_RATE.isoba;
   if (mode === 'live') return blind ? POINT_RATE.hard : POINT_RATE.live;
   if (mode === 'practice' && blind) return POINT_RATE.blindPractice;
   return 0;

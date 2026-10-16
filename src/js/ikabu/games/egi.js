@@ -9,6 +9,7 @@
 //   やり取り     … 押している間だけ巻く（張りすぎると身切れ、ゆるめすぎるとバレ）
 // 画面側は tick(dt) を毎フレーム呼び、state と state.events（起きたこと）を見て描く。
 import { seeded, pickWeighted } from './rng.js';
+import { makeIsoField, isoBottomAt, isoPartAt, isoPartOver, isoZoneAt, ISO_PARTS, ISO_ZONES, ISO_SQUID } from './isoba.js';
 
 export const CASTS = 5; // 1回の釣行で投げられる回数
 // ラストチャンスと救済（2026-09-27、ぱっぱ：本物どおりだと釣れない日はほぼ釣れない＝離脱される）
@@ -496,12 +497,16 @@ export const DEPTHS = ['shallow', 'normal', 'deep'];
 export const DEPTH_RANGE = { shallow: [3, 2], normal: [5, 5], deep: [10, 6] };
 export const TAILOR_DEPTH = { shallow: [4, 2], normal: [6, 4], deep: [10, 6] };
 const pickBottom = (s, table) => { const [a, w] = table[s.depthPref] ?? table.normal; return a + Math.round(s.rand() * w); };
-export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one', tackle, depth = 'normal' } = {}) {
+export function createEgi({ seed = String(Date.now()), month = 9, tod = 'evening', rand, conditions, egi, easy = false, method = 'egi', bait = 'sasami', aji = 'live', tana = 'one', tackle, depth = 'normal', stage = 'pier', fieldSeed = null } = {}) {
   const cond = normalizeConditions(conditions);
   const spec = normalizeEgi(egi);
   const tk = normalizeTackle(tackle);
-  const m = METHOD_IDS_ENGINE.includes(method) ? method : 'egi';
+  const iso = stage === 'isoba';
+  const m = iso ? 'egi' : METHOD_IDS_ENGINE.includes(method) ? method : 'egi';   // 磯場はエギングだけ（2026-10-16 テスト）
   return {
+    stage: iso ? 'isoba' : 'pier',   // 磯場（isoba.js）：底は「今エギがいる距離」で決まり、岩・サンゴ・藻に根掛かる
+    field: iso ? makeIsoField(fieldSeed ?? seed) : null,
+    isoOver: null,   // いま真上にいる部品（合図を1回だけ出すため）
     tana: TANAS.includes(tana) ? tana : 'one',   // テーラーのタナ
     depthPref: DEPTHS.includes(depth) ? depth : 'normal',   // 釣り場の水深（浅場・ふつう・深場）
     floats: [],        // テーラーのウキ3本
@@ -1211,8 +1216,9 @@ export function release(s) {
     s.castDist = Math.round((10 + s.power * 30) * SIZE_DIST[s.spec.size]);
     s.dist = s.castDist;
     s.depth = 0;
-    s.bottom = pickBottom(s, DEPTH_RANGE);
-    s.weed = s.method === 'jado' || s.method === 'yaen' ? null : makeWeed(s);   // 邪道・ヤエンは底に置く釣り（藻場は出さない）
+    s.bottom = s.field ? isoBottomAt(s.field, s.dist) : pickBottom(s, DEPTH_RANGE);
+    s.isoOver = null;
+    s.weed = s.field || s.method === 'jado' || s.method === 'yaen' ? null : makeWeed(s);   // 磯場は部品の藻を使う   // 邪道・ヤエンは底に置く釣り（藻場は出さない）
     s.yaen = null;
     s.rock = s.method === 'jado' && s.rand() < ROCK_CHANCE;
     s.jadoLift = null;   // 「ふわっと」の途中で投げ直した時の残りを消す
@@ -1255,6 +1261,11 @@ export function release(s) {
     if (s.weed) {
       if (s.squid > 0) { if (s.rand() < 0.6) s.squid += 1; }
       else if (s.rand() < 0.5 * (s.cond.expectation / 10) ** 2) s.squid = 1;   // 期待値2で2%、7で25%、10で50%
+    }
+    // 磯場（2026-10-16）：イカが岩や藻に付いているので、藻場と同じく寄りを多く（日の良し悪しに比例）
+    if (s.field) {
+      if (s.squid > 0) { if (s.rand() < ISO_SQUID.more) s.squid += 1; }
+      else if (s.rand() < ISO_SQUID.fresh * (s.cond.expectation / 10) ** 2) s.squid = 1;
     }
     // ラストチャンス／救済（初心者練習には入れない）
     if (!s.easy) {
@@ -1317,7 +1328,7 @@ function judgeRhythm(s) {
 function onBottom(s, dt) {
   s.bottomFor += dt;
   // 岩場の藻場のまわりの底は根が多い（1.5倍）
-  const rocky = overWeed(s) && WEEDS[s.weed.kind].rocky ? 1.5 : 1;
+  const rocky = s.field ? ISO_ZONES[isoZoneAt(s.field, s.dist).kind].bottomSnag : overWeed(s) && WEEDS[s.weed.kind].rocky ? 1.5 : 1;
   if (!s.easy && s.bottomFor > 1.5 && s.rand() < 0.12 * TYPE_SNAG[s.spec.type] * rocky * dt) {   // 初心者練習は根掛かりしない
     return snagOrJunk(s);
   }
@@ -1361,6 +1372,38 @@ function makeWeed(s) {
   const width = 5 + s.rand() * 3;
   const from = Math.max(3, s.castDist * (0.55 + s.rand() * 0.4) - width / 2);   // 着水点のまわり（手前すぎるとエギが寄る前に1投が終わる）
   return { kind, from: Math.round(from * 10) / 10, to: Math.round((from + width) * 10) / 10, height: WEEDS[kind].height };
+}
+// 磯場（2026-10-16）：エギの距離で底を決め直す。底がエギより上に来たら（根に寄せた）、エギは底の上に押し上げられる
+function isoFollow(s) {
+  s.bottom = isoBottomAt(s.field, s.dist);
+  if (s.depth > s.bottom) s.depth = s.bottom;
+}
+// 磯場の部品（岩・サンゴ・藻）の判定。真上に来た合図（1部品1回）と、部品の高さより下に入った時の根掛かり。掛かったら true
+function isoCheck(s, dt) {
+  if (s.easy) return false;
+  const over = isoPartOver(s.field, s.dist);
+  if (over && over !== s.isoOver) emit(s, 'isoOver', { kind: over.kind, group: ISO_PARTS[over.kind].group });
+  s.isoOver = over;
+  const p = isoPartAt(s.field, s.dist, s.depth);
+  if (!p) return false;
+  const P = ISO_PARTS[p.kind];
+  if (s.rand() >= P.snag * TYPE_SNAG[s.spec.type] * dt) return false;
+  if (!P.lose) {   // 藻：掛かってもエギは戻る（今の藻場と同じ）
+    if (s.rand() < WEED_GEDO) gedoCatch(s, 'seaweed');
+    emit(s, 'weed', { kind: p.kind === 'amamo' ? 'amamo' : 'hondawara', iso: true });
+    endCast(s, 'weed');
+    return true;
+  }
+  if (s.rand() < P.free) {   // 岩の角で一瞬止まったが外れた：エギは少し浮いて続けられる
+    s.depth = Math.max(0.5, s.depth - 0.8);
+    s.bottomFor = 0;
+    emit(s, 'isoFree', { kind: p.kind, group: P.group });
+    return false;
+  }
+  s.egi -= 1;
+  emit(s, 'snag', { egiLeft: s.egi, iso: P.group });
+  endCast(s, 'snag');
+  return true;
 }
 // 藻場の上に入った合図（1投に1回）と、藻に掛かる判定。掛かったら true
 function checkWeed(s, dt) {
@@ -1420,6 +1463,7 @@ export function tick(s, dt) {
       tailorTick(s, dt);
       break;
     case 'sinking': {
+      if (s.field) { isoFollow(s); if (isoCheck(s, dt)) break; }
       if (s.method === 'yaen') {
         const floor = s.aji === 'live' ? s.bottom * YAEN_LIVE_DEPTH : s.bottom;
         s.depth = Math.min(floor, s.depth + YAEN_SINK * dt);
@@ -1436,6 +1480,7 @@ export function tick(s, dt) {
       break;
     }
     case 'action': {
+      if (s.field) { isoFollow(s); if (isoCheck(s, dt)) break; }
       // 2段しゃくりの残りの上がり：DOUBLE_DELAY 秒かけてなめらかに（10/2）。上がり切ったら「2段」の知らせ
       if (s.pendingLift) {
         const pl = s.pendingLift;

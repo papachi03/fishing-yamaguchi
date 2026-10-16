@@ -26,7 +26,20 @@ import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
 import { buildTailor, drawTailor, tailorHit, tailorDeco } from './tailor-ui.js';
 import { loadHagiSea, todFromClock, HAGI } from './sea-live.js';
 import { sunTimes } from '../../api/fishing.js';
-import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX, setDepthMax } from './egi-scene.js';
+import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX, setDepthMax, isoBottomSVG } from './egi-scene.js';
+// 磯場（2026-10-16 試遊版のテスト・ぱっぱ）：入口は試遊版、または手元の開発サーバーで ?isoba を付けた時だけ（本番には出さない）
+const ISO_ON = IS_TRIAL || (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('isoba'));
+const ISO_TX = {
+  title: ['🪨 磯場（テスト）', '🪨 Rocky shore (test)'],
+  note: ['ゴロタ・藻・サンゴが点在し、底に当てると高い確率で根掛かる磯。投げた距離で底の深さが変わるので、カウントして底の手前でしゃくろう。地形は毎日変わる。', 'Boulders, weed and coral everywhere. The depth changes with distance, so count the fall and jerk just above the bottom. The terrain changes daily.'],
+  normal: ['磯場で釣る', 'Fish the rocks'], hard: ['磯場ハード（海が見えない）', 'Rocks HARD (blind)'], back: ['堤防に戻る', 'Back to the pier'],
+  start: ['🪨 磯場。投げた距離で底が変わる。カウントして底の手前でしゃくろう', '🪨 Rocky shore. Count the fall and jerk just above the bottom'],
+  startHard: ['🪨 磯場ハード。海の中は見えない。カウントだけが頼り', '🪨 Rocks HARD. You cannot see below. Trust your count'],
+  over: { rock: ['🪨 岩の上。当てると根掛かり', '🪨 Over a rock'], coral: ['🪸 サンゴの根の上。触れたらほぼロスト', '🪸 Over coral: touching it costs your egi'], weed: ['🌿 藻の上。沈めすぎると藻に掛かる', '🌿 Over weed'] },
+  free: ['岩に当たった…けど外れた！', 'Hit a rock... and it came free!'],
+  snag: { rock: ['岩に根掛かり！エギを1本ロスト', 'Snagged on a rock! Lost an egi'], coral: ['サンゴに根掛かり！エギを1本ロスト', 'Snagged on coral! Lost an egi'] },
+  busy: ['投げる前に切り替えてね', 'Switch before you cast'],
+};
 import { DEPTHS } from './egi.js';
 import { svgEl, egiShape, ART, speciesColors } from '../squid-art.js';
 import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
@@ -106,11 +119,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   const settings = { mode: 'practice', month: now0.getMonth() + 1, tod: todFromClock(now0, sun0.sunrise, sun0.sunset), cond: { ...DEFAULT_CONDITIONS }, live: null, egi: normalizeEgi({ ...DEFAULT_EGI, rig: readPref('ikabu.egi.rig') }), cue: readPref('ikabu.egi.cue') ?? 'real',
     tackle: normalizeTackle({ rod: readPref('ikabu.egi.rod'), drag: readPref('ikabu.egi.drag') }),   // ロッド・ドラグ（2026-10-01）
     method: METHOD_IDS.includes(readPref('ikabu.egi.method')) ? readPref('ikabu.egi.method') : 'egi',   // 釣り方（2026-09-27）
+    stage: 'pier',   // 舞台：堤防／磯場（2026-10-16 試遊版のテスト）
     bait: BAITS.includes(readPref('ikabu.egi.bait')) ? readPref('ikabu.egi.bait') : 'sasami',
     aji: AJI.includes(readPref('ikabu.egi.aji')) ? readPref('ikabu.egi.aji') : 'live',   // ヤエンのアジ（2026-09-28 案B）
     tana: TANAS.includes(readPref('ikabu.egi.tana')) ? readPref('ikabu.egi.tana') : 'one',   // テーラーのタナ（2026-09-28）
     depth: DEPTHS.includes(readPref('ikabu.egi.depth')) ? readPref('ikabu.egi.depth') : 'normal' };   // 釣り場の水深（2026-10-06）
-  const depthMaxOf = (d) => (d === 'deep' ? 18 : 12);   // 画面の縦に入れる深さ（深場の底 16m まで入るように）
+  const depthMaxOf = (d) => (settings.stage === 'isoba' ? 12 : d === 'deep' ? 18 : 12);   // 画面の縦に入れる深さ（深場の底 16m まで入るように。磯場は12m）
   setDepthMax(depthMaxOf(settings.depth));
   // テーラーは冬の夜の釣り：舞台と時間帯は夜に固定
   const todNow = () => (settings.method === 'tailor' ? 'night' : settings.tod);
@@ -160,7 +174,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   let blindShown = null;   // アタリチャレンジで海の中を隠しているか（変わった時だけ書き換える）
   function buildScene() {
     const bottom = s?.bottom || 8;
-    el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref, moon: (settings.mode === 'live' ? settings.live?.conditions?.moon : settings.cond?.moon) ?? 0.5 });
+    el.scene.innerHTML = egiSceneSVG({ lang, tod: todNow(), W, bottom, assetHref, moon: (settings.mode === 'live' ? settings.live?.conditions?.moon : settings.cond?.moon) ?? 0.5, stage: s?.field ? 'isoba' : 'pier', field: s?.field ?? null });
     const svg = el.scene.querySelector('svg');
     sc = {
       svg,
@@ -298,6 +312,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   }
   // 海底：投げるたびに深さが変わる
   function updateBottom(bottom) {
+    if (s?.field) { sc.bottomG.innerHTML = isoBottomSVG(s.field, W, assetHref); return; }   // 磯場：地形は日ごとに決まっている（投げても変わらない）
     sc.bottomG.innerHTML = `<path class="ika-eg-seabed" d="${seabedD(bottom, W, s?.casts ?? 0)}" fill="#c9b787" stroke="#0b2a33" stroke-width="3" />${rocksSVG(bottom, W, s?.casts ?? 0)}${s?.phase !== 'ready' ? weedSVG(s?.weed, bottom, X) : ''}`;
   }
   // 気配のイカ・抱いたイカの絵は、種類が決まるたびに作り直す。
@@ -400,7 +415,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (methodNow(settings.method) !== 'ok') settings.method = 'egi';   // 解放・季節の外になった釣り方は、エギングに戻す
     if (settings.method !== 'egi') settings.blind = false;   // アタリチャレンジはエギングだけ
     V.blindStats = { bites: 0, hooked: 0, lates: [] }; V.blindReveal = 0;
-    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana, depth: settings.depth });
+    if (settings.stage === 'isoba') { settings.method = 'egi'; if (settings.mode === 'beginner') settings.mode = 'practice'; }   // 磯場はエギングだけ・初心者練習では遊べない
+    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana, depth: settings.depth, stage: settings.stage, fieldSeed: utcDay() });
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
@@ -1073,6 +1089,30 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (on) callout(t(lang, TX.live.hardStart), '', 4200);
   }
   el.hard?.addEventListener('click', (e) => { const b = e.target.closest('[data-hard]'); if (b) setHard(b.dataset.hard === '1'); });
+  // 磯場（2026-10-16 試遊版のテスト）：今日の萩の海の条件のまま、舞台だけ磯に。ハード＝海が見えない（アタリチャレンジと同じ見せ方）
+  if (ISO_ON && el.hard) {
+    el.hard.insertAdjacentHTML('afterend', `<div class="ika-egi-hard" id="ika-egi-iso"><p class="ika-egi-setup-label">${t(lang, ...ISO_TX.title)}</p>
+      <div class="ika-chips" role="group" aria-label="${t(lang, ...ISO_TX.title)}"><button type="button" class="ika-chip" data-iso="pier">${t(lang, ...ISO_TX.back)}</button><button type="button" class="ika-chip" data-iso="normal">${t(lang, ...ISO_TX.normal)}</button><button type="button" class="ika-chip" data-iso="hard">${t(lang, ...ISO_TX.hard)}</button></div>
+      <p class="ika-egi-cue-note">${t(lang, ...ISO_TX.note)}</p></div>`);
+    const isoBox = document.getElementById('ika-egi-iso');
+    const syncIso = () => isoBox.querySelectorAll('[data-iso]').forEach((b) => b.setAttribute('aria-pressed', String(settings.stage === 'isoba' ? (b.dataset.iso === (settings.blind ? 'hard' : 'normal')) : b.dataset.iso === 'pier')));
+    isoBox.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-iso]'); if (!b) return;
+      if (started()) { callout(t(lang, ...ISO_TX.busy), '', 2200, { blindOk: true }); return; }
+      userPicked = true;
+      settings.stage = b.dataset.iso === 'pier' ? 'pier' : 'isoba';
+      if (settings.stage === 'isoba') { settings.method = 'egi'; settings.blind = b.dataset.iso === 'hard'; if (settings.mode === 'beginner') settings.mode = 'practice'; }
+      else settings.blind = false;
+      setDepthMax(depthMaxOf(settings.depth));
+      guide = 0; showGuide();
+      syncSetup();
+      newGame();
+      buildScene();
+      syncIso();
+      if (settings.stage === 'isoba') callout(t(lang, ...(settings.blind ? ISO_TX.startHard : ISO_TX.start)), '', 4200);
+    });
+    syncIso();
+  }
   el.playLive.addEventListener('click', () => { if (!started()) useLive(); });
   el.playPractice.addEventListener('click', () => {
     if (started()) return;
@@ -1173,6 +1213,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     for (const e of events) {
       switch (e.type) {
         case 'cast': {
+          V.isoLastGroup = null;
           castAt = s.t;
           signalsThisCast = 0;
           updateBottom(s.bottom);
@@ -1540,10 +1581,19 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           V.snagAt = now;
           callout(t(lang, TX.msg.weed), 'bad');
           break;
+        case 'isoOver': {
+          if (settings.blind || e.group === V.isoLastGroup) break;   // ハードは見えないので知らせない。同じ種類が続く時は黙る
+          V.isoLastGroup = e.group;
+          callout(t(lang, ISO_TX.over[e.group]), e.group === 'weed' ? '' : 'bad', 1800);
+          break;
+        }
+        case 'isoFree':
+          callout(t(lang, ISO_TX.free), 'good', 1800);
+          break;
         case 'snag':
           V.egi.mode = 'stuck';
           V.snagAt = now;
-          callout(t(lang, TX.msg.snag), 'bad');
+          callout(t(lang, e.iso ? ISO_TX.snag[e.iso] : TX.msg.snag), 'bad');
           syncStock();
           break;
         case 'recover':
@@ -2573,11 +2623,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     }
     sc.line.setAttribute('d', d);
     // アタリチャレンジ：投げてから掛けるまで（沈下・誘い・アタリ）は海の中を隠し、糸も水面より上だけ。答え合わせの間は見せる
-    const blindHide = Boolean(settings.blind) && s?.method === 'egi' && ['sinking', 'action', 'signal'].includes(phase) && !(now < (V.blindReveal ?? 0));
+    //   磯場ハード（2026-10-16）：地形を覚えられないよう、投げる前も結果の時も隠す（アタリの答え合わせの一瞬だけ見せる）
+    const blindHide = Boolean(settings.blind) && s?.method === 'egi' && (Boolean(s?.field) || ['sinking', 'action', 'signal'].includes(phase)) && !(now < (V.blindReveal ?? 0));
     if (blindHide !== blindShown) {
       blindShown = blindHide;
       sc.under.style.opacity = blindHide ? '0' : '';
-      sc.fog.setAttribute('opacity', blindHide ? '0.9' : '0');
+      sc.fog.setAttribute('opacity', blindHide ? (s?.field ? '1' : '0.9') : '0');   // 磯場ハードは地形が透けないよう真っ暗
       if (blindHide) sc.line.setAttribute('clip-path', 'url(#ika-eg-aboveclip)'); else sc.line.removeAttribute('clip-path');
     }
     // ヤエン：竿先で道糸に掛け、糸を伝って滑り降りる針金の仕掛け（ヤエンの位置＝滑った距離 / 残りの距離）
@@ -2925,7 +2976,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       } else {
       setText(el.countLabel, 'label', label);
       setText(el.countNum, 'count', String(Math.max(0, Math.floor(phase === 'sinking' ? s.t - castAt : since))));
-      setText(el.depth, 'depth', onBottom ? `${t(lang, TX.hud.bottom)}！` : `${t(lang, TX.hud.depth)} ${t(lang, '約', '~')}${s.bottom}m`);
+      setText(el.depth, 'depth', onBottom ? `${t(lang, TX.hud.bottom)}！` : `${t(lang, TX.hud.depth)} ${s.field ? (settings.blind ? '？' : `${t(lang, '約', '~')}${s.bottom.toFixed(1)}m`) : `${t(lang, '約', '~')}${s.bottom}m`}`);
       el.count.classList.toggle('is-bottom', onBottom);
       el.windnote.hidden = !(s.windows.good < SIGNAL_GOOD - 0.01 && phase !== 'signal');
       }
