@@ -31,9 +31,9 @@ const ENTRY = {
     title: pair('イカのある風景。', 'Life, with a little squid.'),
     desc: pair('海、生きもの、食卓。部員の写真も募集中（投稿すると🎫1枚）。', 'Sea, wildlife and food. Members can post their own photos too (🎫 +1).'),
   },
-  play: {
+  games: {
     title: pair('同じイカで、世界と一戦。', 'One board. A world of players.'),
-    desc: pair('エギングゲームと「墨つなぎ」。釣りに行けない日のために。', 'An eging game and Ink Link, for the days you cannot get to the water.'),
+    desc: pair('エギング・墨つなぎ・ガチャ・カードバトル。遊ぶと🎫がたまり、ガチャでカードが引けます。', 'Eging, Ink Link, the gacha and card battles. Play to earn 🎫 and pull cards.'),
   },
   studio: {
     title: pair('LINEスタンプ', 'LINE stickers'),
@@ -158,7 +158,7 @@ export function render(lang) {
       <span class="ika-hero-ink" data-world="1120,760" hidden aria-hidden="true">${t(lang, 'ぷしゅっ', 'Squirt!')}</span>
       <div class="ika-hero-callout" data-world="1160,330" hidden aria-live="polite">
         <span class="ika-hero-callout-word">${t(lang, '抱いた！', 'Hooked!')}</span>
-        <a class="ika-hero-callout-link" href="${pageHref('play', lang)}" hidden>${t(lang, 'エギングゲームで遊ぶ →', 'Play the egi game →')}</a>
+        <a class="ika-hero-callout-link" href="${pageHref('games', lang)}" hidden>${t(lang, 'エギングゲームで遊ぶ →', 'Play the egi game →')}</a>
       </div>
     </div>
     <div class="ika-ticker" aria-hidden="true"><div class="ika-ticker-track">${tickerItems}</div></div>

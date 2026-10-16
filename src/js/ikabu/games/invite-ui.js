@@ -6,6 +6,7 @@
 import { t } from '../i18n.js';
 import { IS_TRIAL } from '../views/trial-notice.js';
 import { readTickets, INVITE_MAX, INVITE_BONUS, inviteLeft } from './tickets.js';
+import { utcDay } from './rng.js';   // 🎫の「今日」（tickets.js と同じ UTC の日）
 
 import { LINE_ADD_URL } from './links.js';
 export { LINE_ADD_URL };
@@ -13,24 +14,24 @@ export { LINE_ADD_URL };
 export const INVITE_TEXT = {
   title: (lang) => (lang === 'en' ? '📣 Invite a friend, get 🎫 2' : '📣 友だちに紹介して🎫2枚'),
   lead: (lang) => (lang === 'en'
-    ? `Share the official LINE link with a friend who might like the test play. 🎫 ${INVITE_BONUS} per share, up to ${INVITE_MAX} times (🎫 ${INVITE_BONUS * INVITE_MAX} in total).`
-    : `テストプレイに誘いたい友だちに、公式LINEのリンクを送ってください。1回で🎫${INVITE_BONUS}枚、${INVITE_MAX}回まで（合計🎫${INVITE_BONUS * INVITE_MAX}枚）。`),
+    ? `Share the official LINE link with a friend who might enjoy Ika-bu. 🎫 ${INVITE_BONUS} per share, up to ${INVITE_MAX} times a day.`
+    : `イカ部を楽しんでくれそうな友だちに、公式LINEのリンクを送ってください。1回で🎫${INVITE_BONUS}枚、1日${INVITE_MAX}回まで。`),
   btn: (lang) => (lang === 'en' ? '📣 Invite a friend' : '📣 友だちに紹介する'),
-  left: (lang, n) => (n > 0 ? (lang === 'en' ? `${n} more time${n > 1 ? 's' : ''}` : `あと ${n} 回`) : lang === 'en' ? 'All done. Thank you!' : '5回ぜんぶ使いました。ありがとう！'),
+  left: (lang, n) => (n > 0 ? (lang === 'en' ? `${n} more today` : `今日はあと ${n} 回`) : lang === 'en' ? 'Done for today. Thank you!' : '今日の分は使いました。ありがとう！また明日'),
   share: (lang) => ({
-    title: lang === 'en' ? 'Yamaguchi Ika-bu: test play' : '山口イカ部 テストプレイ',
+    title: lang === 'en' ? 'Yamaguchi Ika-bu' : '山口イカ部',
     text: lang === 'en'
-      ? `Yamaguchi Ika-bu's games are in test play! Eging, puzzles and a card gacha 🦑 Join from the official LINE: ${LINE_ADD_URL}`
-      : `山口イカ部のゲーム、テストプレイ中！エギング・パズル・カードガチャが遊べるよ🦑 公式LINEから参加できます → ${LINE_ADD_URL}`,
+      ? `Yamaguchi Ika-bu's games: eging, puzzles and a card gacha 🦑 Join from the official LINE: ${LINE_ADD_URL}`
+      : `山口イカ部のゲーム、遊んでみて！エギング・パズル・カードガチャが遊べるよ🦑 公式LINEから参加できます → ${LINE_ADD_URL}`,
   }),
   done: (lang) => (lang === 'en' ? 'Thanks for sharing!' : '紹介ありがとう！'),
   cancel: (lang) => (lang === 'en' ? 'Share cancelled.' : '送らずに閉じました。'),
   copied: (lang) => (lang === 'en' ? 'Copied. Paste it to a friend in LINE.' : 'コピーしました。LINEで友だちに貼り付けて送ってください。'),
 };
 
-export function inviteHTML(lang) {
+export function inviteHTML(lang, { wrap = true } = {}) {
   const T = INVITE_TEXT;
-  return `<div class="wrap"><section class="ika-invite" id="ika-invite" aria-label="${T.title(lang)}">
+  const inner = `<section class="ika-invite" id="ika-invite" aria-label="${T.title(lang)}">
     <p class="ika-invite-title">${T.title(lang)}</p>
     <p class="ika-invite-lead">${T.lead(lang)}</p>
     <div class="ika-invite-row">
@@ -38,29 +39,34 @@ export function inviteHTML(lang) {
       <span class="ika-invite-left" data-invite-left></span>
     </div>
     <p class="ika-invite-msg" data-invite-msg role="status" aria-live="polite"></p>
-  </section></div>`;
+  </section>`;
+  return wrap ? `<div class="wrap">${inner}</div>` : inner;
 }
 
-// テストプレイ版だけ、注意書き（.ika-trial-note）の直後に出す
-export function mountInvite(lang, { trialOnly = true } = {}) {
+// 試遊版は注意書き（.ika-trial-note）の直後、本番は見出しの説明文（.ika-games-lead）の直後＝ゲーム一覧より上に出す
+//   （2026-10-16 本番にも出す。最初は TOP の節の後ろに置いたら、ゲーム一覧のずっと下になってぱっぱのスマホで見つからなかった）
+export function mountInvite(lang, { trialOnly = false } = {}) {
   if (trialOnly && !IS_TRIAL) return null;
   if (document.getElementById('ika-invite')) return null;
   const note = document.querySelector('.ika-trial-note')?.closest('.wrap');
-  (note ?? document.querySelector('main'))?.insertAdjacentHTML(note ? 'afterend' : 'afterbegin', inviteHTML(lang));
+  const lead = document.querySelector('.ika-games-lead');
+  if (note) note.insertAdjacentHTML('afterend', inviteHTML(lang));
+  else if (lead) lead.insertAdjacentHTML('afterend', inviteHTML(lang, { wrap: false }));   // すでに .wrap の中
+  else document.querySelector('main')?.insertAdjacentHTML('afterbegin', inviteHTML(lang));
   const root = document.getElementById('ika-invite');
   const btn = root.querySelector('[data-invite]');
   const left = root.querySelector('[data-invite-left]');
   const msg = root.querySelector('[data-invite-msg]');
   const T = INVITE_TEXT;
   const render = () => {
-    const n = inviteLeft(readTickets());
+    const n = inviteLeft(readTickets(), utcDay());
     left.textContent = T.left(lang, n);
     btn.disabled = n <= 0;
   };
   const earn = () => dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'invite', counted: true } }));
   let busy = false;
   btn.addEventListener('click', async () => {
-    if (busy || inviteLeft(readTickets()) <= 0) return;
+    if (busy || inviteLeft(readTickets(), utcDay()) <= 0) return;
     busy = true;
     msg.textContent = '';
     const s = T.share(lang);

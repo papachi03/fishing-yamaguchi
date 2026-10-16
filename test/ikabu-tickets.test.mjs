@@ -75,12 +75,18 @@ test('写真部に投稿すると1枚。同じ日の2回目は0枚、日付が�
   assert.equal(c.got, 1); assert.equal(c.rec.n, 2);
 });
 
-test('友だち紹介：1回2枚、5回まで（通算）。日付が変わっても回数は戻らない（2026-10-01 キャンペーン）', async () => {
+test('友だち紹介：1回2枚、1日5回まで。日付が変わると回数が戻る（2026-10-16 ぱっぱ：本番にも出す・利用者の声）', async () => {
   const { earnInvite, inviteLeft, INVITE_MAX } = await import('../src/js/ikabu/games/tickets.js');
   let r = emptyTickets();
-  assert.equal(inviteLeft(r), INVITE_MAX);
+  assert.equal(inviteLeft(r, D), INVITE_MAX);
   for (let i = 0; i < 5; i++) { const a = earnInvite(r, { day: D }); assert.equal(a.got, 2); assert.deepEqual(a.why, ['invite']); r = a.rec; }
-  assert.equal(r.n, 10); assert.equal(inviteLeft(r), 0);
-  const more = earnInvite(r, { day: '2026-10-02' });
-  assert.equal(more.got, 0); assert.equal(more.rec.n, 10);
+  assert.equal(r.n, 10); assert.equal(inviteLeft(r, D), 0);
+  const same = earnInvite(r, { day: D });
+  assert.equal(same.got, 0); assert.equal(same.rec.n, 10);
+  assert.equal(inviteLeft(r, '2026-10-02'), INVITE_MAX, '次の日は残り5回に戻る');
+  const next = earnInvite(r, { day: '2026-10-02' });
+  assert.equal(next.got, 2); assert.equal(next.rec.n, 12); assert.equal(inviteLeft(next.rec, '2026-10-02'), 4);
+  // 古い記録（通算の invites を持つ）が残っていても、今日の分は5回から数える
+  const old = { ...emptyTickets(), invites: 5, n: 10 };
+  assert.equal(inviteLeft(old, D), INVITE_MAX); assert.equal(earnInvite(old, { day: D }).got, 2);
 });

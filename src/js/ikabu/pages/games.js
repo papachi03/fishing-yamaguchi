@@ -9,7 +9,7 @@ import { mountHomescreen } from '../games/homescreen-ui.js';
 
 const { lang } = boot(render);
 mountTrialNotice(lang);
-mountInvite(lang);   // 友だち紹介キャンペーン（テストプレイ版だけ・注意書きの直下。2026-10-01 ぱっぱ）
+mountInvite(lang);   // 友だち紹介（2026-10-01 テスト中だけ → 2026-10-16 ぱっぱ：本番にも。試遊版は注意書きの直下・本番はTOPの直後）
 mountTicketEarn({ lang });
 mountTickets(document.getElementById('ika-tickets'), { lang });
 mountCerts(document.getElementById('ika-certs'), { lang });

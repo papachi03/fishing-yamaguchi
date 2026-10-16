@@ -39,10 +39,10 @@ export const SECTIONS = [
   { page: 'recipes', num: '03', label: pair('イカ食堂', 'Recipes'), en: 'KITCHEN' },
   { page: 'atlas', num: '04', label: pair('世界のイカ', 'Squid atlas'), en: 'ATLAS' },
   { page: 'gallery', num: '05', label: pair('写真部', 'Gallery'), en: 'PHOTO' },
-  { page: 'play', num: '06', label: pair('イカ部のあそび場', 'Play'), en: 'PLAY' },
+  { page: 'games', num: '06', label: pair('イカ部のあそび場', 'Play'), en: 'PLAY' },   // 2026-10-16 ぱっぱ：トップの「のぞいてみる」は games（🎫・ガチャ・カードのある、いつもの画面）へ。play は古い遊び場
   { page: 'studio', num: '07', label: pair('LINEスタンプ', 'LINE stickers'), en: 'STICKERS' },
 ];
 
 // recipe（1品のページ）はナビ上は recipes の子として扱う
 // メニューで「今どこか」を示す親ページ（1品のレシピ→イカ食堂、エギング専用ページ→あそび場）
-export const navPageOf = (page) => ({ recipe: 'recipes', egi: 'play', sumi: 'play', 'egi-guide': 'play' })[page] ?? page;
+export const navPageOf = (page) => ({ recipe: 'recipes', play: 'games', egi: 'games', sumi: 'games', 'egi-guide': 'games', gacha: 'games', cards: 'games', story: 'games' })[page] ?? page;

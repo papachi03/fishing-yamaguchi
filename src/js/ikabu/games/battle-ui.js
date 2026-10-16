@@ -13,8 +13,16 @@ import { tierOf } from './gacha-show.js';
 import { brainNext } from './cpu-brain.js';
 import { TILE_FILES } from './marks.js';
 import { RULE_TEXT } from './story-data.js';
+import { IS_TRIAL } from '../views/trial-notice.js';
+import { createNet, mirror, isCode } from './battle-net.js';
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+// オンライン対戦（2026-10-16 第1段階・試遊版だけ）の部屋のサーバー。手元は wrangler dev（launch.json の ikabu-battle-8788）
+const BATTLE_BASE = import.meta.env.DEV ? 'http://localhost:8788' : 'https://ikabu-battle.hoodhomies.workers.dev';
+// 入口を出す条件（2026-10-16 ぱっぱ：開発段階なので、URLを教えた人とだけ対戦できるように）：
+//   試遊版か手元の開発サーバーで、URL に合言葉 ?online=tomodachi が付いている時だけ。本番の組み立てでは出さない
+const ONLINE_KEY = 'tomodachi';
+const ONLINE_ON = (IS_TRIAL || import.meta.env.DEV) && typeof location !== 'undefined' && new URLSearchParams(location.search).get('online') === ONLINE_KEY;
 // 曲（Suno・ぱっぱ 2026-10-01）：対戦中（前奏9秒→9〜66秒を繰り返す）／終盤（エギ残り2以下かターン8以降。6〜156秒を繰り返す）／勝ちのジングル
 const BATTLE_AUDIO = {
   battle: { src: '/assets/ikabu/audio/battle/bgm_battle.mp3', loop: true, loopStart: 9, loopEnd: 66, volume: 0.18 },
@@ -110,6 +118,22 @@ const TX = {
   kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
   noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
   shakuri: (lang) => (lang === 'en' ? `Tide jerk (🌊${SHAKURI_COST} → ATK +${SHAKURI_ATK})` : `潮しゃくり（🌊${SHAKURI_COST}で攻撃+${SHAKURI_ATK}）`),
+  // オンライン対戦（試遊版・第1段階：2人とも同じスターターデッキ）
+  online: {
+    title: ['🧪 友だちと対戦（テスト）', '🧪 Play a friend (test)'],
+    note: ['2人とも同じスターターデッキで、対戦の仕組みを確かめます。1ターン60秒。記録と🎫には数えません。', 'Both players use the same starter deck while we test online play. 60 s per turn. Not recorded.'],
+    create: ['部屋を作る', 'Create a room'], join: ['入る', 'Join'], codePh: ['4桁のコード', '4-digit code'],
+    creating: ['部屋を作っています…', 'Creating a room…'], joining: ['入っています…', 'Joining…'],
+    waiting: (lang, code) => (lang === 'en' ? `Room code <b class="ika-bt-online-codeview">${code}</b><br>Waiting for your friend to join with this code…` : `部屋のコード <b class="ika-bt-online-codeview">${code}</b><br>相手がこのコードで入るのを待っています…`),
+    joined: ['入りました。始まるまで少し待ってください', 'Joined. Starting shortly…'],
+    badCode: ['4桁のコードを入れてください', 'Enter the 4-digit code'], full: ['その部屋は満席です', 'That room is full'],
+    noRoom: ['その部屋に入れませんでした（コードを確かめてください）', 'Could not join (check the code)'], noCreate: ['部屋を作れませんでした', 'Could not create a room'],
+    label: ['オンライン対戦', 'Online match'], oppTurn: ['相手の番', "Opponent's turn"],
+    timeUp: ['時間切れでターンが終わりました', 'Time ran out: turn ended'], yourTurnNow: ['あなたの番です', 'Your turn'],
+    oppLeft: ['相手の通信が切れました（30秒待ちます）', 'Opponent disconnected (waiting 30 s)'], oppBack: ['相手が戻りました', 'Opponent is back'],
+    lost: ['通信が切れました。つなぎ直しています…', 'Connection lost. Reconnecting…'], back: ['つながりました', 'Reconnected'], gaveup: ['つなぎ直せませんでした', 'Could not reconnect'],
+    resigned: ['相手が降参しました', 'Opponent resigned'], over: ['オンライン対戦（テスト）', 'Online match (test)'],
+  },
 };
 
 export function mountBattle(root, { lang = 'ja' } = {}) {
@@ -119,19 +143,49 @@ export function mountBattle(root, { lang = 'ja' } = {}) {
     <button type="button" class="ika-gc-imgbtn" data-bt-real><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.startReal)}" width="964" height="170" /><span class="is-real">${t(lang, '本番・部長', 'Captain')}</span></button>
     <p class="ika-bt-entry-note">${t(lang, ...TX.realNote)}<br><b data-bt-record>${TX.record(lang, rec)}</b></p>
     <button type="button" class="ika-gc-imgbtn" data-bt-start><img src="${assetHref('/assets/ikabu/gacha/btn_battle.webp')}" alt="${t(lang, ...TX.start)}" width="964" height="170" /><span>${t(lang, '練習', 'Practice')}</span></button>
-    <p class="ika-bt-entry-note">${t(lang, ...TX.practiceNote)}</p></div>`;
+    <p class="ika-bt-entry-note">${t(lang, ...TX.practiceNote)}</p>
+    ${ONLINE_ON ? `<div class="ika-bt-online"><p class="ika-bt-online-h">${t(lang, ...TX.online.title)}</p><p class="ika-bt-entry-note">${t(lang, ...TX.online.note)}</p>
+      <div class="ika-bt-online-row"><button type="button" class="ika-btn ika-btn--primary" data-on-create>${t(lang, ...TX.online.create)}</button><input class="ika-bt-online-code" data-on-code inputmode="numeric" pattern="\\d*" maxlength="4" placeholder="${t(lang, ...TX.online.codePh)}" aria-label="${t(lang, ...TX.online.codePh)}" /><button type="button" class="ika-btn" data-on-join>${t(lang, ...TX.online.join)}</button></div>
+      <p class="ika-bt-online-msg" data-on-msg role="status" aria-live="polite"></p></div>` : ''}</div>`;
   root.querySelector('[data-bt-start]').addEventListener('click', () => openBattle({ lang, practice: true }));
   root.querySelector('[data-bt-real]').addEventListener('click', () => openBattle({ lang, practice: false, level: 'bucho' }));
   addEventListener('ikabu:battle', () => { const b = root.querySelector('[data-bt-record]'); if (b) b.textContent = TX.record(lang, readRecord()); });
+  if (ONLINE_ON) mountOnline(root, lang);
   return {};
 }
+// オンライン対戦の入口（試遊版だけ）：部屋を作る／コードで入る → 2人そろうと 'start' が来て対戦の画面を開く
+function mountOnline(root, lang) {
+  const msg = root.querySelector('[data-on-msg]');
+  const say = (s, html = false) => { if (html) msg.innerHTML = s; else msg.textContent = s; };
+  const storage = (() => { try { return sessionStorage; } catch { return null; } })();
+  const hook = (net) => {
+    net.on('start', (m) => { say(''); openBattle({ lang, online: { net, state: m.state } }); });
+    net.on('state', (m) => { if (m.rejoin && !document.querySelector('.ika-bt')) openBattle({ lang, online: { net, state: m.state } }); });
+    return net;
+  };
+  root.querySelector('[data-on-create]').addEventListener('click', async () => {
+    say(t(lang, ...TX.online.creating));
+    try { const net = hook(createNet({ base: BATTLE_BASE, storage })); const code = await net.create(); say(TX.online.waiting(lang, code), true); }
+    catch { say(t(lang, ...TX.online.noCreate)); }
+  });
+  root.querySelector('[data-on-join]').addEventListener('click', async () => {
+    const code = root.querySelector('[data-on-code]').value.trim();
+    if (!isCode(code)) { say(t(lang, ...TX.online.badCode)); return; }
+    say(t(lang, ...TX.online.joining));
+    try { const net = hook(createNet({ base: BATTLE_BASE, storage })); await net.join(code); say(t(lang, ...TX.online.joined)); }
+    catch (e) { say(t(lang, ...(e?.message === 'full' ? TX.online.full : TX.online.noRoom))); }
+  });
+  // ページを読み込み直した時：前の部屋が生きていれば戻る（'state' が来て画面が開く）
+  hook(createNet({ base: BATTLE_BASE, storage })).rejoin().catch(() => {});
+}
 
-export function openBattle({ lang = 'ja', practice = true, level = practice ? 'practice' : 'bucho', story = null } = {}) {
+export function openBattle({ lang = 'ja', practice = true, level = practice ? 'practice' : 'bucho', story = null, online = null } = {}) {
   // story（ストーリーモード 2026-10-03）：相手のデッキ・エギの数・考える力・場のルール・盤面を外から渡す。記録と🎫はストーリー側（story-ui.js）が持つ
+  // online（2026-10-16）：{ net, state }。状態はサーバーが持ち、手は net で送って返ってきた状態を描く。相手の手は 'ev' で届く
   const myDeck = story?.myDeck ?? activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ（修行は課題デッキ）
-  const st = newGame({ myDeck, cpuDeck: story?.cpuDeck ?? cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu', cpuEgi: story?.cpuEgi, rule: story?.rule ?? null });
+  let st = online ? mirror(online.state, { cards: CARDS, effects: EFFECTS }) : newGame({ myDeck, cpuDeck: story?.cpuDeck ?? cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu', cpuEgi: story?.cpuEgi, rule: story?.rule ?? null });
   const stageSrc = story?.stage ? `/assets/ikabu/story/stage/${story.stage}.webp` : '/assets/ikabu/battle/stage_b.webp';
-  if (story) practice = false;
+  if (story || online) practice = false;
   const ov = document.createElement('div');
   ov.className = 'ika-bt';
   ov.innerHTML = `
@@ -143,7 +197,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
         <div class="ika-bt-row" data-row="me-back"></div>
       </div>
       <div class="ika-bt-side ika-bt-side--cpu" data-side="cpu"><div class="ika-bt-side-left"><div class="ika-bt-egi" data-egi="cpu"></div><div class="ika-bt-tide" data-tide="cpu"></div></div><div class="ika-bt-nums" data-nums="cpu"></div></div>
-      <div class="ika-bt-band">${story?.rule && RULE_TEXT[story.rule] ? `<span class="ika-bt-rule">${({ night: '🌙', summerNight: '🎆', rough: '🌊', exam: '📝', sarashi: '🌊', tidepool: '☀️', crevice: '🪨', moba: '🌿', stormExam: '⛈️' })[story.rule] ?? ''}${t(lang, ...RULE_TEXT[story.rule].title).replace(/^場のルール：|^Field: /, '')}：${t(lang, ...RULE_TEXT[story.rule].body).replace(/（おたがい）| \(both sides\)/, '')}</span>` : ''}<span class="ika-bt-turn" data-turn></span><span class="ika-bt-msg" data-msg></span></div>
+      <div class="ika-bt-band">${story?.rule && RULE_TEXT[story.rule] ? `<span class="ika-bt-rule">${({ night: '🌙', summerNight: '🎆', rough: '🌊', exam: '📝', sarashi: '🌊', tidepool: '☀️', crevice: '🪨', moba: '🌿', stormExam: '⛈️' })[story.rule] ?? ''}${t(lang, ...RULE_TEXT[story.rule].title).replace(/^場のルール：|^Field: /, '')}：${t(lang, ...RULE_TEXT[story.rule].body).replace(/（おたがい）| \(both sides\)/, '')}</span>` : ''}<span class="ika-bt-turn" data-turn></span>${online ? '<span class="ika-bt-timer" data-timer></span>' : ''}<span class="ika-bt-msg" data-msg></span></div>
       <div class="ika-bt-side ika-bt-side--me" data-side="me"><div class="ika-bt-egi" data-egi="me"></div><div class="ika-bt-tide" data-tide="me"></div><div class="ika-bt-nums" data-nums="me"></div></div>
       <button type="button" class="ika-bt-scale" data-scale aria-label="${t(lang, 'カードの大きさ', 'Card size')}">⚙</button>
       <button type="button" class="ika-bt-sound" data-sound aria-pressed="true">🔊</button>
@@ -194,6 +248,24 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   let sel = null;          // { kind:'hand', x } | { kind:'attacker', x } | { kind:'target', x, who }
   let busy = false;
   let logSeen = st.log.length;
+  // 手を進める。CPU戦は手元の battle.js、オンラインはサーバーへ送って返ってきた状態に差し替える（r の形は同じ。caught は { uid, no }）
+  function apply(view) { if (!view) return; const prev = st.log; st = mirror(view, { cards: CARDS, effects: EFFECTS }); st.log = prev.concat(st.log); }
+  async function act(a) {
+    if (online) {
+      busy = true;
+      try { const res = await online.net.act({ kind: a.kind, uid: a.x?.uid, target: a.target?.uid ?? null, mark: a.mark ?? null, discard: a.discard?.map((d) => d.uid) }); apply(res.state); return res.r; }
+      catch { callout(t(lang, ...TX.online.lost), 'is-no'); return { ok: false, why: 'net' }; }
+      finally { busy = false; }
+    }
+    if (a.kind === 'play') return play(st, 'me', a.x, { target: a.target, mark: a.mark });
+    if (a.kind === 'attack') { const r = attack(st, 'me', a.x, a.target); if (r.ok && r.result === 'catch') r.caught = { uid: a.target.uid, no: a.target.no }; return r; }
+    if (a.kind === 'shakuri') return shakuri(st, 'me', a.x);
+    endTurn(st, { discard: a.discard }); return { ok: true };
+  }
+  // 持ち時間（オンラインだけ）：サーバーの締切まで何秒か
+  const timerEl = $('[data-timer]');
+  const tickTimer = () => { if (!timerEl) return; const s = st.deadline ? Math.max(0, Math.ceil((st.deadline - Date.now()) / 1000)) : null; timerEl.textContent = s == null || st.winner ? '' : `⏱${s}`; timerEl.classList.toggle('is-low', s != null && s <= 10); };
+  const timerId = online ? setInterval(tickTimer, 500) : 0;
 
   const egiPrev = { me: null, cpu: null };   // 最初は必ず描く（5→5で描かれずエギが消えた：2026-10-01 ぱっぱ）
   const egiHTML = (n) => Array.from({ length: 5 }, (_, i) => `<img class="ika-bt-egi-i${i < n ? '' : ' is-lost'}" src="${assetHref('/assets/ikabu/battle/egi.webp')}" alt="" width="240" height="120" />`).join('');
@@ -220,7 +292,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     }
     const me = st.players.me;
     for (const side of ['me', 'cpu']) { const q = st.players[side]; el.tide[side].innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < q.tide ? 'is-on' : i < q.tideMax ? 'is-max' : ''}"></i>`).join(''); }
-    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...TX.cpuTurn)} ・ T${st.turn}${story ? ` ・ ${story.foeName}` : practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
+    el.turn.textContent = `${st.active === 'me' ? t(lang, ...TX.yourTurn) : t(lang, ...(online ? TX.online.oppTurn : TX.cpuTurn))} ・ T${st.turn}${story ? ` ・ ${story.foeName}` : online ? ` ・ ${t(lang, ...TX.online.label)}` : practice ? '' : ` ・ ${t(lang, ...CPU_DECKS[level].name)}`}`;
+    tickTimer();
     el.hand.innerHTML = me.hand.map((x) => {
       const c = canPlay(st, 'me', x);
       return `<button type="button" class="ika-bt-hcard${c.ok ? '' : ' is-no'}${sel?.kind === 'hand' && sel.x === x ? ' is-sel' : ''}" data-uid="${x.uid}" data-tier="${tierOf(x.card.rarity)}"><img src="${cardSrc(x.no)}" alt="${esc(x.card.name)}" width="240" height="360" draggable="false" /><i class="ika-bt-cost">${costOf(st, 'me', x)}</i><span class="ika-bt-hmark">${markImg(x.card.mark, 16)}${isNight(x.card) ? '<i class="ika-bt-night">🌙</i>' : ''}</span></button>`;
@@ -313,7 +386,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const canJ = st.players.me.front.includes(x) && canShakuri(st, 'me', x).ok;
     el.sheet.innerHTML = `<div class="ika-bt-sheet-in">${cardInfoHTML(x, true)}<div>${canJ ? `<button type="button" class="ika-btn ika-btn--primary" data-shakuri>${TX.shakuri(lang)}</button>` : ''}<button type="button" class="ika-btn" data-cancel>${t(lang, ...TX.close)}</button></div></div>`;
     el.sheet.querySelector('[data-cancel]').addEventListener('click', () => { el.sheet.hidden = true; });
-    el.sheet.querySelector('[data-shakuri]')?.addEventListener('click', () => { const r = shakuri(st, 'me', x); if (r.ok) { audio.se('place'); callout(t(lang, `攻撃+${SHAKURI_ATK}！`, `ATK +${SHAKURI_ATK}!`), 'is-good'); } render(); showInfo(x); });
+    el.sheet.querySelector('[data-shakuri]')?.addEventListener('click', async () => { const r = await act({ kind: 'shakuri', x }); if (r.ok) { audio.se('place'); callout(t(lang, `攻撃+${SHAKURI_ATK}！`, `ATK +${SHAKURI_ATK}!`), 'is-good'); } render(); showInfo(findInst(x.uid) ?? x); });
   }
   function showSheet(x) {
     const label = x.card.kind === 'squid' ? TX.put : x.card.kind === 'tech' ? TX.use : TX.set;
@@ -340,7 +413,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     let mark = null;
     if (target && effectsOf(st, x.no).some((e) => e.do === 'changeMark')) { mark = await pickMark(target); if (!mark) { sel = null; render(); return; } }
     const before = snapshot(); const logFrom = st.log.length;
-    const r = play(st, 'me', x, { target, mark });
+    const r = await act({ kind: 'play', x, target, mark });
     if (r.ok) audio.se('place');
     sel = null;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
@@ -370,13 +443,12 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   });
   el.direct.addEventListener('click', () => { if (sel?.kind === 'attacker') doAttack(sel.x, null); });
   async function doAttack(x, target) {
-    busy = true;
+    busy = true; el.sheet.hidden = true;   // 攻撃したら説明の窓は閉じる（開いたままだと次の手が押せない 2026-10-16）
     const node = ov.querySelector(`.ika-bt-card[data-uid="${x.uid}"]`);
     node?.classList.add('is-attack-up'); audio.se('swing');
     await wait(280);
     const before = snapshot(); const logFrom = st.log.length;
-    const r = attack(st, 'me', x, target);
-    if (r.ok && r.result === 'catch') r.caught = target;
+    const r = await act({ kind: 'attack', x, target });
     seForResult(r); fxAfter(before, logFrom, r);
     sel = null; busy = false;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
@@ -388,7 +460,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const n = overflow(st, 'me');
     let discard = null;
     if (n > 0) { discard = await pickDiscard(n); if (!discard) { render(); return; } }
-    audio.se('endturn'); endTurn(st, { discard }); render(); if (!checkOver()) await cpuTurn();
+    audio.se('endturn'); await act({ kind: 'end', discard }); render(); if (!checkOver() && !online) await cpuTurn();
   });
   // 納竿：捨てるカードを選ぶ窓（n枚タップ→「捨てる」）。「やめる」で戻る
   function pickDiscard(n) {
@@ -405,10 +477,17 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
       draw();
     });
   }
-  $('[data-quit]').addEventListener('click', () => { close(); if (story) story.onEnd?.(null); });
+  $('[data-quit]').addEventListener('click', () => { if (online && !st.winner) online.net.leave(); close(); if (story) story.onEnd?.(null); });
   // ストーリーから来た対戦は、閉じても下にストーリーの画面が残る。その時はサイトの帯を隠したままにする（2026-10-16 ぱっぱ：一覧の×・音のボタンが帯に隠れて押せなかった）
-  function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); if (!document.querySelector('.ika-st')) document.documentElement.classList.remove('is-battle'); }
+  function close() { audio.stopBgm(0.6); audio.stopAllSe(); clearInterval(timerId); if (online) { for (const off of netOff) off(); if (st.winner) online.net.close(); } ov.remove(); if (!document.querySelector('.ika-st')) document.documentElement.classList.remove('is-battle'); }
 
+  // 相手の1手を見せる（CPU もオンラインの相手も同じ）。a＝{ kind, uid, target, cardKind }、commit()＝その手で状態を進めて r を返す
+  async function showOpp(a, commit) {
+    if (a.kind === 'shakuri') { commit(); audio.se('place'); render(); await wait(600); return; }
+    if (a.kind === 'play') { const before = snapshot(); const logFrom = st.log.length; commit(); audio.se('place'); render(); fxAfter(before, logFrom, null); if (a.cardKind !== 'trap') fxRipple(posOf(a.uid)); await wait(800); return; }
+    if (a.kind === 'attack') { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const before = snapshot(); const logFrom = st.log.length; const r = commit(); seForResult(r); fxAfter(before, logFrom, r); render(); await wait(900); return; }
+    commit(); render();   // end／resign
+  }
   async function cpuTurn() {
     busy = true; render();
     await wait(600);
@@ -416,12 +495,30 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     while (st.active === 'cpu' && !st.winner && guard++ < 40) {
       const a = story ? brainNext(st, story.brain ?? 2) : cpuNext(st);
       if (a.type === 'end') break;
-      if (a.type === 'shakuri') { shakuri(st, 'cpu', a.x); audio.se('place'); render(); await wait(600); continue; }
-      if (a.type === 'play') { const before = snapshot(); const logFrom = st.log.length; play(st, 'cpu', a.x, { target: a.target }); audio.se('place'); render(); fxAfter(before, logFrom, null); if (a.x.card.kind !== 'trap') fxRipple(posOf(a.x.uid)); await wait(800); }
-      else { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.x.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const before = snapshot(); const logFrom = st.log.length; const r = attack(st, 'cpu', a.x, a.target); if (r.ok && r.result === 'catch') r.caught = a.target; seForResult(r); fxAfter(before, logFrom, r); render(); await wait(900); }
+      await showOpp({ kind: a.type, uid: a.x.uid, target: a.target?.uid ?? null, cardKind: a.x.card.kind }, () => {
+        if (a.type === 'shakuri') return shakuri(st, 'cpu', a.x);
+        if (a.type === 'play') return play(st, 'cpu', a.x, { target: a.target });
+        const r = attack(st, 'cpu', a.x, a.target); if (r.ok && r.result === 'catch') r.caught = { uid: a.target.uid, no: a.target.no }; return r;
+      });
     }
     if (!st.winner) endTurn(st);
     busy = false; render(); checkOver();
+  }
+  // オンライン：相手の手・通信の知らせ。手は届いた順に1つずつ見せる（演出の途中に次が届いても重ねない）
+  const netOff = [];
+  if (online) {
+    let chain = Promise.resolve();
+    netOff.push(online.net.on('ev', (m) => { chain = chain.then(async () => {
+      busy = true;
+      await showOpp(m.a, () => { apply(m.state); return m.r; });
+      busy = false; render();
+      if (m.a.kind === 'end' && !st.winner) callout(t(lang, ...(m.a.auto ? TX.online.timeUp : TX.online.yourTurnNow)), 'is-good');
+      if (m.a.kind === 'resign') callout(t(lang, ...TX.online.resigned), 'is-good');
+      checkOver();
+    }).catch(() => {}); }));
+    netOff.push(online.net.on('state', (m) => { apply(m.state); sel = null; render(); checkOver(); }));
+    netOff.push(online.net.on('opp', (m) => callout(t(lang, ...(m.status === 'left' ? TX.online.oppLeft : TX.online.oppBack)), m.status === 'left' ? 'is-no' : 'is-good', 2500)));
+    netOff.push(online.net.on('conn', (m) => { if (m.status === 'lost') callout(t(lang, ...TX.online.lost), 'is-no', 4000); else if (m.status === 'back') callout(t(lang, ...TX.online.back), 'is-good'); else if (m.status === 'gaveup') callout(t(lang, ...TX.online.gaveup), 'is-no', 6000); }));
   }
   function seForResult(r) {
     if (!r?.ok) return;
@@ -436,19 +533,20 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     const win = st.winner === 'me';
     audio.stopBgm(0.8); audio.se(win ? 'win' : 'lose');
     el.over.hidden = false;
-    const rec = practice || story ? null : recordResult(level, win);
+    const rec = practice || story || online ? null : recordResult(level, win);
     if (rec) dispatchEvent(new CustomEvent('ikabu:battle', { detail: { level, win } }));
     el.over.className = `ika-bt-over ${win ? 'is-win' : 'is-lose'}`;
     el.over.innerHTML = `<div class="ika-bt-over-in">
       <div class="ika-bt-over-rays" aria-hidden="true"></div>
       <img class="ika-bt-over-title" src="${assetHref(`/assets/ikabu/battle/${win ? 'co_win' : 'co_lose'}.webp`)}" alt="${t(lang, ...(win ? TX.win : TX.lose))}" />
       <img class="ika-bt-over-mascot" src="${assetHref(`/assets/ikabu/mascot/${win ? 'banzai' : 'sad'}.webp`)}" alt="" />
-      <p class="ika-bt-over-sub">${story ? `${t(lang, 'ストーリー', 'Story')} ・ ${esc(story.foeName)}` : practice ? t(lang, ...TX.practiceNote) : `${t(lang, ...CPU_DECKS[level].name)}<br><b>${TX.record(lang, rec)}</b>`}</p>
+      <p class="ika-bt-over-sub">${story ? `${t(lang, 'ストーリー', 'Story')} ・ ${esc(story.foeName)}` : online ? t(lang, ...TX.online.over) : practice ? t(lang, ...TX.practiceNote) : `${t(lang, ...CPU_DECKS[level].name)}<br><b>${TX.record(lang, rec)}</b>`}</p>
       <div class="ika-bt-over-btns">
-        ${story ? `<button type="button" class="ika-btn ika-btn--primary ika-bt-over-next" data-next>${t(lang, 'つづきを見る ▶', 'Continue ▶')}</button>` : `<button type="button" class="ika-gc-imgbtn" data-again><img src="${assetHref('/assets/ikabu/gacha/btn_again.webp')}" alt="${t(lang, ...TX.again)}" /></button>
+        ${story ? `<button type="button" class="ika-btn ika-btn--primary ika-bt-over-next" data-next>${t(lang, 'つづきを見る ▶', 'Continue ▶')}</button>` : `${online ? '' : `<button type="button" class="ika-gc-imgbtn" data-again><img src="${assetHref('/assets/ikabu/gacha/btn_again.webp')}" alt="${t(lang, ...TX.again)}" /></button>`}
         <button type="button" class="ika-gc-imgbtn" data-close><img src="${assetHref('/assets/ikabu/battle/btn_close.webp')}" alt="${t(lang, ...TX.close)}" /></button>`}
       </div></div>`;
     if (story) { el.over.querySelector('[data-next]').addEventListener('click', () => { close(); story.onEnd?.(win); }); return true; }
+    if (online) { el.over.querySelector('[data-close]').addEventListener('click', close); return true; }
     el.over.querySelector('[data-again]').addEventListener('click', () => { close(); openBattle({ lang, practice, level }); });
     el.over.querySelector('[data-close]').addEventListener('click', close);
     dispatchEvent(new CustomEvent('ikabu:game', { detail: { game: 'battle', win, counted: !practice } }));
@@ -458,8 +556,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   const shio = [st.players.me.shiodome && t(lang, ...TX.shiodome), st.players.cpu.shiodome && t(lang, ...TX.shiodomeCpu)].filter(Boolean);
   if (shio.length) tutorHoldUntil = performance.now() + 2600;
   render();
-  if (import.meta.env.DEV) window.__bt = { st, render };   // 開発時の確認用
+  if (import.meta.env.DEV) window.__bt = { get st() { return st; }, render };   // 開発時の確認用（オンラインでは st が差し替わるので getter）
   if (shio.length) { callout(shio.join('\n'), 'is-good', 2600); setTimeout(() => { if (!busy) tutor(); }, 2700); }
-  if (st.active === 'cpu') setTimeout(cpuTurn, shio.length ? 2600 : 0);
-  return { st, close };
+  if (st.active === 'cpu' && !online) setTimeout(cpuTurn, shio.length ? 2600 : 0);
+  return { get st() { return st; }, close };
 }

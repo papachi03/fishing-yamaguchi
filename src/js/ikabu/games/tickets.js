@@ -74,14 +74,14 @@ export function earnPhoto(rec, { day }) {
   const got = add(r, 1);
   return { rec: r, got, why: got ? ['photo'] : [] };
 }
-// 友だち紹介（2026-10-01 ぱっぱ：テスト中のキャンペーン。1回2枚・1人5回まで＝合計10枚。日ごとではなく通算）
+// 友だち紹介（2026-10-01 テスト中は通算5回 → 2026-10-16 ぱっぱ：本番にも出す。1回2枚・1日5回まで（利用者の声）。日付は他の🎫と同じ UTC の日）
 export const INVITE_MAX = 5, INVITE_BONUS = 2;
-export const inviteLeft = (rec) => Math.max(0, INVITE_MAX - (rec?.invites ?? 0));
+export const inviteLeft = (rec, day) => Math.max(0, INVITE_MAX - (rec && rec.day === day ? (rec.today?.invite ?? 0) : 0));
 export function earnInvite(rec, { day }) {
   const r = roll(rec, day);
-  r.invites = r.invites ?? 0;
-  if (r.invites >= INVITE_MAX) return { rec: r, got: 0, why: [] };
-  r.invites += 1;
+  r.today.invite = r.today.invite ?? 0;
+  if (r.today.invite >= INVITE_MAX) return { rec: r, got: 0, why: [] };
+  r.today.invite += 1;
   const got = add(r, INVITE_BONUS);
   return { rec: r, got, why: got ? ['invite'] : [] };
 }
