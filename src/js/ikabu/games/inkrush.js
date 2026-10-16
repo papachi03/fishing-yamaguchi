@@ -3,7 +3,7 @@
 //   ・部屋から空き間をつたって**一番下の列まで道が通れば、そこから墨が抜ける**（一番下で開いているマスが多いほど速い）
 //   ・一定時間ごとに、各列の上から1つずつブロックが降ってきて、その列の空いた所の一番下まで落ちる（道がふさがる＝栓）
 //   ・水位が CAP で飲み込まれて終わり。競うのは「何秒しのいだか」。今日の盤面（と降ってくるブロック）は世界中で同じ
-import { swapMatches, createGame, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS, BALL, RARE } from './match3.js';
+import { swapMatches, createGame, freshBoard, swap, swapWorks, inkFlash, findMatches, adjacent, cascade, lineH, lineV, SIZE, KINDS, BALL, RARE } from './match3.js';
 
 export const CAP = 30;                  // 水位がここで飲み込まれる
 export const START = 8;                // 最初の水位
@@ -21,6 +21,9 @@ export const SPECIAL_RATE = 0.1;
 export const NEAR_CLEAR = 3;                 // 残りのマークがこれ以下で「ほぼ全消し」（10/3 ぱっぱ：6→3。自動の手では400回で0回＝人が墨ダマを使って狙えるくらい）
 export const NEAR_BONUS = 300, NEAR_DELAY = 2;     // 点・次のブロックが遅れる秒
 export const ALL_BONUS = 1000, ALL_DELAY = 5;
+// 2026-10-16 ぱっぱ A案：全消しは「墨が抜けて新しい盤へ」。盤をマークで埋め直し、水位は ALL_LEVEL まで下げ、ブロックは始めと同じ ROW_FIRST 秒後から降る
+//   （前は盤が空のまま続き、空の列に降るブロックが一番下の6マスを一度にふさいで、14〜22秒で必ず溺れていた）
+export const ALL_LEVEL = 3;
 // 流れ込む速さ（1秒あたり）：[この秒から, 速さ]。しのぐほど速く
 export const PACE = [[0, 0.5], [20, 0.9], [40, 1.4], [60, 2.0], [90, 2.8], [120, 4.0], [160, 5.5]];   // 道を意識して2秒に1手で約100秒・でたらめ33秒（rush_sim.mjs）
 export const inflowAt = (sec) => { let v = PACE[0][1]; for (const [from, amt] of PACE) if (sec >= from) v = amt; return v; };
@@ -122,7 +125,7 @@ export function rushTick(g, dt) {
   const events = [];
   g.rush.t += dt;
   const out = Math.min(g.rush.level, g.rush.open.length * HOLE_RATE * dt);
-  g.rush.level += inflowAt(g.rush.t) * dt - out;
+  g.rush.level += inflowAt(g.rush.t - (g.rush.paceFrom ?? 0)) * dt - out;   // paceFrom：全消しで速さが始めに戻る（2026-10-16）
   if (out > 0) { g.rush.flushed += out; g.score += Math.round(out * FLUSH_POINT); }
   if (g.rush.t >= g.rush.nextRow) {
     g.rush.nextRow += ROW_EVERY;
@@ -143,7 +146,15 @@ function clearBonus(g) {
   const m = marksLeft(g.board);
   const prev = g.rush.marks ?? SIZE * SIZE;
   g.rush.marks = m;
-  if (m === 0 && prev > 0) { g.score += ALL_BONUS; g.rush.nextRow += ALL_DELAY; g.rush.allClears = (g.rush.allClears ?? 0) + 1; return { type: 'allClear', points: ALL_BONUS, delay: ALL_DELAY }; }
+  if (m === 0 && prev > 0) {
+    g.score += ALL_BONUS; g.rush.allClears = (g.rush.allClears ?? 0) + 1;
+    g.board = freshBoard(g.rand);   // 新しい盤（今日の盤面と同じく、乱数の続きで決まる＝世界中で同じ）
+    g.rush.level = Math.min(g.rush.level, ALL_LEVEL);
+    g.rush.held = 0; g.rush.open = []; g.rush.marks = marksLeft(g.board);   // 盤が埋まった：受け皿も抜け道もなし（押し戻しはしない）
+    g.rush.nextRow = Math.max(g.rush.nextRow, g.rush.t + ROW_FIRST);
+    g.rush.paceFrom = g.rush.t;   // 流れ込む速さも始めに戻す（経過時間＝点はそのまま）。遅い時間の全消しでも新しい盤で道を作る間がある
+    return { type: 'allClear', points: ALL_BONUS, delay: ROW_FIRST, refill: true };
+  }
   if (m <= NEAR_CLEAR && prev > NEAR_CLEAR) { g.score += NEAR_BONUS; g.rush.nextRow += NEAR_DELAY; g.rush.nearClears = (g.rush.nearClears ?? 0) + 1; return { type: 'nearClear', points: NEAR_BONUS, delay: NEAR_DELAY, left: m }; }
   return null;
 }

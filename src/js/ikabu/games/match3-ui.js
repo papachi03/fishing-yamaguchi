@@ -506,7 +506,12 @@ export function mountMatch3(root, { lang = 'ja', demo = null } = {}) {
         callout(TX.rush.allClear(lang, ev.points, ev.delay), 'huge clear'); sfx.combo(); setTimeout(() => sfx.goal(), 380);
         el.board.classList.remove('is-allclear'); void el.board.offsetWidth; el.board.classList.add('is-allclear');
         setTimeout(() => el.board.classList.remove('is-allclear'), 1800);
-        if (!g.over) { setMood('relief'); await sleep(dur(1400)); mood = ''; }
+        if (!g.over) { setMood('relief'); await sleep(dur(900)); mood = ''; }
+        if (ev.refill) {   // 新しい盤：上から降ってきて埋まる（2026-10-16）
+          setSelected(null); renderBoard(g.board);
+          if (!reduced) cells.forEach((c, i) => c.animate([{ transform: `translateY(${-(Math.floor(i / 6) + 1) * 108}%)`, opacity: 0 }, { transform: 'translateY(0) scale(1.08, 0.9)', offset: 0.8 }, { transform: 'none', opacity: 1 }], { duration: 380 + Math.floor(i / 6) * 40, easing: 'cubic-bezier(.3,.8,.4,1)' }));
+          await sleep(dur(600));
+        }
       }
     }
     if (drained && !g.over) { setMood('relief'); await sleep(dur(450)); mood = ''; }

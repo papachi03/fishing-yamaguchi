@@ -199,7 +199,7 @@ test('バッジ以前の記録（2分35秒・13,200点）からも時間と点�
 });
 
 // ほぼ全消し・全消し（2026-10-03）：しきいを下回った瞬間に1回だけ、点とブロックの遅れ。実績（バッジ）は付けない（ぱっぱ）
-import { NEAR_CLEAR, NEAR_BONUS, NEAR_DELAY, ALL_BONUS, ALL_DELAY, marksLeft } from '../src/js/ikabu/games/inkrush.js';
+import { NEAR_CLEAR, NEAR_BONUS, NEAR_DELAY, ALL_BONUS, ALL_LEVEL, marksLeft } from '../src/js/ikabu/games/inkrush.js';
 test('ほぼ全消し（残り3個以下）と全消し（0）で、点が増え次のブロックが遅れる。下回った瞬間だけ', () => {
   const g = createRush({ seed: 'clear' });
   // マーク4個だけ残した盤（そろわない並び）にして、1個消す形を作る
@@ -223,10 +223,26 @@ test('ほぼ全消し（残り3個以下）と全消し（0）で、点が増え
   g.board = Array(N).fill(null);
   r = rushDrop(g, null);
   const all = r.events.find((e) => e.type === 'allClear');
-  assert.ok(all);
+  assert.ok(all); assert.equal(all.refill, true);
   assert.equal(g.score - s1 >= ALL_BONUS, true);
-  assert.equal(g.rush.nextRow, n1 + ALL_DELAY);
+  // 新しい盤：全部埋まっていて、そろいは無い。水位は ALL_LEVEL 以下、ブロックは ROW_FIRST 秒後から
+  assert.equal(marksLeft(g.board), N); assert.equal(findMatches(g.board).length, 0);
+  assert.ok(g.rush.level <= ALL_LEVEL); assert.equal(g.rush.held, 0); assert.deepEqual(g.rush.open, []);
+  assert.ok(g.rush.nextRow >= g.rush.t + ROW_FIRST - 1e-9 && g.rush.nextRow >= n1);
   assert.equal(NEAR_CLEAR, 3);
   // 実績（バッジ）は増やしていない
   assert.equal(RUSH_BADGES.some((b) => /clear/i.test(b.id)), false);
+});
+test('全消しの後、何もしなくても20秒は溺れない（前は盤が空のままブロックが穴を全部ふさぎ、14〜22秒で必ず溺れた・2026-10-16）', () => {
+  for (const [t0, lv0] of [[30, 15], [90, 20], [130, 22]]) {
+    const g = createRush({ seed: 'allclear-' + t0 });
+    g.rush.t = t0; g.rush.level = lv0; g.rush.nextRow = t0 + 3; g.rush.marks = 2;
+    g.board = Array(N).fill(null);
+    rushDrop(g, null);
+    const after = g.rush.level;
+    assert.ok(after <= ALL_LEVEL, `t=${t0} 全消し直後 ${after}`);
+    let sec = 0;
+    while (!g.over && sec < 20) { rushTick(g, 1); sec++; }
+    assert.equal(g.over, false, `t=${t0} で ${sec} 秒後に溺れた（水位 ${g.rush.level.toFixed(1)}／${CAP}）`);
+  }
 });

@@ -103,8 +103,8 @@ export function findHint(b) {
 }
 export const hasMove = (b) => findHint(b) !== null;
 
-// そろいが無く、動かせる手がある盤面になるまで作り直す
-function freshBoard(rand) {
+// そろいが無く、動かせる手がある盤面になるまで作り直す（墨のがれの全消しでも使う）
+export function freshBoard(rand) {
   for (;;) {
     const b = new Array(N);
     for (let i = 0; i < N; i++) {

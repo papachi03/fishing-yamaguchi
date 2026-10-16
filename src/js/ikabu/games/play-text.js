@@ -786,7 +786,7 @@ export const M3_TEXT = {
     lidFall: pair('ブロックが降ってきた！', 'Blocks!'),
     lidBreak: pair('道が通った！ ドバッ', 'Path open! Whoosh'),
     nearClear: (lang, pts, sec) => (lang === 'en' ? `Almost cleared!\n+${pts} · blocks ${sec}s later` : `ほぼ全消し！\n+${pts}点・ブロック${sec}秒おそく`),   // 2行目は小さく（is-clear）
-    allClear: (lang, pts, sec) => (lang === 'en' ? `ALL CLEAR!!\n+${pts} · blocks ${sec}s later` : `全消し！！\n+${pts}点・ブロック${sec}秒おそく`),
+    allClear: (lang, pts) => (lang === 'en' ? `ALL CLEAR!!\n+${pts} · ink drained, new board!` : `全消し！！\n+${pts}点・墨が抜けて新しい盤へ`),
     nextLid: (lang, n) => (lang === 'en' ? `Blocks in ${n}s` : `ブロックまで ${n}秒`),
     turns: pair('しのいだ秒', 'Seconds survived'),
     flushed: pair('流した墨', 'Ink flushed'),
