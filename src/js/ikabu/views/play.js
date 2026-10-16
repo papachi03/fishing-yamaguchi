@@ -7,6 +7,7 @@ import { ytHTML } from '../yt-facade.js';
 import { EGI_TEXT, M3_TEXT, HUB_TEXT, TOD, SEASON, MARKS, RARE_NAME, monthLabel, speciesName, YAMAGUCHI_SQUID, GAME_ZUKAN } from '../games/play-text.js';
 import { egiSceneSVG } from '../games/egi-scene.js';
 import { tileImg } from '../games/marks.js';
+import { EGI_ART, egiArtHref } from '../squid-art.js';
 import { TIMES, CASTS, EGI_STOCK, EGI_SIZES, EGI_TYPES, EGI_COLORS, EGI_COLOR_HEX, DEFAULT_EGI, speciesPool, seasonOf, egiSecPerMeter, SEASON_MODES, EGI_RIGS, RODS, DRAGS, DEFAULT_TACKLE } from '../games/egi.js';
 import { recommendedSizes, distRank, snagRank } from '../games/egi-advice.js';
 import { METHODS, METHOD_IDS } from '../games/progress.js';
@@ -167,13 +168,11 @@ const howtoHTML = (lang, game) => {
 
 /* ---------- しゃくって抱かせろ！ ---------- */
 
-// エギの絵（号数で大きさ、タイプで色）。ブラウザ側でも同じ関数で描き直す
-export const EGI_LEGS_D = 'M-5,10 Q-9,8 -10,5 M-5.5,15 Q-9.5,13 -10.5,10 M-5.5,20 Q-9.5,18 -10.5,15 M-4.5,25 Q-8.5,23 -9.5,20 M-3,29 Q-6.5,27 -7.5,24';   // 足つき：腹側（海底を向く -x 側）にエビの足のような短い足5本。足は頭側（-y）へ向く（2026-10-01 ぱっぱ：尻側に向けたら「逆」）   // 足つき：腹側（舞台で海底を向く -x 側。+x だと水面を向いた）にエビの足のような短い足5本（2026-10-01 ぱっぱの絵）   // 足つき：腹側（舞台で海底を向く +x 側）にエビの足のような短い足5本（2026-10-01 ぱっぱの絵。最初 -x 側に描いたら水面を向いた）   // 足つき：腹側（海底側）にエビの足のような短い足5本（2026-10-01 ぱっぱの絵）   // 足つきの足（舞台の絵と同じ形。games/egi-ui.js の paintEgi）
+// エギの小さな絵（号数で大きさ）。舞台と同じ絵（squid-art.js の egiShape：7色×通常／足つき。ラトルは通常と同じ見た目）2026-10-16
 export function egiIconHTML(size = 3, type = 'normal', color = 'orange', rig = 'normal') {
   const k = { 2.5: 0.85, 3: 1, 3.5: 1.15 }[size] ?? 1;
-  const fill = EGI_COLOR_HEX[color] ?? '#f47321';
-  const legs = rig === 'legs' ? `<path d="${EGI_LEGS_D}" fill="none" stroke="#16233a" stroke-width="2.2" stroke-linecap="round"/>` : '';
-  return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${k.toFixed(2)})"><path d="M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z" fill="${fill}" stroke="#16233a" stroke-width="3" stroke-linejoin="round"/><path d="M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22" stroke="#ffd2a8" stroke-width="1.6" stroke-linecap="round"/><circle cx="0" cy="3.5" r="1.8" fill="#16233a"/><path d="M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35" stroke="#16233a" stroke-width="1.6" stroke-linecap="round"/>${legs}</g></svg>`;
+  const A = EGI_ART;
+  return `<svg class="ika-egi-pick-icon" viewBox="-16 -8 32 50" width="${Math.round(26 * k)}" height="${Math.round(40 * k)}" aria-hidden="true" focusable="false"><g transform="scale(${(k * 0.8).toFixed(2)})"><image href="${egiArtHref(color, rig)}" x="${A.x}" y="${A.y}" width="${A.w}" height="${A.h}"/></g></svg>`;
 }
 
 // エギの色の丸いボタン（エギ選び欄と、舞台の色選びで同じものを使う）

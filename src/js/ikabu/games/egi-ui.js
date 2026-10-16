@@ -46,12 +46,12 @@ const ISO_TX = {
   busy: ['投げる前に切り替えてね', 'Switch before you cast'],
 };
 import { DEPTHS } from './egi.js';
-import { svgEl, egiShape, ART, speciesColors } from '../squid-art.js';
+import { svgEl, egiShape, egiJadoDeco as jadoDeco, paintEgiArt, ART, speciesColors } from '../squid-art.js';
 import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
-import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML, EGI_LEGS_D } from '../views/play.js';
+import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
 import { ANGLER_BASE_H, anglerOf, readAnglers, anglerSrc, anglerJet, lookOf, ANGLERS_EVENT } from './anglers.js';
 import { anglerPopHTML, anglerPopClick } from './angler-pop.js';
 import { readTickets, writeTickets } from './tickets.js';
@@ -212,23 +212,6 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.camShown = null;
     if (s) draw(0);   // 作り直した直後に1回描く（ループが止まっていても竿と糸が出るように）
   }
-  // 邪道エギング（2026-09-27）：エギとスナップのつなぎ目にオモリ、背中にエサ（ぱっぱの写真どおり）
-  function jadoDeco() {
-    const g = svgEl('g', { class: 'ika-eg-jado', style: 'display:none' });
-    const sinker = svgEl('ellipse', { cx: '0', cy: '-6', rx: '3.6', ry: '4.2', fill: '#3b4148', stroke: '#16233a', 'stroke-width': '1.6' });
-    const kibinago = svgEl('g', { class: 'ika-eg-bait-kibinago' });
-    kibinago.append(
-      svgEl('path', { d: 'M5,3 Q10,12 8,24 Q7,28 5,27 Q6,15 3,4 Z', fill: '#d9e2e8', stroke: '#16233a', 'stroke-width': '1.3', 'stroke-linejoin': 'round' }),
-      svgEl('path', { d: 'M6,6 Q9,14 7,24', fill: 'none', stroke: '#5b86b0', 'stroke-width': '1.4', 'stroke-linecap': 'round' }),
-    );
-    const sasami = svgEl('g', { class: 'ika-eg-bait-sasami' });
-    sasami.append(
-      svgEl('path', { d: 'M4,5 Q10,13 7,25 L4,25 Q6,15 2,6 Z', fill: '#f6dcd3', stroke: '#16233a', 'stroke-width': '1.3', 'stroke-linejoin': 'round' }),
-      svgEl('path', { d: 'M2,10 L9,11 M3,18 L9,19', stroke: '#9aa6ad', 'stroke-width': '1', 'stroke-linecap': 'round' }),
-    );
-    g.append(sinker, kibinago, sasami);
-    return g;
-  }
   let ajiClipN = 0;
   function ajiDeco() {
     const g = svgEl('g', { class: 'ika-eg-aji', style: 'display:none' });
@@ -349,6 +332,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     //   ※ 2026-09-28 修正：ヤエンの行を足した時に if/else の組がずれて、抱いたイカの上に青い「泳ぐイカ」が重なっていた（ぱっぱ：釣れた時に青い）
     if (kind !== 'hug') { node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } })); return; }
     node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
+    paintEgiArt(node, { color: settings.egi.color, rig: settings.egi.rig });   // 腕の中のエギも選んだ色・種類に（2026-10-16）
     const method = s?.method ?? settings.method;
     // テーラー：腕の中はテーラー（egi 側の絵）
     if (method === 'tailor') node.querySelectorAll('.ika-art-egi').forEach((e) => { e.style.display = 'none'; });
@@ -845,17 +829,9 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (bubbles.length > 18) bubbles.splice(0, bubbles.length - 18);
   }
   function paintEgi() {
-    const hex = EGI_COLOR_HEX[settings.egi.color] ?? EGI_COLOR_HEX.orange;
-    const n = sc?.nodes;
-    if (!n) return;
-    [n.egiWater, n.egiAir, n.ghost].forEach((g) => g.querySelector('.ika-art-egi path')?.setAttribute('fill', hex));
-    // 足つき（パタパタ系）：見た目だけ。舞台のすべてのエギの絵に足を付け外しする（2026-10-01 深夜 ぱっぱ）
-    const legs = settings.egi.rig === 'legs';
-    sc.svg?.querySelectorAll('.ika-art-egi').forEach((art) => {
-      let lg = art.querySelector('.ika-art-egi-legs');
-      if (legs && !lg) { lg = svgEl('path', { class: 'ika-art-egi-legs', d: EGI_LEGS_D, fill: 'none', stroke: '#16233a', 'stroke-width': '2.2', 'stroke-linecap': 'round' }); art.appendChild(lg); }
-      if (lg) lg.style.display = legs ? '' : 'none';
-    });
+    // 舞台のすべてのエギの絵（海の中・竿先・残像・抱いたイカ）を、選んだ色・種類（通常／足つき）の絵に。ラトルは通常と同じ見た目（2026-10-16 ぱっぱ）
+    if (!sc?.svg) return;
+    paintEgiArt(sc.svg, { color: settings.egi.color, rig: settings.egi.rig });
   }
   const colorOpts = () => ({ tod: settings.tod, cond: settings.cond, mood: moodOf(settings.month, settings.tod, settings.cond) });
   // なぜその色が効くのか（時間帯と、波から見た濁り）

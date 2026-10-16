@@ -4,6 +4,8 @@
 // 向きの決まり：原点は「糸の結び目（エギの頭）」で、+y が下。
 //   イカはエギを足（ゲソ）で抱くので、足がエギの側（上）、胴は下に垂れる。
 //   泳いでいる姿は同じ部品を rotate() で回して使う（胴の先が進行方向＝ジェット噴射で後ろ向きに走る）。
+import { url } from '../base.js';
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 export const svgEl = (name, attrs = {}) => {
   const e = document.createElementNS(SVG_NS, name);
@@ -13,16 +15,60 @@ export const svgEl = (name, attrs = {}) => {
 
 export const ART = { navy: '#182c47', ivory: '#f4ead8', egi: '#f47321', egiLine: '#16233a', egiStripe: '#ffd2a8' };
 
-// エギ：オレンジの胴に紺の縁、目、背中の布の筋、尻のカンナ。原点は糸の結び目で、+y 方向に伸びる（長さ ≈ 36）
-export function egiShape() {
+// エギ（2026-10-16 ぱっぱ・部員の要望「本物のシルエットに」）：ChatGPT で描いた白いエギを7色に塗った絵（エギ王型・パタパタ型の2種）。
+//   本物そっくりにはしない（形を単純にしてデフォルメ）。ラトルは見た目が同じなので rig 'rattle' も通常の絵。
+//   絵は public/assets/ikabu/egi-art/{normal|legs}_{色}.webp（作り方 ikabu-research\egi-shape\cut.py → tint.py → export.py）。
+//   原点は糸の結び目（頭の輪の中心）で、+y 方向に伸びる。腹（オモリ・足）は -x 側
+//   大きさ：輪からカンナの先まで 38（今までの絵と同じ長さ）× EGI_SCALE。細長い形にした分、同じ長さだと海の中で見つけにくいので 1.3 倍（2026-10-16 ぱっぱ）
+export const EGI_SCALE = 1.3;
+const EGI_BASE = { x: -5.52, y: -1.57, w: 11.03, h: 39.94 };
+export const EGI_ART = Object.fromEntries(Object.entries(EGI_BASE).map(([k, v]) => [k, Math.round(v * EGI_SCALE * 100) / 100]));
+const EGI_ART_COLORS = ['red', 'blue', 'green', 'purple', 'orange', 'pink', 'brown'];
+export const egiArtHref = (color = 'orange', rig = 'normal') => url(`/assets/ikabu/egi-art/${rig === 'legs' ? 'legs' : 'normal'}_${EGI_ART_COLORS.includes(color) ? color : 'orange'}.webp`);
+export function egiShape({ color = 'orange', rig = 'normal' } = {}) {
   const g = svgEl('g', { class: 'ika-art-egi' });
-  g.append(
-    svgEl('path', { d: 'M0,-2 Q7,4 6,16 Q5,26 0,30 Q-5,26 -6,16 Q-7,4 0,-2 Z', fill: ART.egi, stroke: ART.egiLine, 'stroke-width': '3', 'stroke-linejoin': 'round' }),
-    svgEl('path', { d: 'M-3,8 L3,8 M-4,15 L4,15 M-3,22 L3,22', stroke: ART.egiStripe, 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
-    svgEl('circle', { cx: '0', cy: '3.5', r: '1.8', fill: ART.egiLine }),
-    svgEl('path', { d: 'M-4,30 L-6,35 M0,31 L0,36 M4,30 L6,35', stroke: ART.egiLine, 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
-  );
+  g.append(svgEl('image', { class: 'ika-art-egi-img', href: egiArtHref(color, rig), x: String(EGI_ART.x), y: String(EGI_ART.y), width: String(EGI_ART.w), height: String(EGI_ART.h), preserveAspectRatio: 'xMidYMid meet' }));
   return g;
+}
+// 邪道エギング（2026-09-27）：エギとスナップのつなぎ目にオモリ、背中にエサ（ぱっぱの写真どおり）
+// 2026-10-16 ぱっぱ：新しいエギの絵に合わせて、通常のエギの背中（+x 側）にササミ／キビナゴを沿わせ、針金で3か所巻きつけ、
+//   頭の先にオモリのシンカー。形は 上の EGI_ART（背中の線＝y16 で x≈4.5、目＝(0.5, 4.8)）に合わせた
+export function egiJadoDeco() {
+  const g = svgEl('g', { class: 'ika-eg-jado', style: 'display:none' });
+  const sinker = svgEl('g', { class: 'ika-eg-jado-sinker' });
+  sinker.append(
+    svgEl('path', { d: 'M0,-6 Q1.8,-3.6 1.7,-1.2 Q1.4,1.3 0,1.4 Q-1.4,1.3 -1.7,-1.2 Q-1.8,-3.6 0,-6 Z', fill: '#3b4148', stroke: '#16233a', 'stroke-width': '0.9', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M-0.7,-4 Q-1,-2.4 -0.8,-0.8', fill: 'none', stroke: '#8b949c', 'stroke-width': '0.5', 'stroke-linecap': 'round' }),
+  );
+  const bait = 'M1.8,6 Q5.4,10.5 5.8,16.5 Q6,22.5 3.6,27.2 L2.4,26.6 Q3.9,22 3.4,16.5 Q3,11 1.4,6.6 Z';   // 背中に重ねて沿わせた細長いエサ（背中の線の内1.1〜外1.3）
+  const kibinago = svgEl('g', { class: 'ika-eg-bait-kibinago' });
+  kibinago.append(
+    svgEl('path', { d: bait, fill: '#d9e2e8', stroke: '#16233a', 'stroke-width': '0.6', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M2.6,8 Q5,12 5,16.5 Q5,21.5 3.3,25.6', fill: 'none', stroke: '#5b86b0', 'stroke-width': '0.8', 'stroke-linecap': 'round' }),
+    svgEl('path', { d: 'M3,27 L2.2,29.2 M3,27 L4.1,29', fill: 'none', stroke: '#16233a', 'stroke-width': '0.7', 'stroke-linecap': 'round' }),
+    svgEl('circle', { cx: '2.3', cy: '7.3', r: '0.55', fill: '#16233a' }),
+  );
+  const sasami = svgEl('g', { class: 'ika-eg-bait-sasami' });
+  sasami.append(
+    svgEl('path', { d: bait, fill: '#f6dcd3', stroke: '#16233a', 'stroke-width': '0.6', 'stroke-linejoin': 'round' }),
+    svgEl('path', { d: 'M2.8,10 L4.6,11 M3.8,15 L5.3,15.8 M3.7,20 L5.2,20.7 M3.1,24.2 L4.2,24.8', stroke: '#d9a99a', 'stroke-width': '0.45', 'stroke-linecap': 'round' }),
+  );
+  // 針金：腹から背中のエサの外までをまたいで3か所（紺の縁＋銀）
+  const wireD = 'M-1.2,10.8 L5.4,9.4 M-1.4,17.4 L6.1,15.8 M-0.2,23.8 L5,22.6';
+  const wire = svgEl('g', { class: 'ika-eg-jado-wire' });
+  wire.append(
+    svgEl('path', { d: wireD, stroke: '#16233a', 'stroke-width': '1', 'stroke-linecap': 'round' }),
+    svgEl('path', { d: wireD, stroke: '#d4dbe0', 'stroke-width': '0.5', 'stroke-linecap': 'round' }),
+  );
+  const inner = svgEl('g', { transform: `scale(${EGI_SCALE})` });   // エギの絵と同じ倍率（形は 1 倍の座標で描いてある）
+  inner.append(kibinago, sasami, wire, sinker);
+  g.append(inner);
+  return g;
+}
+
+// 描いてあるエギの色・種類を替える（舞台のエギ選び・色選び）
+export function paintEgiArt(root, { color, rig }) {
+  root?.querySelectorAll?.('.ika-art-egi-img').forEach((im) => im.setAttribute('href', egiArtHref(color, rig)));
 }
 
 // 足1本：紺の太線の上にアイボリーの細線を重ねて、縁取りのある足にする
