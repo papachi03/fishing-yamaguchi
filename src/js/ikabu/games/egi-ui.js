@@ -31,7 +31,7 @@ import { SCENE, PALETTE, egiSceneSVG, seabedD, rocksSVG, weedSVG, depthY, distX,
 const ISO_ON = IS_TRIAL || (import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('isoba'));
 const ISO_TX = {
   title: ['🪨 磯場（テスト）', '🪨 Rocky shore (test)'],
-  note: ['ゴロタ・藻・サンゴが点在し、底に当てると高い確率で根掛かる磯。投げた距離で底の深さが変わるので、カウントして底の手前でしゃくろう。地形は毎日変わる。', 'Boulders, weed and coral everywhere. The depth changes with distance, so count the fall and jerk just above the bottom. The terrain changes daily.'],
+  note: ['ゴロタ・藻・サンゴが点在し、底に当てると高い確率で根掛かる磯。投げた距離で底の深さが変わるので、カウントして底の手前でしゃくろう。地形は釣行（5投）ごとに変わる。', 'Boulders, weed and coral everywhere. The depth changes with distance, so count the fall and jerk just above the bottom. The terrain changes every trip.'],
   normal: ['磯場で釣る', 'Fish the rocks'], hard: ['磯場ハード（海が見えない）', 'Rocks HARD (blind)'], back: ['堤防に戻る', 'Back to the pier'],
   start: ['🪨 磯場。投げた距離で底が変わる。カウントして底の手前でしゃくろう', '🪨 Rocky shore. Count the fall and jerk just above the bottom'],
   startHard: ['🪨 磯場ハード。海の中は見えない。カウントだけが頼り', '🪨 Rocks HARD. You cannot see below. Trust your count'],
@@ -416,7 +416,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     if (settings.method !== 'egi') settings.blind = false;   // アタリチャレンジはエギングだけ
     V.blindStats = { bites: 0, hooked: 0, lates: [] }; V.blindReveal = 0;
     if (settings.stage === 'isoba') { settings.method = 'egi'; if (settings.mode === 'beginner') settings.mode = 'practice'; }   // 磯場はエギングだけ・初心者練習では遊べない
-    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana, depth: settings.depth, stage: settings.stage, fieldSeed: utcDay() });
+    s = createEgi({ tackle: settings.tackle, month: settings.month, tod: todNow(), conditions: settings.cond, egi: settings.egi, easy: settings.mode === 'beginner', method: settings.method, bait: settings.bait, aji: settings.aji, tana: settings.tana, depth: settings.depth, stage: settings.stage, fieldSeed: `${utcDay()}-${Date.now()}` });   // 磯場の地形は釣行ごとに変わる（日ごとだと何度遊んでも同じで試せない：2026-10-16 ぱっぱ）
     V.fastDrags = 0;
     castAt = 0; inked = false; firstSpecies = []; signalsThisCast = 0; bonusNote = null;
     el.stage.classList.remove('is-lastchance');
