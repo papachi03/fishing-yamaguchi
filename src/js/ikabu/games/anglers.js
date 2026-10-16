@@ -34,17 +34,26 @@ const SHIRO_RUSH = { calm: 'mascot/wink', worry: 'mascot/rush-worry', panic: 'ma
 export const COLORS = ['pink', 'mint', 'purple'];
 export const COLOR_COST = 5;
 const okColor = (c) => COLORS.includes(c);
+// 部長のメス（2026-10-16 ぱっぱ：女性アングラー版。オス／メスは最初から無料で切り替え。色違いはオスだけ）
+//   絵の選び方では、色の代わりに FEMALE（'f'）を渡す＝ lookOf が返す。絵は anglers/shiro_f.webp・shiro_f_jet.webp・rush-chars/shiro_f_{表情}.webp
+export const SEX_ANGLER = DEFAULT_ANGLER;
+export const FEMALE = 'f';
+const isFemale = (id, look) => look === FEMALE && anglerOf(id).id === SEX_ANGLER;
 export function rushFaceSrc(id, mood, color = '') {
   const m = RUSH_MOODS.includes(mood) ? mood : mood === 'drown' ? 'doom' : 'calm';
   const a = anglerOf(id);
+  if (isFemale(id, color)) return `/assets/ikabu/rush-chars/${a.id}_f_${m}.webp`;
   if (okColor(color)) return `/assets/ikabu/rush-chars/${a.id}_${color}_${m}.webp`;
   return a.id === DEFAULT_ANGLER ? `/assets/ikabu/${SHIRO_RUSH[m]}.webp` : `/assets/ikabu/rush-chars/${a.id}_${m}.webp`;
 }
 // エギングの立ち絵（ふつう・ジェット）。色違いは元の絵と同じ台紙（padTop も同じ）に置いてある
-export const anglerSrc = (id, color = '') => (okColor(color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_${color}.webp` : anglerOf(id).src);
-export const anglerJet = (id, color = '') => (okColor(color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_${color}_jet.webp` : anglerOf(id).jet);
+export const anglerSrc = (id, color = '') => (isFemale(id, color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_f.webp` : okColor(color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_${color}.webp` : anglerOf(id).src);
+export const anglerJet = (id, color = '') => (isFemale(id, color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_f_jet.webp` : okColor(color) ? `/assets/ikabu/anglers/${anglerOf(id).id}_${color}_jet.webp` : anglerOf(id).jet);
 // いま使っているキャラの色（持っていない色・知らない色は元の色）
 export const colorOf = (rec, id) => { const c = rec?.color?.[id] ?? ''; return okColor(c) && rec?.colors?.[id]?.includes(c) ? c : ''; };
+// 絵を選ぶ時の見た目：部長がメスなら FEMALE（色違いより優先）、それ以外は色
+export const sexOf = (rec) => (rec?.sex === FEMALE ? FEMALE : '');
+export const lookOf = (rec, id) => (anglerOf(id).id === SEX_ANGLER && sexOf(rec) === FEMALE ? FEMALE : colorOf(rec, id));
 // キャラを替えた・入手した時に、同じページのもう一方のゲーム（エギング⇔墨のがれ）へ知らせる
 export const ANGLERS_EVENT = 'ikabu:anglers';
 
@@ -63,6 +72,7 @@ export function normalizeAnglers(rec) {
     if (okColor(c) && have.includes(c)) color[id] = c;
   }
   r.colors = colors; r.color = color;
+  if (r.sex !== FEMALE) delete r.sex;   // sex：部長の見た目（'f'＝メス。無ければオス）
   return r;
 }
 export const readAnglers = () => normalizeAnglers(readJSON(KEY_ANGLERS));
@@ -94,7 +104,16 @@ export function buyColor(rec, tickets, id, color, { day }) {
   if (r.colors[id]?.includes(color)) return { rec: r, tickets, ok: false, why: 'owned' };
   const sp = spend(tickets, COLOR_COST, { day });
   if (!sp.ok) return { rec: r, tickets, ok: false, why: 'tickets' };
-  return { rec: { ...r, current: id, colors: { ...r.colors, [id]: [...(r.colors[id] ?? []), color] }, color: { ...r.color, [id]: color } }, tickets: sp.rec, ok: true };
+  const out = { ...r, current: id, colors: { ...r.colors, [id]: [...(r.colors[id] ?? []), color] }, color: { ...r.color, [id]: color } };
+  if (id === SEX_ANGLER) delete out.sex;   // 色違いはオスだけ（部長の色を選んだらオスにする）
+  return { rec: out, tickets: sp.rec, ok: true };
+}
+// 部長のオス／メスを替える（無料・いつでも）。部長を使う。sex：'' オス／'f' メス
+export function useSex(rec, sex) {
+  const r = normalizeAnglers(rec);
+  const next = { ...r, current: SEX_ANGLER };
+  if (sex === FEMALE) next.sex = FEMALE; else delete next.sex;
+  return { rec: next, ok: sex === '' || sex === FEMALE };
 }
 // 持っている色に替える（'' は元の色）。そのキャラを使う
 export function useColor(rec, id, color) {
@@ -102,5 +121,7 @@ export function useColor(rec, id, color) {
   if (!r.owned.includes(id)) return { rec: r, ok: false };
   if (color !== '' && !r.colors[id]?.includes(color)) return { rec: r, ok: false };
   const next = { ...r.color }; if (color) next[id] = color; else delete next[id];
-  return { rec: { ...r, current: id, color: next }, ok: true };
+  const out = { ...r, current: id, color: next };
+  if (id === SEX_ANGLER) delete out.sex;   // 色の丸はオスの部長に出す。押したらオス
+  return { rec: out, ok: true };
 }

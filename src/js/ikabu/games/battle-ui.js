@@ -406,7 +406,8 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     });
   }
   $('[data-quit]').addEventListener('click', () => { close(); if (story) story.onEnd?.(null); });
-  function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); document.documentElement.classList.remove('is-battle'); }
+  // ストーリーから来た対戦は、閉じても下にストーリーの画面が残る。その時はサイトの帯を隠したままにする（2026-10-16 ぱっぱ：一覧の×・音のボタンが帯に隠れて押せなかった）
+  function close() { audio.stopBgm(0.6); audio.stopAllSe(); ov.remove(); if (!document.querySelector('.ika-st')) document.documentElement.classList.remove('is-battle'); }
 
   async function cpuTurn() {
     busy = true; render();
