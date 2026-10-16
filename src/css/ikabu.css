@@ -1773,6 +1773,32 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-dart-arrow { font-size: 20px; line-height: 1; }
 .ika-egi-dart:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ika-ink); }
 .ika-egi-dart:disabled { opacity: 0.35; box-shadow: none; cursor: not-allowed; }
+/* 回収（2026-10-16）：すぐ手元まで巻いて投げ直す。ダートと同じ形の白いボタンを、主ボタンの左（ダートの反対側）に。
+   エギ・邪道の時はずっと置いておき、押せない時は薄く（遊んでいる途中でボタンの位置がずれないように） */
+.ika-egi-reelin {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  min-width: 56px; min-height: 66px; padding: 6px 10px;
+  border: 3px solid var(--ika-ink); border-radius: 16px;
+  background: var(--ika-white); color: var(--ika-ink);
+  font-family: var(--font-maru); font-weight: 900; font-size: 13px; line-height: 1.2;
+  box-shadow: 4px 4px 0 var(--ika-ink);
+  cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.2s;
+}
+.ika-egi-reelin[hidden] { display: none; }
+.ika-egi-reelin:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ika-ink); }
+.ika-egi-reelin:disabled { opacity: 0.35; box-shadow: none; cursor: not-allowed; }
+/* 縦向き：［回収］［主ボタン］［ダート］の3つを横に（横向き・全画面は下の縦積みのまま） */
+@media not ((orientation: landscape) and (max-height: 540px)) {
+  html:not(.is-egi-full) .ika-egi-main-row:has(.ika-egi-reelin:not([hidden])) { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
+}
+/* 横向き・全画面：縦に積む列の中では横長に。全画面ではいちばん上（ダートの上）に */
+@media (orientation: landscape) and (max-height: 540px) {
+  .ika-egi-reelin { flex-direction: row; gap: 6px; min-height: 44px; }
+}
+.is-egi-full .ika-egi-reelin { width: 100%; order: -2; flex-direction: row; gap: 6px; min-height: 40px; opacity: 0.8; }
+.is-egi-full .ika-egi-reelin:active { opacity: 1; }
+.is-egi-full .ika-egi-reelin:disabled { opacity: 0.4; }
 .ika-egi-btn {
   min-height: 66px;
   padding: 8px 20px;
@@ -3222,6 +3248,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 /* ② 横画面：投げてから着底までの間は右のボタンを薄くして、イカが見えるように（体験版の感想 2026-10-01） */
 .is-egi-full .ika-egi-btn[data-phase='sink'] { opacity: 0.4; }
 .is-egi-full .ika-egi-controls:has(.ika-egi-btn[data-phase='sink']) .ika-egi-dart:not(:disabled) { opacity: 0.45; }
+.is-egi-full .ika-egi-controls:has(.ika-egi-btn[data-phase='sink']) .ika-egi-reelin:not(:disabled) { opacity: 0.45; }   /* 回収（2026-10-16）もダートと同じ薄さに */
 .is-egi-full .ika-egi-controls:has(.ika-egi-btn[data-phase='sink']) .ika-egi-sidehud .ika-egi-count { opacity: 0.55; }
 /* ③ 海の選び方：ボタンを縦に並べ、説明の小さい文字を添える */
 .ika-egi-live-pick { margin: 14px 0 6px; }

@@ -742,6 +742,22 @@ export function dart(s) {
   if (s.phase === 'sinking' || s.phase === 'action') jerk(s, 'dart');
 }
 
+// 回収ボタン（2026-10-16 ぱっぱ・部員の要望）：押したらすぐ手元まで巻いて、その1投を終える（回数は投げた時に減っている）。
+//   イカの反応が無くなった・キャストミスをやり直したい時のため。巻いている間に抱くことはしない（イカはフォールで抱く＝知識系の発信と合わせる）
+//   エギと邪道だけ。沈下・誘い（action）の間だけで、アタリの合図・ファイト中は押せない
+export const canReelIn = (s) => Boolean(s) && (s.method === 'egi' || s.method === 'jado') && (s.phase === 'sinking' || s.phase === 'action');
+export function reelIn(s) {
+  if (!canReelIn(s)) return false;
+  s.pressing = false;
+  s.pendingLift = null;
+  s.dist = 0;
+  s.depth = 0;
+  emit(s, 'recover', { manual: true });
+  endCast(s, 'recover');
+  s.manualRecover = true;   // 結果のカードの一言を分ける（次に投げた時に消す）
+  return true;
+}
+
 // 邪道エギング：エサを付け直す／エサを替える（投げる前だけ）
 export function rebait(s, bait = s.bait) {
   if (s.phase !== 'ready' && s.phase !== 'result') return false;
@@ -1227,6 +1243,7 @@ export function release(s) {
     if (s.method === 'jado') s.baitLeft = Math.max(0, s.baitLeft - BAIT_USE.cast);
     s.weedSeen = false;
     s.pendingLift = null;
+    s.manualRecover = false;
     s.bottomFor = 0;
     s.interest = 0.15;
     s.jerks = [];
