@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { newGame, play, attack, endTurn, cpuNext, checkDeck, starterDeck, statOf, costOf, canAttack, shakuri, canShakuri, DECK_SIZE } from '../src/js/ikabu/games/battle.js';
+import { newGame, play, attack, endTurn, cpuNext, checkDeck, starterDeck, statOf, costOf, canAttack, shakuri, canShakuri, DECK_SIZE, answerTrap, trapCandidates } from '../src/js/ikabu/games/battle.js';
 
 const CARDS = JSON.parse(readFileSync(new URL('../src/js/ikabu/games/cards-data.json', import.meta.url), 'utf8'));
 const EFFECTS = JSON.parse(readFileSync(new URL('../src/js/ikabu/games/cards-effects.json', import.meta.url), 'utf8'));
@@ -127,6 +127,67 @@ test('トラップ：根掛かりは相手の攻撃を止めて捨て札へ。1�
   assert.equal(r.result, 'trapped'); assert.equal(r.trap, trap);
   assert.equal(st.players.cpu.back[0], null);
   assert.ok(st.players.cpu.front.includes(b));
+});
+
+test('トラップを選ぶ（2026-10-16 ぱっぱ）：ask の側は相手の攻撃で止まり、答えてから続く。「開かない」なら伏せたまま', () => {
+  // わたし（ask）が根掛かりを伏せ、CPU が攻撃してくる
+  const st = rich(mk()); st.ask.me = true;
+  const trap = give(st, 'me', '根掛かり'); assert.equal(play(st, 'me', trap).ok, true);
+  const a = give(st, 'me', 'スルメイカ'); play(st, 'me', a); endTurn(st);
+  const b = give(st, 'cpu', 'ヤリイカ'); play(st, 'cpu', b);   // 出たターンに攻撃できる
+  st.players.cpu.noAttack = false;
+  const r = attack(st, 'cpu', b, a);
+  assert.equal(r.result, 'ask');
+  assert.deepEqual(st.pending.options, [trap.uid]); assert.equal(st.pending.side, 'me'); assert.equal(st.pending.when, 'enemyAttack');
+  assert.equal(b.attacked, false);   // まだ攻撃していない
+  assert.equal(endTurn(st), st); assert.equal(st.active, 'cpu');   // 問い合わせ中はターンも終われない
+  assert.equal(answerTrap(st, 'cpu', trap.uid).ok, false);   // 聞かれていない側は答えられない
+  const r2 = answerTrap(st, 'me', null);   // 開かない
+  assert.equal(st.pending, null); assert.equal(r2.ok, true); assert.notEqual(r2.result, 'trapped'); assert.equal(b.attacked, true);
+  assert.equal(st.players.me.back[0], trap);   // 伏せたまま
+  // もう一度：今度は開く（同じ場面を作り直す）
+  const st2 = rich(mk()); st2.ask.me = true;
+  const trap2 = give(st2, 'me', '根掛かり'); play(st2, 'me', trap2);
+  const a2 = give(st2, 'me', 'スルメイカ'); play(st2, 'me', a2); endTurn(st2);
+  const b2 = give(st2, 'cpu', 'ヤリイカ'); play(st2, 'cpu', b2); st2.players.cpu.noAttack = false;
+  assert.equal(attack(st2, 'cpu', b2, a2).result, 'ask');
+  assert.equal(answerTrap(st2, 'me', 9999).why, 'badChoice');
+  const r3 = answerTrap(st2, 'me', trap2.uid);
+  assert.equal(r3.result, 'trapped'); assert.equal(r3.trap, trap2); assert.equal(st2.players.me.back[0], null);
+  assert.ok(st2.players.me.front.includes(a2));
+});
+
+test('トラップを選ぶ：候補が2枚なら選んだ方だけ開く。ask でない側（CPU）は今までどおり自動', () => {
+  const st = rich(mk()); st.ask.me = true;
+  const t1 = give(st, 'me', '根掛かり'); play(st, 'me', t1);
+  const t2 = give(st, 'me', 'フグの襲来'); play(st, 'me', t2);
+  const a = give(st, 'me', 'スルメイカ'); play(st, 'me', a); endTurn(st);
+  const b = give(st, 'cpu', 'ヤリイカ'); play(st, 'cpu', b); st.players.cpu.noAttack = false;
+  const r = attack(st, 'cpu', b, a);
+  assert.equal(r.result, 'ask'); assert.deepEqual(st.pending.options, [t1.uid, t2.uid]);
+  assert.equal(trapCandidates(st, 'me', 'enemyAttack', { attacker: b }).length, 2);
+  const r2 = answerTrap(st, 'me', t2.uid);   // フグ（攻撃-3）だけ開く。根掛かりは残る
+  assert.equal(r2.trap, t2); assert.notEqual(r2.result, 'trapped');
+  assert.equal(st.players.me.back.filter(Boolean).length, 1); assert.ok(st.players.me.back.includes(t1));
+  // CPU 側は ask でないので、わたしの攻撃で勝手に開く
+  const st3 = rich(mk()); st3.ask.me = true;
+  const c = give(st3, 'me', 'スルメイカ'); play(st3, 'me', c); endTurn(st3);
+  const tr = give(st3, 'cpu', '根掛かり'); play(st3, 'cpu', tr);
+  const d = give(st3, 'cpu', 'シリヤケイカ'); play(st3, 'cpu', d); endTurn(st3);
+  assert.equal(attack(st3, 'me', c, d).result, 'trapped'); assert.equal(st3.pending, null);
+});
+
+test('トラップを選ぶ：イカを出す時にも聞く。答えると続きが進む', () => {
+  const st = rich(mk()); st.ask.me = true;
+  const t = give(st, 'me', '水草'); play(st, 'me', t);   // 相手のイカが出た時（出たイカを疲れさせる）
+  endTurn(st);
+  const b = give(st, 'cpu', 'ヤリイカ');
+  const r = play(st, 'cpu', b);
+  assert.equal(r.result, 'ask'); assert.ok(st.players.cpu.hand.includes(b));   // まだ出ていない・潮も減っていない
+  const tide = st.players.cpu.tide;
+  const r2 = answerTrap(st, 'me', t.uid);
+  assert.equal(r2.ok, true); assert.ok(st.players.cpu.front.includes(b)); assert.ok(st.players.cpu.tide < tide);
+  assert.equal(st.players.me.back[0], null);
 });
 
 test('エギ5個を全部奪われたら負け。山札が尽きてエギが同じなら、尽きた方の負け', () => {

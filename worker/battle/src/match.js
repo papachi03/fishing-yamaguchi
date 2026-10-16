@@ -2,10 +2,11 @@
 //   ・席は a／b。battle.js の中では a＝'me'、b＝'cpu' として進め、相手に送るときは読み替える（相手から見れば自分が 'me'）
 //   ・DOM も Cloudflare の仕組みも触らない（node --test で確かめる）。部屋（room.js）が通信と時間を受け持つ
 //   ・第1段階は2人とも同じデッキ（スターター）。第2段階で deckA／deckB を外から渡す
-import { newGame, play, attack, endTurn, shakuri, starterDeck, checkDeck } from '../../../src/js/ikabu/games/battle.js';
+import { newGame, play, attack, endTurn, shakuri, answerTrap, starterDeck, checkDeck } from '../../../src/js/ikabu/games/battle.js';
 
 export const TURN_MS = 60_000;     // 1ターンの持ち時間
 export const LEAVE_MS = 30_000;    // 通信が切れてから負けになるまで
+export const ASK_MS = 15_000;      // トラップを使うか答える持ち時間（過ぎたら自動で開く＝前と同じ結果）
 const SIDE = { a: 'me', b: 'cpu' };
 const otherSeat = (seat) => (seat === 'a' ? 'b' : 'a');
 export const sideOf = (seat) => SIDE[seat];
@@ -27,7 +28,8 @@ export function createMatch({ cards, effects, deckA = null, deckB = null, seed =
   const myDeck = deckA ?? same, cpuDeck = deckB ?? same;
   for (const [name, d] of [['a', myDeck], ['b', cpuDeck]]) { const c = checkDeck(d, cards); if (!c.ok) throw new Error(`deck ${name}: ${c.errors.join('・')}`); }
   const st = newGame({ myDeck, cpuDeck, cards, effects, first: first ?? (Math.random() < 0.5 ? 'me' : 'cpu'), seed });
-  const m = { st, deadline: 0 };
+  st.ask = { me: true, cpu: true };   // 2人とも人：トラップは「発動するか」を聞く
+  const m = { st, deadline: 0, askDeadline: 0 };
 
   const P = (side) => st.players[side];
   const byUid = (list, uid) => list.find((x) => x && String(x.uid) === String(uid)) ?? null;
@@ -39,7 +41,7 @@ export function createMatch({ cards, effects, deckA = null, deckB = null, seed =
       egi: p.egi, tide: p.tide, tideMax: p.tideMax, tideNext: p.tideNext, tailwind: !!p.tailwind, summoned: p.summoned, techUsed: p.techUsed, techLimit: p.techLimit, noAttack: p.noAttack, lost: p.lost, shiodome: !!p.shiodome,
       front: p.front.map(serCard), back: p.back.map(mine ? serCard : facedown), hand: mine ? p.hand.map(serCard) : p.hand.map(inHand), grave: p.grave.map(serCard), deck: p.deck.length,
     });
-    return { turn: st.turn, active: rel(st.active), first: rel(st.first), winner: rel(st.winner), rule: st.rule, log: st.log.map((l) => ({ ...l, side: rel(l.side) })), players: { me: pub(P(me), true), cpu: pub(P(op), false) }, deadline: m.deadline };
+    return { turn: st.turn, active: rel(st.active), first: rel(st.first), winner: rel(st.winner), rule: st.rule, pending: st.pending ? { ...st.pending, side: rel(st.pending.side) } : null, askDeadline: m.askDeadline, log: st.log.map((l) => ({ ...l, side: rel(l.side) })), players: { me: pub(P(me), true), cpu: pub(P(op), false) }, deadline: m.deadline };
   };
   // 結果の中の盤面の実体を、uid と番号だけにする（相手にも送るので、見せてよい物だけ）
   const slim = (r) => { if (!r) return r; const { trap, caught, ...rest } = r; if (trap) rest.trap = { uid: trap.uid, no: trap.no }; if (caught) rest.caught = { uid: caught.uid, no: caught.no }; return rest; };
@@ -49,6 +51,12 @@ export function createMatch({ cards, effects, deckA = null, deckB = null, seed =
     const side = SIDE[seat], en = P(SIDE[otherSeat(seat)]), p = P(side);
     st.log = [];
     if (st.winner) return { r: { ok: false, why: 'over' } };
+    if (msg?.kind === 'trap') {   // 問い合わせへの答え（自分の番でなくてよい）
+      const pd = st.pending;
+      const r = answerTrap(st, side, msg.uid ?? null);
+      if (r.ok && pd?.action?.kind === 'attack' && r.result === 'catch') r.caught = byUid([...p.front, ...p.grave, ...p.hand], pd.action.target);
+      return { r: slim(r), a: r.ok ? { kind: 'trap', uid: msg.uid ?? null, fired: r.trap?.uid ?? null } : null };
+    }
     if (st.active !== side) return { r: { ok: false, why: 'notYourTurn' } };
     switch (msg?.kind) {
       case 'play': {
@@ -84,6 +92,9 @@ export function createMatch({ cards, effects, deckA = null, deckB = null, seed =
   // 投了・通信が戻らない：相手の勝ち
   m.resign = (seat) => { st.log = []; if (st.winner) return null; st.winner = SIDE[otherSeat(seat)]; st.log.push({ turn: st.turn, side: st.active, text: '相手が降参した' }); return { kind: 'resign', seat }; };
   m.activeSeat = () => (st.active === 'me' ? 'a' : 'b');
+  m.askSeat = () => (st.pending?.type === 'trap' ? (st.pending.side === 'me' ? 'a' : 'b') : null);
+  // 答えの持ち時間切れ：条件に合う最初の1枚が開く（前と同じ結果）
+  m.autoTrap = () => { st.log = []; const pd = st.pending; if (!pd || st.winner) return null; const r = answerTrap(st, pd.side, pd.options[0]); if (r.ok && pd.action?.kind === 'attack' && r.result === 'catch') r.caught = { uid: pd.action.target }; return { kind: 'trap', auto: true, uid: pd.options[0], fired: r.trap?.uid ?? null }; };
   m.over = () => !!st.winner;
   return m;
 }

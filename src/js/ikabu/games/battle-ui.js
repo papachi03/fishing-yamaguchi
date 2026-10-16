@@ -5,7 +5,7 @@
 import { t, esc, assetHref } from '../i18n.js';
 import CARDS from './cards-data.json';
 import EFFECTS from './cards-effects.json';
-import { newGame, play, attack, endTurn, overflow, cpuNext, canPlay, canAttack, canShakuri, shakuri, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK, isNight, markOf, MARK_IDS, effectsOf } from './battle.js';
+import { newGame, play, attack, endTurn, overflow, cpuNext, canPlay, canAttack, canShakuri, shakuri, answerTrap, needsTarget, statOf, costOf, starterDeck, cpuDeck, CPU_DECKS, view, SHAKURI_COST, SHAKURI_ATK, isNight, markOf, MARK_IDS, effectsOf } from './battle.js';
 import { readJSON, writeJSON } from './records.js';
 import { KEY_DECK, activeDeck } from './deck.js';
 import { createGachaAudio } from './gacha-audio.js';
@@ -116,6 +116,10 @@ const TX = {
   state: { settle: ['着底 防御+2', 'Settled DEF+2'], sick: ['出たばかり', 'new'], tired: ['バラシ', 'tired'], shield: ['守り', 'safe'], attacked: ['攻撃済', 'done'], set: ['伏せ', 'set'] },   // バラシ＝弾かれて次の番は休み（カードの説明の言葉にそろえた 2026-10-03）
   hand: ['手札', 'Hand'], deck: ['山札', 'Deck'], grave: ['捨て', 'Used'],
   kind: { squid: ['イカ', 'Squid'], tech: ['テクニック', 'Technique'], trap: ['トラップ', 'Trap'] },
+  // トラップを選ぶ（2026-10-16 ぱっぱ「使うタイミングを選べると戦略性が増す」）
+  trapAsk: { title: ['このカードの効果を使用しますか？', 'Use this trap?'], fire: ['発動する', 'Activate'], skip: ['発動しない', 'Keep it'],
+    wait: ['相手がトラップを使うか考えています…', 'Opponent is deciding on a trap…'], auto: ['時間切れでトラップが自動で開きました', 'Time ran out: the trap opened automatically'],
+    why: { attack: ['相手の攻撃に合わせて', 'Against the attack'], enter: ['相手のイカが出るのに合わせて', 'As the squid enters'], tech: ['相手のテクニックに合わせて', 'Against the technique'], turn: ['相手の番の始めに', 'At the start of their turn'] } },
   noEffect: ['特技なし', 'No ability'], atk: ['攻撃', 'ATK'], def: ['防御', 'DEF'], now: ['いま', 'now'], close: ['閉じる', 'Close'],
   shakuri: (lang) => (lang === 'en' ? `Tide jerk (🌊${SHAKURI_COST} → ATK +${SHAKURI_ATK})` : `潮しゃくり（🌊${SHAKURI_COST}で攻撃+${SHAKURI_ATK}）`),
   // オンライン対戦（試遊版・第1段階：2人とも同じスターターデッキ）
@@ -185,6 +189,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   const myDeck = story?.myDeck ?? activeDeck(readJSON(KEY_DECK), starterDeck(CARDS), CARDS);   // 3つのうち「使う」にしたデッキ（修行は課題デッキ）
   let st = online ? mirror(online.state, { cards: CARDS, effects: EFFECTS }) : newGame({ myDeck, cpuDeck: story?.cpuDeck ?? cpuDeck(CARDS, level), cards: CARDS, effects: EFFECTS, first: Math.random() < 0.5 ? 'me' : 'cpu', cpuEgi: story?.cpuEgi, rule: story?.rule ?? null });
   const stageSrc = story?.stage ? `/assets/ikabu/story/stage/${story.stage}.webp` : '/assets/ikabu/battle/stage_b.webp';
+  if (!online) st.ask.me = true;   // 自分のトラップは「発動するか」を聞く（CPU は自動）。オンラインはサーバーが両方に聞く
   if (story || online) practice = false;
   const ov = document.createElement('div');
   ov.className = 'ika-bt';
@@ -414,6 +419,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     if (target && effectsOf(st, x.no).some((e) => e.do === 'changeMark')) { mark = await pickMark(target); if (!mark) { sel = null; render(); return; } }
     const before = snapshot(); const logFrom = st.log.length;
     const r = await act({ kind: 'play', x, target, mark });
+    if (r.ok && r.result === 'ask') { sel = null; render(); callout(t(lang, ...TX.trapAsk.wait), 'is-trap', 6000); return; }
     if (r.ok) audio.se('place');
     sel = null;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
@@ -449,6 +455,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     await wait(280);
     const before = snapshot(); const logFrom = st.log.length;
     const r = await act({ kind: 'attack', x, target });
+    if (r.ok && r.result === 'ask') { sel = null; busy = false; render(); callout(t(lang, ...TX.trapAsk.wait), 'is-trap', 6000); return; }
     seForResult(r); fxAfter(before, logFrom, r);
     sel = null; busy = false;
     if (!r.ok) callout(t(lang, ...(TX.why[r.why] ?? ['', ''])), 'is-no');
@@ -482,7 +489,39 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   function close() { audio.stopBgm(0.6); audio.stopAllSe(); clearInterval(timerId); if (online) { for (const off of netOff) off(); if (st.winner) online.net.close(); } ov.remove(); if (!document.querySelector('.ika-st')) document.documentElement.classList.remove('is-battle'); }
 
   // 相手の1手を見せる（CPU もオンラインの相手も同じ）。a＝{ kind, uid, target, cardKind }、commit()＝その手で状態を進めて r を返す
+  // トラップを選ぶ窓：候補のカードを見せて「発動する」「発動しない」。答え＝uid／null。閉じられた（相手の時間切れなど）時は undefined
+  let askResolve = null;
+  function askTrap(pd) {
+    const whyKey = { enemyAttack: 'attack', enemySquidEnter: 'enter', enemyTech: 'tech', enemyTurnStart: 'turn' }[pd.when] ?? 'attack';
+    const opts = pd.options.map((u) => findInst(u)).filter(Boolean);
+    el.sheet.hidden = false;
+    el.sheet.innerHTML = `<div class="ika-bt-sheet-in ika-bt-trapask"><p class="ika-bt-sheet-name">${t(lang, ...TX.trapAsk.title)}<small>${t(lang, ...TX.trapAsk.why[whyKey])}</small></p>
+      ${opts.map((x) => `<div class="ika-bt-trapask-opt">${cardInfoHTML(x, false)}<div><button type="button" class="ika-btn ika-btn--primary" data-fire="${x.uid}">${t(lang, ...TX.trapAsk.fire)}</button></div></div>`).join('')}
+      <div><button type="button" class="ika-btn" data-skip>${t(lang, ...TX.trapAsk.skip)}</button></div></div>`;
+    return new Promise((resolve) => {
+      askResolve = resolve;
+      const done = (v) => { askResolve = null; el.sheet.hidden = true; resolve(v); };
+      el.sheet.querySelectorAll('[data-fire]').forEach((b) => b.addEventListener('click', () => done(Number(b.dataset.fire))));
+      el.sheet.querySelector('[data-skip]').addEventListener('click', () => done(null));
+    });
+  }
+  const closeAsk = () => { if (askResolve) { const r = askResolve; askResolve = null; el.sheet.hidden = true; r(undefined); } };
+  // 自分に問い合わせが来ていれば、答えて止まっていた手の続きを進める（CPU戦は手元、オンラインはサーバーへ）
+  async function resolveAsk() {
+    while (st.pending?.type === 'trap' && st.pending.side === 'me' && !st.winner) {
+      const choice = await askTrap(st.pending);
+      if (choice === undefined) break;   // 相手の時間切れなどで閉じられた（状態はもう届いている）
+      const before = snapshot(); const logFrom = st.log.length;
+      let r;
+      if (online) { try { const res = await online.net.act({ kind: 'trap', uid: choice }); apply(res.state); r = res.r; } catch { callout(t(lang, ...TX.online.lost), 'is-no'); break; } }
+      else r = answerTrap(st, 'me', choice);
+      if (choice != null && r?.result !== 'trapped') audio.se('trap');
+      seForResult(r); render(); fxAfter(before, logFrom, r);
+      await wait(700);
+    }
+  }
   async function showOpp(a, commit) {
+    if (a.kind === 'trap') { closeAsk(); const before = snapshot(); const logFrom = st.log.length; const r = commit(); seForResult(r); fxAfter(before, logFrom, r); render(); if (a.auto) callout(t(lang, ...TX.trapAsk.auto), 'is-trap', 2500); await wait(900); return; }
     if (a.kind === 'shakuri') { commit(); audio.se('place'); render(); await wait(600); return; }
     if (a.kind === 'play') { const before = snapshot(); const logFrom = st.log.length; commit(); audio.se('place'); render(); fxAfter(before, logFrom, null); if (a.cardKind !== 'trap') fxRipple(posOf(a.uid)); await wait(800); return; }
     if (a.kind === 'attack') { const node = ov.querySelector(`.ika-bt-card[data-uid="${a.uid}"]`); node?.classList.add('is-attack-down'); audio.se('swing'); await wait(280); const before = snapshot(); const logFrom = st.log.length; const r = commit(); seForResult(r); fxAfter(before, logFrom, r); render(); await wait(900); return; }
@@ -490,6 +529,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
   }
   async function cpuTurn() {
     busy = true; render();
+    await resolveAsk();   // 相手の番の始めのトラップ
     await wait(600);
     let guard = 0;
     while (st.active === 'cpu' && !st.winner && guard++ < 40) {
@@ -500,6 +540,7 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
         if (a.type === 'play') return play(st, 'cpu', a.x, { target: a.target });
         const r = attack(st, 'cpu', a.x, a.target); if (r.ok && r.result === 'catch') r.caught = { uid: a.target.uid, no: a.target.no }; return r;
       });
+      if (st.pending) { const tg = a.target; await resolveAsk(); if (tg && !st.players.me.front.includes(tg) && st.players.me.grave.includes(tg)) { /* 釣られた演出は resolveAsk の fxAfter で */ } }
     }
     if (!st.winner) endTurn(st);
     busy = false; render(); checkOver();
@@ -511,12 +552,13 @@ export function openBattle({ lang = 'ja', practice = true, level = practice ? 'p
     netOff.push(online.net.on('ev', (m) => { chain = chain.then(async () => {
       busy = true;
       await showOpp(m.a, () => { apply(m.state); return m.r; });
+      if (st.pending?.side === 'me') { await resolveAsk(); }
       busy = false; render();
       if (m.a.kind === 'end' && !st.winner) callout(t(lang, ...(m.a.auto ? TX.online.timeUp : TX.online.yourTurnNow)), 'is-good');
       if (m.a.kind === 'resign') callout(t(lang, ...TX.online.resigned), 'is-good');
       checkOver();
     }).catch(() => {}); }));
-    netOff.push(online.net.on('state', (m) => { apply(m.state); sel = null; render(); checkOver(); }));
+    netOff.push(online.net.on('state', (m) => { apply(m.state); sel = null; render(); checkOver(); if (st.pending?.side === 'me' && !askResolve) resolveAsk(); }));
     netOff.push(online.net.on('opp', (m) => callout(t(lang, ...(m.status === 'left' ? TX.online.oppLeft : TX.online.oppBack)), m.status === 'left' ? 'is-no' : 'is-good', 2500)));
     netOff.push(online.net.on('conn', (m) => { if (m.status === 'lost') callout(t(lang, ...TX.online.lost), 'is-no', 4000); else if (m.status === 'back') callout(t(lang, ...TX.online.back), 'is-good'); else if (m.status === 'gaveup') callout(t(lang, ...TX.online.gaveup), 'is-no', 6000); }));
   }

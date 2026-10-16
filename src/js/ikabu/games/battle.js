@@ -3,6 +3,9 @@
 //   ・出したターンは攻撃できない（haste を除く）／攻撃 vs 防御：＞釣る・＝バラシ（両方残る）・＜弾かれる（次のターン攻撃できない）
 //   ・相手の前列が0体の時だけダイレクト（エギ1個）。奪われた側は1枚引く。エギ0で負け
 //   ・2026-10-16 ぱっぱ：山札が尽きて引けなくなったら、その時のエギの数で勝ち負け（多い方の勝ち。同じなら先に尽きた方の負け）。全モード共通
+//   ・2026-10-16 ぱっぱ：トラップは「発動するか選べる」。st.ask[side] が true の側（人）は、相手の手で条件に合う伏せ札があると
+//     処理を止めて st.pending＝{ type:'trap', side, when, options:[uid…], action } にし、answerTrap(st, side, uid|null) で続きを進める。
+//     ask が false の側（CPU・自動プレイの計測）は今までどおり条件に合う最初の1枚が勝手に開く
 //   ・先攻は最初のターン攻撃できない。同じマークのイカが前列にいると、そのマークのテクニックは潮1安い
 //   ・カードの効果は cards-effects.json（make_effects.py が effect の文から機械的に作る）
 //   2026-10-01 膠着の解消（ぱっぱ「終盤カードが減らないし攻撃補助が無いと詰む」）：
@@ -101,7 +104,7 @@ export function newGame({ myDeck, cpuDeck, cards, effects, first = 'me', seed = 
   const fr = rule ? FIELD_RULES[rule] : null;
   if (fr?.first) first = fr.first;
   const back = fr?.back ?? BACK;
-  const st = { turn: 0, active: first, first, players: { me: player(myDeck, byNo, rnd, { back }), cpu: player(cpuDeck, byNo, rnd, { egi: cpuEgi, back }) }, effects, byNo, log: [], winner: null, rnd, pending: null, rule };
+  const st = { turn: 0, active: first, first, players: { me: player(myDeck, byNo, rnd, { back }), cpu: player(cpuDeck, byNo, rnd, { egi: cpuEgi, back }) }, effects, byNo, log: [], winner: null, rnd, pending: null, rule, ask: { me: false, cpu: false } };
   for (const side of ['me', 'cpu']) dealStart(st, side, rnd);
   startTurn(st);
   return st;
@@ -142,7 +145,7 @@ function draw(st, side, n = 1) {
   }
   return true;
 }
-export function startTurn(st) {
+export function startTurn(st, { trapChoice } = {}) {
   st.turn += 1;
   const side = st.active, p = P(st, side);
   p.tideMax = Math.min(TIDE_MAX, p.tideMax + 1);
@@ -153,12 +156,14 @@ export function startTurn(st) {
   for (const x of p.front) if (x) { x.sick = false; x.attacked = false; x.shield = false; x.shakuri = false; x.skipThis = x.skipNext; x.skipNext = false; if (x.resting) { x.resting = false; } }
   // 「攻撃されない」（ダート・ドリフト）は相手の番の終わりまで残す。前は相手の番の始めに外していて、自分の番にしか効かない空振りだった（2026-10-04 ぱっぱ）
   if (!draw(st, side)) { check(st); return st; }
-  fireTraps(st, other(side), 'enemyTurnStart', {});
+  if (needAsk(st, other(side), 'enemyTurnStart', { trapChoice }, { kind: 'turnStart' })) return st;
+  fireTraps(st, other(side), 'enemyTurnStart', { trapChoice });
   return st;
 }
 // 納竿で捨てる枚数（7枚を超えた分）
 export const overflow = (st, side) => Math.max(0, P(st, side).hand.length - HAND_MAX);
 export function endTurn(st, { discard = null } = {}) {
+  if (st.pending || st.winner) return st;
   const side = st.active, p = P(st, side);
   const n = overflow(st, side);
   if (n > 0) {   // 納竿：超えた分を捨てる。選んだカードがあればそれを、無ければコストの高い順（CPU）
@@ -272,22 +277,62 @@ function run(st, side, acts, ctx) {
     }
   }
 }
-// 伏せたトラップが条件で開く（1つの出来事につき、条件に合う最初の1枚だけ）
-function fireTraps(st, side, when, ctx) {
-  const p = P(st, side);
-  for (let i = 0; i < p.back.length; i++) {
-    const x = p.back[i];
+// 条件に合う伏せたトラップ（開ける候補）
+export function trapCandidates(st, side, when, ctx = {}) {
+  const out = [];
+  for (const x of P(st, side).back) {
     if (!x || x.card.kind !== 'trap') continue;
     const acts = effectsOf(st, x.no).filter((e) => e.when === when);
     if (!acts.length) continue;
     if (acts.some((a) => a.onlyNight) && !(ctx.attacker && isNight(ctx.attacker.card))) continue;
-    p.back[i] = null; p.grave.push(x);
-    say(st, `トラップ「${x.card.name}」が開いた！`);
-    ctx.trap = x;
-    run(st, side, acts, ctx);
-    return x;
+    out.push(x);
   }
-  return null;
+  return out;
+}
+// 聞く側（人）に候補があれば、処理を止めて問い合わせにする。answerTrap が action をもう一度動かす（trapChoice 付き）
+function needAsk(st, side, when, ctx, action) {
+  if (!st.ask?.[side] || ctx.trapChoice !== undefined) return false;
+  const cands = trapCandidates(st, side, when, ctx);
+  if (!cands.length) return false;
+  st.pending = { type: 'trap', side, when, options: cands.map((x) => x.uid), action };
+  return true;
+}
+// 伏せたトラップが条件で開く（1つの出来事につき1枚。選んだ時はその1枚、選ばなければ条件に合う最初の1枚。trapChoice＝null は「開かない」）
+function fireTraps(st, side, when, ctx) {
+  const p = P(st, side);
+  const cands = trapCandidates(st, side, when, ctx);
+  if (!cands.length) return null;
+  let x = cands[0];
+  if (ctx.trapChoice !== undefined) { if (ctx.trapChoice === null) return null; x = cands.find((c) => c.uid === ctx.trapChoice); if (!x) return null; }
+  const acts = effectsOf(st, x.no).filter((e) => e.when === when);
+  p.back[p.back.indexOf(x)] = null; p.grave.push(x);
+  say(st, `トラップ「${x.card.name}」が開いた！`);
+  ctx.trap = x;
+  run(st, side, acts, ctx);
+  return x;
+}
+// 問い合わせへの答え：uid＝そのトラップを開く／null＝開かない。止めていた手（相手の攻撃など）の続きを進める
+export function answerTrap(st, side, uid = null) {
+  const pd = st.pending;
+  if (!pd || pd.type !== 'trap' || pd.side !== side) return { ok: false, why: 'noPending' };
+  const choice = uid == null ? null : pd.options.includes(uid) ? uid : undefined;
+  if (choice === undefined) return { ok: false, why: 'badChoice' };
+  st.pending = null;
+  const actor = other(side), p = P(st, actor), en = P(st, side);
+  const byUid = (list, u) => list.find((x) => x && x.uid === u) ?? null;
+  const a = pd.action;
+  if (a.kind === 'turnStart') { const trap = fireTraps(st, side, 'enemyTurnStart', { trapChoice: choice }); check(st); return { ok: true, result: 'turnStart', trap }; }
+  if (a.kind === 'play') {
+    const x = byUid(p.hand, a.uid); if (!x) return { ok: false, why: 'notInHand' };
+    const target = a.target != null ? byUid(p.front, a.target) ?? byUid(en.front, a.target) : null;
+    return play(st, actor, x, { target, mark: a.mark ?? null, trapChoice: choice });
+  }
+  if (a.kind === 'attack') {
+    const x = byUid(p.front, a.uid); if (!x) return { ok: false, why: 'notOnField' };
+    const target = a.target != null ? byUid(en.front, a.target) : null;
+    return attack(st, actor, x, target, { trapChoice: choice });
+  }
+  return { ok: false, why: 'badAction' };
 }
 function caught(st, side, x, bySide) {
   // side＝釣られる側。藻場のようなトラップで助かることがある
@@ -306,6 +351,7 @@ const pickEnemyForCaught = (st, side) => P(st, other(side)).front.filter(Boolean
 export function canPlay(st, side, x) {
   const p = P(st, side);
   if (st.active !== side || st.winner) return { ok: false, why: 'notYourTurn' };
+  if (st.pending) return { ok: false, why: 'pending' };
   if (!p.hand.includes(x)) return { ok: false, why: 'notInHand' };
   if (x.card.kind === 'squid') { if (p.summoned) return { ok: false, why: 'summoned' }; if (!p.front.includes(null)) return { ok: false, why: 'frontFull' }; }
   if (x.card.kind === 'trap' && !p.back.includes(null)) return { ok: false, why: 'backFull' };
@@ -314,22 +360,24 @@ export function canPlay(st, side, x) {
   return { ok: true };
 }
 // target：対象のイカ（要る時だけ）。戻り値：{ ok, why, events }
-export function play(st, side, x, { target = null, mark = null } = {}) {
+export function play(st, side, x, { target = null, mark = null, trapChoice } = {}) {
   const c = canPlay(st, side, x);
   if (!c.ok) return c;
   const p = P(st, side), en = P(st, other(side));
   const need = needsTarget(st, x);
   if (need && !target) return { ok: false, why: 'needTarget', who: need };
+  const askWhen = x.card.kind === 'squid' ? 'enemySquidEnter' : x.card.kind === 'tech' ? 'enemyTech' : null;
+  if (askWhen && needAsk(st, other(side), askWhen, { entered: x, target, trapChoice }, { kind: 'play', uid: x.uid, target: target?.uid ?? null, mark })) return { ok: true, result: 'ask', pending: st.pending };
   p.tide -= costOf(st, side, x);
   p.hand.splice(p.hand.indexOf(x), 1);
-  const ctx = { target, mark };
+  const ctx = { target, mark, trapChoice };
   if (x.card.kind === 'squid') {
     x.sick = true; x.attacked = false; x.skipNext = false; x.skipThis = false;
     p.front[p.front.indexOf(null)] = x; p.summoned = true;
     settle(st, x);
     say(st, `${x.card.name}を出した`);
     run(st, side, effectsOf(st, x.no).filter((e) => e.when === 'enter'), ctx);
-    fireTraps(st, other(side), 'enemySquidEnter', { entered: x });
+    fireTraps(st, other(side), 'enemySquidEnter', { entered: x, trapChoice });
   } else if (x.card.kind === 'tech') {
     p.techUsed += 1;
     say(st, `${x.card.name}！`);
@@ -349,6 +397,7 @@ export function play(st, side, x, { target = null, mark = null } = {}) {
 export function canShakuri(st, side, x) {
   const p = P(st, side);
   if (st.active !== side || st.winner) return { ok: false, why: 'notYourTurn' };
+  if (st.pending) return { ok: false, why: 'pending' };
   if (!p.front.includes(x)) return { ok: false, why: 'notOnField' };
   if (x.shakuri) return { ok: false, why: 'shakuried' };
   if (p.tide < SHAKURI_COST) return { ok: false, why: 'tide' };
@@ -365,6 +414,7 @@ export function shakuri(st, side, x) {
 export function canAttack(st, side, x) {
   const p = P(st, side);
   if (st.active !== side || st.winner) return { ok: false, why: 'notYourTurn' };
+  if (st.pending) return { ok: false, why: 'pending' };
   if (!p.front.includes(x)) return { ok: false, why: 'notOnField' };
   if (p.noAttack) return { ok: false, why: 'noAttack' };
   if (x.attacked) return { ok: false, why: 'attacked' };
@@ -373,7 +423,7 @@ export function canAttack(st, side, x) {
   return { ok: true };
 }
 // target：相手のイカ。null＝ダイレクトアタック（相手の前列が0体の時だけ）
-export function attack(st, side, x, target = null) {
+export function attack(st, side, x, target = null, { trapChoice } = {}) {
   const c = canAttack(st, side, x);
   if (!c.ok) return c;
   const en = P(st, other(side));
@@ -381,9 +431,10 @@ export function attack(st, side, x, target = null) {
   if (enemies.length && (!target || !enemies.includes(target))) return { ok: false, why: 'mustTargetSquid' };
   if (!enemies.length && target) return { ok: false, why: 'noTarget' };
   if (target && target.shield) return { ok: false, why: 'shielded' };
-  x.attacked = true;
-  const ctx = { attacker: x, defender: target };
+  const ctx = { attacker: x, defender: target, trapChoice };
   const ignore = passive(st, x, 'ignoreTrapOnAttack') || x.flags.ignoreTrap != null;
+  if (!ignore && needAsk(st, other(side), 'enemyAttack', ctx, { kind: 'attack', uid: x.uid, target: target?.uid ?? null })) return { ok: true, result: 'ask', pending: st.pending };
+  x.attacked = true;
   say(st, `${x.card.name}の攻撃！`);
   if (!ignore) fireTraps(st, other(side), 'enemyAttack', ctx);
   if (ctx.blocked) { say(st, '攻撃は止められた'); check(st); return { ok: true, result: 'trapped', trap: ctx.trap }; }

@@ -3070,6 +3070,7 @@ html.is-egi-rot .ika-egi-fullnote { top: auto; bottom: 18%; width: min(58%, 420p
 .ika-bt-sheet-in { width: min(100%, 360px); padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,0.96); color: var(--ika-ink); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .ika-bt-sheet-name { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 900; font-size: 15px; } .ika-bt-sheet-name small { color: #1e90ff; font-size: 12px; }
 .ika-bt-sheet-rimg { height: 22px; width: auto; }
+.ika-bt-trapask { display: grid; gap: 8px; } .ika-bt-sheet-in .ika-bt-trapask-opt { display: grid; gap: 6px; padding: 8px; border-radius: 10px; background: rgba(120, 60, 200, 0.08); border: 1px solid rgba(120, 60, 200, 0.25); } .ika-bt-trapask .ika-bt-sheet-name small { color: #7a3bd0; }
 .ika-bt-sheet-stats { margin: 6px 0 0; display: flex; gap: 8px; font-weight: 900; font-size: 13px; }
 .ika-bt-sheet-stats span { padding: 2px 8px; border-radius: 999px; color: #fff; } .ika-bt-sheet-stats .is-atk { background: #d9432b; } .ika-bt-sheet-stats .is-def { background: #2b6cb0; } .ika-bt-sheet-stats b { margin-left: 4px; color: #ffd166; }
 .ika-bt-sheet { bottom: 22%; }

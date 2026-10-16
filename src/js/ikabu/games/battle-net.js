@@ -8,7 +8,7 @@ export function mirror(view, { cards, effects }) {
   const byNo = new Map(cards.map((c) => [c.no, c]));
   const fix = (x) => (x ? { ...x, card: x.hidden ? x.card : byNo.get(x.no), buffs: x.buffs ?? [], flags: x.flags ?? {} } : null);
   const pl = (p) => ({ ...p, front: p.front.map(fix), back: p.back.map(fix), hand: p.hand.map(fix), grave: p.grave.map(fix), deck: Array(p.deck).fill(null) });
-  return { ...view, players: { me: pl(view.players.me), cpu: pl(view.players.cpu) }, effects, byNo, rnd: () => 0.5, pending: null, online: true };
+  return { ...view, players: { me: pl(view.players.me), cpu: pl(view.players.cpu) }, effects, byNo, rnd: () => 0.5, pending: view.pending ?? null, ask: { me: true, cpu: true }, online: true };
 }
 
 const CODE_RE = /^\d{4}$/;

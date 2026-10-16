@@ -89,6 +89,7 @@ test('時間切れの自動納竿と、降参', () => {
 
 // 本番の形：両方の席が「自分から見た状態（mirror）」だけを見て手を決め（CPU の思考を借りる）、uid で手を送る
 test('2つの席が mirror だけを見て最後まで戦える（40ターン以内に決着）', () => {
+  let asked = 0;
   for (const seed of ['x1', 'x2', 'x3']) {
     const m = mk({ seed, first: seed === 'x2' ? 'cpu' : 'me' });
     let guard = 0;
@@ -107,10 +108,23 @@ test('2つの席が mirror だけを見て最後まで戦える（40ターン以
       // 結果の中に盤面の実体（card 入り）が混ざっていない（相手にも送るので）
       assert.ok(!res.r.caught || (typeof res.r.caught.uid === 'number' && !res.r.caught.card));
       assert.ok(!res.r.trap || !res.r.trap.card);
+      // トラップの問い合わせ：聞かれた席（相手）から見ると pending.side＝me、手を打った席から見ると cpu。答えると続きが進む
+      const ask = m.askSeat();
+      if (ask) {
+        asked++;
+        assert.equal(ask, m.activeSeat() === 'a' ? 'b' : 'a');
+        assert.equal(res.r.result, 'ask');
+        assert.equal(seen(m, seat).pending.side, 'cpu');
+        const pv = seen(m, ask).pending; assert.equal(pv.side, 'me'); assert.ok(pv.options.length >= 1);
+        const ans = m.act(ask, { kind: 'trap', uid: asked % 2 ? pv.options[0] : null });   // 交互に「開く」「開かない」
+        assert.equal(ans.r.ok, true, `${seed} trap ${ans.r.why}`); assert.equal(ans.a.kind, 'trap'); assert.equal(m.askSeat(), null);
+        assert.ok(!ans.r.trap || !ans.r.trap.card);
+      }
     }
     assert.ok(m.over(), `${seed} 決着しなかった`);
     assert.ok(m.st.turn <= 60, `${seed} ${m.st.turn} ターン`);
   }
+  assert.ok(asked >= 1, 'トラップの問い合わせが1回は出る');
 });
 
 test('mirror の自分の手札は canPlay で判定できる（潮・前列の空き）', () => {

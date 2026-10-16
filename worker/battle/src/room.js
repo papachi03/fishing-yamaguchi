@@ -2,7 +2,7 @@
 //   ・席 a／b に WebSocket を1本ずつ。試合の進行は match.js（battle.js そのまま）。状態はこの部屋のメモリにだけ持つ（第1段階）
 //   ・1ターン TURN_MS で自動納竿。通信が切れた席は LEAVE_MS 以内に同じ token で戻れば続き、戻らなければ負け
 //   ・メッセージは JSON。スマホ→部屋：hello／act／leave／ping、部屋→スマホ：seat／start／res／ev／state／opp／err
-import { createMatch, TURN_MS, LEAVE_MS } from './match.js';
+import { createMatch, TURN_MS, LEAVE_MS, ASK_MS } from './match.js';
 import CARDS from '../../../src/js/ikabu/games/cards-data.json';
 import EFFECTS from '../../../src/js/ikabu/games/cards-effects.json';
 
@@ -17,7 +17,7 @@ export class BattleRoom {
   reset() {
     for (const s of ['a', 'b']) { try { this.seats?.[s]?.ws?.close(1000, 'reset'); } catch {} }
     this.seats = { a: null, b: null };   // { token, ws, online }
-    this.match = null; this.turnTimer = null; this.leaveTimers = {}; this.touched = Date.now(); this.code = null;
+    this.match = null; this.turnTimer = null; this.askTimer = null; this.leaveTimers = {}; this.touched = Date.now(); this.code = null;
   }
   busy() { return !!this.match && !this.match.over() && Date.now() - this.touched < IDLE_MS; }
 
@@ -70,6 +70,7 @@ export class BattleRoom {
       if (!this.match) { this.send(ws, { t: 'res', id: m.id, r: { ok: false, why: 'notStarted' } }); return seat; }
       const { r, a } = this.match.act(seat, m);
       if (r.ok && (m.kind === 'end' || this.match.over())) this.armTurn();
+      this.armAsk();   // 問い合わせが出たら答えの持ち時間を測る（答えたら止める）
       this.send(ws, { t: 'res', id: m.id, r, state: this.match.viewFor(seat) });
       if (r.ok && a) this.toSeat(this.other(seat), { t: 'ev', a, r, state: this.match.viewFor(this.other(seat)) });
       if (this.match.over()) this.finish();
@@ -99,8 +100,21 @@ export class BattleRoom {
       if (this.match.over()) this.finish(); else this.armTurn();
     }, TURN_MS);
   }
+  // トラップの答えの持ち時間：過ぎたら自動で開いて両方に知らせる
+  armAsk() {
+    clearTimeout(this.askTimer); this.askTimer = null;
+    if (!this.match || this.match.over() || !this.match.askSeat()) { this.match && (this.match.askDeadline = 0); return; }
+    this.match.askDeadline = Date.now() + ASK_MS;
+    this.askTimer = setTimeout(() => {
+      const a = this.match?.autoTrap();
+      if (!a) return;
+      this.match.askDeadline = 0;
+      this.broadcast(a);
+      if (this.match.over()) this.finish();
+    }, ASK_MS);
+  }
   broadcast(a) { for (const s of ['a', 'b']) this.toSeat(s, { t: 'ev', a, r: { ok: true }, state: this.match.viewFor(s) }); }
-  finish() { clearTimeout(this.turnTimer); for (const s of ['a', 'b']) clearTimeout(this.leaveTimers[s]); }
+  finish() { clearTimeout(this.turnTimer); clearTimeout(this.askTimer); for (const s of ['a', 'b']) clearTimeout(this.leaveTimers[s]); }
   onClose(ws, seat) {
     if (!seat || this.seats[seat]?.ws !== ws) return;
     this.seats[seat].online = false;
