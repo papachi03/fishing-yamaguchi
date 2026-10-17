@@ -134,7 +134,9 @@ export default defineConfig({
       transformIndexHtml: {
         order: 'pre',
         async handler(html, ctx) {
-          if (!ctx.filename.replace(/\\/g, '/').includes('/guides/')) return html;
+          const f = ctx.filename.replace(/\\/g, '/');
+          // 釣り方別の動画 videos.html にも道具カード（2026-10-17 ぱっぱ：アフィリエイトの導線）
+          if (!f.includes('/guides/') && !f.endsWith('/videos.html')) return html;
           const { fillGuideTackle } = await import('./src/js/components/guide-tackle-html.js');
           return fillGuideTackle(html);
         },
