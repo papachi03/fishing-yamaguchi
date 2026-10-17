@@ -323,7 +323,7 @@ export function animateSquid(node, t, { speed = 1, calm = 1, jet = 0, reach = 0 
 }
 
 // 足の配置。squid＝長い足が外へ広がる／cuttle＝足は短く太く、触腕は白く長い
-function armSet(sh, pose, C) {
+function armSet(sh, pose, C, { reachY = 0 } = {}) {
   const cut = sh.kind === 'cuttle';
   const st = Boolean(sh.armStripe);
   const tent = cut ? { color: '#f4efe6', w0: 1.8, w1: 0.8 } : { w0: 2.1, w1: 0.9 };
@@ -335,6 +335,18 @@ function armSet(sh, pose, C) {
   const arm = (o) => taperedArm({ ...o, w0: o.w0 * aw, w1: o.w1 * aw }, C);
   const scaleArm = (p0, p1, p2, kk = k) => ({ p0: P(...p0), p1: [P(...p1)[0], p0[1] + dy + (p1[1] - p0[1]) * kk], p2: [P(...p2)[0], p0[1] + dy + (p2[1] - p0[1]) * kk] });
   const kt = k * (sh.tentK ?? 1);   // 触腕の長さ
+  // 触腕掛かり（2026-10-17 ぱっぱ・部員 aji131703 さんの案）：足8本は抱く形のまま縮め、触腕2本だけを前（-y）へ長く伸ばして
+  //   先（club）でエギの胴をつかむ。reachY＝触腕の先の y（この絵の中の座標。胴ごと後ろへ離した分を引いた値）
+  if (pose === 'tent') {
+    const h = armSet(sh, 'hug', C);
+    const tip = (x) => [x, reachY];
+    return {
+      back: h.back.slice(2),
+      front: [...h.front,
+        taperedArm({ p0: P(-4, 30), p1: [P(-4, 30)[0] - 1.5, (30 + dy + reachY) / 2], p2: tip(-1.4), ...tent, club: true, stripe: st }, C),
+        taperedArm({ p0: P(4, 30), p1: [P(4, 30)[0] + 1.5, (30 + dy + reachY) / 2], p2: tip(1.4), ...tent, club: true, stripe: st }, C)],
+    };
+  }
   if (pose === 'hug') {
     return {
       back: [
@@ -382,6 +394,26 @@ export function huggingSquid({ species = 'default', len = 56, colors = ART } = {
   front.append(bodyGroup(speciesBody({ species, len: len / k, colors: C, seed: 7 }), len / k), ...arms.front);
   // コウイカの仲間は足が短いので、抱いた姿は体ごとエギ側へ寄せる（足の先がエギに届くように）
   if (sh.kind === 'cuttle') { const up = -11 * k; back.setAttribute('transform', `translate(0 ${f(up)}) scale(${k.toFixed(3)})`); front.setAttribute('transform', `translate(0 ${f(up)}) scale(${k.toFixed(3)})`); }
+  g.append(back, egiShape(), front);
+  return g;
+}
+
+// 触腕だけでエギに掛かったイカ（2026-10-17）：胴と足は後ろ（+y）へ GAP 離れ、触腕2本がエギの胴（y≈TENT_AT）まで伸びる。
+//   座標の決まりは huggingSquid と同じ（原点＝糸の結び目）
+const TENT_GAP = 50, TENT_AT = 22;
+export function tentacleSquid({ species = 'default', len = 56, colors = ART } = {}) {
+  const C = colors;
+  const sh = shapeOf(species);
+  const k = bodyScale(len);
+  const up = sh.kind === 'cuttle' ? -11 * k : 0;
+  const shift = TENT_GAP + up;
+  const g = svgEl('g', { class: 'ika-art-hug ika-art-tent ika-art-v2' });
+  const tr = `translate(0 ${f(shift)}) scale(${k.toFixed(3)})`;
+  const back = svgEl('g', { transform: tr });
+  const front = svgEl('g', { transform: tr });
+  const arms = armSet(sh, 'tent', C, { reachY: (TENT_AT - shift) / k });
+  back.append(...arms.back);
+  front.append(bodyGroup(speciesBody({ species, len: len / k, colors: C, seed: 7 }), len / k), ...arms.front);
   g.append(back, egiShape(), front);
   return g;
 }

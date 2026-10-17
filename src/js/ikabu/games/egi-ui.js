@@ -20,6 +20,7 @@ import { watchTilt, makeTiltGate } from './shake.js';
 const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内に押したら 0.25 秒待って、しゃくりかテンションフォールか見分ける（2026-10-04）
 // 奥へ倒す角度の判定は shake.js の makeTiltGate（15 度で入る・9 度未満で終わる・振った後 0.8 秒は入らない）
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
+const TENT_GAP_UNITS = 50;   // 触腕掛かりの絵で、胴がエギから離れている分（squid-art2.js の TENT_GAP と同じ）
 const LINE_W = '1.75', LINE_OPACITY = '0.75';   // 糸の太さ・濃さ。どの場面でもフリーフォールと同じ（2026-10-17 ぱっぱ）。egi-scene.js の最初の値も同じ
 const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
@@ -48,7 +49,7 @@ const ISO_TX = {
 };
 import { DEPTHS } from './egi.js';
 import { svgEl, egiShape, egiJadoDeco as jadoDeco, paintEgiArt, ART, speciesColors } from '../squid-art.js';
-import { huggingSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
+import { huggingSquid, tentacleSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
 import { rodPathD, lerp } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
@@ -333,7 +334,8 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // 正体が分かるまでは暗い色で描いた影。CSS の filter は SVG の中の部品には効かないブラウザがある（ぱっぱのスクショで判明）ので色で作る
     //   ※ 2026-09-28 修正：ヤエンの行を足した時に if/else の組がずれて、抱いたイカの上に青い「泳ぐイカ」が重なっていた（ぱっぱ：釣れた時に青い）
     if (kind !== 'hug') { node.append(swimmingSquid({ species: 'default', len, colors: { ...ART, ivory: '#8fb6bf', navy: '#0e2733' } })); return; }
-    node.append(revealed ? huggingSquid({ species, len, colors: speciesColors(species) }) : huggingSquid({ species: 'default', len, colors: SHADOW }));
+    const hugArt = s?.hooking?.hold === 'tent' ? tentacleSquid : huggingSquid;   // 触腕掛かり（2026-10-17）は触腕だけを伸ばした姿
+    node.append(revealed ? hugArt({ species, len, colors: speciesColors(species) }) : hugArt({ species: 'default', len, colors: SHADOW }));
     paintEgiArt(node, { color: settings.egi.color, rig: settings.egi.rig });   // 腕の中のエギも選んだ色・種類に（2026-10-16）
     const method = s?.method ?? settings.method;
     // テーラー：腕の中はテーラー（egi 側の絵）
@@ -1581,6 +1583,15 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           if (!s.hooking?.gedo && !reduced) V.ink = { t0: now, x: V.hug.x + 6, y: Math.max(SCENE.surface + 24, V.hug.y + 26), under: true };
           callout(t(lang, e.lucky ? TX.msg.lucky : s.hooking?.boss ? TX.msg.bossHook : (V.heavy ?? 0) >= 0.66 ? TX.msg.heavy : TX.msg.hook), 'good');
           feel.fire('hook', { heavy: V.heavy });
+          // 触腕掛かり（2026-10-17 ぱっぱ）：アタリの時に描いた「抱いた姿」を、触腕だけ伸ばした姿に描き直す。やさしく巻こう、と一言
+          if (e.hold === 'tent' && s.hooking) {
+            const h = s.hooking;
+            setSquidArt(sc.nodes.hugWater, 'hug', h.id, mantleUnits(h.mantle), V.revealed);
+            setSquidArt(sc.nodes.hugAir, 'hug', h.id, mantleUnits(h.mantle), true);
+            paintEgiArt(sc.svg, { color: settings.egi.color, rig: settings.egi.rig });
+            V.hug.height += TENT_GAP_UNITS;
+            setTimeout(() => { if (s.phase === 'fight' && s.hooking?.hold === 'tent') callout(t(lang, TX.msg.tentHook), '', 2600); }, 1400);
+          }
           if (settings.blind && V.blindStats && V.lastBite && !e.lucky) {
             V.blindStats.hooked += 1;
             if (Number.isFinite(e.late)) V.blindStats.lates.push(e.late);
@@ -1619,11 +1630,12 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           addGedo(e);
           break;
         case 'break':
+        case 'shaken':
         case 'unhooked':
           escapeSquid();
           feel.fire('break');
           if (e.type === 'break' && V.gesoAt === now) { callout(t(lang, TX.msg.geso), '', 3000); break; }   // ゲソだけ上がってきた
-          callout(t(lang, e.type === 'break' ? TX.msg.break : TX.msg.unhooked), 'bad');
+          callout(t(lang, e.type === 'break' ? (s.lastHold === 'tent' ? TX.msg.tentBreak : TX.msg.break) : e.type === 'shaken' ? TX.msg.shaken : TX.msg.unhooked), 'bad');
           break;
         case 'landed': {
           // 取り込み方は重さで自動（2026-10-01 ぱっぱ）：lift＝ぶっこ抜き／net＝タモ／gaff＝ギャフ。タモ・ギャフは道具が出てから持ち上がる
@@ -1829,7 +1841,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         ${tako ? `<div class="ika-egi-card-catch"><span class="ika-egi-gedo-icon is-big" aria-hidden="true">${gedoImg('tako')}</span><div><p class="ika-egi-card-name">${t(lang, TX.gedo.names.tako)}</p></div></div>` : ''}
         <p class="ika-egi-card-note">${t(lang, TX.yaen.note[why])}${tako && settings.mode === 'live' ? `（${t(lang, TX.gedo.added)}）` : ''}</p>`;
     } else {
-      const note = { weed: T.weedNote, snag: T.snagNote, break: T.breakNote, unhooked: T.unhookedNote, recover: s.manualRecover ? T.reelInNote : signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
+      const note = { weed: T.weedNote, snag: T.snagNote, shaken: T.shakenNote, break: s.lastHold === 'tent' ? T.tentBreakNote : T.breakNote, unhooked: T.unhookedNote, recover: s.manualRecover ? T.reelInNote : signalsThisCast === 0 ? TX.msg.noSign : T.recoverNote }[why];
       html = `<p class="ika-egi-card-title${why === 'recover' ? '' : ' is-bad'}">${t(lang, T[why] ?? T.recover)}</p><p class="ika-egi-card-note">${t(lang, note ?? T.recoverNote)}</p>`;
     }
     // 邪道エギング：エサがくたびれていたら付け直しを勧める

@@ -137,6 +137,16 @@ export const TAILOR_REBAIT = 2.5;        // エサが無くなってから付け
 //   海藻   … 藻に掛かった時、ときどきそのまま付いてくる
 //   長靴・空き缶 … 根掛かりのうち、ときどきゴミだった（エギは戻る）
 export const GESO_CHANCE = 0.3;   // 身切れのうち、ゲソだけ上がってくる割合
+// 掛かり方（2026-10-17 ぱっぱ・部員 aji131703 さんの案）：ガッツリ抱き（hug）か、触腕だけ（tent）。ぱっぱの体感で触腕は10杯に1〜2杯
+//   身切れ：ゴリ巻きで張りが上限に届いた時だけ。秋・冬の身の薄いイカは身切れする（触腕は早く・ゲソになりやすい）。
+//   春・夏の身の厚いイカは抱いていれば身切れせず、ゲージを振り切って逃げられる（shaken）。春は親イカでジェットが強い
+export const TENT_CHANCE = 0.15;
+export const TENT_BREAK_AT = 85;   // 秋・冬の触腕掛かりは、張りがここで身切れ
+export const TENT_GESO = 0.6;      // 触腕掛かりの身切れのうち、ゲソだけ上がってくる割合
+export const THICK_SEASONS = ['spring', 'earlySummer', 'summer'];
+export const SPRING_JET = { chance: 1.35, tension: 1.35 };   // 春のジェット（出やすさ・張りの跳ね上がり）。試遊版でぱっぱと合わせる
+export const thickSeason = (s) => THICK_SEASONS.includes(seasonOf(s.month));
+export const holdFor = (s) => (s.hooking.gedo || s.hooking.boss ? 'hug' : s.rand() < TENT_CHANCE ? 'tent' : 'hug');
 export const GEDO = {
   fugu: { g: [80, 300], power: 0.3 },   // テーラーでエサを取っていく（ウキが細かくピクピク）
   kasago: { g: [80, 350], power: 0.35 },
@@ -665,7 +675,8 @@ function jerk(s, kind = 'lift') {
     s.dist = Math.max(s.dist, 3);
     s.lastJerk = s.t;
     s.bite = null;
-    emit(s, 'hook', { id: s.hooking.id, late: s.t - lg.at, lucky: true });
+    s.hooking.hold = holdFor(s);
+    emit(s, 'hook', { id: s.hooking.id, late: s.t - lg.at, lucky: true, hold: s.hooking.hold });
     return;
   }
   s.lastJerk = s.t;
@@ -735,7 +746,8 @@ export function press(s) {
       s.tension = 30;
       s.slackFor = 0;
       s.dist = Math.max(s.dist, 3);
-      emit(s, 'hook', { id: s.hooking.id, late, bite: s.bite?.kind });
+      if (s.method === 'egi' || s.method === 'jado') s.hooking.hold = holdFor(s);
+      emit(s, 'hook', { id: s.hooking.id, late, bite: s.bite?.kind, hold: s.hooking.hold });
     } else {
       if (!s.hooking?.gedo) s.squid = Math.max(0, s.squid - 1);
       s.hooking = null;
@@ -1285,6 +1297,7 @@ export function release(s) {
     s.weedSeen = false;
     s.pendingLift = null;
     s.manualRecover = false;
+    s.lastHold = null;   // 前の投げの掛かり方（結果のカードの一言用）
     s.castAt = s.t;   // 投げた時刻（すぐ回収の判定）
     s.bottomFor = 0;
     s.interest = 0.15;
@@ -1695,9 +1708,10 @@ export function tick(s, dt) {
       const recent = hk.jets.filter((t) => s.t - t < JET_WINDOW);
       const resting = recent.length >= JET_BURST && s.t - recent[recent.length - 1] < JET_REST;
       const canJet = !resting && s.t - (hk.jets[hk.jets.length - 1] ?? -99) >= JET_GAP;
-      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * tk.drag.jet * dt) {
+      const spring = seasonOf(s.month) === 'spring' && !hk.gedo;   // 春の親イカはジェットが強い（2026-10-17 ぱっぱ）
+      if (canJet && s.rand() < 0.7 * p * hk.stamina * (1 + 0.3 * Math.min(3, s.cond.wave)) * (s.easy || s.hooking?.bonus ? EASY.jet : 1) * tk.drag.jet * (spring ? SPRING_JET.chance : 1) * dt) {
         // 初心者練習は噴射の引きもやさしく。締めたドラグ（取り込み優先）は張りが一気に上がり、ゆるめ（駆け引き優先）は受け流す（2026-10-01）
-        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.drag.jetTension * (tk.rod.jet ?? tk.rod.tension);   // ロッドでもジェットの重さが変わる（硬めは強い・柔らかめは受け流す）
+        if (s.pressing) s.tension += 22 * (s.easy || s.hooking?.bonus ? EASY.tension : 1) * tk.drag.jetTension * (tk.rod.jet ?? tk.rod.tension) * (spring ? SPRING_JET.tension : 1);   // ロッドでもジェットの重さが変わる（硬めは強い・柔らかめは受け流す）
         else s.dist += 1;
         hk.jets.push(s.t);
         hk.stamina = Math.max(STAMINA_MIN, hk.stamina - 0.15);
@@ -1705,9 +1719,18 @@ export function tick(s, dt) {
       }
       s.tension = Math.max(0, s.tension);
       s.slackFor = s.tension <= 0 ? s.slackFor + dt : 0;
-      if (s.tension >= 100) {
-        // 身切れ。イカなら GESO_CHANCE で足（ゲソ）だけ上がってくる（10/2 感想「ゲソだけ。とか釣れてもいいかな🤣」）
-        if (!s.hooking.gedo && !s.hooking.boss && s.rand() < GESO_CHANCE) {
+      const tent = s.hooking.hold === 'tent';
+      const thick = thickSeason(s);
+      if (s.tension >= (tent && !thick ? TENT_BREAK_AT : 100) && !tent && thick && !s.hooking.gedo) {
+        // 春・夏の身の厚いイカを抱かせていた：身切れはせず、ゲージを振り切って逃げられた（2026-10-17 ぱっぱ）
+        s.lastHold = 'hug';
+        emit(s, 'shaken', { id: s.hooking.id });
+        s.hooking = null;
+        endCast(s, 'shaken');
+      } else if (s.tension >= (tent && !thick ? TENT_BREAK_AT : 100)) {
+        // 身切れ。イカなら GESO_CHANCE で足（ゲソ）だけ上がってくる（10/2 感想「ゲソだけ。とか釣れてもいいかな🤣」）。触腕掛かりは TENT_GESO
+        s.lastHold = tent ? 'tent' : 'hug';
+        if (!s.hooking.gedo && !s.hooking.boss && s.rand() < (tent ? TENT_GESO : GESO_CHANCE)) {
           // ゲソ＝長い触腕が1本ちぎれて、エギにからんだまま上がってくるもの（10/2 ぱっぱ：下半身まるごとは上がらない）。重さはイカの約3%
           const g = { id: 'geso', weight: Math.max(5, Math.round((s.hooking.weight ?? 300) * 0.03)), from: s.hooking.id };
           s.gedo.push(g);
