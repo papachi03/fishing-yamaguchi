@@ -179,9 +179,33 @@ test('邪道：エサは投げるたび・アタリのたびに減り、投げ�
   assert.equal(rebait(s), false);   // 投げている最中は付け直せない
   toBottom(s); s.dist = 1; press(s); release(s);   // 手前まで引いて回収
   assert.equal(s.phase, 'result');
+  const before = s.casts;
   assert.equal(rebait(s, 'sasami'), true);
   assert.equal(s.baitLeft, 1);
   assert.equal(s.bait, 'sasami');
+  assert.equal(s.casts, before - 1);   // 2026-10-17：使ったエサを付け直すと投数を1使う
+  assert.equal(rebait(s, 'kibinago'), true);   // 付けたてのまま種類を替えるだけなら投数は使わない
+  assert.equal(s.casts, before - 1);
+});
+
+test('邪道：エサは海の中で少しずつ傷み、ダメになった投げの終わりに自動で付け替え（投数−1）。残り1投では手で付け直せない（2026-10-17 ぱっぱ）', () => {
+  const s = createEgi({ seed: 'spoil', method: 'jado', month: 5, rand: () => 0.99 });
+  cast(s); toBottom(s);
+  const b0 = s.baitLeft;
+  for (let i = 0; i < 100; i++) tick(s, 0.1);   // 10秒止めておく
+  assert.ok(s.baitLeft < b0 - 0.03, `傷み ${b0} → ${s.baitLeft}`);
+  s.baitLeft = 0;   // ダメになった
+  const c0 = s.casts;
+  s.dist = 1; s.lastDrag = s.t - 2; press(s); release(s);   // 手前まで引いて回収
+  assert.equal(s.phase, 'result');
+  assert.ok(s.events.some((e) => e.type === 'bait-spoiled'), JSON.stringify(s.events.map((e) => e.type)));
+  assert.equal(s.casts, c0 - 1); assert.equal(s.baitLeft, 1);
+  // 残り1投：使ったエサでも手で付け直せない
+  const t = createEgi({ seed: 'last', method: 'jado', month: 5, rand: () => 0.99 });
+  t.casts = 1; t.baitLeft = 0.4; t.phase = 'result';
+  assert.equal(rebait(t), false);
+  assert.ok(t.events.some((e) => e.type === 'rebait-no'));
+  assert.equal(t.casts, 1);
 });
 
 test('邪道：ズル引きは根掛かりの危険がある（初心者練習は無し）。ときどきゴミが上がる（エギは減らない）', () => {
@@ -246,7 +270,7 @@ function noviceJadoTrip(seed, { month = 5, tod = 'evening', expectation = 6 } = 
   let guard = 0;
   while (s.phase !== 'over' && guard++ < 200000) {
     if (s.phase === 'ready') { press(s); run(s, 0.7); release(s); continue; }
-    if (s.phase === 'result') { if (s.baitLeft < 0.5) rebait(s); press(s); release(s); continue; }
+    if (s.phase === 'result') { press(s); release(s); continue; }   // 2026-10-17：付け直しは投数を使うので、初心者は付け直さない（ダメになれば自動で付け替え）
     if (s.phase === 'sinking') { tick(s, 0.05); continue; }
     if (s.phase === 'action') { run(s, 2); if (s.phase === 'action') { press(s); release(s); } continue; }
     if (s.phase === 'signal') { run(s, 0.5); if (s.phase === 'signal') { press(s); release(s); } continue; }

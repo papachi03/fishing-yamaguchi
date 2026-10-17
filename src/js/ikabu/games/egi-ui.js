@@ -1436,7 +1436,16 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'rebait':
           syncBait();
           paintJado();
-          callout(t(lang, TX.bait.rebaited), 'good');
+          syncStock();
+          callout(e.cost ? TX.bait.rebaitedCost(lang, e.casts) : t(lang, TX.bait.rebaited), 'good');
+          break;
+        case 'rebait-no':
+          callout(t(lang, TX.bait.rebaitNo), 'bad', 2800);
+          break;
+        case 'bait-spoiled':   // ダメになったエサを自動で付け替えた（2026-10-17）
+          syncBait();
+          syncStock();
+          callout(TX.bait.spoiled(lang, e.casts), 'bad', 3200);
           break;
         case 'rhythm': {
           // 手ほどきは毎回は言わない（ダート・しゃくりすぎ・渋い日の助言は毎回、ふつうの評価は2回に1回）

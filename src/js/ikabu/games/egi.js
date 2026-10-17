@@ -50,6 +50,9 @@ export const JADO_LIFT_CALL = 0.2;       // 着底のとき、遠くのイカが
 export const canJadoLift = (s) => s.method === 'jado' && s.phase === 'action' && !s.jadoLift && s.depth >= s.bottom - 0.01 && s.t - (s.jadoLiftAt ?? -99) >= JADO_LIFT_GAP;
 export const ROCK_CHANCE = 0.35;     // 1投ごとの「岩まじりの底」の確率
 export const BAIT_USE = { cast: 0.1, bite: 0.3 };   // エサの減り（投げるたび／アタリ・コツコツのたび）
+// 2026-10-17 ぱっぱ：海の中にいる間も少しずつ傷む（1秒あたり）。1投（約50秒）でおよそ2割＝投げ・アタリの分と合わせて3投ほどでダメになる
+//   ダメ（0）になった投げが終わったら自動で付け替えて投数が1減る。手で付け直す時も投数を1使う（まだ新品で種類を替えるだけの時はただ）
+export const BAIT_SOAK = 0.004;
 export const KOTSU_SHARE = 0.45;     // 深夜（夜）に、寄ったイカが抱かずにコツコツだけで終わる割合
 export const KOTSU_SPOOK = 1.2;      // コツコツの後すぐ動かすと、離れていくことがある
 export const KOTSU_WAIT = 2.0;       // コツコツの後これだけ待てると、抱く気になる
@@ -601,6 +604,11 @@ const emit = (s, type, data = {}) => s.events.push({ type, t: s.t, ...data });
 // その回の投げを終えて、次の構えへ（もう投げられなければ終了）
 function endCast(s, why) {
   if (s.method === 'tailor') { tailorEndFight(s, why); return; }
+  // 邪道：エサがダメになっていたら、投げ終わりに自動で付け替える（投数を1使う）。最後の1投なら付け替えずにおしまい
+  if (s.method === 'jado' && s.baitLeft <= 0.001 && s.casts > 0 && s.egi > 0) {
+    s.casts -= 1; s.baitLeft = 1;
+    emit(s, 'bait-spoiled', { casts: s.casts });
+  }
   s.last = why;
   s.dryCasts = s.signaled ? 0 : (s.dryCasts ?? 0) + 1;
   s.quiet = s.reacted ? 0 : (s.quiet ?? 0) + 1;
@@ -772,9 +780,12 @@ export function reelIn(s) {
 // 邪道エギング：エサを付け直す／エサを替える（投げる前だけ）
 export function rebait(s, bait = s.bait) {
   if (s.phase !== 'ready' && s.phase !== 'result') return false;
+  const fresh = s.baitLeft >= 0.999;   // まだ付けたて＝種類を替えるだけ（投数は使わない）
+  if (!fresh && s.casts <= 1) { emit(s, 'rebait-no', { casts: s.casts }); return false; }   // 付け直すと投げる分が無くなる
   s.bait = BAITS.includes(bait) ? bait : s.bait;
+  if (!fresh) s.casts -= 1;
   s.baitLeft = 1;
-  emit(s, 'rebait', { bait: s.bait });
+  emit(s, 'rebait', { bait: s.bait, cost: fresh ? 0 : 1, casts: s.casts });
   return true;
 }
 
@@ -1522,7 +1533,7 @@ export function tick(s, dt) {
           s.pendingLift = null;
         }
       }
-      if (s.method === 'jado') { if (s.jadoLift) jadoLiftTick(s, dt); else jadoAction(s, dt); break; }
+      if (s.method === 'jado') { s.baitLeft = Math.max(0, s.baitLeft - BAIT_SOAK * dt); if (s.jadoLift) jadoLiftTick(s, dt); else jadoAction(s, dt); break; }   // 海の中では少しずつ傷む
       const since = s.t - s.lastJerk;
       // しゃくった後も押したまま＝テンションフォール（ゆっくり沈み、手前に寄ってくる）
       if (s.pressing && !s.tensionFall && s.t - s.pressAt >= TENSION_HOLD) {

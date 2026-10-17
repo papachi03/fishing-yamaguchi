@@ -298,8 +298,11 @@ export const EGI_TEXT = {
     left: pair('エサ', 'Bait'),
     rebait: pair('エサを付け直す', 'Re-bait'),
     rebaited: pair('エサを付け直した', 'Fresh bait on'),
+    rebaitedCost: (lang, n) => (lang === 'en' ? `Fresh bait on (1 cast used · ${n} left)` : `エサを付け直した（投数を1使った・残り${n}投）`),
+    rebaitNo: pair('残り1投なので、付け直すと投げられなくなります。このまま投げましょう', 'Only 1 cast left — re-baiting would use it up. Cast as it is'),
+    spoiled: (lang, n) => (lang === 'en' ? `The bait was spent — put on fresh bait (1 cast used · ${n} left)` : `エサがダメになったので付け替えた（投数を1使った・残り${n}投）`),
     stopFor: pair('止めて', 'Paused'),
-    low: pair('エサがくたびれてきた。付け直すと効きが戻る', 'The bait is worn out. Put on fresh bait'),
+    low: pair('エサがくたびれてきた。付け直すと効きが戻る（投数を1使う）。ダメになると自動で付け替え', 'The bait is worn out. Fresh bait restores it (uses 1 cast). Spent bait is replaced automatically'),
   },
   jado: {
     waitBottom: pair('着底を待つ', 'Wait for bottom'),
