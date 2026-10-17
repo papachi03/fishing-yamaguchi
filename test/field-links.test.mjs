@@ -27,5 +27,5 @@ test('実際の釣りの動画：遊んだ釣り方の見出しへ（目印は #
   assert.ok(fieldLinksHTML('ja', 'tailor').includes(`href="/videos.html?from=${FIELD_FROM}#tailor"`));
   assert.ok(fieldLinksHTML('ja', 'egi').includes(`href="/videos.html?from=${FIELD_FROM}"`));
   assert.match(fieldLinksHTML("ja", "yaen"), /実際の釣りを動画で見る/);
-  assert.ok(fieldLinksHTML("ja", "yaen").includes("i.ytimg.com/vi/TJfAOkytZDE/"));
+  assert.ok(fieldLinksHTML("ja", "yaen").includes("i.ytimg.com/vi/Y3suaT2xEkk/"));
 });

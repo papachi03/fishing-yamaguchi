@@ -18,9 +18,9 @@ const SECOND = {
 // 釣り方別の動画ページ（videos.html）の見出しと、カードに出す主役の動画（videos.html の MAIN と同じ）。ふつうのエギングはページの先頭
 const VIDEO = {
   jado: { hash: '#jado', id: 'czNLWIHE8CQ', ja: 'ダディの邪道エギング', en: "Daddy's jado eging" },
-  yaen: { hash: '#yaen', id: 'TJfAOkytZDE', ja: 'ダディのヤエン釣り', en: "Daddy's yaen fishing" },
+  yaen: { hash: '#yaen', id: 'Y3suaT2xEkk', ja: 'ダディのヤエン釣り', en: "Daddy's yaen fishing" },
   tailor: { hash: '#tailor', id: 'gc1c6fg2hU0', ja: 'ダディのCD式灯火フィッシング', en: "Daddy's CD-style light fishing" },
-  egi: { hash: '', id: 'TJfAOkytZDE', ja: 'ダディの実際のイカ釣り', en: "Daddy's real squid fishing" },
+  egi: { hash: '', id: 'Y3suaT2xEkk', ja: 'ダディの実際のイカ釣り', en: "Daddy's real squid fishing" },
 };
 
 export const fieldHref = (path, toHref = (p) => p) => `${toHref(path)}?from=${FIELD_FROM}`;
