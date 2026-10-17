@@ -21,7 +21,8 @@ export const SCENE = {
   pierTop: 236,        // 堤防の上面
   squidBox: { x: 30, y: 70, w: 150, h: 167 },   // squid.png（HERO と同じ比率 586:654）
   grip: { x: 158, y: 181 },                     // 竿の握り（squid.png の切れ端の位置）
-  rod: { len: 178, rest: 42, width: [11, 4], outline: 6 },  // 長さ・休みの角度（度、右上向き）
+  // 竿の太さ（2026-10-18 部員 aji131703 さん「ロッドを少し細く」）：前は [11, 4]・縁 6。手元は釣り人の絵の竿の切れ端とつながる太さを残す
+  rod: { len: 178, rest: 42, width: [8, 2.2], outline: 4 },  // 長さ・休みの角度（度、右上向き）
   lamp: { x: 120, y: 120 },                     // 夜の常夜灯
 };
 
@@ -221,6 +222,9 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
   <!-- 竿・糸・空中のもの（egi-ui.js が描く） -->
   <path class="ika-eg-rod-outline" d="" fill="#16233a" />
   <path class="ika-eg-rod" d="" fill="#f4ead8" />
+  <!-- ガイド（先端を入れて5個）と、ガイドを通ってリールへ続く糸（2026-10-18） -->
+  <path class="ika-eg-rodline" d="" fill="none" stroke="#fff8e6" stroke-width="1.75" stroke-linejoin="round" opacity="0.75" />
+  <g class="ika-eg-guides"></g>
   <path class="ika-eg-line" d="" fill="none" stroke="#fff8e6" stroke-width="1.75" stroke-linecap="round" opacity="0.75" />
   <g class="ika-eg-air"></g>
 </svg>`;

@@ -22,6 +22,10 @@ const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内�
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
 const TENT_GAP_UNITS = 50;   // 触腕掛かりの絵で、胴がエギから離れている分（squid-art2.js の TENT_GAP と同じ）
 const LINE_W = '1.75', LINE_OPACITY = '0.75';   // 糸の太さ・濃さ。どの場面でもフリーフォールと同じ（2026-10-17 ぱっぱ）。egi-scene.js の最初の値も同じ
+// 竿のガイド（2026-10-18 部員 aji131703 さんの案・ぱっぱOK）：先端（トップガイド）を入れて5個。本物は8〜10個だが、画面の竿は短く
+//   点の列にしか見えないのでデフォルメ。手元ほど大きく、先ほど小さく・間隔を詰める。腹側（水面側）に付け、糸はリールからガイドを通って竿先へ
+const GUIDES = [{ k: 0.36, r: 2.7 }, { k: 0.55, r: 2.2 }, { k: 0.71, r: 1.8 }, { k: 0.85, r: 1.5 }, { k: 1, r: 1.3 }];
+const REEL_K = 0.04;   // リールの位置（竿の手元から。釣り人の絵の手元のリール）
 const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
@@ -50,7 +54,7 @@ const ISO_TX = {
 import { DEPTHS } from './egi.js';
 import { svgEl, egiShape, egiJadoDeco as jadoDeco, paintEgiArt, ART, speciesColors } from '../squid-art.js';
 import { huggingSquid, tentacleSquid, swimmingSquid, animateSquid } from '../squid-art2.js';   // 第2版の絵（2026-09-29 まずアオリイカ。ほかの種類は第1版のまま）
-import { rodPathD, lerp } from '../hero-scene.js';
+import { rodPathD, lerp, bez } from '../hero-scene.js';
 import { createPendulum, swingEase, flightPoint, headingDeg, flightTime, flightApex, trailingLineD } from '../cast-physics.js';
 import { EGI_TEXT as TX, TOD, SEASON, monthLabel, speciesName, speciesById, YAMAGUCHI_SQUID, GAME_ZUKAN, zukanById, zukanArt } from './play-text.js';
 import { aroundHTML, egiPickerHTML, egiTraitsHTML, egiIconHTML } from '../views/play.js';
@@ -2451,6 +2455,36 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     V.ripples.push({ x, y: SCENE.surface, t0: now, big: true });
   }
 
+
+  // 竿のガイドとガイドを通る糸（竿のしなりに合わせて毎回置き直す）
+  function drawGuides(p0, c, p2, R) {
+    const box = sc.svg?.querySelector('.ika-eg-guides');
+    const rl = sc.svg?.querySelector('.ika-eg-rodline');
+    if (!box || !rl) return;
+    if (!box.childElementCount) {
+      for (const g of GUIDES) box.append(svgEl('line', { stroke: '#16233a', 'stroke-width': '1', 'stroke-linecap': 'round' }), svgEl('circle', { r: String(g.r), fill: 'none', stroke: '#16233a', 'stroke-width': '1.3' }), svgEl('circle', { r: String(g.r), fill: 'none', stroke: '#c9d4dc', 'stroke-width': '0.6' }));
+    }
+    const at = (k) => {
+      const p = bez(p0, c, p2, k), q = bez(p0, c, p2, Math.min(1, k + 0.01)), r = bez(p0, c, p2, Math.max(0, k - 0.01));
+      let nx = -(q.y - r.y), ny = q.x - r.x; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+      return { p, nx, ny, hw: (lerp(R.width[0], R.width[1], k) + R.outline) / 2 };
+    };
+    const pts = [];
+    const reel = at(REEL_K);
+    pts.push([reel.p.x + reel.nx * (reel.hw + 2.5), reel.p.y + reel.ny * (reel.hw + 2.5)]);   // 釣り人の手元のリール（竿のすぐ下）
+    GUIDES.forEach((g, i) => {
+      const a = at(g.k);
+      const off = g.k >= 1 ? 0 : a.hw + g.r * 0.75 + 0.3;   // 竿にぴったり付ける（足は短く）。先端のトップガイドは竿先そのもの
+      const cx = a.p.x + a.nx * off, cy = a.p.y + a.ny * off;
+      const [foot, ring, inner] = [box.children[i * 3], box.children[i * 3 + 1], box.children[i * 3 + 2]];
+      foot.setAttribute('x1', a.p.x.toFixed(1)); foot.setAttribute('y1', a.p.y.toFixed(1));
+      foot.setAttribute('x2', (cx - a.nx * g.r).toFixed(1)); foot.setAttribute('y2', (cy - a.ny * g.r).toFixed(1));
+      foot.style.display = g.k >= 1 ? 'none' : '';
+      for (const el of [ring, inner]) { el.setAttribute('cx', cx.toFixed(1)); el.setAttribute('cy', cy.toFixed(1)); }
+      pts.push([cx, cy]);
+    });
+    rl.setAttribute('d', `M${pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join('L')}`);
+  }
   function draw(dt) {
     const n = sc.nodes;
     const S = SCENE;
@@ -2709,6 +2743,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     const R = S.rod;
     sc.rodOutline.setAttribute('d', rodPathD(S.grip, bend, tip, R.width[0], R.width[1], R.outline));
     sc.rod.setAttribute('d', rodPathD(S.grip, bend, tip, R.width[0], R.width[1]));
+    drawGuides(S.grip, bend, tip, R);
 
     /* ----- 糸：竿先 → エギ（イカ）。根掛かりで切れたら短く垂れる ----- */
     let d;
