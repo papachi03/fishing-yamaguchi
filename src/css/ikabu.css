@@ -1749,6 +1749,24 @@ button.ika-egi-zukan-open:hover { background: var(--ika-mist); }
 .ika-egi-card-credit { font-size: 11px; line-height: 1.6; color: var(--ika-ink-soft); }
 .ika-egi-around-list span { display: inline-block; padding: 3px 12px; border-radius: 999px; background: var(--ika-mist); border: 2px solid var(--ika-sea); color: var(--ika-sea); font-family: var(--font-maru); font-weight: 900; font-size: 12.5px; line-height: 1.6; }
 .ika-egi-card-note { font-size: 13px; line-height: 1.7; color: var(--ika-ink-soft); }
+/* 釣行のまとめの下の「本物の海で釣るなら」（ジャーナル本編へ・2026-10-17） */
+.ika-egi-field { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgba(244, 115, 33, 0.08); border: 1px solid rgba(244, 115, 33, 0.28); text-align: left; }
+.ika-egi-field-title { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--ika-orange-deep); margin-bottom: 4px; }
+.ika-egi-field-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ika-egi-field-links a { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: 13.5px; font-weight: 700; color: var(--ika-ink); text-decoration: none; border-bottom: 1px dashed rgba(11, 42, 47, 0.18); }
+.ika-egi-field-links li:last-child a { border-bottom: 0; }
+.ika-egi-field-links a:hover { color: var(--ika-orange-deep); }
+.ika-egi-field-lang { font-weight: 400; font-size: 11px; opacity: 0.7; }
+/* 動画の行：主役のサムネイル＋再生ボタン（白いカードの中でも目に止まるように） */
+.ika-egi-field-video a { display: grid; grid-template-columns: 104px 1fr; gap: 10px; align-items: center; padding: 6px 0 8px; }
+.ika-egi-field-thumb { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; background: var(--ika-sea); }
+.ika-egi-field-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ika-egi-field-play { position: absolute; inset: 0; margin: auto; width: 30px; height: 21px; border-radius: 6px; background: rgba(21, 23, 28, 0.75); }
+.ika-egi-field-play::after { content: ""; position: absolute; left: 12px; top: 6px; border-left: 8px solid #fff; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.ika-egi-field-video a:hover .ika-egi-field-play { background: #ff0033; }
+.ika-egi-field-text { display: grid; gap: 2px; min-width: 0; }
+.ika-egi-field-text b { font-size: 13.5px; line-height: 1.4; }
+.ika-egi-field-text small { font-size: 11px; font-weight: 400; color: var(--ika-ink-soft); }
 .ika-egi-card-btn { min-height: 44px; padding: 6px 18px; font-size: 14px; justify-self: start; }
 .ika-egi-over-total { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-family: var(--font-maru); font-weight: 900; }
 .ika-egi-over-total b { font-family: var(--font-varsity); font-weight: 800; font-size: 34px; line-height: 1; color: var(--ika-sea); }

@@ -62,6 +62,7 @@ import { recommendedSizes } from './egi-advice.js';
 import { recordGedo } from './records.js';
 import { readJSON, writeJSON, recordEgiCatch, recordEgiTrip, addEgiPoints, emptyEgi, KEY_EGI, KEY_M3, readRecord, writeRecord, storageWorks, exportCode, importCode, mergeEgi, mergeM3 } from './records.js';
 import { t, esc, assetHref, pageHref } from '../i18n.js';
+import { fieldLinksHTML } from '../field-links.js';   // 釣行のまとめの下の「本物の海で釣るなら」（2026-10-17）
 import { openShareView, shareButtonHTML, shareUrl, egiCatchText, egiTripText, SHARE_VARIANT } from './share.js';
 
 const f1 = (v) => v.toFixed(1);
@@ -1869,6 +1870,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       ${s.gedo.length ? `<p class="ika-egi-card-note">${t(lang, TX.gedo.title)}: ${s.gedo.map((g) => `${TX.gedo.icon[g.id] ?? ''}${esc(t(lang, TX.gedo.names[g.id]))}`).join('、')}</p>` : ''}
       ${counted || blindPractice ? `<p class="ika-egi-card-note ika-egi-over-level">${t(lang, TX.level.title)} Lv${levelOf(rec.points).level}${levelOf(rec.points).to == null ? '' : `・${TX.level.next(lang, levelOf(rec.points).need)}`}${counted && settings.blind ? `（${t(lang, O.hardBonus)}）` : ''}</p>` : ''}
       <p class="ika-egi-card-cond">${esc(condLine())}</p>
+      ${fieldLinksHTML(lang, settings.method, assetHref)}
       <div class="ika-egi-card-actions"><button type="button" class="ika-btn ika-btn--primary ika-egi-card-btn" data-restart>${t(lang, TX.btn.over)}</button>${shareButtonHTML(lang)}<a class="ika-btn ika-egi-card-btn" href="${solo ? pageHref('games', lang) : '#main'}">${t(lang, TX.btn.quit)}</a></div>`;   // 「やめる」（2026-09-30 ぱっぱ：もう一度しか無いとやめられず戸惑う）
     lastShare = { kind: 'trip', catches: catches.slice() };
     if (counted || blindPractice) levelCheck(lvBefore);
