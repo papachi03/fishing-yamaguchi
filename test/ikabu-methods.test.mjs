@@ -336,6 +336,19 @@ test('ヤエン：アジを底に置いて待つ。抱かれないとアジが�
   assert.ok(s.t - s.yaen.waitFrom < 0.01, 'しゃくったら待った秒数は0から');
   run(s, 4);
   assert.equal(s.depth, s.bottom, '沈み直す');
+  // 2026-10-17：素早く2回＝ふわっと（高く上がり、寄せはもう増えない。ゆっくり落ちて、着底を知らせる）
+  const d1 = s.dist;
+  press(s); release(s); tick(s, 0.1); press(s); release(s);
+  assert.ok(s.events.some((e) => e.type === 'yaen-fuwa'), JSON.stringify(s.events.map((e) => e.type)));
+  assert.equal(s.dist, d1 - 1.5, '2回目は寄せない');
+  assert.ok(s.depth <= s.bottom - 2.5, 'ふわっと高く上がる');
+  press(s); release(s);
+  assert.ok(s.depth <= s.bottom - 2.5, 'ふわっと中にしゃくっても押し下げない');
+  run(s, 3);
+  assert.ok(s.depth < s.bottom, 'ゆっくり落ちる（3秒ではまだ底に着かない）');
+  let landed = false;
+  for (let k = 0; k < 400 && !landed; k++) { tick(s, 0.05); landed = s.events.some((e) => e.type === 'yaen-fuwa-land'); }
+  assert.ok(landed, '着底を知らせる');
   s.dist = 2.5; press(s); release(s);
   assert.equal(s.last, 'recover');
 });

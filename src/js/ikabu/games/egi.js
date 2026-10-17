@@ -71,6 +71,13 @@ export const YAEN_JERK_LIFT = 2.0;     // しゃくり（大きく1回）でア�
 export const YAEN_JERK_PULL = 1.5;     // しゃくりで手前に寄る距離（m）。しゃくったら待った秒数は0から数え直す（2026-09-28 ぱっぱ）
 export const YAEN_LURE = [6, 1.8];     // しゃくってから LURE[0] 秒は、抱く勢いが LURE[1] 倍
 export const YAEN_HINT = 12;           // この秒数しゃくらずに待って反応が無ければ「しゃくってみよう」の案内
+// 2026-10-17 ぱっぱ：死にアジも邪道エギのように。1回しゃくる＝少し浮かせて寄せる（YAEN_TAP_LIFT 浮いて YAEN_JERK_PULL 寄る）、
+//   素早く2回（DOUBLE_JERK 秒以内）＝「ふわっと」：YAEN_FUWA_LIFT 高く上げて、ふつうの YAEN_FUWA_FALL 倍でゆっくり落とす。寄せない。
+//   ふわっとで落ちている間は抱かない（盗られない）。着底したら YAEN_FUWA_LURE 秒、抱く勢いが倍（邪道の「ふわっと」と同じ考え）
+export const YAEN_TAP_LIFT = 0.6;
+export const YAEN_FUWA_LIFT = 2.8;
+export const YAEN_FUWA_FALL = 0.55;   // 2.8m を約8秒で落ちる（0.4だと11秒で長すぎた）
+export const YAEN_FUWA_LURE = [9, 2.4];
 // 活きアジ（2026-09-28 ぱっぱ：案B＝活きアジが基本、死にアジは「ぱっぱ流」で選べる）：
 //   アジが中層を泳ぎ回り、だんだん弱る（アジの元気）。寄ってきたイカが追いかけて（YAEN_CHASE 秒）抱く。弱ったアジは見向きされにくい
 export const AJI = ['live', 'dead'];
@@ -811,10 +818,18 @@ function yaenPress(s) {
   const y = s.yaen;
   if (s.phase === 'sinking') return;   // 沈んでいる途中はしゃくれない（死にアジは底で誘う）
   if (s.phase === 'wait') {
+    // 死にアジ：素早く2回目＝「ふわっと」（高く上げてゆっくり落とす・寄せない）。1回目の寄せはそのまま
+    if (s.aji !== 'live' && s.t - (y.lastTap ?? -99) <= DOUBLE_JERK && !y.fuwa) {
+      s.depth = Math.max(0.5, s.bottom - YAEN_FUWA_LIFT);
+      y.fuwa = true; y.liftAt = s.t; y.waitFrom = s.t; y.lastTap = -99;
+      s.lastJerk = s.t;
+      emit(s, 'yaen-fuwa', {});
+      return;
+    }
     // 着底後のしゃくり：アジを少し浮かせて手前に寄せる（ボトムの親イカを誘う）。手前まで来たら回収
-    if (s.aji !== 'live') s.depth = Math.max(s.bottom - YAEN_JERK_LIFT, s.depth - YAEN_JERK_LIFT);
+    if (s.aji !== 'live') s.depth = Math.min(s.depth, Math.max(s.bottom - YAEN_TAP_LIFT, s.depth - YAEN_TAP_LIFT));   // もう浮いている時（ふわっとで落ちている途中）は押し下げない
     s.dist = Math.max(0, s.dist - YAEN_JERK_PULL);
-    y.liftAt = s.t;
+    y.liftAt = s.t; y.lastTap = s.t;
     y.waitFrom = s.t;   // 待った秒数は0から数え直す
     y.jerks = (y.jerks ?? 0) + 1;
     s.lastJerk = s.t;
@@ -893,8 +908,12 @@ function yaenTick(s, dt) {
       s.dist = Math.max(3, s.dist + Math.cos(s.t * 0.45) * 0.35 * vigor * panic * dt + (y.chaseAt != null ? 0.5 * dt : 0));
       if (y.chaseAt != null && s.t - y.chaseAt >= YAEN_CHASE) { y.chaseAt = null; yaenBite(s, false); return; }
       if (y.chaseAt != null) return;
-    } else if (s.depth < s.bottom) s.depth = Math.min(s.bottom, s.depth + YAEN_SINK * 0.7 * dt);
-    const lure = s.t - (y.liftAt ?? -99) < YAEN_LURE[0] ? (live ? 1.4 : YAEN_LURE[1]) : 1;
+    } else if (s.depth < s.bottom) {
+      s.depth = Math.min(s.bottom, s.depth + YAEN_SINK * 0.7 * (y.fuwa ? YAEN_FUWA_FALL : 1) * dt);
+      if (y.fuwa && s.depth >= s.bottom) { y.fuwa = false; y.fuwaLanded = s.t; y.waitFrom = s.t; emit(s, 'yaen-fuwa-land', {}); }
+    }
+    if (y.fuwa) return;   // ふわっとで落ちている間は抱かない（盗られない）。傷みは進む（下の vigor は次の着底後に見る）
+    const lure = s.t - (y.fuwaLanded ?? -99) < YAEN_FUWA_LURE[0] ? YAEN_FUWA_LURE[1] : s.t - (y.liftAt ?? -99) < YAEN_LURE[0] ? (live ? 1.4 : YAEN_LURE[1]) : 1;
     if (!y.hinted && !y.jerks && waited > YAEN_HINT) { y.hinted = true; emit(s, 'yaen-hint', { live }); }
     const moodFactor = 0.6 + 0.08 * s.cond.expectation;
     const tod = s.tod === 'morning' ? 1.4 : s.tod === 'evening' ? 1.2 : s.tod === 'night' ? 1.0 : 0.7;   // 朝マズメに大型（ぱっぱの実釣）

@@ -915,6 +915,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   function onShake() {
     // しゃくり（沈下・フォール）とアワセ（合図）の時だけ。巻いている時（ファイト）に振っても何もしない
     if (s && !frozen && s.method === 'jado' && ['sinking', 'action', 'signal'].includes(s.phase)) { onJadoShake(); return; }
+    if (s && !frozen && s.method === 'yaen' && s.aji === 'dead' && s.phase === 'wait') { doPress(); doRelease(); return; }   // 死にアジ：1回＝寄せ、速く2回＝ふわっと（2回目の判定はエンジン側）
     if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) return;
     tilt.block(performance.now());   // 振った直後は倒しても入らない。倒したまま振り上げた＝しゃくり・合わせ（エンジン側でもテンションフォールが終わる）
     doPress();
@@ -1380,6 +1381,13 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
           break;
         case 'yaen-jerk':
           V.jerkAt = now; V.jerkKind = 'lift'; V.jerkDouble = false;
+          break;
+        case 'yaen-fuwa':   // 死にアジのふわっと（2026-10-17）
+          V.jerkAt = now; V.jerkKind = 'lift'; V.jerkDouble = true;
+          callout(t(lang, TX.yaen.fuwa), 'good', 2000);
+          break;
+        case 'yaen-fuwa-land':
+          callout(t(lang, TX.yaen.fuwaLand), 'good', 2200);
           break;
         case 'yaen-hint':
           callout(t(lang, e.live ? TX.yaen.liveHint : TX.yaen.jerkHint), 'good', 3600);
