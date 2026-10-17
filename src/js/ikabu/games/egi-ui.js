@@ -20,6 +20,7 @@ import { watchTilt, makeTiltGate } from './shake.js';
 const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内に押したら 0.25 秒待って、しゃくりかテンションフォールか見分ける（2026-10-04）
 // 奥へ倒す角度の判定は shake.js の makeTiltGate（15 度で入る・9 度未満で終わる・振った後 0.8 秒は入らない）
 const JET_RESIST = 4;    // ジェットの後、抵抗が残っている秒数（この間に巻くと最初に「チリリリ」を1回）
+const LINE_W = '1.75', LINE_OPACITY = '0.75';   // 糸の太さ・濃さ。どの場面でもフリーフォールと同じ（2026-10-17 ぱっぱ）。egi-scene.js の最初の値も同じ
 const RESIST_TENSION = 70;   // （2026-10-04 から使っていない：張りではドラグを鳴らさない）
 import { createBgm } from './bgm.js';
 import { shakeSupported, requestShakePermission, watchShake } from './shake.js';
@@ -2770,10 +2771,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       sc.yaenInner.setAttribute('transform', `scale(${(1.1 + (1 - pop) * 0.6).toFixed(2)})`);
       sc.yaenNode.setAttribute('opacity', '1');
     } else sc.yaenNode.setAttribute('opacity', '0');
-    // 糸の太さ（2026-10-17 部員 aji131703 さん「テンションフォールの時に太い」・ぱっぱOK）：前は 2〜3.2（スマホ横で1.3〜1.7px）で、
-    //   細長くした新しいエギと並ぶと太すぎた。全体を細くし、張り・たるみは太さの差を小さくして主に濃さで見せる（横で約0.9〜1.1px）
-    sc.line.setAttribute('stroke-width', (1.5 + 0.55 * taut).toFixed(2));
-    sc.line.setAttribute('opacity', (0.55 + 0.45 * taut).toFixed(2));
+    // 糸の太さ（2026-10-17 部員 aji131703 さん「テンションフォールの時に太い」）：前は張り具合で 2〜3.2（スマホ横で1.3〜1.7px）。
+    //   ぱっぱ：太さは一律フリーフォールの太さに統一（テンションフォール・糸ふけも同じ）→ 太さも濃さも張り具合で変えない（横で約0.9px）
+    sc.line.setAttribute('stroke-width', LINE_W);
+    sc.line.setAttribute('opacity', LINE_OPACITY);
     // 入水点の輪
     if (!V.lineBroken && lineEnd.y > S.surface + 4 && tip.y < S.surface) {
       // 糸はたるんだ曲線なので、まっすぐな線ではなく曲線が水面と交わる点に輪を置く（ぱっぱ指摘：フリーフォールで輪がずれる）
