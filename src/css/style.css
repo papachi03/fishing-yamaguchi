@@ -2123,3 +2123,71 @@ button { font: inherit; background: none; border: none; cursor: pointer; color: 
   .home-ikabu-card { grid-template-columns: 1fr; }
   .home-ikabu-art { aspect-ratio: 3 / 2; }
 }
+
+/* ===== 釣り方別の動画 videos.html（2026-10-17）。ゲームから来た人が「見たい」と思う構図 ===== */
+.vhero { padding-bottom: clamp(28px, 5vw, 56px); }
+.vhero-eyebrow { font-size: 11px; letter-spacing: 0.22em; color: var(--amber); margin-bottom: 14px; }
+.vhero .ja { margin-top: 14px; }
+/* 扉3枚：サムネイルを背景に、暗い帯の上に見出し */
+.vdoors-wrap { background: var(--sumi); padding-bottom: clamp(40px, 6vw, 72px); }
+.vdoors { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 1.6vw, 18px); }
+.vdoor { position: relative; display: block; aspect-ratio: 4 / 3.4; overflow: hidden; border-radius: 14px; color: var(--paper); isolation: isolate; }
+.vdoor-bg { position: absolute; inset: 0 0 82px; background-image: var(--door); background-size: cover; background-position: center top; transform: scale(1.04); transition: transform 0.8s cubic-bezier(0.2, 0.6, 0.2, 1); }
+.vdoor::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(21, 23, 28, 0) 55%, rgba(21, 23, 28, 0.55) 100%); }
+.vdoor:hover .vdoor-bg { transform: scale(1.12); }
+/* 見出しは不透明な帯の上に（サムネイルに焼き込まれた大きな文字と重ならないように） */
+.vdoor-body { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; display: grid; gap: 3px; padding: 12px 16px 14px; background: rgba(21, 23, 28, 0.92); border-top: 2px solid var(--amber); }
+.vdoor-game { font-size: 10px; letter-spacing: 0.2em; color: var(--amber); }
+.vdoor-name { font-family: var(--font-mincho); font-weight: 800; font-size: clamp(22px, 2.4vw, 28px); line-height: 1.25; }
+.vdoor-sub { font-size: 12px; opacity: 0.85; }
+.vdoor.is-yours { box-shadow: 0 0 0 3px var(--amber); }
+.vdoor.is-yours .vdoor-game::after { content: '  ・ あなたが遊んだ釣り'; color: var(--paper); }
+/* 各段：主役1本を大きく、残りを横に */
+.vsec { background: var(--paper); padding: clamp(44px, 7vw, 88px) 0; border-top: 1px solid rgba(32, 35, 42, 0.1); scroll-margin-top: 72px; }
+.vsec:nth-of-type(even) { background: var(--paper-warm); }
+.vsec-head { max-width: 760px; margin-bottom: clamp(20px, 3vw, 32px); }
+.vsec-en { font-size: 11px; letter-spacing: 0.22em; color: var(--amber); }
+.vsec-ja { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 6vw, 64px); line-height: 1.05; margin-top: 6px; letter-spacing: 0.02em; }
+.vsec-lead { font-family: var(--font-mincho); font-weight: 700; font-size: clamp(15px, 2vw, 19px); margin-top: 12px; }
+.vsec-desc { font-size: 14px; line-height: 1.9; color: var(--ink-soft); margin-top: 8px; }
+.vsec.is-yours .vsec-lead::before { content: 'あなたが遊んだ釣り'; display: inline-block; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.1em; background: var(--amber); color: var(--sumi); padding: 3px 10px; border-radius: 999px; margin-right: 10px; vertical-align: middle; }
+.vmain { display: grid; grid-template-columns: 1.6fr 1fr; gap: 0; overflow: hidden; border-radius: 18px; background: var(--sumi); color: var(--paper); box-shadow: 0 22px 48px rgba(21, 23, 28, 0.22); }
+.vmain-fig { position: relative; margin: 0; aspect-ratio: 16 / 9; overflow: hidden; }
+.vmain-fig img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.8s cubic-bezier(0.2, 0.6, 0.2, 1); }
+.vmain:hover .vmain-fig img { transform: scale(1.05); }
+.vmain-play { position: absolute; inset: 0; margin: auto; width: 84px; height: 58px; border-radius: 16px; background: rgba(21, 23, 28, 0.72); transition: background 0.25s, transform 0.25s; }
+.vmain-play span { position: absolute; left: 34px; top: 17px; border-left: 22px solid var(--paper); border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+.vmain:hover .vmain-play { background: #ff0033; transform: scale(1.06); }
+.vmain-tag { position: absolute; left: 14px; top: 12px; font-size: 10px; letter-spacing: 0.18em; background: var(--amber); color: var(--sumi); padding: 4px 10px; border-radius: 999px; }
+.vmain-body { padding: clamp(18px, 3vw, 32px); display: grid; align-content: center; gap: 10px; }
+.vmain-title { font-family: var(--font-mincho); font-weight: 700; font-size: clamp(16px, 1.8vw, 21px); line-height: 1.5; }
+.vmain-note { font-size: 13px; line-height: 1.8; color: var(--paper-ink-dim); }
+.vmain-cta { justify-self: start; margin-top: 4px; display: inline-flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; border-bottom: 1px solid var(--amber); padding-bottom: 3px; color: var(--amber); }
+.vsubs { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px, 2vw, 22px); margin-top: clamp(16px, 2.4vw, 26px); }
+.vsub { display: block; min-width: 0; }
+.vsub figure { position: relative; margin: 0; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: var(--sumi); }
+.vsub img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.2, 0.6, 0.2, 1); }
+.vsub:hover img { transform: scale(1.05); }
+.vsub:hover .yt-play { background: #ff0033; }
+.vsub-title { margin-top: 8px; font-family: var(--font-mincho); font-weight: 700; font-size: 13px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 締め */
+.vnext { background: var(--sumi); color: var(--paper); }
+.vnext .sec-head .en, .vnext .sec-head .ja { color: var(--paper); }
+.vnext-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.vnext-card { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid rgba(241, 236, 225, 0.18); border-radius: 12px; color: var(--paper); transition: background 0.25s, border-color 0.25s; }
+.vnext-card:hover { background: rgba(241, 236, 225, 0.08); border-color: var(--amber); }
+.vnext-card .t-mono { font-size: 10px; letter-spacing: 0.2em; color: var(--amber); }
+.vnext-card b { font-family: var(--font-mincho); font-size: 16px; }
+.vnext-card small { font-size: 12px; color: var(--paper-ink-dim); line-height: 1.6; }
+.vnext-yt { margin-top: 22px; font-size: 13px; }
+.vnext-yt a { border-bottom: 1px solid var(--amber); padding-bottom: 2px; }
+@media (max-width: 900px) {
+  .vmain { grid-template-columns: 1fr; }
+  .vnext-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .vdoors { grid-template-columns: 1fr; }
+  .vdoor { aspect-ratio: 16 / 12; }
+  .vsubs { grid-template-columns: 1fr; }
+  .vsec { scroll-margin-top: 64px; }
+}

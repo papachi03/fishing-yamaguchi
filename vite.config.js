@@ -170,6 +170,7 @@ export default defineConfig({
         'guides/family-sabiki': resolve(__dirname, 'guides/family-sabiki.html'),
         ...ikabuInputs,
         'guides/yaen-beginner': resolve(__dirname, 'guides/yaen-beginner.html'),
+        videos: resolve(__dirname, 'videos.html'),   // 釣り方別の動画（2026-10-17）
       },
     },
   },
