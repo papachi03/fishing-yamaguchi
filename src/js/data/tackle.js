@@ -60,6 +60,17 @@ export const tackle = [
   A({ id: 'egioh-k', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'エギ王 K 3.5号（軍艦グリーン）', owned: false,
       query: 'ヤマシタ エギ王K 3.5号', asin: 'B078ZW65R7', spec: '3.5号 / 22g',
       note: '秋のアオリイカの定番エギ。まず1本ならこれ。' }),
+  // ---- テーラー（夜のヤリイカのウキ釣り）。2026-10-17 ぱっぱからもらったリンク（amzn.asia）から ASIN を取得し、商品ページの表記と一致を確認
+  //   愛用かどうかは未確認のため owned: false（ぱっぱが使っていると分かったら true に）
+  A({ id: 'yamashita-tailor-set', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'イカ釣・エサ巻テーラ ウキ釣セット M3', owned: false,
+      query: 'ヤマシタ エサ巻テーラ ウキ釣セット M3', asin: 'B01NCPC1GT', spec: '道糸4号6.8m＋仕掛け1.2m',
+      note: '夜のヤリイカのウキ釣りを、これ一式で。磯竿やコンパクトロッドでも扱いやすいM3サイズ。' }),
+  A({ id: 'yamashita-esamaki-tailor', category: 'eging', type: 'lure', brand: 'YAMASHITA', name: 'イカ エサ巻テーラ MO（鉛なし）', owned: false,
+      query: 'ヤマシタ エサ巻テーラ MO 鉛なし', asin: 'B000FQATWS', spec: 'MO / 鉛なし / 2本入り',
+      note: 'テーラの替え。赤い目玉で集魚、出っ張った目玉で巻いたワイヤーが止まる。' }),
+  A({ id: 'fuji-denki-uki', category: 'eging', type: 'gear', brand: '冨士灯器', name: '電気ウキ FF-B6LG〜FF-B15LG', owned: false,
+      query: '冨士灯器 電気ウキ FF-B LG', asin: 'B00O1E9WL4', spec: '緑色LED / オモリ6〜15号',
+      note: '夜のウキ釣りの電気ウキ。テーラーの仕掛けの上で、アタリを光で知らせる。' }),
 
   // ---------- ヤエン ----------
   A({ id: 'aori-yaen-hikkake', category: 'yaen', type: 'lure', brand: 'YAMASHITA', name: 'アオリヤエン 必掛',

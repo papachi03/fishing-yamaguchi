@@ -9,7 +9,7 @@ test('海況へのリンクと、釣り方に合う記事へのリンクが出�
   assert.ok(egi.includes(`href="/sea.html?from=${FIELD_FROM}"`));
   assert.ok(egi.includes(`href="/guides/autumn-eging.html?from=${FIELD_FROM}"`));
   assert.match(fieldLinksHTML('ja', 'yaen'), /\/guides\/yaen-beginner\.html\?from=/);
-  assert.match(fieldLinksHTML('ja', 'tailor'), /\/spots\.html\?from=/);
+  assert.match(fieldLinksHTML('ja', 'tailor'), /\/tackle\.html\?from=ikabu-egi#eging/);
   assert.match(fieldLinksHTML('ja', undefined), /\/guides\/autumn-eging\.html\?from=/);   // 分からない釣り方はエギング
 });
 

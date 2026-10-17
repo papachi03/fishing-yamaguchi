@@ -12,7 +12,7 @@ const SECOND = {
   egi: { href: '/guides/autumn-eging.html', ja: '最初にそろえるエギングの道具', en: 'Gear to start egging' },
   jado: { href: '/guides/autumn-eging.html', ja: '最初にそろえるエギングの道具', en: 'Gear to start egging' },
   yaen: { href: '/guides/yaen-beginner.html', ja: 'ヤエン釣りの道具と、春の大型の狙い方', en: 'Yaen gear and how to target big spring squid' },
-  tailor: { href: '/spots.html', ja: '山口の釣り場の一覧', en: 'Fishing spots in Yamaguchi' },
+  tailor: { href: '/tackle.html#eging', ja: 'テーラーの仕掛けと電気ウキ', en: 'Tailor rigs and electric floats' },
 };
 
 // 釣り方別の動画ページ（videos.html）の見出しと、カードに出す主役の動画（videos.html の MAIN と同じ）。ふつうのエギングはページの先頭
@@ -23,7 +23,11 @@ const VIDEO = {
   egi: { hash: '', id: 'Y3suaT2xEkk', ja: 'ダディの実際のイカ釣り', en: "Daddy's real squid fishing" },
 };
 
-export const fieldHref = (path, toHref = (p) => p) => `${toHref(path)}?from=${FIELD_FROM}`;
+// 目印 ?from= は # より前に置く（/tackle.html#eging → /tackle.html?from=…#eging。# の後ろに付けると GA4 で数えられない）
+export const fieldHref = (path, toHref = (p) => p) => {
+  const [p, hash] = path.split('#');
+  return `${toHref(p)}?from=${FIELD_FROM}${hash ? `#${hash}` : ''}`;
+};
 
 export function fieldLinksHTML(lang, method, toHref = (p) => p) {
   const second = SECOND[method] ?? SECOND.egi;
