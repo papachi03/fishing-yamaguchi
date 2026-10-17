@@ -3545,3 +3545,8 @@ html.is-egi-rot .ika-egi-main .ika-tickets-toast { top: 14px; max-width: calc(va
 
 /* アタリチャレンジ：吹き出しは竿先から離して、舞台の下の方（左下の欄の上）に。竿先・水面の糸を見ている目の邪魔をしない（2026-10-04 感想 #36） */
 .ika-egi-stage.is-blind .ika-egi-callout, .ika-egi-stage.is-blind .ika-egi-callout.is-guide { top: auto; bottom: 26%; font-size: 14px; padding: 4px 12px; opacity: 0.92; }
+/* iPhone の動きセンサーの許可の前の説明（2026-10-17） */
+.ika-egi-perm { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; padding: 16px; background: rgba(4, 16, 28, 0.6); }
+.ika-egi-perm-in { width: min(100%, 380px); max-height: 90vh; overflow: auto; padding: 18px 18px 16px; border-radius: 16px; background: #fffdf7; color: #0b2a2f; box-shadow: 0 12px 40px rgba(0,0,0,0.45); font-size: 14px; line-height: 1.6; }
+.ika-egi-perm-h { margin: 0 0 8px; font-size: 17px; font-weight: 900; } .ika-egi-perm-in ul { margin: 8px 0; padding-left: 1.3em; list-style: disc; } .ika-egi-perm-in li { margin: 2px 0; }
+.ika-egi-perm-note { margin: 8px 0 12px; font-size: 12.5px; color: #4a6066; } .ika-egi-perm-btns { display: grid; gap: 8px; } .ika-egi-perm-btns .ika-btn { width: 100%; }

@@ -969,7 +969,18 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   if (readPref('ikabu.egi.shake') !== false && !el.feelShake?.hidden) {
     if (typeof window.DeviceMotionEvent?.requestPermission !== 'function') setShake(true, false);
     else {
-      const askOnce = () => { removeEventListener('touchend', askOnce, true); removeEventListener('click', askOnce, true); if (!shakeOn && readPref('ikabu.egi.shake') !== false) setShake(true, true); };
+      // いきなり iPhone の許可の画面を出すと怖がられるので、先に説明の窓を出す（2026-10-17 ぱっぱ）
+      const askOnce = (e) => {
+        if (e?.target?.closest?.('.ika-egi-perm')) return;   // 説明の窓の中を押した時は数えない
+        removeEventListener('touchend', askOnce, true); removeEventListener('click', askOnce, true);
+        if (shakeOn || readPref('ikabu.egi.shake') === false) return;
+        const d = document.createElement('div');
+        d.className = 'ika-egi-perm'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');
+        d.innerHTML = `<div class="ika-egi-perm-in"><p class="ika-egi-perm-h">${t(lang, TX.feel.permTitle)}</p><p>${t(lang, TX.feel.permBody)}</p><ul>${TX.feel.permPoints.map((x) => `<li>${t(lang, x)}</li>`).join('')}</ul><p class="ika-egi-perm-note">${t(lang, TX.feel.permNext)}</p><div class="ika-egi-perm-btns"><button type="button" class="ika-btn ika-btn--primary" data-perm-yes>${t(lang, TX.feel.permYes)}</button><button type="button" class="ika-btn" data-perm-no>${t(lang, TX.feel.permNo)}</button></div></div>`;
+        document.body.appendChild(d);
+        d.querySelector('[data-perm-yes]').addEventListener('click', () => { d.remove(); setShake(true, true); });   // ボタンを押した瞬間なので iPhone の許可の画面を出せる
+        d.querySelector('[data-perm-no]').addEventListener('click', () => { d.remove(); writePref('ikabu.egi.shake', false); syncFeel(); callout(t(lang, TX.feel.permLater), '', 3200); });
+      };
       addEventListener('touchend', askOnce, true); addEventListener('click', askOnce, true);
     }
   }
