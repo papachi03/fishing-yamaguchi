@@ -15,7 +15,7 @@ import { rhythmHintKey } from './egi-advice.js';
 import { moonPhase, MOON_PRESET } from './egi.js';
 import { readJSON as readPref, writeJSON as writePref } from './records.js';
 import { createFeel, canVibrate } from './feel.js';
-import { holdFall, setTiltFall } from './egi.js';
+import { holdFall, setTiltFall, DOUBLE_JERK } from './egi.js';
 import { watchTilt, makeTiltGate } from './shake.js';
 const FOLLOW_HOLD = { within: 1.0, ms: 250 };   // しゃくりから1秒以内に押したら 0.25 秒待って、しゃくりかテンションフォールか見分ける（2026-10-04）
 // 奥へ倒す角度の判定は shake.js の makeTiltGate（15 度で入る・9 度未満で終わる・振った後 0.8 秒は入らない）
@@ -896,11 +896,24 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
     // iPhone：行は出すが押せない。「震えない理由」を添える（感想「当たった時のバイブ機能が欲しい」→ 実は iPhone の Safari が対応していない。2026-10-01）
     if (ios && !canVibrate()) { el.feelVib.querySelectorAll('button').forEach((b) => { b.disabled = true; b.setAttribute('aria-pressed', 'false'); }); el.feelVib.insertAdjacentHTML('beforeend', `<small class="ika-egi-feel-note">${t(lang, TX.feel.noIos)}</small>`); }
   }
-  // 振ってしゃくる（試験中）。スマホ（動きの読み取りができて、タッチの端末）だけに出す。最初はオフ
+  // 振ってしゃくる（2026-10-17 正規の機能に・最初からオン）。スマホ（動きの読み取りができて、タッチの端末）だけに出す。設定でオフにした人だけオフ
   let shakeOn = false, stopShake = null;
   if (el.feelShake) el.feelShake.hidden = !(shakeSupported() && matchMedia('(pointer: coarse)').matches);
+  // 邪道エギング（2026-10-17 ぱっぱ）：1回振る＝ズル引き、2段しゃくりのように速く2回振る（DOUBLE_JERK 秒以内）＝「ふわっと」。
+  //   2回目が来るかを DOUBLE_JERK 秒だけ待ってからズル引きにする。アタリの合図の時は待たずに合わせる
+  let jadoShakeTimer = 0;
+  function onJadoShake() {
+    if (s.phase === 'signal') { clearTimeout(jadoShakeTimer); jadoShakeTimer = 0; doPress(); doRelease(); return; }
+    if (jadoShakeTimer) {   // 2回目：ふわっと（底で止めている時だけ。できない時はズル引き）
+      clearTimeout(jadoShakeTimer); jadoShakeTimer = 0;
+      if (canJadoLift(s)) { dart(s); onEvents(s.events.splice(0)); setButton(); } else { doPress(); doRelease(); }
+      return;
+    }
+    jadoShakeTimer = setTimeout(() => { jadoShakeTimer = 0; if (s && !frozen && s.method === 'jado' && ['sinking', 'action'].includes(s.phase)) { doPress(); doRelease(); } }, DOUBLE_JERK * 1000);
+  }
   function onShake() {
     // しゃくり（沈下・フォール）とアワセ（合図）の時だけ。巻いている時（ファイト）に振っても何もしない
+    if (s && !frozen && s.method === 'jado' && ['sinking', 'action', 'signal'].includes(s.phase)) { onJadoShake(); return; }
     if (!s || frozen || s.method !== 'egi' || !['sinking', 'action', 'signal'].includes(s.phase)) return;
     tilt.block(performance.now());   // 振った直後は倒しても入らない。倒したまま振り上げた＝しゃくり・合わせ（エンジン側でもテンションフォールが終わる）
     doPress();
@@ -952,7 +965,14 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
   });
   syncFeel();
   // 前にオンにしていた人：Android はそのまま見張りを始める。iPhone は許可をボタンでしか頼めないので、もう一度オンを押してもらう
-  if (readPref('ikabu.egi.shake') === true && !el.feelShake?.hidden && typeof window.DeviceMotionEvent?.requestPermission !== 'function') setShake(true, false);
+  // 最初からオン（自分でオフにした人＝記録が false の人を除く）。iPhone は許可を「画面を触った時」にしか聞けないので、最初のタッチで聞く
+  if (readPref('ikabu.egi.shake') !== false && !el.feelShake?.hidden) {
+    if (typeof window.DeviceMotionEvent?.requestPermission !== 'function') setShake(true, false);
+    else {
+      const askOnce = () => { removeEventListener('touchend', askOnce, true); removeEventListener('click', askOnce, true); if (!shakeOn && readPref('ikabu.egi.shake') !== false) setShake(true, true); };
+      addEventListener('touchend', askOnce, true); addEventListener('click', askOnce, true);
+    }
+  }
 
   // 練習モードに切り替えて、今の練習条件でゲームを作り直す。
   // user＝人が自分で選んだ（季節・時間帯などを押した）。そのあとに今日の萩の海のデータが届いても、勝手に切り替えない
@@ -1642,6 +1662,7 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
         case 'ready':
           if (guide > 0) { guide = 1; showGuide(); }   // アタリが来ないまま次の1投：手順をもう一度
           resetForNextCast();
+          syncBait();   // 邪道：投げるたびにエサが減る（BAIT_USE.cast）。前はここで描き直さず、ゲージが減らないように見えた（2026-10-17 ぱっぱ）
           if (s.dryCasts >= 2) setTimeout(() => { if (s.phase === 'ready') callout(t(lang, TX.egi.rotateHint)); }, 400);
           break;
         case 'rotation':
