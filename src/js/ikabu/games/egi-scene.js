@@ -221,7 +221,7 @@ export function egiSceneSVG({ lang = 'ja', tod = 'evening', W = SCENE.W0, bottom
   <!-- 竿・糸・空中のもの（egi-ui.js が描く） -->
   <path class="ika-eg-rod-outline" d="" fill="#16233a" />
   <path class="ika-eg-rod" d="" fill="#f4ead8" />
-  <path class="ika-eg-line" d="" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round" opacity="0.95" />
+  <path class="ika-eg-line" d="" fill="none" stroke="#fff8e6" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
   <g class="ika-eg-air"></g>
 </svg>`;
 }

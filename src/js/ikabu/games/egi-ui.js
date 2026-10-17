@@ -2770,8 +2770,10 @@ export function mountEgi(root, { lang = 'ja', demo = null } = {}) {
       sc.yaenInner.setAttribute('transform', `scale(${(1.1 + (1 - pop) * 0.6).toFixed(2)})`);
       sc.yaenNode.setAttribute('opacity', '1');
     } else sc.yaenNode.setAttribute('opacity', '0');
-    sc.line.setAttribute('stroke-width', (2 + 1.2 * taut).toFixed(1));
-    sc.line.setAttribute('opacity', (0.8 + 0.2 * taut).toFixed(2));
+    // 糸の太さ（2026-10-17 部員 aji131703 さん「テンションフォールの時に太い」・ぱっぱOK）：前は 2〜3.2（スマホ横で1.3〜1.7px）で、
+    //   細長くした新しいエギと並ぶと太すぎた。全体を細くし、張り・たるみは太さの差を小さくして主に濃さで見せる（横で約0.9〜1.1px）
+    sc.line.setAttribute('stroke-width', (1.5 + 0.55 * taut).toFixed(2));
+    sc.line.setAttribute('opacity', (0.55 + 0.45 * taut).toFixed(2));
     // 入水点の輪
     if (!V.lineBroken && lineEnd.y > S.surface + 4 && tip.y < S.surface) {
       // 糸はたるんだ曲線なので、まっすぐな線ではなく曲線が水面と交わる点に輪を置く（ぱっぱ指摘：フリーフォールで輪がずれる）
