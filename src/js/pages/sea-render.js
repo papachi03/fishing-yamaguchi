@@ -46,7 +46,8 @@ const T = {
     safetyFallback: (wind, wave) => `風速${wind}m/s・波高${wave}m`,
     onshore: ' ／ 海からの風',
     reasonSep: ' ／ ',
-    obsLine: (station, at, wind, calm) => `実測 ${station} ${at}：風 ${wind}m/s${calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）`,
+    // 判定の帯の下の実測の行。obsLine（アメダスの欄用）と同じ名前にして上書きされ「undefined function at()」と出ていた（2026-10-17 ぱっぱ発見）
+    obsBand: (station, at, wind, calm) => `実測 ${station} ${at}：風 ${wind}m/s${calm ? '（静穏）' : ''}（陸の観測所。堤防では1〜2m/s強く吹きます）`,
     obsMismatch: '⚠ いまの実測は穏やかで、予報と食い違っています。判定は安全側（予報）のままにしています。現地の海面と気象庁の発表で確かめてください',
     legend: (legend, pfLabel, provisional) => `${legend}（${pfLabel}の基準）。気象庁の注意報・警報が出ている時はそちらを優先${provisional ? ' ／ この海域のしきい値は暫定です' : ''}`,
     trial: TRIAL_NOTE,
@@ -89,7 +90,7 @@ const T = {
     safetyFallback: (wind, wave) => `wind ${wind} m/s · waves ${wave} m`,
     onshore: ' / onshore wind',
     reasonSep: ' / ',
-    obsLine: (station, at, wind, calm) => `Observed at ${station} ${at}: wind ${wind} m/s${calm ? ' (calm)' : ''} (inland station; expect 1–2 m/s more on the pier)`,
+    obsBand: (station, at, wind, calm) => `Observed at ${station} ${at}: wind ${wind} m/s${calm ? ' (calm)' : ''} (inland station; expect 1–2 m/s more on the pier)`,
     obsMismatch: '⚠ The current observation is calm and disagrees with the forecast. The rating stays on the safe side (forecast). Check the sea and JMA before you go.',
     legend: (legend, pfLabel, provisional) => `${legend} (${pfLabel} thresholds). JMA advisories and warnings always take precedence${provisional ? ' / thresholds for this area are provisional' : ''}`,
     trial: 'We have switched our weather data sources and are still fine-tuning them. Before you go, also check JMA information and the conditions on site.',
@@ -281,7 +282,7 @@ function safetyBandHTML(area, w, lang, obs = null, now = new Date()) {
         s.reasons.length ? s.reasons.join(L.reasonSep) : L.safetyFallback(fmt1(w.current.wind), fmt1(w.current.wave))
       }${onshore && w.current.wind < pf.wind[0] ? L.onshore : ''}</p>${
         fo ? `
-      <p class="safety-obs t-mono">${L.obsLine(fo.station, fo.at, fmt1(fo.wind), fo.calm)}</p>` : ''
+      <p class="safety-obs t-mono">${L.obsBand(fo.station, fo.at, fmt1(fo.wind), fo.calm)}</p>` : ''
       }${calmObs ? `
       <p class="safety-obs safety-mismatch t-mono">${L.obsMismatch}</p>` : ''}
       ${safetyLegendHTML(area, lang)}

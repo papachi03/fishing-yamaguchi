@@ -89,3 +89,15 @@ test('現地の声のカード：英語では見出し・タグだけ英語、�
   assert.match(en, /釣れました/, '本文は翻訳しない');
   assert.doesNotMatch(en, /の情報|場所不明/);
 });
+
+// 2026-10-17 ぱっぱ発見：判定の帯の下の実測の行が「undefined function at() { [native code] } 実測 12:10」と出ていた。
+// 文言の表に同じ名前（obsLine）が2つあり、アメダスの欄用の方で上書きされていた
+test('判定の帯の実測の行：観測所・時刻・風が出る（undefined や function の文字が出ない）', () => {
+  const obs = { station: '萩', at: '11:50', atMs: new Date(2026, 8, 24, 11, 50).getTime(), wind: 3.8, windDir: 0, calm: false, gustMax: 6.7, gustAt: '7:25' };
+  for (const lang of [undefined, 'en']) {
+    const html = dashHTML({ area: F.areaHagi, w: F.weather, t: F.tide, now: F.NOW, updatedLabel: 'x', obs, ...(lang ? { lang } : {}) });
+    const line = html.match(/<p class="safety-obs t-mono">([^<]*)<\/p>/)?.[1] ?? '';
+    assert.ok(line.includes('萩') && line.includes('11:50') && line.includes('3.8'), `実測の行: ${line}`);
+    assert.doesNotMatch(html, /undefined|function |\[native code\]/);
+  }
+});
